@@ -26,7 +26,7 @@
         <div class="col-md-12">
           @if($sales->count() > 0)
             <div class="alert alert-success" role="alert">
-              <p>The Total Amount of Sale from {{$dateStart}} to {{$dateEnd}} is ${{number_format($totalSale, 2)}}</p>
+              <p>The Total Amount of Sale from {{$dateStart}} to {{$dateEnd}} is Rs {{number_format($totalSale, 2)}}</p>
               <p>Total Result: {{$sales->total()}}</p>
             </div>
             <table class="table">
@@ -81,12 +81,17 @@
    
             {{$sales->appends($_GET)->links()}}
 
-            <form action="/report/show/export" method="get">
-              <input type="hidden" name="dateStart" value="{{$dateStart}}" >
-              <input type="hidden" name="dateEnd" value="{{$dateEnd}}" >
-              <input type="submit" class="btn btn-warning" value="Export to Excel" >
-            </form>
+            
 
+<div id="buttons">
+            <a href="/export/salereport">
+            <button class="btn btn-back">
+                Show Report
+            </button>
+            
+
+
+            
           @else
             <div class="alert alert-danger" role="alert">
               There is no Sale Report

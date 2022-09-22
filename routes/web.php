@@ -35,7 +35,12 @@ Route::get('/cashier/getSaleDetailsByTable/{table_id}', 'App\Http\Controllers\Ca
 
 
 Route::post('/cashier/orderFood', 'App\Http\Controllers\Cashier\CashierController@orderFood');
+
 Route::post('/cashier/deleteSaleDetail', 'App\Http\Controllers\Cashier\CashierController@deleteSaleDetail');
+Route::post('/cashier/increase-quantity', 'App\Http\Controllers\Cashier\CashierController@increaseQuantity');
+
+Route::post('/cashier/decrease-quantity', 'App\Http\Controllers\Cashier\CashierController@decreaseQuantity');
+
 Route::post('/cashier/confirmOrderStatus','App\Http\Controllers\Cashier\CashierController@confirmOrderStatus' );
 Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
 

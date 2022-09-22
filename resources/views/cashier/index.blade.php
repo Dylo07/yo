@@ -169,6 +169,48 @@ $("#order-detail").on("click", ".btn-delete-saledetail", function(){
   })
 
 });
+
+//increase quantity
+$("#order-detail").on("click", ".btn-increase-quantity", function(){
+  var saleDetailID = $(this).data("id");
+  $.ajax({
+    type: "POST",
+    data: {
+      "_token" : $('meta[name="csrf-token"]').attr('content'),
+      "saleDetail_id": saleDetailID
+    },
+    url: "{{url('/cashier/increase-quantity')}}", 
+    success: function(data){
+      $(("#order-detail")).html(data);
+      
+    }
+
+  })
+
+});
+
+//decrease quantity
+$("#order-detail").on("click", ".btn-decrease-quantity", function(){
+  var saleDetailID = $(this).data("id");
+  $.ajax({
+    type: "POST",
+    data: {
+      "_token" : $('meta[name="csrf-token"]').attr('content'),
+      "saleDetail_id": saleDetailID
+    },
+    url: "{{url('/cashier/decrease-quantity')}}", 
+    success: function(data){
+      $(("#order-detail")).html(data);
+      
+    }
+
+  })
+
+});
+
+
+
+
 // when a user click on payment button
 $("#order-detail").on("click", ".btn-payment", function(){
   var totalAmount = $(this).attr('data-totalAmount');

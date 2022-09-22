@@ -22,7 +22,7 @@ class ReportController extends Controller
         $dateStart = date("Y-m-d H:i:s", strtotime($request->dateStart.' 00:00:00'));
         $dateEnd = date("Y-m-d H:i:s", strtotime($request->dateEnd.' 23:59:59'));
         $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])->where('sale_status','paid');
-        return view('report.showReport')->with('dateStart', date("m/d/Y H:i:s", strtotime($request->dateStart.' 00:00:00')))->with('dateEnd', date("m/d/Y H:i:s", strtotime($request->dateEnd.' 23:59:59')))->with('totalSale', $sales->sum('change'))->with('sales', $sales->paginate(500));
+        return view('report.showReport')->with('dateStart', date("m/d/Y H:i:s", strtotime($request->dateStart.' 00:00:00')))->with('dateEnd', date("m/d/Y H:i:s", strtotime($request->dateEnd.' 23:59:59')))->with('totalSale', $sales->sum('change'))->with('serviceCharge', $sales->sum('total_recieved'))->with('sales', $sales->paginate(500));
     }
     public function export(Request $request){
         return Excel::download(new SaleReportExport($request->dateStart, $request->dateEnd), 'saleReport.xlsx');

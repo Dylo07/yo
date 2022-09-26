@@ -73,9 +73,29 @@
                       <td>{{$saleDetail->quantity}}</td>
                       <td>{{$saleDetail->menu_price}}</td>
                       <td>{{$saleDetail->menu_price * $saleDetail->quantity}}</td>
+                      <td colspan="2"></td>
                     </tr>
                   @endforeach
                 @endforeach
+
+                    <tr class="bg-primary text-light">
+                      <th colspan ="8" class="text-center">Summary</th>
+                    </tr>
+
+                    <tr>
+                      <th colspan ="2">MeniId</th>
+                      <th colspan ="3">Menu</th>
+                      <th colspan ="3">Quantity</th>
+                        
+                    </tr>
+                    @foreach($summarySales as $sale)
+                    <tr>
+                      <td colspan ="2">{{$sale->menu_id}}</td>
+                      <td colspan ="3">{{$sale->menu_name}}</td>
+                      <td colspan ="3">{{$sale->qty_sum}}</td>
+                        
+                    </tr>
+                    @endforeach
               </tbody>
             </table>
    

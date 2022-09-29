@@ -78,12 +78,12 @@
                   @endforeach
                 @endforeach
 
-                    <tr class="bg-primary text-light">
+                    <tr class="bg-dark text-light">
                       <th colspan ="8" class="text-center">Summary</th>
                     </tr>
 
                     <tr>
-                      <th colspan ="2">MeniId</th>
+                      <th colspan ="2">Menu Id</th>
                       <th colspan ="3">Menu</th>
                       <th colspan ="3">Quantity</th>
                         

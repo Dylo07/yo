@@ -48,12 +48,14 @@
     </a>
 </div>
 
-
-
-
-
-
-
+<div class="col-lg-4 col-md-4 col-xs-4 thumb">
+<a href="{{route('inventory')}}">   
+    <h5>Inventory</h5>
+        <a class="thumbnail" href="#">
+            <img class="img-responsive"  width="50px" src="{{asset('image/stock.svg')}}"/> 
+    </a>
+    </a>
+</div>
 
 
 

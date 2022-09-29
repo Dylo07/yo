@@ -66,3 +66,14 @@ Route::get('/report/show', 'App\Http\Controllers\Report\ReportController@show');
 
 // Export to excel
 Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');
+
+// route for inventory
+Route::get('/inventory',function(){
+    return view('inventory.index'); 
+ })->name('inventory');
+
+ // routes for inventory
+Route::resource('inventory/category', App\Http\Controllers\Inventory\CategoryController::class);
+Route::resource('inventory/menu', App\Http\Controllers\Inventory\MenuController::class);
+Route::resource('inventory/stock', App\Http\Controllers\Inventory\StockController::class);
+Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);

@@ -1,0 +1,4 @@
+--> Table stock:
+
+-> stock colum
+ALTER TABLE `in_menus` ADD `stock` INT(11) NULL DEFAULT '0' AFTER `price`;

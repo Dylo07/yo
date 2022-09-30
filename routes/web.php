@@ -76,4 +76,8 @@ Route::get('/inventory',function(){
 Route::resource('inventory/category', App\Http\Controllers\Inventory\CategoryController::class);
 Route::resource('inventory/menu', App\Http\Controllers\Inventory\MenuController::class);
 Route::resource('inventory/stock', App\Http\Controllers\Inventory\StockController::class);
+Route::get('inventory/stock/{itemid}', 'App\Http\Controllers\Inventory\StockController@show')->name('Stock.show');
+Route::post('inventory/storestock/{itemid}', 'App\Http\Controllers\Inventory\StockController@store')->name('Stock.storeStock');
+Route::delete('inventory/removeStock/{itemid}', 'App\Http\Controllers\Inventory\StockController@destroy')->name('Stock.removeStock');
+
 Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);

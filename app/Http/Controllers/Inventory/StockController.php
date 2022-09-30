@@ -5,8 +5,8 @@ namespace App\Http\Controllers\inventory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\InStock;
-
-
+use App\Models\InMenu;
+use Illuminate\Support\Facades\Auth;
 
 class StockController extends Controller
 {
@@ -17,7 +17,8 @@ class StockController extends Controller
      */
     public function index()
     {
-        return view ('inventory.stock');
+        $menus = InMenu::all();
+        return view ('inventory.stock')->with('menus',$menus);
     }
 
     /**
@@ -38,7 +39,22 @@ class StockController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        //echo  $request ->itemid;
+        //dd($request->all());
+        //$stock = InStock::create($request->all());
+        //save information to stock table
+        $user = Auth::user();
+        $stock = new InStock();
+        $stock->in_menu_id  = $request ->itemid;
+        $stock->stock = $request->stock;
+        $stock->user_id = $user->id;
+        
+        $stock->save();
+        $menu = InMenu::find($request ->itemid);
+        $menu->stock = intval($menu->stock)+($request->stock);
+        $menu->save();
+        $request->session()->flash('status','Stock saved successfully');
+        return redirect('/inventory/stock');
     }
 
     /**
@@ -49,7 +65,8 @@ class StockController extends Controller
      */
     public function show($id)
     {
-        //
+        $menu = InMenu::find($id);
+        return view ('inventory.stockDetail')->with('menu',$menu);
     }
 
     /**
@@ -81,8 +98,19 @@ class StockController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy($id,Request $request)
     {
-        //
+        $user = Auth::user();
+        $stock = new InStock();
+        $stock->in_menu_id  = $request ->itemid;
+        $stock->stock = -intval($request->stock);
+        $stock->user_id = $user->id;
+        
+        $stock->save();
+        $menu = InMenu::find($request ->itemid);
+        $menu->stock = intval($menu->stock)-($request->stock);
+        $menu->save();
+        $request->session()->flash('warning','Stock has been removed successfully');
+        return redirect('/inventory/stock');
     }
 }

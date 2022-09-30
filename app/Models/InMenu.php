@@ -12,4 +12,8 @@ class InMenu extends Model
     public function category(){
         return $this->belongsTo(InCategory::class);
     }
+
+    public function inStock(){
+        return $this->hasmany(InStock::class);
+    }
 }

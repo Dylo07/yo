@@ -50,7 +50,7 @@ class CashierController extends Controller
         $html = '';
         foreach($menus as $menu){
             $html .= '
-            <div class="row-cols-md-auto mb-2 mr-2  ">
+            <div class="row-cols-md-auto ">
                 <a class="btn btn-outline-secondary btn-menu" data-id="'.$menu->id.'">
                     <img class="img-fluid" src="'.url('/menu_images/'.$menu->image).'">
                     <br>

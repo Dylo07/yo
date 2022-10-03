@@ -16,9 +16,9 @@
     <div id="wrapper">
         <div id="recipt-header">
         <p style="text-align:center;"><img width="200px" src="{{asset('image/lg.png')}}" alt="Logo"></p>
-                       <p style="text-align:center;"> Badagamuwa, Kurunegala</p>
+                       <p style="text-align:center;"> Balawattala Road, Melsiripura, Kurunegala</p>
             <p style="text-align:center;">| Restaurant | Swimming Pool | Cottages | Bar |</p>
-            <p>Tel: 037 5500 600</p>
+            <p style="text-align:center;">Tel: 037 2250 308 | 071 7152 955</p>
             <p>Invoice No: <strong>{{$sale->id}}</strong></p>
                               
             
@@ -91,7 +91,9 @@
 
         </table>
         <div id="recipt-footer">
-            <p> THANK YOU, COME AGAIN !!</p>
+        <p> ස්තූතීයි, නැවත එන්න !!</p>
+        <p> THANK YOU, COME AGAIN !!</p>
+
         </div>
         <div id="buttons">
             <a href="/cashier">

@@ -24,7 +24,7 @@ class CashierController extends Controller
         $html = '' ;
         
         foreach($tables as $table){
-            $html .= '<div class="col-lg-4 col-md-3 col-sm-4 mb-4">';
+            $html .= '<div class="col-lg-2 col-md-3 col-sm-1 mb-2">';
             $html .= '<button class="btn btn-primary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
             
             <img class="img-fluid"  style="width:100%" src="'.url('/image/table.svg').'"/>
@@ -50,7 +50,7 @@ class CashierController extends Controller
         $html = '';
         foreach($menus as $menu){
             $html .= '
-            <div class="col-md-3 text-center">
+            <div class="row-cols-md-auto mb-2 mr-2  ">
                 <a class="btn btn-outline-secondary btn-menu" data-id="'.$menu->id.'">
                     <img class="img-fluid" src="'.url('/menu_images/'.$menu->image).'">
                     <br>

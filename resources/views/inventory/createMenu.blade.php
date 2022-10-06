@@ -38,7 +38,7 @@
 
 </lable>
 <div class="input-group mb-3"> 
-    <span class="input-group-text"> $ </span>
+    <span class="input-group-text"> Rs </span>
     
     <input type="text" name="price" class="form-control" aria-label="Amount (to the nearest dollor )">
 <div class="input-group-append" >
@@ -69,7 +69,7 @@
 
 <div class="form-group">
    
-    <button type="submit" class="btn btn-warning">Edit</button>
+    <button type="submit" class="btn btn-warning">Create</button>
 
     </form>
 </div>

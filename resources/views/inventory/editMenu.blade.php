@@ -39,7 +39,7 @@
 
 </lable>
 <div class="input-group mb-3"> 
-    <span class="input-group-text"> $ </span>
+    <span class="input-group-text"> Rs </span>
     
     <input type="text" name="price" value="{{$menu->price}}" class="form-control" aria-label="Amount (to the nearest dollor )">
 

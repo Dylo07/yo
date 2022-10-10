@@ -27,7 +27,7 @@ Route::get('/management',function(){
 })->name('management');
 //routes for cashier
 Route::get('/cashier', 'App\Http\Controllers\Cashier\CashierController@index')->name('cashier');
-Route::get('/cashier/getMenuByCategory/{category_id}', 'App\Http\Controllers\Cashier\CashierController@getMenuByCategory');
+Route::get('/cashier/getMenuByCategory/{category_id}/{search_keyword?}', 'App\Http\Controllers\Cashier\CashierController@getMenuByCategory');
 
 
 Route::get('/cashier/getTable', 'App\Http\Controllers\Cashier\CashierController@getTables');

@@ -19,6 +19,17 @@
             @endforeach
           </div>
         </nav>
+        <br>
+        <div class="row search-sec" style="display:none">
+          <div class="col-md-6 ">
+          </div>
+            
+          <div class="col-md-6 pull-right">
+              <input type="text" class="form-control" id="searchkeyword" placeholder="search menu" name="search">
+          </div>
+
+        </div>
+
         <div id="list-menu" class="row mt-2"></div>
       </div>
     </div>
@@ -88,14 +99,32 @@
       }
       
   });
+  
+  $(document).on('keydown', '#searchkeyword', function(e) {
+    if (e.keyCode === 13) {
+      e.preventDefault();
+      //e.stopImmediatePropagation();
+      //Do your stuff...
+      var id = $(".nav-link.active").data("id");
+      getmenuList(id);
+    }
+  });
 
-    //load menus by category
-    $(".nav-link").click(function(){
-    $.get("{{url('/cashier/getMenuByCategory')}}"+"/"+$(this).data("id"),function(data){
+  function getmenuList(id){
+    var search_key  = $("#searchkeyword").val().trim();
+    
+    $.get("{{url('/cashier/getMenuByCategory')}}"+"/"+id+"/"+search_key,function(data){
       $("#list-menu").hide();
       $("#list-menu").html(data);
+      $(".search-sec").show();
       $("#list-menu").fadeIn('fast');
     });
+  }
+    //load menus by category
+    $(".nav-link").click(function(){
+      var id = $(this).data("id");
+      $("#searchkeyword").val('');
+      getmenuList(id);
   })
   var SELECTED_TABLE_ID = "";
   var SELECTED_TABLE_NAME = "";

@@ -45,8 +45,12 @@ class CashierController extends Controller
         return $html;
     }
     
-    public function getMenuByCategory($category_id){
-        $menus = Menu::where('category_id', $category_id)->get();
+    public function getMenuByCategory($category_id,$search_keyword = ''){
+      
+        $menus = Menu::where('category_id', $category_id)
+        ->where('name', 'LIKE', "%{$search_keyword}%") 
+        ->get();
+
         $html = '';
         foreach($menus as $menu){
             $html .= '

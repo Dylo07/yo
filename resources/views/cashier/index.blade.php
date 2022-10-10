@@ -1,3 +1,4 @@
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 @extends('layouts.app')
 
 @section('content')
@@ -13,10 +14,13 @@
         <nav>
           <div class="nav nav-tabs" id="nav-tab" role="tablist">
             @foreach($categories as $category)
+            
               <a class="nav-item nav-link" data-id="{{$category->id}}" data-toggle="tab">
                 {{$category->name}}
               </a>
+              
             @endforeach
+            
           </div>
         </nav>
         <br>

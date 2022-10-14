@@ -24,7 +24,7 @@
           </div>
         </nav>
         <br>
-        <div class="row search-sec" style="display:none">
+        <div class="row search-sec" >
           <div class="col-md-6 ">
           </div>
             
@@ -110,7 +110,7 @@
       //e.stopImmediatePropagation();
       //Do your stuff...
       var id = $(".nav-link.active").data("id");
-      getmenuList(id);
+      getmenuList(0);
     }
   });
 
@@ -120,7 +120,6 @@
     $.get("{{url('/cashier/getMenuByCategory')}}"+"/"+id+"/"+search_key,function(data){
       $("#list-menu").hide();
       $("#list-menu").html(data);
-      $(".search-sec").show();
       $("#list-menu").fadeIn('fast');
     });
   }

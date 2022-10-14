@@ -65,6 +65,7 @@
                     <th>Service Charge</th>
                     <th>Total Price</th>
                   </tr>
+                
                   @foreach($sale->saleDetails as $saleDetail)
                     <tr>
                       <td></td>
@@ -85,10 +86,25 @@
                     <tr>
                       <th colspan ="2">Menu Id</th>
                       <th colspan ="3">Menu</th>
+                      
                       <th colspan ="3">Quantity</th>
                         
                     </tr>
+                    @php 
+                      $CategoryNew='';
+                    @endphp
+                    
                     @foreach($summarySales as $sale)
+                    @if ($CategoryNew != $sale->name)
+                      <tr>
+                      <td colspan ="8" align="center"><b>{{$sale->name}}</b></td>
+                      </tr>
+                    @endif
+                    
+                    @php 
+                      $CategoryNew= $sale->name;
+                    @endphp
+  
                     <tr>
                       <td colspan ="2">{{$sale->menu_id}}</td>
                       <td colspan ="3">{{$sale->menu_name}}</td>

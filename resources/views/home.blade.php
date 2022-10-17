@@ -15,6 +15,7 @@
                     @endif
 
                     <div class="row text-center">
+                    @if(Auth::user()->checkAdmin())
                         
 
 
@@ -27,6 +28,7 @@
 </a>
 
 </div>
+@endif
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('cashier')}}">
@@ -38,6 +40,7 @@
 
 
 </div>
+@if(Auth::user()->checkAdmin())
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('report')}}">   
@@ -47,7 +50,7 @@
     </a>
     </a>
 </div>
-
+@endif
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('inventory')}}">   
     <h5>Inventory</h5>

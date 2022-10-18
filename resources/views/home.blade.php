@@ -24,7 +24,7 @@
         <h5>Management</h5>
         <a class="thumbnail" href="{{route('management')}}">
             <img class="img-responsive" width="50px" src="{{asset('image/management.svg')}}"/> 
-            <img class="img-fluid"  style="width:50%" src="{{asset('image/management.svg')}}"/>
+            
     </a>
 </a>
 
@@ -36,7 +36,7 @@
     <h5>cashier</h5>
         <a class="thumbnail" href="{{route('cashier')}}">
             <img class="img-responsive" width="50px" src="{{asset('image/cashier.svg')}}"/> 
-            <img class="img-fluid"  style="width:50%" src="{{asset('image/cashier.svg')}}"/>
+            
     </a>
     </a>
 
@@ -49,7 +49,7 @@
     <h5>report</h5>
         <a class="thumbnail" href="{{route('report')}}">
             <img class="img-responsive"  width="50px" src="{{asset('image/report.svg')}}"/> 
-            <img class="img-fluid"  style="width:50%" src="{{asset('image/report.svg')}}"/>
+            
     </a>
     </a>
 </div>
@@ -59,7 +59,7 @@
     <h5>Inventory</h5>
         <a class="thumbnail" href="{{route('inventory')}}">
             <img class="img-responsive"  width="50px" src="{{asset('image/stock.svg')}}"/> 
-            <img class="img-fluid"  style="width:50%" src="{{asset('image/stock.svg')}}"/>
+           
     </a>
     </a>
 </div>

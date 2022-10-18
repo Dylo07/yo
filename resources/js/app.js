@@ -5,11 +5,10 @@
  */
 
 import './bootstrap';
-require('./bootstrap');
 import { createApp } from 'vue';
 
  window.Vue = require('vue');
- 
+ require('vue-resource')
  /**
   * The following block of code may be used to automatically register your
   * Vue components. It will recursively scan this directory for the Vue

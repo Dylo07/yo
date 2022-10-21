@@ -10,7 +10,7 @@ class InMenu extends Model
     use HasFactory;
     use HasFactory;
     public function category(){
-        return $this->belongsTo(InCategory::class);
+        return $this->belongsTo(Category::class);
     }
 
     public function inStock(){

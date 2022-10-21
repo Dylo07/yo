@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Menu;
 use App\Models\Sale;
 use App\Models\SaleDetail;
+use App\Models\InStock;
 use Illuminate\Support\Facades\Auth;
 
 class CashierController extends Controller
@@ -245,13 +246,15 @@ class CashierController extends Controller
 
         }
         public function savePayment(Request $request){
-            $saleID = $request -> saleID;
-            $recievedAmount = $request -> recievedAmount;
+           
+           
+            $saleID = $request->saleID;
+            $recievedAmount = $request->recievedAmount;
             $paymentType = $request->PaymentType;
             // update sale information in the sale table by using sale model
             $sale = Sale::find($saleID);
             $sale->total_recieved = $recievedAmount;
-            $sale->change = $recievedAmount + $sale -> total_price;
+            $sale->change = $recievedAmount + $sale->total_price;
             $sale->payment_type = $paymentType;
             $sale->sale_status = "paid";
             $sale->save();
@@ -259,6 +262,19 @@ class CashierController extends Controller
             $table = Table::find($sale->table_id);
             $table->status = "available";
             $table->save();
+            $saleDetail = SaleDetail::get()->where('sale_id',$request->saleID);
+            foreach ($saleDetail as $value) {
+                $user = Auth::user();
+                $stock = new InStock();
+                $stock->menu_id  = $value->menu_id;
+                $stock->stock = -intval($value->quantity);
+                $stock->user_id = $user->id;
+                $stock->save();
+
+                $menu = Menu::find($value->menu_id);
+                $menu->stock = intval($menu->stock)-($value->quantity);
+                $menu->save();     
+            }
             // $return_url = url('/cashier/showRecipt')
             return url('/cashier/showRecipt')."/".$saleID;
 

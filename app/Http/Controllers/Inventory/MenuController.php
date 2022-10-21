@@ -4,8 +4,8 @@ namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\InCategory;
-use App\Models\InMenu;
+use App\Models\Category;
+use App\Models\Menu;
 class MenuController extends Controller
 {
     /**
@@ -15,7 +15,7 @@ class MenuController extends Controller
      */
     public function index()
     {
-        $menus = InMenu::all();
+        $menus = Menu::all();
         return view ('inventory.menu')->with('menus',$menus);
     }
 
@@ -26,7 +26,7 @@ class MenuController extends Controller
      */
     public function create()
     {
-        $categories= InCategory::all();
+        $categories= Category::all();
         return view('inventory.createMenu')->with('categories',$categories);
     }
 
@@ -57,7 +57,7 @@ class MenuController extends Controller
        $request->image->move(public_path('menu_images'),$imageName);
     }
     //save information to menu table
-    $menu = new InMenu();
+    $menu = new Menu();
     $menu->name = $request ->name;
     $menu->price = $request-> price;
     $menu->image = $imageName;
@@ -87,8 +87,8 @@ class MenuController extends Controller
      */
     public function edit($id)
     {
-        $menu = InMenu::find($id);
-        $categories = InCategory::all();
+        $menu = Menu::find($id);
+        $categories = Category::all();
         return view('inventory.editMenu')->with('menu',$menu)->with('categories',$categories);
     }
 
@@ -107,7 +107,7 @@ class MenuController extends Controller
             'price'=>'required|numeric',
             'category_id'=>'required|numeric'
         ]);
-        $menu = InMenu::find($id);
+        $menu = Menu::find($id);
         //validate if a user upload a image
         if($request->image){
             $request->validate([
@@ -142,7 +142,7 @@ class MenuController extends Controller
      */
     public function destroy($id)
     {
-        $menu=InMenu::find($id);
+        $menu=Menu::find($id);
         if ($menu->image !="noimage.png"){
             unlink(public_path('menu_images').'/'.$menu->image);
 

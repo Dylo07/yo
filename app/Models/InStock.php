@@ -9,7 +9,7 @@ class InStock extends Model
 {
     use HasFactory;
     public function inMenu(){
-        return $this->belongsTo(InMenu::class);
+        return $this->belongsTo(Menu::class);
     }
     public function user(){
         return $this->belongsTo(User::class);

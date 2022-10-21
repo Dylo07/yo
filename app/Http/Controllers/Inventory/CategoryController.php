@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\InCategory;
+use App\Models\Category;
 
 class CategoryController extends Controller
 {
@@ -15,7 +15,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories= InCategory::all();
+        $categories= Category::all();
         return view('inventory.category')->with('categories',$categories);
     }
 
@@ -39,7 +39,7 @@ class CategoryController extends Controller
     {
         $request->validate(['name'=>'required|unique:categories|max:255']);
         
-        $category = new InCategory;
+        $category = new Category;
         $category->name = $request->name;
         $category->save();
         $request->session()->flash('status',$request->name. " Is Saved Successfully");
@@ -65,7 +65,7 @@ class CategoryController extends Controller
      */
     public function edit($id)
     {
-        $category = InCategory::find($id);
+        $category = Category::find($id);
         return view('inventory.editCategory')->with('category',$category);
     }
 
@@ -79,7 +79,7 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate(['name'=> 'required|unique:categories|max:255']);
-        $category= InCategory::find($id);
+        $category= Category::find($id);
         $category->name= $request->name;
         $category->save();
         $request->session()->flash('status', $request->name." is updated successfully");
@@ -94,7 +94,7 @@ class CategoryController extends Controller
      */
     public function destroy($id)
     {
-        InCategory::destroy($id);
+        Category::destroy($id);
         Session()->flash('status','The category is deleted successfully');
         return redirect ('/inventory/category');
     }

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\inventory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\InStock;
-use App\Models\InMenu;
+use App\Models\Menu;
 use Illuminate\Support\Facades\Auth;
 
 class StockController extends Controller
@@ -17,7 +17,8 @@ class StockController extends Controller
      */
     public function index()
     {
-        $menus = InMenu::all();
+        $menus = Menu::all();
+        
         return view ('inventory.stock')->with('menus',$menus);
     }
 
@@ -45,12 +46,12 @@ class StockController extends Controller
         //save information to stock table
         $user = Auth::user();
         $stock = new InStock();
-        $stock->in_menu_id  = $request ->itemid;
+        $stock->menu_id  = $request ->itemid;
         $stock->stock = $request->stock;
         $stock->user_id = $user->id;
         
         $stock->save();
-        $menu = InMenu::find($request ->itemid);
+        $menu = Menu::find($request ->itemid);
         $menu->stock = intval($menu->stock)+($request->stock);
         $menu->save();
         $request->session()->flash('status','Stock saved successfully');
@@ -65,7 +66,7 @@ class StockController extends Controller
      */
     public function show($id)
     {
-        $menu = InMenu::find($id);
+        $menu = Menu::find($id);
         return view ('inventory.stockDetail')->with('menu',$menu);
     }
 
@@ -102,15 +103,16 @@ class StockController extends Controller
     {
         $user = Auth::user();
         $stock = new InStock();
-        $stock->in_menu_id  = $request ->itemid;
+        $stock->menu_id  = $request ->itemid;
         $stock->stock = -intval($request->stock);
         $stock->user_id = $user->id;
-        
         $stock->save();
-        $menu = InMenu::find($request ->itemid);
+    
+        $menu = Menu::find($request ->itemid);
         $menu->stock = intval($menu->stock)-($request->stock);
         $menu->save();
         $request->session()->flash('warning','Stock has been removed successfully');
+    
         return redirect('/inventory/stock');
     }
 }

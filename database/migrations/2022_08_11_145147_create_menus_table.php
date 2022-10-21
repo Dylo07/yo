@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table-> String('name');
             $table-> decimal('price',8,2);
+            $table-> decimal('stock',8,2);
             $table->string('image');
             $table ->text('description');
             $table -> integer('category_id');

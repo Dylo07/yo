@@ -34,7 +34,20 @@
     </div>
     @endif
     
-    
+    <form action="/inventory/stockFilterByCategory" name="category" id="categoryForm" method="post">
+        @csrf
+        @method('POST')
+      
+        <div class="pull-right">
+                <label>Search by category</lebel>
+                <select name="category_id" id="category_id" class="form-control">
+                @foreach($data['categories'] as $category)                
+                    <option value="{{$category->id}}" @if($data['selectedCategory'] == $category->id ) selected @endif>{{$category->name}}</option>
+                @endforeach    
+                </select>
+        </div>
+    </form>
+    <br>
     <table class="table table-bordered">
         <thead>
           <tr>
@@ -45,12 +58,12 @@
             <th scope="col">Add Stock</th>
             <th scope="col">Remove Stock</th>
             <th scope="col">View</th>
-    </tr>  
+        </tr>  
     </thead>
     <tbody> 
 
     </tbody>
-    @foreach($menus as $menu)
+    @foreach($data['menus'] as $menu)
     <tr> 
         <td> {{$menu->id}} </td>
         <td> {{$menu->name}} </td>
@@ -93,5 +106,9 @@
 </div>
     </div>
     </div>
+    <script>
+$(document).on('change', '#category_id', function () {
+    $( "#categoryForm").submit();
+});   
+</script>
 @endsection
-   

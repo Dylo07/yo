@@ -104,8 +104,10 @@
       
   });
   
-  $(document).on('keydown', '#searchkeyword', function(e) {
-    if (e.keyCode === 13) {
+  $(document).on('keyup', '#searchkeyword', function(e) {
+    console.log($(this).val().length);
+    // if (e.keyCode === 13) {
+      if ($(this).val().length > 2) {  
       e.preventDefault();
       //e.stopImmediatePropagation();
       //Do your stuff...

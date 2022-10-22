@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\InStock;
 use App\Models\Menu;
+use App\Models\Category;
 use Illuminate\Support\Facades\Auth;
 
 class StockController extends Controller
@@ -15,11 +16,20 @@ class StockController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        $menus = Menu::all();
-        
-        return view ('inventory.stock')->with('menus',$menus);
+    public function index(Request $request)
+    {   
+        $categories = Category::all();
+        $category_id = 0;
+        if(count($categories)){
+            $category_id = $categories[0]->id; 
+        }
+        if(isset($request->category_id)){
+            $category_id = $request->category_id;
+        }
+          
+        $menus = Menu::all()->where('category_id',$category_id);
+        $data = array('menus'=>$menus,'categories'=>$categories,'selectedCategory'=>$category_id);
+        return view ('inventory.stock')->with('data',$data);
     }
 
     /**

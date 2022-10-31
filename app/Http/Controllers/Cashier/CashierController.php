@@ -28,7 +28,7 @@ class CashierController extends Controller
             $html .= '<div class="col-lg-2 col-md-3 col-sm-1 mb-2">';
             $html .= '<button class="btn btn-primary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
             
-            <img class="img-fluid"  style="width:100%" src="'.url('/image/table.svg').'"/>
+            <img class="img-fluid"  style="width:0%" src="'.url('/image/table.svg').'"/>
             <br>';
             if($table->status == "available"){
                 $html .= '<span class="badge badge-pill badge-success">'.$table->name.'</span>';

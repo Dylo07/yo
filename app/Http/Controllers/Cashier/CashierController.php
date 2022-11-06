@@ -128,11 +128,11 @@ class CashierController extends Controller
         // list all saledetail
         $html = '<p>Sale ID: '.$sale_id.'</p>';
         $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
-        $html .= '<div class="table-responsive-md" style="overflow-y:scroll; height: 400px; border: 1px solid #343A40">
+        $html .= '<div class="table-responsive-md" style="overflow-y:scroll; height: 900px;  border: 1px solid #343A40">
         <table class="table table-stripped table-dark">
         <thead>
             <tr>
-                <th scope="col">ID</th>
+                
                 <th scope="col">Menu</th>
                 <th scope="col">Quantity</th>
                 <th scope="col">Price</th>
@@ -152,7 +152,7 @@ class CashierController extends Controller
           
             $html .= '
             <tr>
-                <td>'.$saleDetail->menu_id.'</td>
+                
                 <td>'.$saleDetail->menu_name.'</td>
                 <td>  '. $decreaseButton. ' '. $saleDetail->quantity.'<button data-id="'.$saleDetail->id.'" class="btn btn-primary btn-sm btn-increase-quantity">+</button></td>
                 <td>'.$saleDetail->menu_price.'</td>

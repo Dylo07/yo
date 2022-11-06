@@ -30,11 +30,11 @@
         <table class="tb-sale-detail">
         <thead>
             <tr>
-                <th>#</th>
+                
                 <th>Menu</th>
                 <th>Qty</th>
                 <th>Price</th>
-                <th>Total</th>
+                <th style="text-align:right;">Total</th>
             </tr>
 
 
@@ -42,11 +42,11 @@
         <tbody>
             @foreach($saleDetails as $saleDetail)
             <tr>
-                <td width="30">{{$saleDetail->menu_id}}</td>
-                <td width="180">{{$saleDetail->menu_name}}</td>
+               
+                <td width="180" style="text-align:left;">{{$saleDetail->menu_name}}</td>
                 <td width="50">{{$saleDetail->quantity}}</td>
                 <td width="55">{{$saleDetail->menu_price}}</td>
-                <td width="65">{{$saleDetail->menu_price*$saleDetail->quantity}}</td>
+                <td width="65" style="text-align:right;">{{$saleDetail->menu_price*$saleDetail->quantity}}</td>
                 
 
 

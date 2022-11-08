@@ -59,12 +59,12 @@
       </div>
       <div class="modal-body">
         <h3 class="totalAmount"></h3>
-        <h3 class="changeAmount"></h3>
+        <h3 class="changeAmount">Service Charege: Rs 0</h3>
         <div class="input-group mb-3">
            <div class="input-group-prepend">
             <span class="input-group-text">Rs</span>
            </div> 
-           <input type="number" id="recieved-amount" class="form-control">
+           <input type="number" id="recieved-amount" class="form-control" placeholder="0">
         </div>
         <div class="form-group">
           <label for="payment">Payment Type</label>
@@ -89,8 +89,8 @@
   // make table-detail hidden by default
   $("#table-detail").hide();
 
-  //show all tables when a client click on the button
-  $("#btn-show-tables").click(function(){
+  //show all tables when load the page
+    window.onload = function() {
       if($("#table-detail").is(":hidden")){
         $.get("{{url('/cashier/getTable')}}", function(data){
         $("#table-detail").html(data);
@@ -101,8 +101,12 @@
         $("#table-detail").slideUp('fast');
         $("#btn-show-tables").html('View All Tables').removeClass('btn-danger').addClass('btn-primary');
       }
-      
-  });
+
+      setTimeout(function(){
+        $( "#table-detail .badge-success" ).first().click();
+        },1000);
+
+  }
   
   $(document).on('keyup', '#searchkeyword', function(e) {
     console.log($(this).val().length);
@@ -244,13 +248,28 @@ $("#order-detail").on("click", ".btn-decrease-quantity", function(){
 
 
 
+// when user click on Print KOT
+$("#order-detail").on("click",".printKot", function(){
+  saleID = $(this).data('id');
+  $.ajax({
+  type: "POST",
+  data: {
+    "_token" : $('meta[name="csrf-token"]').attr('content'),
+    "saleID" : saleID
+  },
+  url: "{{url('/cashier/printOrder')}}",
+  success: function(data){
+    window.open(data, '_blank').focus();
+  }
+});
+});
+
 
 // when a user click on payment button
 $("#order-detail").on("click", ".btn-payment", function(){
   var totalAmount = $(this).attr('data-totalAmount');
   $(".totalAmount").html("Total Amount Rs " + totalAmount);
   $("#recieved-amount").val('');
-  $(".changeAmount").html('');
   SALE_ID = $(this).data('id');
 
 });
@@ -260,6 +279,9 @@ $("#recieved-amount").keyup(function(){
 var totalAmount = $(".btn-payment").attr('data-totalAmount');
 var recievedAmount = $(this).val();
 var changeAmount =  recievedAmount ;
+if(!changeAmount){
+  changeAmount = 0;
+}
 $(".changeAmount").html("Service Charege: Rs " + changeAmount );
 
 //ckeck if cashier enter the right amount, then enable or disable save payment button

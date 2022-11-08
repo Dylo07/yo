@@ -41,6 +41,10 @@ Route::middleware(['auth'])->group(function(){
      Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
      
      Route::get('/cashier/showRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showRecipt');
+
+     Route::get('/cashier/printOrderRec/{saleID}', 'App\Http\Controllers\Cashier\CashierController@printOrderRec');
+
+     Route::post('/cashier/printOrder', 'App\Http\Controllers\Cashier\CashierController@printOrder');
      
      
 

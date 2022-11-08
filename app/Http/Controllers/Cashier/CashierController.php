@@ -102,6 +102,7 @@ class CashierController extends Controller
         $saleDetail->menu_name = $menu->name;
         $saleDetail->menu_price = $menu->price;
         $saleDetail->quantity = $request->quantity;
+        $saleDetail->count = 1;
         $saleDetail->save();
         //update total price in the sales table
         $sale->total_price = $sale->total_price + ($request->quantity * $menu->price);
@@ -173,7 +174,7 @@ class CashierController extends Controller
 
         if($showBtnPayment){
             $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
-            $html .= '<button class="btn btn-dark btn-block btn-payment"">Print KOT</button>';
+            $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot"">Print KOT</button>';
         }else{
             $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
         }
@@ -218,6 +219,10 @@ class CashierController extends Controller
     public function confirmOrderStatus(Request $request) {
         $sale_id = $request->sale_id;
         $saleDetails = SaleDetail::where('sale_id', $sale_id)->update(['status'=>'confirm']);
+        $saleDetail = SaleDetail::get()->where('sale_id',$sale_id);
+        foreach ($saleDetail as $value) {
+            SaleDetail::where('id', $value->id)->update(['count'=>$value->count+1]);    
+        }
         $html = $this->getSaleDetails($sale_id);
         return $html;
 
@@ -286,6 +291,17 @@ class CashierController extends Controller
             $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
             return view('cashier.showRecipt')->with('sale',$sale) ->with('saleDetails', $saleDetails );
             
+        }
+
+        public function printOrder(Request $request){
+            return url('/cashier/printOrderRec')."/".$request->saleID;
+
+        }
+
+        public function printOrderRec($saleID){
+            $sale = Sale::find($saleID);
+            $saleDetails = SaleDetail::get()->where('sale_id',$saleID)->where('count',2);
+            return view('cashier.printOrder')->with('sale',$sale) ->with('saleDetails', $saleDetails );
         }
 
 

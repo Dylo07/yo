@@ -77,7 +77,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary btn-save-payment" disabled>Save Payment</button>
+        <button type="button" class="btn btn-primary btn-save-payment" >Save Payment</button>
       </div>
     </div>
   </div>
@@ -88,6 +88,7 @@
   $(document).ready(function(){
   // make table-detail hidden by default
   $("#table-detail").hide();
+
 
   //show all tables when load the page
     window.onload = function() {
@@ -269,7 +270,7 @@ $("#order-detail").on("click",".printKot", function(){
 $("#order-detail").on("click", ".btn-payment", function(){
   var totalAmount = $(this).attr('data-totalAmount');
   $(".totalAmount").html("Total Amount Rs " + totalAmount);
-  $("#recieved-amount").val('');
+  $("#recieved-amount").val(0);
   SALE_ID = $(this).data('id');
 
 });

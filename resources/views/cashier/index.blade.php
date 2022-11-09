@@ -59,7 +59,7 @@
       </div>
       <div class="modal-body">
         <h3 class="totalAmount"></h3>
-        <h3 class="changeAmount">Service Charege: Rs 0</h3>
+        <h3 class="changeAmount">Service Charege: </h3>
         <div class="input-group mb-3">
            <div class="input-group-prepend">
             <span class="input-group-text">Rs</span>

@@ -64,7 +64,7 @@
            <div class="input-group-prepend">
             <span class="input-group-text">Rs</span>
            </div> 
-           <input type="number" id="recieved-amount" class="form-control" placeholder="0">
+           <input type="number" id="recieved-amount" class="form-control" >
         </div>
         <div class="form-group">
           <label for="payment">Payment Type</label>

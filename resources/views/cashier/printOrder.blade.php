@@ -13,29 +13,33 @@
     
 </head>
 <body>
+<p style="text-align:center;"><img width="200px" src="{{asset('image/lg.png')}}" alt="Logo"></p>
     <div id="wrapper">
         <div id="recipt-header">
-            <p>Invoice No: <strong>{{$sale->id}}</strong></p>
-            <p > Date: <strong>{{$sale->updated_at}}</strong></p> 
+            <p style="font-size:20px;" >Invoice No: <strong>{{$sale->id}}</strong></p>
+            <p style="font-size:20px;"> Date: <strong>{{$sale->updated_at}}</strong></p> 
         </div>
         <div id="recipt-body"></div>
         <table class="tb-sale-detail">
         <thead>
             <tr>
-                <th>Menu</th>
-                <th>Qty</th>
+                <th style="font-size:20px;" >Menu</th>
+                <th style="font-size:20px;">Qty</th>
             </tr>
         </thead>
         <tbody>
             @foreach($saleDetails as $saleDetail)
             <tr>
-                <td width="180" style="text-align:left;">{{$saleDetail->menu_name}}</td>
-                <td width="50">{{$saleDetail->quantity}}</td>
+                <td width="180"  style="text-align:left;font-size:20px;">{{$saleDetail->menu_name}}</td>
+                <td  width="100" style="font-size:20px;">{{$saleDetail->quantity}}</td>
+                
             </tr>
+            
             @endforeach
         </tbody>
         </table>
-
+        <p style="font-size:20px;">------------------------------------------</p>
+        <p style="font-size:20px;">_________________________</p>
         <div id="buttons">
             <a href="/cashier">
             <button class="btn btn-back">

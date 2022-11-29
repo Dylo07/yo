@@ -38,9 +38,9 @@ Route::middleware(['auth'])->group(function(){
      Route::post('/cashier/decrease-quantity', 'App\Http\Controllers\Cashier\CashierController@decreaseQuantity');
      
      Route::post('/cashier/confirmOrderStatus','App\Http\Controllers\Cashier\CashierController@confirmOrderStatus' );
-     Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
      
-     Route::get('/cashier/showRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showRecipt');
+     
+     
 
      Route::get('/cashier/printOrderRec/{saleID}', 'App\Http\Controllers\Cashier\CashierController@printOrderRec');
 
@@ -69,7 +69,9 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      
      Route::get('/report/show', 'App\Http\Controllers\Report\ReportController@show');
      
-     
+     // cashier
+     Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
+     Route::get('/cashier/showRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showRecipt');
      
      // Export to excel
      Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');

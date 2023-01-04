@@ -93,4 +93,12 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      Route::delete('inventory/removeStock/{itemid}', 'App\Http\Controllers\Inventory\StockController@destroy')->name('Stock.removeStock');
      
      Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
-});
+
+
+      // routes for petty cash
+
+      Route::get('/pettycash',function(){
+        return view('pettycash.index'); 
+     })->name('pettycash');
+
+    });

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PettycashController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -97,8 +98,9 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
       // routes for petty cash
 
-      Route::get('/pettycash',function(){
-        return view('pettycash.index'); 
-     })->name('pettycash');
+    Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
+    Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
+    Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));
+    Route::post('pettycash/edit/{id}', 'App\Http\Controllers\PettycashController@edit')->name(('pettycash.edit'));
 
     });

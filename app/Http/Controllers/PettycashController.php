@@ -30,30 +30,23 @@ class PettycashController extends Controller
             'Amount' => 'required',
         ]);
         
-        PettycashTrans::create($request->post());
+        if($request->tran_id)
+        {
+            PettycashTrans::where('id', $request->tran_id)
+                            ->update([
+                                'trans_date' => $request->trans_date,
+                                'TypeOfTrans' => $request->TypeOfTrans,
+                                'Employee' => $request->Employee,
+                                'Description' => $request->Description,
+                                'Amount' => $request->Amount
+                            ]);
+        }
+        else
+        {
+            PettycashTrans::create($request->post());
+        }
 
         return redirect()->route('pettycash')->with('success','Cash has been added successfully.');
-    }
-
-
-    public function edit($id)
-    {
-        return view('pettycash');
-    }
-
-    public function update(Request $request, PettycashTrans $trans)
-    {
-        $request->validate([
-            'trans_date' => 'required',
-            'TypeOfTrans' => 'required',
-            'Employee' => 'required',
-            'Description' => 'required',
-            'Amount' => 'required',
-        ]);
-        
-        $trans->fill($request->post())->save();
-
-        return redirect()->route('companies.index')->with('success','Company Has Been updated successfully');
     }
 
     public function destroy($id)

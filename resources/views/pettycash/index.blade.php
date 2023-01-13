@@ -13,7 +13,7 @@
             <tr>
               <th scope="row">Date</th>
               <td>
-                <input type="date" name="trans_date" class="form-control" />
+                <input type="date" name="trans_date" id="trans_date" class="form-control" />
                 @error('trans_date')
                   <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
                 @enderror
@@ -21,8 +21,9 @@
             </tr>
             <tr>
               <th scope="row">Type Of Transaction</th>
+              <input type="hidden" id="tran_id" name="tran_id">
               <td>
-                  <select class="form-control" name="TypeOfTrans">
+                  <select class="form-control" name="TypeOfTrans" id="TypeOfTrans">
                     <option value="Cash_Withdraw">Cash Withdraw</option>
                     <option value="Salary_Advance">Salary Advance</option>
                     <option value="Bill_Payment">Bill Payment</option>
@@ -39,7 +40,7 @@
             <tr>
               <th scope="row">Employee</th>
               <td>
-                  <select class="form-control" name="Employee">
+                  <select class="form-control" name="Employee" id="Employee">
                     <option value="None">None</option>
                     <option value="MD">MD</option>
                     <option value="Mark">Mark</option>
@@ -54,7 +55,7 @@
               <th scope="row">Description</th>
               <td>
                 <div class="form-group">
-                  <textarea class="form-control" rows="5" id="comment" name="Description"></textarea>
+                  <textarea class="form-control" rows="5" id="Description" name="Description"></textarea>
                 </div>
                 @error('Description')
                   <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
@@ -65,7 +66,7 @@
               <th scope="row">Amount</th>
               <td>
                 <div class="form-outline">
-                  <input  type="number" name="Amount" class="form-control" />
+                  <input  type="number" name="Amount" class="form-control" id="Amount"/>
                   @error('Amount')
                     <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
                   @enderror
@@ -73,7 +74,7 @@
               </td>
           </tbody>
         </table>
-        <button type="submit" class="btn btn-success btn-lg btn-block">ADD</button>
+        <button type="submit" class="btn btn-success btn-lg btn-block" id="dynamicBtn">ADD</button>
       </form>
 </div>
 
@@ -127,7 +128,7 @@
         <td>{{ $tran->Amount }}</td>
         <td>{{ $tran->trans_date }}</td>
         <td>
-              <a class="btn btn-primary" href="{{ route('pettycash.edit',$tran->id) }}">Edit</a>
+              <a class="btn btn-primary get_data" onclick="myFunction({{ json_encode($tran) }})">Edit</a>
               <a class="btn btn-danger" href="{{ route('pettycash.destroy',$tran->id) }}">Delete</a>
           </form>
         </td>
@@ -140,4 +141,18 @@
 
 </div>
 </div>
+<script>
+function myFunction(data) {
+  // console.log("data", data);
+  document.getElementById("tran_id").value = data.id;
+  document.getElementById("trans_date").value = data.trans_date;
+  document.getElementById("TypeOfTrans").value = data.TypeOfTrans;
+  document.getElementById("Employee").value = data.Employee;
+  document.getElementById("Description").value = data.Description;
+  document.getElementById("Amount").value = data.Amount;
+
+  document.getElementById("dynamicBtn").innerHTML = 'Update';
+}
+</script>
 @endsection
+

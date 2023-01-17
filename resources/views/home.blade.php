@@ -74,7 +74,7 @@
     </a>
     </a>
 </div>
-
+@endif
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('pettycash')}}">   
     <h5>Petty Cash</h5>
@@ -85,7 +85,7 @@
     </a>
 </div>
 
-@endif
+
 
 
             </div>

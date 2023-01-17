@@ -12,11 +12,16 @@ class PettycashController extends Controller
     {
         if($request->date)
         {
-            $trans = PettycashTrans::where('trans_date', $request->date)->orderBy('id','desc')->paginate(5);
+            $trans = PettycashTrans::where('trans_date', $request->date)->orderBy('id','desc')->paginate(100);
+
+
+
+
+            
         }
         else
         {
-            $trans = PettycashTrans::orderBy('id','desc')->paginate(5);
+            $trans = PettycashTrans::orderBy('id','desc')->paginate(100);
         }
         
         $summeries = DB::select('
@@ -25,7 +30,9 @@ class PettycashController extends Controller
                                 FROM pettycash_trans pt
                                 GROUP BY pt.TypeOfTrans
                             ');
-        return view('pettycash.index', compact('trans', 'summeries'));
+        return view('pettycash.index', compact('trans', 'summeries'))
+        ->with('ggg', $trans->sum('Amount'));
+        
     }
 
     public function store(Request $request)

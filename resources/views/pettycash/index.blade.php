@@ -27,12 +27,12 @@ $date = request()->get('date');
               <input type="hidden" id="tran_id" name="tran_id">
               <td>
                   <select class="form-control" name="TypeOfTrans" id="TypeOfTrans">
-                    <option value="Cash_Withdraw">Cash Withdraw</option>
+                    <option value="Cash_Withdraw">Cash Withdraw by MD</option>
                     <option value="Salary_Advance">Salary Advance</option>
-                    <option value="Bill_Payment">Bill Payment</option>
-                    <option value="Chicken_Payment">Chicken Payment</option>
-                    <option value="Fish_Payment">Fish Payment</option>
-                    <option value="Grocery_Payment">Grocery Payment</option>
+                    <option value="Bill_Payment">Bill Payment Soft Drink</option>
+                    <option value="Chicken_Payment">Bill Payment Water</option>
+                    <option value="Fish_Payment">Bill Payment Rent</option>
+                    <option value="Grocery_Payment">Grocery Item</option>
                     <option value="Bakery_Item">Bakery Item</option>
                   </select>
                   @error('TypeOfTrans')
@@ -54,7 +54,9 @@ $date = request()->get('date');
                   @enderror
               </td>
             </tr>
+            
             <tr>
+              
               <th scope="row">Description</th>
               <td>
                 <div class="form-group">
@@ -82,10 +84,13 @@ $date = request()->get('date');
 </div>
 
   <div class="col">
-    <tr>            
+    <tr>   
+    <pr class="p-2 mb-1 bg-primary text-white  ">Monthly Petty Cash Summery</pr>    
       <table class="table table-dark">
         <thead class="text-light bg-success">
+        
           <tr>
+            
             <th scope="col">Description</th>
             <th scope="col">Total </th>
           </tr>
@@ -112,6 +117,7 @@ $date = request()->get('date');
 <div class="p-5">
 @if($date)
   <table class="table table-dark" id="transactions">
+  <pr class="p-2 mb-1 bg-primary text-white">Daily Petty Cash Summery</pr> 
     <thead class="text-light bg-success">
       <tr>
         <th scope="col">Type of Transaction</th>
@@ -134,10 +140,31 @@ $date = request()->get('date');
               <a class="btn btn-primary get_data" onclick="updateData({{ json_encode($tran) }})">Edit</a>
               <a class="btn btn-danger" href="{{ route('pettycash.destroy',$tran->id) }}">Delete</a>
         </td>
+
+        
       </tr>
       @endforeach
     </tbody>
   </table>
+  <p><p>
+    
+  <div class="col">
+    <tr>            
+      <table class="table table-dark">
+        
+         
+        
+          <tr>
+            <th scope="row">Total Daily Expence</th>
+            <th scope="col">{{number_format($ggg)}}</th>
+          </tr>
+        </tbody>
+      </table>
+    </tr>
+  </div>
+
+
+
 
   {!! $trans->links("pagination::bootstrap-4") !!}
   @endif

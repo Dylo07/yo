@@ -40,14 +40,19 @@ Route::middleware(['auth'])->group(function(){
      
      Route::post('/cashier/confirmOrderStatus','App\Http\Controllers\Cashier\CashierController@confirmOrderStatus' );
      
-     
+     Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
+     Route::get('/cashier/showRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showRecipt');
      
 
      Route::get('/cashier/printOrderRec/{saleID}', 'App\Http\Controllers\Cashier\CashierController@printOrderRec');
 
      Route::post('/cashier/printOrder', 'App\Http\Controllers\Cashier\CashierController@printOrder');
      
-     
+      // routes for petty cash
+
+    Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
+    Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
+    Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));
 
 });
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
@@ -71,8 +76,7 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      Route::get('/report/show', 'App\Http\Controllers\Report\ReportController@show');
      
      // cashier
-     Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
-     Route::get('/cashier/showRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showRecipt');
+   
      
      // Export to excel
      Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');
@@ -96,10 +100,6 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
 
 
-      // routes for petty cash
-
-    Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
-    Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
-    Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));
+     
 
     });

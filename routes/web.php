@@ -101,6 +101,5 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
     Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
     Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
     Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));
-    Route::post('pettycash/edit/{id}', 'App\Http\Controllers\PettycashController@edit')->name(('pettycash.edit'));
 
     });

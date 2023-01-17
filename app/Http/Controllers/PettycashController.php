@@ -8,9 +8,17 @@ use Illuminate\Support\Facades\DB;
 class PettycashController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $trans = PettycashTrans::orderBy('id','desc')->paginate(5);
+        if($request->date)
+        {
+            $trans = PettycashTrans::where('trans_date', $request->date)->orderBy('id','desc')->paginate(5);
+        }
+        else
+        {
+            $trans = PettycashTrans::orderBy('id','desc')->paginate(5);
+        }
+        
         $summeries = DB::select('
                                 SELECT REPLACE(pt.TypeOfTrans, "_", " ") AS TypeOfTrans,
                                 (SELECT SUM(Amount) FROM pettycash_trans WHERE TypeOfTrans = pt.TypeOfTrans GROUP BY TypeOfTrans) AS total

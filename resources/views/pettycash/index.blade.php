@@ -2,6 +2,9 @@
 
 @section('content')
 
+@php
+$date = request()->get('date');
+@endphp
 
 <div class="container">
   <div class="row">
@@ -13,7 +16,7 @@
             <tr>
               <th scope="row">Date</th>
               <td>
-                <input type="date" name="trans_date" id="trans_date" class="form-control" />
+                <input type="date" name="trans_date" id="trans_date" value="{{ isset($date) ? $date : '' }}" class="form-control" onchange="checkDate()" />
                 @error('trans_date')
                   <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
                 @enderror
@@ -74,7 +77,7 @@
               </td>
           </tbody>
         </table>
-        <button type="submit" class="btn btn-success btn-lg btn-block" id="dynamicBtn">ADD</button>
+        <button type="submit" class="btn btn-success btn-lg btn-block" style="display: none;" id="dynamicBtn">ADD</button>
       </form>
 </div>
 
@@ -107,8 +110,8 @@
   </div>
 
 <div class="p-5">
-
-  <table class="table table-dark">
+@if($date)
+  <table class="table table-dark" id="transactions">
     <thead class="text-light bg-success">
       <tr>
         <th scope="col">Type of Transaction</th>
@@ -119,7 +122,7 @@
         <th scope="col">Action</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="transactions_body">
     @foreach ($trans as $tran)
       <tr>
         <th scope="row">{{ $tran->TypeOfTrans() }}</th>
@@ -128,22 +131,23 @@
         <td>{{ $tran->Amount }}</td>
         <td>{{ $tran->trans_date }}</td>
         <td>
-              <a class="btn btn-primary get_data" onclick="myFunction({{ json_encode($tran) }})">Edit</a>
+              <a class="btn btn-primary get_data" onclick="updateData({{ json_encode($tran) }})">Edit</a>
               <a class="btn btn-danger" href="{{ route('pettycash.destroy',$tran->id) }}">Delete</a>
-          </form>
         </td>
       </tr>
       @endforeach
     </tbody>
   </table>
+
   {!! $trans->links("pagination::bootstrap-4") !!}
+  @endif
 </div>
 
 </div>
 </div>
 <script>
-function myFunction(data) {
-  // console.log("data", data);
+function updateData(data) {
+
   document.getElementById("tran_id").value = data.id;
   document.getElementById("trans_date").value = data.trans_date;
   document.getElementById("TypeOfTrans").value = data.TypeOfTrans;
@@ -152,6 +156,42 @@ function myFunction(data) {
   document.getElementById("Amount").value = data.Amount;
 
   document.getElementById("dynamicBtn").innerHTML = 'Update';
+}
+$( document ).ready(function() {
+    onClickDate = document.getElementById('trans_date').value;
+
+    const date = new Date();
+    let day = date.getDate();
+    let month = date.getMonth()+1;
+    let year = date.getFullYear();
+
+    currDate = year+'-'+month.toString().padStart(2, '0')+'-'+day.toString().padStart(2, '0')
+
+    let param_date = `{{ $date }}`;
+    if(onClickDate != currDate){
+      document.getElementById("dynamicBtn").style.display = "none";
+    }else{
+      document.getElementById("dynamicBtn").style.display = "block  ";
+    }
+});
+function checkDate(){
+  onClickDate = document.getElementById('trans_date').value;
+
+  const date = new Date();
+  let day = date.getDate();
+  let month = date.getMonth()+1;
+  let year = date.getFullYear();
+
+  currDate = year+'-'+month.toString().padStart(2, '0')+'-'+day.toString().padStart(2, '0')
+
+  let param_date = `{{ $date }}`;
+  if(onClickDate != currDate){
+    document.getElementById("dynamicBtn").style.display = "none";
+  }else{
+    document.getElementById("dynamicBtn").style.display = "block  ";
+  }
+  let url = `{{ url('pettycash?date=') }}`;
+  window.location.href= url+onClickDate;
 }
 </script>
 @endsection

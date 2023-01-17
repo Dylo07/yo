@@ -34,6 +34,7 @@ $date = request()->get('date');
                     <option value="Rent_Payment">Bill Payment Rent</option>
                     <option value="Grocery_Payment">Grocery Item</option>
                     <option value="Bakery_Item">Bakery Item</option>
+                    <option value="Electricity_Bill">Electricity</option>
                   </select>
                   @error('TypeOfTrans')
                     <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>

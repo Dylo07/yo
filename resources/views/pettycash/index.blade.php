@@ -30,8 +30,8 @@ $date = request()->get('date');
                     <option value="Cash_Withdraw">Cash Withdraw by MD</option>
                     <option value="Salary_Advance">Salary Advance</option>
                     <option value="Bill_Payment">Bill Payment Soft Drink</option>
-                    <option value="Chicken_Payment">Bill Payment Water</option>
-                    <option value="Fish_Payment">Bill Payment Rent</option>
+                    <option value="Water_Bill">Bill Payment Water</option>
+                    <option value="Rent_Payment">Bill Payment Rent</option>
                     <option value="Grocery_Payment">Grocery Item</option>
                     <option value="Bakery_Item">Bakery Item</option>
                   </select>

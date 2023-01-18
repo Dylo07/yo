@@ -27,14 +27,17 @@ $date = request()->get('date');
               <input type="hidden" id="tran_id" name="tran_id">
               <td>
                   <select class="form-control" name="TypeOfTrans" id="TypeOfTrans">
-                    <option value="Cash_Withdraw">Cash Withdraw by MD</option>
+                    <option value="Cash_Withdraw">Cash Withdraw</option>
                     <option value="Salary_Advance">Salary Advance</option>
+                    <option value="Salary_Advance">Salary</option>
                     <option value="Bill_Payment">Bill Payment Soft Drink</option>
                     <option value="Water_Bill">Bill Payment Water</option>
                     <option value="Rent_Payment">Bill Payment Rent</option>
                     <option value="Grocery_Payment">Grocery Item</option>
                     <option value="Bakery_Item">Bakery Item</option>
+                    <option value="Bakery_Salary">Bakery Salary</option>
                     <option value="Electricity_Bill">Electricity</option>
+                    <option value="Card_Payment">Card</option>
                   </select>
                   @error('TypeOfTrans')
                     <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
@@ -47,8 +50,15 @@ $date = request()->get('date');
                   <select class="form-control" name="Employee" id="Employee">
                     <option value="None">None</option>
                     <option value="MD">MD</option>
-                    <option value="Mark">Mark</option>
-                    <option value="Walker">Walker</option>
+                    <option value="Jerry">Jerry</option>
+                    <option value="Gihan">Gihan</option>
+                    <option value="Dulan">Dulan</option>
+                    <option value="Chandani">Chandani</option>
+                    <option value="Sudesh">Sudesh</option>
+                    <option value="Willson">Willson</option>
+                    <option value="Gamini">Gamini</option>
+                    <option value="Mayumi">Mayumi</option>
+
                   </select>
                   @error('Employee')
                     <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
@@ -107,7 +117,7 @@ $date = request()->get('date');
             @endforeach
         </tbody>
           <tr>
-            <th scope="row">Total Amount</th>
+            <th scope="row">Total Monthly Expences</th>
             <th scope="col"><?php echo $gt; ?></th>
           </tr>
         </tbody>
@@ -139,7 +149,7 @@ $date = request()->get('date');
         <td>{{ $tran->trans_date }}</td>
         <td>
               <a class="btn btn-primary get_data" onclick="updateData({{ json_encode($tran) }})">Edit</a>
-              <a class="btn btn-danger" href="{{ route('pettycash.destroy',$tran->id) }}">Delete</a>
+              <a class="btn btn-danger" style="display: none;"  href="{{ route('pettycash.destroy',$tran->id) }}">Delete</a>
         </td>
 
         

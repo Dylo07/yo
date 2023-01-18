@@ -13,7 +13,7 @@
     
 </head>
 <body>
-<p style="text-align:center;"><img width="200px" src="{{asset('image/lg.png')}}" alt="Logo"></p>
+<p style="text-align:center;font-size:20px;"> - KOT -</p>
     <div id="wrapper">
         <div id="recipt-header">
             <p style="font-size:20px;" >Invoice No: <strong>{{$sale->id}}</strong></p>

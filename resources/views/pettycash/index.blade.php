@@ -29,7 +29,7 @@ $date = request()->get('date');
                   <select class="form-control" name="TypeOfTrans" id="TypeOfTrans">
                     <option value="Cash_Withdraw">Cash Withdraw</option>
                     <option value="Salary_Advance">Salary Advance</option>
-                    <option value="Salary_Advance">Salary</option>         
+                    <option value="Salary">Salary</option>         
                     <option value="Grocery_Payment">Grocery Item</option>
                     <option value="Card_Payment">Card Payment</option>
                     <option value="Maintenance_Work">Maintenance Work</option>

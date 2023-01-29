@@ -29,15 +29,14 @@ $date = request()->get('date');
                   <select class="form-control" name="TypeOfTrans" id="TypeOfTrans">
                     <option value="Cash_Withdraw">Cash Withdraw</option>
                     <option value="Salary_Advance">Salary Advance</option>
-                    <option value="Salary_Advance">Salary</option>
-                    <option value="Bill_Payment">Bill Payment Soft Drink</option>
-                    <option value="Water_Bill">Bill Payment Water</option>
-                    <option value="Rent_Payment">Bill Payment Rent</option>
+                    <option value="Salary_Advance">Salary</option>         
                     <option value="Grocery_Payment">Grocery Item</option>
-                    <option value="Bakery_Item">Bakery Item</option>
-                    <option value="Bakery_Salary">Bakery Salary</option>
+                    <option value="Card_Payment">Card Payment</option>
+                    <option value="Maintenance_Work">Maintenance Work</option>
+                    <option value="Softdrink_Payment">Bill Payment Soft Drink</option>
+                    <option value="Liquor_Bill">Bill Payment Liquor</option>                                     
                     <option value="Electricity_Bill">Electricity</option>
-                    <option value="Card_Payment">Card</option>
+                    
                   </select>
                   @error('TypeOfTrans')
                     <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>
@@ -49,15 +48,20 @@ $date = request()->get('date');
               <td>
                   <select class="form-control" name="Employee" id="Employee">
                     <option value="None">None</option>
-                    <option value="MD">MD</option>
-                    <option value="Jerry">Jerry</option>
-                    <option value="Gihan">Gihan</option>
-                    <option value="Dulan">Dulan</option>
-                    <option value="Chandani">Chandani</option>
-                    <option value="Sudesh">Sudesh</option>
-                    <option value="Willson">Willson</option>
-                    <option value="Gamini">Gamini</option>
-                    <option value="Mayumi">Mayumi</option>
+                    <option value="MD">Manoj</option>
+                    <option value="Jerry">Samarakkodi</option>
+                    <option value="Gihan">Mahinda</option>
+                    <option value="Dulan">Ranjaya</option>
+                    <option value="Chandani">Neranjan</option>
+                    <option value="Sudesh">Nadeera</option>
+                    <option value="Sudesh">Sachintha</option>
+                    <option value="Willson">Udara</option>
+                    <option value="Gamini">Premathilaka</option>
+                    <option value="Mayumi">Amarasinghe</option>
+                    <option value="Mayumi">Danushka</option>
+                    <option value="Mayumi">Appuhami</option>
+                    <option value="Mayumi">Siril</option>
+                    <option value="Mayumi">Karunasena</option>
 
                   </select>
                   @error('Employee')

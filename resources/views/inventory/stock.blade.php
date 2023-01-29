@@ -51,7 +51,7 @@
     <table class="table table-bordered">
         <thead>
           <tr>
-            <th scope="col">ID</th>
+           
             <th scope="col">Name</th>
             <th scope="col">Category</th>
             <th scope="col">Current Stock</th>
@@ -65,7 +65,7 @@
     </tbody>
     @foreach($data['menus'] as $menu)
     <tr> 
-        <td> {{$menu->id}} </td>
+      
         <td> {{$menu->name}} </td>
         <td> {{$menu->category->name}} </td>
 

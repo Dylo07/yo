@@ -31,10 +31,11 @@ $date = request()->get('date');
                     <option value="Salary_Advance">Salary Advance</option>
                     <option value="Salary">Salary</option>         
                     <option value="Grocery_Payment">Grocery Item</option>
+                    <option value="Grocery_Payment">Juice Bar Items</option>
                     <option value="Card_Payment">Card Payment</option>
                     <option value="Maintenance_Work">Maintenance Work</option>
-                    <option value="Softdrink_Payment">Bill Payment Soft Drink</option>
-                    <option value="Liquor_Bill">Bill Payment Liquor</option>                                     
+                    <option value="Softdrink_Payment">Chemicals</option>
+                    <option value="Liquor_Bill">Soft Drink</option>                                     
                     <option value="Electricity_Bill">Electricity</option>
                     
                   </select>
@@ -48,21 +49,7 @@ $date = request()->get('date');
               <td>
                   <select class="form-control" name="Employee" id="Employee">
                     <option value="None">None</option>
-                    <option value="MD">Manoj</option>
-                    <option value="Jerry">Samarakkodi</option>
-                    <option value="Gihan">Mahinda</option>
-                    <option value="Dulan">Ranjaya</option>
-                    <option value="Chandani">Neranjan</option>
-                    <option value="Sudesh">Nadeera</option>
-                    <option value="Sudesh">Sachintha</option>
-                    <option value="Willson">Udara</option>
-                    <option value="Gamini">Premathilaka</option>
-                    <option value="Mayumi">Amarasinghe</option>
-                    <option value="Mayumi">Danushka</option>
-                    <option value="Mayumi">Appuhami</option>
-                    <option value="Mayumi">Siril</option>
-                    <option value="Mayumi">Karunasena</option>
-
+                    
                   </select>
                   @error('Employee')
                     <div class="alert alert-danger mt-1 mb-1">{{ $message }}</div>

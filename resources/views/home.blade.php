@@ -26,7 +26,7 @@
                     @endif
 
                     <div class="row text-center">
-                    @if(Auth::user()->checkAdmin())
+                    
                         
 
 
@@ -40,7 +40,7 @@
 </a>
 
 </div>
-@endif
+
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('cashier')}}">

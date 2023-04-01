@@ -21,8 +21,10 @@
               <th scope="col">Name</th>
               <th scope="col">Role</th>
               <th scope="col">Email</th>
+              
               <th scope="col">Edit</th>
               <th scope="col">Delete</th>
+            
             </tr>
           </thead>
           <tbody>

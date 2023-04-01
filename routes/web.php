@@ -54,20 +54,26 @@ Route::middleware(['auth'])->group(function(){
     Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
     Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));
 
-});
+});Route::get('/management',function(){
+    return view('management.index'); 
+ })->name('management');
+ 
+ 
+ 
+ // routes for management
+ Route::resource('management/category', App\Http\Controllers\Management\CategoryController::class);
+ Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
+ Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
+
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
-    Route::get('/management',function(){
-        return view('management.index'); 
-     })->name('management');
-     
+    
      
      
      // routes for management
-     Route::resource('management/category', App\Http\Controllers\Management\CategoryController::class);
-     Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
-     Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
+   
      Route::resource('management/user',App\Http\Controllers\Management\UserController::class);
+
      //route for report
      
      Route::get('/report', 'App\Http\Controllers\Report\ReportController@index')->name('report');

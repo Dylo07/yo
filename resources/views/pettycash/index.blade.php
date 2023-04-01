@@ -49,6 +49,11 @@ $date = request()->get('date');
               <td>
                   <select class="form-control" name="Employee" id="Employee">
                     <option value="None">None</option>
+                    <option value="MD">MD</option>
+                    <option value="Gihan">Gihan</option>
+                    <option value="Supun">Supun</option>
+                    <option value="Prabath">Prabath</option>
+
                     
                   </select>
                   @error('Employee')

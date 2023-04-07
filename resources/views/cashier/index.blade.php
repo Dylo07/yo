@@ -96,7 +96,7 @@
         $.get("{{url('/cashier/getTable')}}", function(data){
         $("#table-detail").html(data);
         $("#table-detail").slideDown('fast');
-        $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-danger');
+        $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-dark');
       })
       }else{
         $("#table-detail").slideUp('fast');

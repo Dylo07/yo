@@ -26,7 +26,7 @@ class CashierController extends Controller
         
         foreach($tables as $table){
             $html .= '<div class="col-lg-2 col-md-3 col-sm-1 mb-2">';
-            $html .= '<button tabindex ="-1" class="btn btn-primary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
+            $html .= '<button tabindex ="-1" class="btn btn-dark btn-outline-secondary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
             
             <img class="img-fluid"  style="width:0%" src="'.url('/image/table.svg').'"/>
             <br>';
@@ -57,9 +57,9 @@ class CashierController extends Controller
         $html = '';
         foreach($menus as $menu){
             $html .= '
-            <div class="col-md-auto  ml-1  mt-3">
-                <a class="btn btn-outline-secondary btn-menu" data-id="'.$menu->id.'">
-                    <img class="img-fluid" src="'.url('/menu_images/'.$menu->image).'">
+            <div class="col-md-auto  ml-1  mt-3 " >
+                <a class="btn  btn-outline-success btn-light  btn-menu  "  data-id="'.$menu->id.'">
+                    
                     <br>
                     '.$menu->name.'
                     <br>

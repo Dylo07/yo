@@ -6,16 +6,16 @@
     <div class="row" id="table-detail"></div>
     <div class="row justify-content-center py5">
       <div class="col-md-5">
-        <button tabindex ="-2" class="btn btn-primary btn-block" id="btn-show-tables">View All Tables</button>
+        <button tabindex ="-2" class="btn btn-primary  btn-block" id="btn-show-tables">View All Tables</button>
         <div id="selected-table"></div>
         <div id="order-detail"></div>
       </div>
       <div class="col-md-7">
         <nav>
-          <div class="nav nav-tabs" id="nav-tab" role="tablist">
+          <div class="nav nav-tabs  " id="nav-tab" role="tablist">
             @foreach($categories as $category)
             
-              <a class="nav-item nav-link" data-id="{{$category->id}}" data-toggle="tab">
+              <a class="nav-item nav-link btn-outline-success"  data-id="{{$category->id}}" data-toggle="tab">
                 {{$category->name}}
               </a>
               

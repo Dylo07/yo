@@ -6,7 +6,7 @@
     <div class="row" id="table-detail"></div>
     <div class="row justify-content-center py5">
       <div class="col-md-5">
-        <button class="btn btn-primary btn-block" id="btn-show-tables">View All Tables</button>
+        <button tabindex ="-2" class="btn btn-primary btn-block" id="btn-show-tables">View All Tables</button>
         <div id="selected-table"></div>
         <div id="order-detail"></div>
       </div>
@@ -53,31 +53,31 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">Payment</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button tabindex ="-4" type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
         <h3 class="totalAmount"></h3>
         <h3 class="changeAmount">Service Charege: </h3>
-        <div class="input-group mb-3">
+        <div tabindex ="-1" class="input-group mb-3">
            <div class="input-group-prepend">
             <span class="input-group-text">Rs</span>
            </div> 
-           <input type="number" id="recieved-amount" class="form-control" >
+           <input tabindex ="-2" type="number" id="recieved-amount" class="form-control" >
         </div>
         <div class="form-group">
-          <label for="payment">Payment Type</label>
-          <select class="form-control" id="payment-type">
-            <option value="cash">Cash</option>
+          <label tabindex ="-1" for="payment">Payment Type</label>
+          <select  tabindex ="-3" class="form-control" id="payment-type">
+            <option tabindex ="-2" value="cash">Cash</option>
             <option value="credit card">Credit Card</option>
           </select>
         </div>
       
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary btn-save-payment" >Save Payment</button>
+        <button tabindex ="-1" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button  type="button" class="btn btn-primary btn-save-payment" >Save Payment</button>
       </div>
     </div>
   </div>
@@ -227,6 +227,32 @@ $("#order-detail").on("click", ".btn-increase-quantity", function(){
   })
 
 });
+//increase quantity
+$("#order-detail").on("change", ".change-quantity", function(){
+  var saleDetailID = $(this).data("id");
+  var qty = Number($(this).val());
+  if(qty < 1){
+    $(this).val(1);
+    qty  = 1;
+  }
+
+  $.ajax({
+    type: "POST",
+    data: {
+      "_token" : $('meta[name="csrf-token"]').attr('content'),
+      "saleDetail_id": saleDetailID,
+      "qty" : qty,
+    },
+    url: "{{url('/cashier/change-quantity')}}", 
+    success: function(data){
+      $(("#order-detail")).html(data);
+      
+    }
+
+  })
+
+});
+
 
 //decrease quantity
 $("#order-detail").on("click", ".btn-decrease-quantity", function(){

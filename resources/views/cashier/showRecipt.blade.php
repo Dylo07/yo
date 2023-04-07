@@ -96,15 +96,18 @@
 
         </div>
         <div id="buttons">
-            <a href="/cashier">
+            
+        <button class="btn btn-print" type="button" onclick="window.print(); return false;">
+                Print
+            </button>
+        
+        <a href="/cashier">
             <button class="btn btn-back">
                 Back to cashier
             </button>
             </a>
             
-            <button class="btn btn-print" type="button" onclick="window.print(); return false;">
-                Print
-            </button>
+           
 
 
         </div>

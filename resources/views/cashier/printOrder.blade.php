@@ -42,7 +42,7 @@
         <p style="font-size:20px;">_________________________</p>
         <div id="buttons">
             <a href="/cashier">
-            <button class="btn btn-back">
+            <button tabindex ="-1" class="btn btn-back">
                 Back to cashier
             </button>
             </a>

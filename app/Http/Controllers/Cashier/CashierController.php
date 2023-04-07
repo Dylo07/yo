@@ -26,7 +26,7 @@ class CashierController extends Controller
         
         foreach($tables as $table){
             $html .= '<div class="col-lg-2 col-md-3 col-sm-1 mb-2">';
-            $html .= '<button class="btn btn-primary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
+            $html .= '<button tabindex ="-1" class="btn btn-primary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
             
             <img class="img-fluid"  style="width:0%" src="'.url('/image/table.svg').'"/>
             <br>';
@@ -129,7 +129,7 @@ class CashierController extends Controller
         // list all saledetail
         $html = '<p>Sale ID: '.$sale_id.'</p>';
         $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
-        $html .= '<div class="table-responsive-md" style="overflow-y:scroll; height: 900px;  border: 1px solid #343A40">
+        $html .= '<div class="table-responsive-md" tabindex ="-1" style="overflow-y:scroll; min-height: 400px;  border: 1px solid #343A40">
         <table class="table table-stripped table-dark">
         <thead>
             <tr>
@@ -148,14 +148,17 @@ class CashierController extends Controller
             $decreaseButton ='<button class="btn btn-danger btn-sm btn-decrease-quantity" disabled>-</button>';
 
             if($saleDetail->quantity > 1) {
+                /* 
                 $decreaseButton = '<button data-id="'.$saleDetail->id.'" class="btn btn-danger btn-sm btn-decrease-quantity">-</button>';
+                <button data-id="'.$saleDetail->id.'" class="btn btn-primary btn-sm btn-increase-quantity">+</button>
+                */
             }
           
             $html .= '
             <tr>
                 
                 <td>'.$saleDetail->menu_name.'</td>
-                <td>  '. $decreaseButton. ' '. $saleDetail->quantity.'<button data-id="'.$saleDetail->id.'" class="btn btn-primary btn-sm btn-increase-quantity">+</button></td>
+                <td>  <input type="number" tabindex ="-1" class="change-quantity" data-id="'.$saleDetail->id.'" style="width:50px;" value="'. $saleDetail->quantity.'"></td>
                 <td>'.$saleDetail->menu_price.'</td>
                 <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>';
                 if($saleDetail->status == "noConfirm"){
@@ -173,10 +176,10 @@ class CashierController extends Controller
         $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
 
         if($showBtnPayment){
-            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
+            $html .= '<button  data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
             $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot"">Print KOT</button>';
         }else{
-            $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
+            $html .= '<button  data-id="'.$sale_id.'"  class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
         }
       
 
@@ -196,6 +199,26 @@ class CashierController extends Controller
         $html = $this->getSaleDetails($saleDetail->sale_id);
         return $html;
     }
+    public function changesQuantity(Request $request){
+        $saleDetail_id = $request->saleDetail_id;
+        $qty = $request->qty;
+        $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
+      
+        //update total amount
+        $sale = Sale::where('id', $saleDetail->sale_id)->first();
+        $Removetotal_price  = $saleDetail->quantity*( $saleDetail->menu_price);  //reset to old price
+
+        // update quantity
+       
+        $saleDetail->quantity = $qty ;
+        $saleDetail->save();
+        $remaing = $sale -> total_price - ($Removetotal_price);
+        $newTot = $remaing + ($qty*$saleDetail->menu_price);
+        $sale->total_price = $newTot; //update total with new prices
+        $sale->save();
+        $html = $this->getSaleDetails($saleDetail->sale_id);
+        return $html;
+    }
 
     public function decreaseQuantity(Request $request){
 
@@ -206,9 +229,13 @@ class CashierController extends Controller
         $saleDetail->save();
         //update total amount
         $sale = Sale::where('id', $saleDetail->sale_id)->first();
-        $sale->total_price = $sale -> total_price - $saleDetail->menu_price;
+        
+        $sale->total_price = $sale -> total_price -abs($saleDetail->menu_price);
+      
         $sale->save();
         $html = $this->getSaleDetails($saleDetail->sale_id);
+       
+        
         return $html;
 
     }

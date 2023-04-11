@@ -50,9 +50,21 @@ $date = request()->get('date');
                   <select class="form-control" name="Employee" id="Employee">
                     <option value="None">None</option>
                     <option value="MD">MD</option>
-                    <option value="Gihan">Gihan</option>
-                    <option value="Supun">Supun</option>
-                    <option value="Prabath">Prabath</option>
+                    <option value="Samarakkodi">Samarakkodi</option>
+                    <option value="Neranjan">Neranjan</option>
+                    <option value="Siril">Siril</option>
+                    <option value="Nadeera">Nadeera</option>
+                    <option value="Appuhami">Appuhami</option>
+                    <option value="Dayananda">Dayananda</option>
+                    <option value="Mahinda">Mahinda</option>
+                    <option value="Ashan">Ashan</option>
+                    <option value="Karunasena">Karunasena</option>
+                    <option value="Himanka">Himanka</option>
+                    <option value="Pasidu">Pasidu</option>
+                    <option value="Dammika">Dammika</option>
+                    <option value="Manike">Manike</option>
+                    <option value="Sisira">Sisira</option>
+                    
 
                     
                   </select>

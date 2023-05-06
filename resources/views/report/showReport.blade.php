@@ -27,6 +27,7 @@
           @if($sales->count() > 0)
             <div class="alert alert-success" role="alert">
               <p>The Total Amount of Sale from {{$dateStart}} to {{$dateEnd}} is Rs {{number_format($totalSale, 2)}}  </p>
+              <p>The Total Amount of S/C {{$dateStart}} to {{$dateEnd}} is Rs {{number_format($serviceCharge, 2)}}  </p>
               <p>Total Result: {{$sales->total()}}</p>
             </div>
             <table class="table">

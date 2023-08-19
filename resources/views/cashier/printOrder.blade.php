@@ -38,7 +38,7 @@
             @endforeach
         </tbody>
         </table>
-        <p style="font-size:20px;">------------------------------------------</p>
+        
         <p style="font-size:20px;">_________________________</p>
         <div id="buttons">
             <a href="/cashier">

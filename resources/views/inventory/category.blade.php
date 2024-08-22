@@ -46,12 +46,13 @@
 
     </td>
     <td>
-    <form action="/inventory/category/{{$category->id}}}" method="post">
+        <!-- <form action="/inventory/category/{{$category->id}}}" method="post">
                 
                 @csrf
                 @method ('DELETE')
                 <input type="submit" value="Delete" class="btn btn-danger">
-                    </form>
+                    </form> -->
+    
     </td>
     </tr>
 

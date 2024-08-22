@@ -68,6 +68,26 @@ Route::middleware(['auth'])->group(function(){
  Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
  Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
 
+ // route for inventory
+ Route::get('/inventory',function(){
+    return view('inventory.index'); 
+ })->name('inventory');
+
+ // routes for inventory
+Route::resource('inventory/category', App\Http\Controllers\Inventory\CategoryController::class);
+Route::resource('inventory/menu', App\Http\Controllers\Inventory\MenuController::class);
+Route::resource('inventory/stock', App\Http\Controllers\Inventory\StockController::class);
+
+Route::post('inventory/stockFilterByCategory', 'App\Http\Controllers\Inventory\StockController@index')->name('Stock.stockFilterByCategory');
+
+Route::get('inventory/stock/{itemid}', 'App\Http\Controllers\Inventory\StockController@show')->name('Stock.show');
+
+
+Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
+
+
+
+
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
     
@@ -86,27 +106,15 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      
      // cashier
    
-     
+     // routes for inventory
+     Route::post('inventory/storestock/{itemid}', 'App\Http\Controllers\Inventory\StockController@store')->name('Stock.storeStock');
+     Route::delete('inventory/removeStock/{itemid}', 'App\Http\Controllers\Inventory\StockController@destroy')->name('Stock.removeStock');
+
+
      // Export to excel
      Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');
      
-     // route for inventory
-     Route::get('/inventory',function(){
-         return view('inventory.index'); 
-      })->name('inventory');
-     
-      // routes for inventory
-     Route::resource('inventory/category', App\Http\Controllers\Inventory\CategoryController::class);
-     Route::resource('inventory/menu', App\Http\Controllers\Inventory\MenuController::class);
-     Route::resource('inventory/stock', App\Http\Controllers\Inventory\StockController::class);
-     
-     Route::post('inventory/stockFilterByCategory', 'App\Http\Controllers\Inventory\StockController@index')->name('Stock.stockFilterByCategory');
-
-     Route::get('inventory/stock/{itemid}', 'App\Http\Controllers\Inventory\StockController@show')->name('Stock.show');
-     Route::post('inventory/storestock/{itemid}', 'App\Http\Controllers\Inventory\StockController@store')->name('Stock.storeStock');
-     Route::delete('inventory/removeStock/{itemid}', 'App\Http\Controllers\Inventory\StockController@destroy')->name('Stock.removeStock');
-     
-     Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
+    
 
 
      

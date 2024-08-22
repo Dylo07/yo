@@ -53,6 +53,17 @@
 
 
 </div>
+
+<div class="col-lg-4 col-md-4 col-xs-4 thumb">
+<a href="{{route('inventory')}}">   
+    <h5>Inventory</h5>
+        <a class="thumbnail" href="{{route('inventory')}}">
+            <img class="img-responsive"  width="50px" src="{{asset('image/stock.svg')}}"/> 
+           
+    </a>
+    </a>
+</div>
+
 @if(Auth::user()->checkAdmin())
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
@@ -65,15 +76,7 @@
     </a>
 </div>
 
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{route('inventory')}}">   
-    <h5>Inventory</h5>
-        <a class="thumbnail" href="{{route('inventory')}}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/stock.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
+
 @endif
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('pettycash')}}">   

@@ -88,6 +88,16 @@
     </a>
 </div>
 
+<div class="col-lg-4 col-md-4 col-xs-4 thumb">
+<a href="{{ url('/calendar') }}">   
+    <h5>Booking Calendar</h5>
+        <a class="thumbnail" href="{{ url('/calendar') }}">
+            <img class="img-responsive"  width="50px" src="{{asset('image/calendar.svg')}}"/> 
+           
+    </a>
+    </a>
+</div>
+
 
 
 

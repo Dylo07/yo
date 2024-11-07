@@ -102,36 +102,35 @@ $date = request()->get('date');
       </form>
 </div>
 
-  <div class="col">
-    <tr>   
-    <pr class="p-2 mb-1 bg-primary text-white  ">Monthly Petty Cash Summery</pr>    
-      <table class="table table-dark">
-        <thead class="text-light bg-success">
-        
+<div class="col">
+  @if($date)
+    <p class="p-2 mb-1 bg-primary text-white">Monthly Petty Cash Summary for {{ date('F Y', strtotime($date)) }}</p>    
+    <table class="table table-dark">
+      <thead class="text-light bg-success">
+        <tr>
+          <th scope="col">Description</th>
+          <th scope="col">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php $gt = 0; ?>
+        @foreach ($summeries as $sum)
           <tr>
-            
-            <th scope="col">Description</th>
-            <th scope="col">Total </th>
+            <td scope="row">{{ $sum->TypeOfTrans }}</td>
+            <td scope="col">{{ $sum->total }}</td>
           </tr>
-        </thead>
-        <tbody>
-          <?php $gt = 0; ?>
-          @foreach ($summeries as $sum)
-            <tr>
-              <th scope="row">{{ $sum->TypeOfTrans }}</th>
-              <th scope="col">{{ $sum->total }}</th>
-            </tr>
-            <?php $gt = $gt + $sum->total; ?>
-            @endforeach
-        </tbody>
-          <tr>
-            <th scope="row">Total Monthly Expences</th>
-            <th scope="col"><?php echo $gt; ?></th>
-          </tr>
-        </tbody>
-      </table>
-    </tr>
-  </div>
+          <?php $gt += $sum->total; ?>
+        @endforeach
+        <tr>
+          <td scope="row">Total Monthly Expenses</td>
+          <td scope="col">{{ $gt }}</td>
+        </tr>
+      </tbody>
+    </table>
+  @else
+    <p class="text-warning">Please select a date to view the monthly summary.</p>
+  @endif
+</div>
 
 <div class="p-5">
 @if($date)

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PettycashController;
+use App\Http\Controllers\BookingController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -85,7 +86,13 @@ Route::get('inventory/stock/{itemid}', 'App\Http\Controllers\Inventory\StockCont
 
 Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
 
-
+// routes for calender
+Route::get('/calendar', function () {
+   return view('calendar');
+})->name('calendar');
+Route::get('/bookings', [BookingController::class, 'index']);
+Route::post('/bookings', [BookingController::class, 'store']);
+Route::put('/bookings/{id}', [BookingController::class, 'update']);
 
 
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
@@ -117,6 +124,5 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
     
 
 
-     
 
     });

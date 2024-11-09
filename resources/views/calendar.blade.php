@@ -50,6 +50,18 @@
         background-color: #218838;
         color: white;
     }
+    /* Change calendar event background color to dark */
+.fc-event {
+    background-color: #34495e !important; /* Darker color for the event box */
+    color: #ecf0f1 !important; /* Light text for readability */
+    border: 1px solid #162cf5 !important; /* Border for better visibility */
+    width: 95% !important; /* Increase event box width (adjust percentage as needed) */
+    margin: 0 auto; /* Center the event box */
+}
+/* Hover effect for the calendar event */
+.fc-event:hover {
+    background-color: #162cf5 !important; /* Even darker on hover */
+}
 
      /* Ensure calendar events wrap text */
      .fc-event-title, .fc-event-time, .fc-list-item-title, .fc-list-item-time {
@@ -57,7 +69,58 @@
         overflow-wrap: break-word;
         word-wrap: break-word;
         word-break: break-word;
+
+
     }
+    .fc-daygrid-day-top {
+    color: #ffffff !important; /* Change date text to white for better visibility */
+    font-weight: bold; /* Make the text bold for clarity */
+}
+     /* Ensure calendar events have scrollable overflow in day cells */
+     .fc-daygrid-day-frame {
+        max-height: 150px; /* Adjust height based on your preference */
+        overflow-y: auto; /* Add vertical scrolling */
+        scrollbar-width: thin; /* Make scrollbar thinner */
+        
+    }
+
+    /* Optional: Style scrollbar for better appearance */
+    .fc-daygrid-day-frame::-webkit-scrollbar {
+        width: 8px; /* Width of scrollbar */
+    }
+
+    .fc-daygrid-day-frame::-webkit-scrollbar-thumb {
+        background-color: #007bff; /* Color of scrollbar thumb */
+        border-radius: 4px; /* Rounded edges for thumb */
+    }
+
+    .fc-daygrid-day-frame::-webkit-scrollbar-track {
+        background-color: #f1f1f1; /* Background color of track */
+    }
+    .fc-daygrid-day-frame {
+    background-color: #2c3e50; /* Dark background for all days */
+    color: #ecf0f1; /* Light text for better contrast */
+    border: 1px solid #34495e; /* Border for clarity */
+}
+
+.fc-day-today .fc-daygrid-day-frame {
+    background-color: #3ec70c !important; /* Distinct green background for today */
+    color: #ffffff !important; /* Light text for today */
+    border: 2px solid #16a085 !important; /* Distinct border for today */
+}
+.fc-list-item:hover {
+    background-color: #34495e !important; /* Ensure hover background matches event background */
+    color: #ecf0f1 !important; /* Maintain readable text color */
+    
+}
+
+.fc-list-item .fc-event-title, 
+.fc-list-item .fc-event-time {
+    color: #ecf0f1 !important; /* Ensure text remains light and readable */
+}
+
+
+
 </style>
 
     </head>
@@ -164,7 +227,8 @@
         right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
     },
     selectable: true,
-    editable: true,
+    editable: false, // Disable drag-and-drop entirely
+    eventStartEditable: false, // Ensure events cannot be resized or moved
     events: '/bookings', // Fetch events dynamically
     eventContent: function (info) {
         const eventDetails = document.createElement('ul');

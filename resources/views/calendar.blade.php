@@ -249,6 +249,27 @@
 
         return { domNodes: [eventDetails] };
     },
+    eventDidMount: function (info) {
+    const start = new Date(info.event.start);
+    const end = info.event.end ? new Date(info.event.end) : start;
+    const isMultiDay = start.toDateString() !== end.toDateString();
+
+    // Access the day cell for the event
+    const dayCell = info.el.closest('.fc-daygrid-day-frame');
+
+    if (dayCell) {
+        if (isMultiDay) {
+            // Disable scrolling for multi-day events
+            dayCell.style.overflowY = 'visible';
+            dayCell.style.maxHeight = 'none';
+        } else {
+            // Enable scrolling for single-day events
+            
+            dayCell.style.overflowY = 'auto';
+            dayCell.style.maxHeight = '150px'; // Adjust height as needed
+        }
+    }
+},
 
     eventClick: function (info) {
     const previousDescription = info.event.extendedProps.name;

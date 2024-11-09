@@ -56,9 +56,9 @@
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('inventory')}}">   
-    <h5>Inventory</h5>
+    <h5>Beer & Soft Drink stock  </h5>
         <a class="thumbnail" href="{{route('inventory')}}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/stock.svg')}}"/> 
+            <img class="img-responsive"  width="50px" src="{{asset('image/bottle.svg')}}"/> 
            
     </a>
     </a>
@@ -98,6 +98,15 @@
     </a>
 </div>
 
+<div class="col-lg-4 col-md-4 col-xs-4 thumb">
+<a href="{{ url('/stock') }}">   
+    <h5>Inventory</h5>
+        <a class="thumbnail" href="{{ url('/stock') }}">
+            <img class="img-responsive"  width="50px" src="{{asset('image/inv.svg')}}"/> 
+           
+    </a>
+    </a>
+</div>
 
 
 

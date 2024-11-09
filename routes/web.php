@@ -5,6 +5,7 @@ use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PettycashController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\InventoryController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -94,6 +95,12 @@ Route::get('/bookings', [BookingController::class, 'index']);
 Route::post('/bookings', [BookingController::class, 'store']);
 Route::put('/bookings/{id}', [BookingController::class, 'update']);
 
+// routes for inventory
+Route::get('/stock', [InventoryController::class, 'index'])->name('stock.index');
+Route::post('/stock', [InventoryController::class, 'store'])->name('stock.store');
+Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('categories.store');
+Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.store');
+Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
 
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 

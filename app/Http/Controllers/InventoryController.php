@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\ProductGroup;
 use App\Models\Item;
 use App\Models\Inventory;
+use App\Models\StockLog; // Add this line to import the StockLog model
+use Illuminate\Support\Facades\Auth;
 
 
 class InventoryController extends Controller
@@ -15,17 +17,15 @@ class InventoryController extends Controller
         $currentMonth = $request->input('month', now()->month);
         $currentYear = $request->input('year', now()->year);
     
-        // Pad month with leading zero
-        $formattedMonth = str_pad($currentMonth, 2, '0', STR_PAD_LEFT);
-    
-        $groups = ProductGroup::with(['items' => function ($query) use ($currentYear, $formattedMonth) {
-            $query->with(['inventory' => function ($inventoryQuery) use ($currentYear, $formattedMonth) {
-                $inventoryQuery->whereYear('stock_date', $currentYear)
-                    ->whereMonth('stock_date', $formattedMonth);
-            }]);
+        $groups = ProductGroup::with(['items.inventory' => function ($query) use ($currentYear, $currentMonth) {
+            $query->whereYear('stock_date', $currentYear)->whereMonth('stock_date', $currentMonth);
         }])->get();
     
-        return view('stock.index', compact('groups', 'currentMonth', 'currentYear'));
+        $logs = StockLog::with(['user', 'item'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    
+        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
     }
     public function store(Request $request)
 {
@@ -118,6 +118,50 @@ public function viewMonthlyStock(Request $request)
     }])->get();
 
     return view('stock.monthly', compact('groups', 'month', 'year'));
+}
+public function updateTodayStock(Request $request)
+{
+    $request->validate([
+        'item_id' => 'required|exists:items,id',
+        'quantity' => 'required|integer|min:1',
+        'description' => 'required|string|max:255',
+    ]);
+
+    $itemId = $request->item_id;
+    $quantity = $request->quantity;
+    $description = $request->description;
+    $today = now()->toDateString();
+
+    // Update stock
+    $inventory = \App\Models\Inventory::firstOrCreate(
+        ['item_id' => $itemId, 'stock_date' => $today],
+        ['stock_level' => 0]
+    );
+
+    $action = $request->action === 'add' ? 'add' : 'remove';
+
+    if ($action === 'add') {
+        $inventory->increment('stock_level', $quantity);
+    } elseif ($action === 'remove') {
+        $inventory->decrement('stock_level', $quantity);
+        if ($inventory->stock_level < 0) {
+            $inventory->stock_level = 0;
+            $inventory->save();
+        }
+    }
+
+    // Log the action
+    DB::table('stock_logs')->insert([
+        'item_id' => $itemId,
+        'user_id' => Auth::id(),
+        'action' => $action,
+        'quantity' => $quantity,
+        'description' => $description,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return redirect()->back()->with('success', 'Stock updated successfully.');
 }
 
 }

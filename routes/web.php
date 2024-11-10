@@ -101,6 +101,7 @@ Route::post('/stock', [InventoryController::class, 'store'])->name('stock.store'
 Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('categories.store');
 Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.store');
 Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
+Route::post('/stock/update', [InventoryController::class, 'updateTodayStock'])->name('stock.update');
 
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 

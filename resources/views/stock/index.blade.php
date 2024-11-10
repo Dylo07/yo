@@ -33,12 +33,13 @@
         <button type="submit" class="btn btn-success">Add Item</button>
     </form>
 
-    <!-- Form to Add Stock -->
-    <form action="{{ route('stock.store') }}" method="POST" class="mb-4">
+    <!-- Stock Update Section -->
+    <h3>Update Today’s Stock</h3>
+    <form action="{{ route('stock.update') }}" method="POST" class="mb-4">
         @csrf
         <div class="mb-3">
             <label for="item" class="form-label">Item</label>
-            <select name="item_id" id="item" class="form-select">
+            <select name="item_id" id="item" class="form-select" required>
                 @foreach($groups as $group)
                     @if($group->items->isNotEmpty())
                         <optgroup label="{{ $group->name }}">
@@ -55,40 +56,16 @@
             </select>
         </div>
         <div class="mb-3">
-            <label for="stock_date" class="form-label">Date</label>
-            <input type="date" name="stock_date" id="stock_date" class="form-control" required>
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
         </div>
         <div class="mb-3">
-            <label for="stock_level" class="form-label">Stock Level</label>
-            <input type="number" name="stock_level" id="stock_level" class="form-control" required>
+            <label for="description" class="form-label">Description</label>
+            <input type="text" name="description" id="description" class="form-control" placeholder="Enter a description" required>
         </div>
-        <button type="submit" class="btn btn-primary">Update Stock</button>
-    </form>
-
-    <!-- Form to View Stock for a Specific Month -->
-    <form action="{{ route('stock.index') }}" method="GET" class="mb-4">
-        <div class="row">
-            <div class="col-md-4">
-                <label for="month" class="form-label">Month</label>
-                <select name="month" id="month" class="form-select">
-                    @for($i = 1; $i <= 12; $i++)
-                        <option value="{{ $i }}" {{ $currentMonth == $i ? 'selected' : '' }}>
-                            {{ DateTime::createFromFormat('!m', $i)->format('F') }}
-                        </option>
-                    @endfor
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label for="year" class="form-label">Year</label>
-                <select name="year" id="year" class="form-select">
-                    @for($i = now()->year; $i >= 2000; $i--)
-                        <option value="{{ $i }}" {{ $currentYear == $i ? 'selected' : '' }}>{{ $i }}</option>
-                    @endfor
-                </select>
-            </div>
-            <div class="col-md-4 align-self-end">
-                <button type="submit" class="btn btn-primary">View Stock</button>
-            </div>
+        <div class="d-flex gap-2">
+            <button type="submit" name="action" value="add" class="btn btn-success">Add</button>
+            <button type="submit" name="action" value="remove" class="btn btn-danger">Remove</button>
         </div>
     </form>
 
@@ -129,5 +106,32 @@
             </tbody>
         </table>
     @endforeach
+
+    <!-- Log Details Section -->
+    <h3 class="mt-5">Stock Log Details</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Item</th>
+                <th>Action</th>
+                <th>Quantity</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($logs as $log)
+                <tr>
+                    <td>{{ $log->created_at->format('Y-m-d H:i') }}</td>
+                    <td>{{ $log->user->name }}</td>
+                    <td>{{ $log->item->name }}</td>
+                    <td>{{ ucfirst($log->action) }}</td>
+                    <td>{{ $log->quantity }}</td>
+                    <td>{{ $log->description }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
 @endsection

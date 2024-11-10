@@ -48,5 +48,10 @@ class User extends Authenticatable
             return false;
         }
     }
-
+    public function logs()
+    {
+        return $this->hasMany(StockLog::class, 'user_id');
+    }
 }
+
+

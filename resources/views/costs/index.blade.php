@@ -4,18 +4,11 @@
 <div class="container">
     <h1>Hotel Expenses</h1>
     <div class="mb-3">
-        <!-- Button to add a new cost -->
         <a href="{{ route('costs.create') }}" class="btn btn-primary">Add New Expense</a>
-
-  <!-- Button to add a new group -->
-  <a href="{{ route('groups.create') }}" class="btn btn-info">Add New Category</a>
+        <a href="{{ route('groups.create') }}" class="btn btn-info">Add New Category</a>
+        <a href="{{ route('persons.create') }}" class="btn btn-secondary">Add New Person/Shop</a>
     </div>
 
-
-        <!-- Button to add a new person/shop -->
-        <a href="{{ route('persons.create') }}" class="btn btn-secondary">Add New Person/Shop</a>
-
-      
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
@@ -124,5 +117,34 @@
             </table>
         @endforeach
     @endif
+
+    <!-- Log Details -->
+    <h3>Stock Log Details</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Category</th>
+                <th>Person/Shop</th>
+                <th>Expense</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($logDetails as $log)
+                <tr>
+                    <td>{{ $log['date'] }}</td>
+                    <td>{{ $log['user'] }}</td>
+                    <td>{{ $log['category'] }}</td>
+                    <td>{{ $log['person_shop'] }}</td>
+                    <td>{{ number_format($log['expense'], 2) }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" class="text-center">No log details available for the selected date.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
 </div>
 @endsection

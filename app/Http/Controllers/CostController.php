@@ -18,7 +18,7 @@ class CostController extends Controller
     $selectedDate = $request->query('date', now()->format('Y-m-d'));
 
     // Fetch all costs filtered by the selected month
-    $costs = Cost::with('group', 'person')
+    $costs = Cost::with('group', 'person', 'user')
         ->whereYear('cost_date', substr($month, 0, 4))
         ->whereMonth('cost_date', substr($month, 5, 2))
         ->get();
@@ -34,7 +34,7 @@ class CostController extends Controller
     });
 
     // Fetch costs for the selected date
-    $dailyCosts = Cost::with('group', 'person')
+    $dailyCosts = Cost::with('group', 'person', 'user')
         ->whereDate('cost_date', $selectedDate)
         ->get();
 
@@ -48,11 +48,26 @@ class CostController extends Controller
         });
     });
 
-    // Calculate grand total for the entire month
+    // Map log details
+    $logDetails = $dailyCosts->map(function ($cost) {
+        return [
+            'date' => $cost->cost_date,
+            'user' => $cost->user->name ?? 'Unknown',
+            'category' => $cost->group->name ?? 'Unknown',
+            'person_shop' => $cost->person->name ?? 'Unknown',
+            'expense' => $cost->amount,
+        ];
+    });
+
+    // Grand total for the entire month
     $grandTotal = $costs->sum('amount');
 
-    return view('costs.index', compact('monthlyGroupedCosts', 'dailyGroupedCosts', 'month', 'selectedDate', 'grandTotal'));
+    // Pass all required variables to the view
+    return view('costs.index', compact('monthlyGroupedCosts', 'dailyGroupedCosts', 'logDetails', 'month', 'selectedDate', 'grandTotal'));
 }
+
+
+
 
     public function create()
     {
@@ -70,16 +85,17 @@ class CostController extends Controller
             'cost_date' => 'required|date',
         ]);
     
-        // Save the cost
         Cost::create([
             'group_id' => $request->group_id,
             'person_id' => $request->person_id,
             'amount' => $request->amount,
             'cost_date' => $request->cost_date,
+            'user_id' => auth()->id(), // Automatically associate the logged-in user
         ]);
     
         return redirect()->route('costs.index')->with('success', 'Cost added successfully!');
     }
+    
 
     public function update(Request $request, Cost $cost)
     {

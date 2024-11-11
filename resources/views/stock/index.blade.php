@@ -72,39 +72,71 @@
     <!-- Stock Overview Section -->
     <h3 class="mt-5">Stock Overview for {{ DateTime::createFromFormat('!m', $currentMonth)->format('F') }} {{ $currentYear }}</h3>
 
+    <!-- Category Selection Dropdown -->
+    <form action="{{ route('stock.index') }}" method="GET" class="mb-4">
+        <div class="row">
+            <div class="col-md-4">
+                <label for="category_filter" class="form-label">Select Category</label>
+                <select name="category_id" id="category_filter" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    @foreach($groups as $group)
+                        <option value="{{ $group->id }}" {{ request('category_id') == $group->id ? 'selected' : '' }}>
+                            {{ $group->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <input type="hidden" name="month" value="{{ $currentMonth }}">
+            <input type="hidden" name="year" value="{{ $currentYear }}">
+        </div>
+    </form>
+
+    <!-- Stock Table -->
     @foreach($groups as $group)
-        <h4>{{ $group->name }}</h4>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    @for($i = 1; $i <= 31; $i++)
-                        <th>{{ $i }}</th>
-                    @endfor
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($group->items as $item)
+        @if(!request('category_id') || request('category_id') == $group->id)
+            <h4>{{ $group->name }}</h4>
+            <table class="table table-bordered">
+                <thead>
                     <tr>
-                        <td>{{ $item->name }}</td>
+                        <th>Item</th>
                         @for($i = 1; $i <= 31; $i++)
-                            @php
-                                $currentDate = now()->toDateString();
-                                $date = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
-                                $inventory = $item->inventory->firstWhere('stock_date', $date);
-                            @endphp
-                            <td>
-                                @if($date <= $currentDate)
-                                    {{ $inventory->stock_level ?? 0 }}
-                                @else
-                                    -
-                                @endif
-                            </td>
+                            <th>{{ $i }}</th>
                         @endfor
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach($group->items as $item)
+                        <tr>
+                            <td>{{ $item->name }}</td>
+                            @for($i = 1; $i <= 31; $i++)
+                                @php
+                                    $currentDate = now()->toDateString();
+                                    $date = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
+
+                                    // Get stock for this date
+                                    $inventory = $item->inventory->firstWhere('stock_date', $date);
+
+                                    // If no stock exists for this date, propagate the most recent stock
+                                    if (!$inventory) {
+                                        $previousInventory = $item->inventory->where('stock_date', '<', $date)->sortByDesc('stock_date')->first();
+                                        $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
+                                    } else {
+                                        $displayStock = $inventory->stock_level;
+                                    }
+                                @endphp
+                                <td>
+                                    @if($date <= $currentDate)
+                                        {{ $displayStock }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            @endfor
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     @endforeach
 
     <!-- Log Details Section -->

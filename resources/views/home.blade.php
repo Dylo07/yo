@@ -78,6 +78,7 @@
 
 
 @endif
+<!--  
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{route('pettycash')}}">   
     <h5>Petty Cash</h5>
@@ -87,6 +88,7 @@
     </a>
     </a>
 </div>
+-->
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{ url('/calendar') }}">   

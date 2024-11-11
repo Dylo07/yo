@@ -16,10 +16,17 @@ class InventoryController extends Controller
     {
         $currentMonth = $request->input('month', now()->month);
         $currentYear = $request->input('year', now()->year);
+        $categoryId = $request->input('category_id');
     
         $groups = ProductGroup::with(['items.inventory' => function ($query) use ($currentYear, $currentMonth) {
             $query->whereYear('stock_date', $currentYear)->whereMonth('stock_date', $currentMonth);
-        }])->get();
+        }]);
+    
+        if ($categoryId) {
+            $groups = $groups->where('id', $categoryId);
+        }
+    
+        $groups = $groups->get();
     
         $logs = StockLog::with(['user', 'item'])
             ->orderBy('created_at', 'desc')
@@ -27,6 +34,7 @@ class InventoryController extends Controller
     
         return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
     }
+    
     public function store(Request $request)
 {
     $request->validate([
@@ -132,36 +140,74 @@ public function updateTodayStock(Request $request)
     $description = $request->description;
     $today = now()->toDateString();
 
-    // Update stock
-    $inventory = \App\Models\Inventory::firstOrCreate(
-        ['item_id' => $itemId, 'stock_date' => $today],
-        ['stock_level' => 0]
+    // Fetch or initialize today's inventory
+    $inventory = \App\Models\Inventory::firstOrNew(
+        ['item_id' => $itemId, 'stock_date' => $today]
     );
 
+    // If today's stock is not explicitly set, inherit from the previous day
+    if (!$inventory->exists) {
+        $yesterday = now()->subDay()->toDateString();
+        $previousInventory = \App\Models\Inventory::where('item_id', $itemId)
+            ->where('stock_date', '<=', $yesterday)
+            ->orderBy('stock_date', 'desc')
+            ->first();
+
+        $inventory->stock_level = $previousInventory ? $previousInventory->stock_level : 0;
+    }
+
+    // Update stock for today based on the action
     $action = $request->action === 'add' ? 'add' : 'remove';
 
     if ($action === 'add') {
-        $inventory->increment('stock_level', $quantity);
+        $inventory->stock_level += $quantity;
     } elseif ($action === 'remove') {
-        $inventory->decrement('stock_level', $quantity);
+        $inventory->stock_level -= $quantity;
         if ($inventory->stock_level < 0) {
-            $inventory->stock_level = 0;
-            $inventory->save();
+            $inventory->stock_level = 0; // Ensure stock does not go below zero
         }
     }
 
-    // Log the action
-    DB::table('stock_logs')->insert([
+    $inventory->save();
+
+    // Propagate today's stock to future dates
+    DB::transaction(function () use ($itemId, $today, $inventory) {
+        $futureInventories = \App\Models\Inventory::where('item_id', $itemId)
+            ->where('stock_date', '>', $today)
+            ->orderBy('stock_date')
+            ->get();
+
+        if ($futureInventories->isEmpty()) {
+            // No future updates, propagate today's stock to all future dates
+            for ($date = now()->addDay(); $date->lte(now()->endOfMonth()); $date->addDay()) {
+                \App\Models\Inventory::updateOrCreate(
+                    ['item_id' => $itemId, 'stock_date' => $date->toDateString()],
+                    ['stock_level' => $inventory->stock_level]
+                );
+            }
+        } else {
+            // Propagate today's stock until the next update
+            $nextUpdateDate = $futureInventories->first()->stock_date;
+            for ($date = now()->addDay(); $date->lt($nextUpdateDate); $date->addDay()) {
+                \App\Models\Inventory::updateOrCreate(
+                    ['item_id' => $itemId, 'stock_date' => $date->toDateString()],
+                    ['stock_level' => $inventory->stock_level]
+                );
+            }
+        }
+    });
+
+    // Log the stock update
+    \App\Models\StockLog::create([
         'item_id' => $itemId,
         'user_id' => Auth::id(),
         'action' => $action,
         'quantity' => $quantity,
         'description' => $description,
-        'created_at' => now(),
-        'updated_at' => now(),
     ]);
 
     return redirect()->back()->with('success', 'Stock updated successfully.');
 }
+
 
 }

@@ -6,6 +6,11 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PettycashController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InventoryController;
+
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\CostController;
+use App\Http\Controllers\PersonController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -103,9 +108,15 @@ Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.st
 Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
 Route::post('/stock/update', [InventoryController::class, 'updateTodayStock'])->name('stock.update');
 
+// Expenses
+Route::resource('groups', GroupController::class);
+Route::resource('costs', CostController::class);
+Route::resource('persons', PersonController::class);
+
+
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
-    
+ 
      
      
      // routes for management

@@ -57,7 +57,7 @@
         </div>
         <div class="mb-3">
             <label for="quantity" class="form-label">Quantity</label>
-            <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
+            <input type="number" name="quantity" id="quantity" class="form-control" step="0.1" min="0.1" required>
         </div>
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>

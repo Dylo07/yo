@@ -131,7 +131,7 @@ public function updateTodayStock(Request $request)
 {
     $request->validate([
         'item_id' => 'required|exists:items,id',
-        'quantity' => 'required|integer|min:1',
+        'quantity' => 'required|numeric|min:0.01', // Ensure numeric input, including decimals
         'description' => 'required|string|max:255',
     ]);
 

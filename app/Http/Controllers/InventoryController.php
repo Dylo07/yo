@@ -131,7 +131,7 @@ public function updateTodayStock(Request $request)
 {
     $request->validate([
         'item_id' => 'required|exists:items,id',
-        'quantity' => 'required|numeric|min:0.01', // Ensure numeric input, including decimals
+        'quantity' => 'required|numeric|min:0.1', // Ensure numeric input, including decimals
         'description' => 'required|string|max:255',
     ]);
 
@@ -140,23 +140,22 @@ public function updateTodayStock(Request $request)
     $description = $request->description;
     $today = now()->toDateString();
 
-    // Fetch or initialize today's inventory
+    // Fetch today's inventory or initialize it with the most recent past stock
     $inventory = \App\Models\Inventory::firstOrNew(
         ['item_id' => $itemId, 'stock_date' => $today]
     );
 
-    // If today's stock is not explicitly set, inherit from the previous day
     if (!$inventory->exists) {
-        $yesterday = now()->subDay()->toDateString();
+        // If no inventory for today, inherit the most recent stock
         $previousInventory = \App\Models\Inventory::where('item_id', $itemId)
-            ->where('stock_date', '<=', $yesterday)
+            ->where('stock_date', '<', $today)
             ->orderBy('stock_date', 'desc')
             ->first();
 
         $inventory->stock_level = $previousInventory ? $previousInventory->stock_level : 0;
     }
 
-    // Update stock for today based on the action
+    // Update today's stock based on the action
     $action = $request->action === 'add' ? 'add' : 'remove';
 
     if ($action === 'add') {
@@ -164,7 +163,7 @@ public function updateTodayStock(Request $request)
     } elseif ($action === 'remove') {
         $inventory->stock_level -= $quantity;
         if ($inventory->stock_level < 0) {
-            $inventory->stock_level = 0; // Ensure stock does not go below zero
+            $inventory->stock_level = 0; // Ensure stock doesn't go negative
         }
     }
 
@@ -186,8 +185,9 @@ public function updateTodayStock(Request $request)
                 );
             }
         } else {
-            // Propagate today's stock until the next update
+            // Propagate today's stock until the next future update
             $nextUpdateDate = $futureInventories->first()->stock_date;
+
             for ($date = now()->addDay(); $date->lt($nextUpdateDate); $date->addDay()) {
                 \App\Models\Inventory::updateOrCreate(
                     ['item_id' => $itemId, 'stock_date' => $date->toDateString()],
@@ -197,7 +197,7 @@ public function updateTodayStock(Request $request)
         }
     });
 
-    // Log the stock update
+    // Log the action
     \App\Models\StockLog::create([
         'item_id' => $itemId,
         'user_id' => Auth::id(),
@@ -208,6 +208,5 @@ public function updateTodayStock(Request $request)
 
     return redirect()->back()->with('success', 'Stock updated successfully.');
 }
-
 
 }

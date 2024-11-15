@@ -99,6 +99,9 @@ Route::get('/calendar', function () {
 Route::get('/bookings', [BookingController::class, 'index']);
 Route::post('/bookings', [BookingController::class, 'store']);
 Route::put('/bookings/{id}', [BookingController::class, 'update']);
+Route::get('/available-rooms', [BookingController::class, 'availableRooms']);
+
+
 
 // routes for inventory
 Route::get('/stock', [InventoryController::class, 'index'])->name('stock.index');

@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
+    /**
+     * Fetch all bookings for the calendar.
+     */
     public function index()
     {
         $bookings = Booking::all();
@@ -15,75 +19,133 @@ class BookingController extends Controller
         return $bookings->map(function ($booking) {
             return [
                 'id' => $booking->id,
-            'title' => $booking->time_slot . ' - ' . $booking->name,
-            'start' => $booking->start,
-            'end' => $booking->end,
-            'time_slot' => $booking->time_slot,
-            'name' => $booking->name,
+                'title' => $booking->time_slot . ' - ' . $booking->name,
+                'start' => $booking->start,
+                'end' => $booking->end,
+                'advance_payment' => $booking->formatted_advance_payment,
+                'name' => $booking->name,
+                'function_type' => $booking->function_type,
+                'contact_number' => $booking->contact_number,
+                'room_numbers' => implode(', ', json_decode($booking->room_numbers) ?? []), // Convert array to string for display
+                'guest_count' => $booking->guest_count,
             ];
         });
     }
 
- 
-
+    /**
+     * Store a new booking.
+     */
     public function store(Request $request)
-    {
-        try {
-            // Validate the request
-            $request->validate([
-                'start' => 'required|date', // Ensure 'start' is required
-                'end' => 'nullable|date',
-                'time_slot' => 'required|string',
-                'name' => 'required|string',
-            ]);
-    
-            // Log the incoming request for debugging
-            \Log::info('Booking Data:', $request->all());
-    
-            // Insert the record into the database
-            $start = Carbon::parse($request->start)->format('Y-m-d H:i:s');
-            $end = $request->end ? Carbon::parse($request->end)->format('Y-m-d H:i:s') : null;
-    
-            // Create the booking
-            Booking::create([
-                'start' => $start,
-                'end' => $end,
-                'time_slot' => $request->time_slot,
-                'name' => $request->name,
-            ]);
-    
-            return response()->json(['message' => 'Booking created successfully!'], 201);
-    
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            \Log::error('Error Creating Booking:', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Failed to create booking.'], 500);
-        }
-    }
-    public function update(Request $request, $id)
 {
-    $request->validate([
-        'start' => 'required|date',
+    try {
+        $validated = $request->validate([
+            'start' => 'required|date',
             'end' => 'nullable|date',
-            'time_slot' => 'required|string',
+            'advance_payment' => 'required|numeric|min:0',
+        
             'name' => 'required|string',
-    ]);
-
-    $booking = Booking::findOrFail($id);
-
-        // Convert ISO datetime to MySQL-compatible format
-        $start = Carbon::parse($request->start)->format('Y-m-d H:i:s');
-        $end = $request->end ? Carbon::parse($request->end)->format('Y-m-d H:i:s') : null;
-
-        // Update the booking
-        $booking->update([
-            'start' => $start,
-            'end' => $end,
-            'time_slot' => $request->time_slot,
-            'name' => $request->name,
+            'function_type' => 'required|string',
+            'contact_number' => 'required|string|max:15',
+            'room_numbers' => 'nullable|array',
+            'guest_count' => 'required|string',
         ]);
 
+        $validated['room_numbers'] = json_encode($validated['room_numbers']);
 
-    return response()->json(['message' => 'Booking updated successfully!']);
+        \Log::info('Incoming Booking Request:', $validated);
+
+        $start = Carbon::parse($validated['start'])->format('Y-m-d H:i:s');
+        $end = isset($validated['end']) ? Carbon::parse($validated['end'])->format('Y-m-d H:i:s') : null;
+
+        Booking::create([
+            'start' => $start,
+            'end' => $end,
+            'advance_payment' => $validated['advance_payment'], // Correctly map advance_payment to time_slot
+            'name' => $validated['name'],
+            'function_type' => $validated['function_type'],
+            'contact_number' => $validated['contact_number'],
+            'room_numbers' => $validated['room_numbers'],
+            'guest_count' => $validated['guest_count'],
+        ]);
+
+        return response()->json(['message' => 'Booking created successfully!'], 201);
+    } catch (\Exception $e) {
+        \Log::error('Booking Error:', ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'Failed to create booking.'], 500);
+    }
 }
-}
+
+
+    
+    /**
+     * Update an existing booking.
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'start' => 'required|date',
+                'end' => 'nullable|date',
+                'advance_payment' => 'required|numeric|min:0',
+                'name' => 'required|string',
+                'function_type' => 'required|string',
+                'contact_number' => 'required|string|max:15',
+                'room_numbers' => 'nullable|array',
+                'guest_count' => 'required|string',
+            ]);
+
+            $validated['room_numbers'] = json_encode($validated['room_numbers']);
+
+            $booking = Booking::findOrFail($id);
+            $booking->update($validated);
+
+            return response()->json(['message' => 'Booking updated successfully!']);
+        } catch (\Exception $e) {
+            Log::error('Booking Update Error:', [
+                'error' => $e->getMessage(),
+                'request' => $request->all(),
+            ]);
+            return response()->json(['error' => 'Failed to update booking.'], 500);
+        }
+    }
+    public function availableRooms(Request $request)
+    {
+        $date = $request->query('date');
+        if (!$date) {
+            return response()->json([], 400); // Bad request if no date is provided
+        }
+    
+        // Define all rooms
+        $allRooms = [
+            'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
+            'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
+            '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
+            '103', '104', '105',
+        ];
+    
+        // Get all bookings that overlap with the selected date
+        $bookedRooms = Booking::where(function ($query) use ($date) {
+            $query->whereDate('start', '<=', $date)
+                  ->whereDate('end', '>=', $date)
+                  ->orWhere(function ($query) use ($date) {
+                      $query->whereDate('start', '=', $date)
+                            ->whereNull('end'); // Handle single-day bookings
+                  });
+        })->pluck('room_numbers');
+    
+        // Decode JSON-encoded room numbers and merge them into a single array
+        $bookedRoomsArray = $bookedRooms->flatMap(function ($roomNumbers) {
+            return json_decode($roomNumbers, true) ?? [];
+        })->unique();
+    
+        // Calculate available rooms by subtracting booked rooms from all rooms
+        $availableRooms = array_diff($allRooms, $bookedRoomsArray->toArray());
+    
+        return response()->json($availableRooms);
+    }
+    
+
+
+
+
+};

@@ -109,29 +109,29 @@
                         <tr>
                             <td>{{ $item->name }}</td>
                             @for($i = 1; $i <= 31; $i++)
-                                @php
-                                    $currentDate = now()->toDateString();
-                                    $date = $currentYear . '-' . str_pad($currentMonth, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
+    @php
+        $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
 
-                                    // Get stock for this date
-                                    $inventory = $item->inventory->firstWhere('stock_date', $date);
+        // Get stock for this date
+        $inventory = $item->inventory->firstWhere('stock_date', $date);
 
-                                    // If no stock exists for this date, propagate the most recent stock
-                                    if (!$inventory) {
-                                        $previousInventory = $item->inventory->where('stock_date', '<', $date)->sortByDesc('stock_date')->first();
-                                        $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-                                    } else {
-                                        $displayStock = $inventory->stock_level;
-                                    }
-                                @endphp
-                                <td>
-                                    @if($date <= $currentDate)
-                                        {{ $displayStock }}
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                            @endfor
+        // Determine the stock level to display
+                                if ($inventory) {
+                                    $displayStock = $inventory->stock_level;
+                                } else {
+                                    $previousInventory = $item->inventory->where('stock_date', '<', $date)->sortByDesc('stock_date')->first();
+                                    $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
+                                }
+    @endphp
+    <td>
+        @if($date <= now()->toDateString())
+            {{ $displayStock }}
+        @else
+            -
+        @endif
+    </td>
+@endfor
+
                         </tr>
                     @endforeach
                 </tbody>

@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model
 {
+    protected $table = 'items'; // Explicitly set the table name
     protected $fillable = ['name', 'group_id'];
-
     public function group()
     {
         return $this->belongsTo(ProductGroup::class, 'group_id');

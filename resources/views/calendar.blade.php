@@ -10,6 +10,7 @@
 
 
     <title>Booking Calendar</title>
+   
 
     <style>
         body {
@@ -72,6 +73,9 @@
 <body>
     <div class="container">
         <h1 class="text-center my-4">Booking Calendar</h1>
+        
+    <!-- Add the Home Button -->
+    <a href="/" class="btn btn-primary mb-3" style="float: right;">Home</a>
         <form id="booking-form">
             <h1>Enter Booking Details</h1>
             <div class="mb-3">

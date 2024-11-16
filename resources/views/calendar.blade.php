@@ -256,7 +256,9 @@
                     <div class="mb-3">
     <label for="editRoomNumbers" class="form-label">Room Numbers:</label>
     <div class="checkbox-group" id="editRoomNumbers">
+
         
+                    <label><input type="checkbox" name="room_number[]" value="Ahala"> Ahala</label>
                     <label><input type="checkbox" name="room_number[]" value="Sepalika"> Sepalika</label>
                     <label><input type="checkbox" name="room_number[]" value="Sudu Araliya"> Sudu Araliya</label>
                     <label><input type="checkbox" name="room_number[]" value="Orchid"> Orchid</label>

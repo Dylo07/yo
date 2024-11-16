@@ -133,16 +133,17 @@ class BookingController extends Controller
                   });
         })->pluck('room_numbers');
     
-        // Decode JSON-encoded room numbers and merge them into a single array
+        // Flatten and decode booked rooms into an array
         $bookedRoomsArray = $bookedRooms->flatMap(function ($roomNumbers) {
             return json_decode($roomNumbers, true) ?? [];
         })->unique();
     
-        // Calculate available rooms by subtracting booked rooms from all rooms
+        // Calculate available rooms
         $availableRooms = array_diff($allRooms, $bookedRoomsArray->toArray());
     
-        return response()->json($availableRooms);
+        return response()->json(array_values($availableRooms)); // Ensure JSON response is clean
     }
+    
     
 
 

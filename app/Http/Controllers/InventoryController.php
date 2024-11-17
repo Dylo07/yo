@@ -31,7 +31,8 @@ class InventoryController extends Controller
 
         $logs = StockLog::with(['user', 'item'])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->appends($request->except('page'));
 
         return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
     }

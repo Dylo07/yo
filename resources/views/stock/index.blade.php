@@ -165,8 +165,12 @@
             @endforeach
         </tbody>
     </table>
+    <!-- Add Pagination Links -->
+    <div class="d-flex justify-content-center">
+    {{ $logs->links('pagination::bootstrap-4') }}
+    </div>
     <a href="{{ route('stock.test-propagation') }}" class="btn btn-info">
     Test Stock Propagation
 </a>
-</div>
+
 @endsection

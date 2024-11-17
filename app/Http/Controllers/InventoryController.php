@@ -61,38 +61,32 @@ class InventoryController extends Controller
     }
 
     private function propagateStock($itemId, $startDate, $stockLevel)
-{
-    // Fetch all future inventory records for the item starting from the next day
-    $futureInventories = Inventory::where('item_id', $itemId)
-        ->where('stock_date', '>', $startDate)
-        ->orderBy('stock_date')
-        ->get();
-
-    if ($futureInventories->isEmpty()) {
-        // No future updates, propagate the stock level to the end of the current month
-        for ($date = Carbon::parse($startDate)->addDay(); $date->lte(Carbon::now()->endOfMonth()); $date->addDay()) {
-            Inventory::updateOrCreate(
-                ['item_id' => $itemId, 'stock_date' => $date->toDateString()],
-                ['stock_level' => $stockLevel]
-            );
-        }
-    } else {
-        // Propagate the stock level until the next existing inventory record
-        foreach ($futureInventories as $futureInventory) {
-            $futureDate = Carbon::parse($futureInventory->stock_date);
-
-            for ($date = Carbon::parse($startDate)->addDay(); $date->lt($futureDate); $date->addDay()) {
-                Inventory::updateOrCreate(
-                    ['item_id' => $itemId, 'stock_date' => $date->toDateString()],
-                    ['stock_level' => $stockLevel]
-                );
-            }
-
-            // Update the stock level to match the next inventory record for consistency
-            $stockLevel = $futureInventory->stock_level;
+    {
+        // Convert to Carbon instance for date manipulation
+        $startDateCarbon = Carbon::parse($startDate);
+        
+        // Get the end of current month as the maximum date for propagation
+        $endOfMonth = Carbon::parse($startDate)->endOfMonth();
+        
+        // Delete any existing future records to prevent conflicts
+        Inventory::where('item_id', $itemId)
+            ->where('stock_date', '>', $startDate)
+            ->where('stock_date', '<=', $endOfMonth)
+            ->delete();
+            
+        // Propagate the current stock level to all future dates until end of month
+        $currentDate = $startDateCarbon->copy()->addDay();
+        
+        while ($currentDate->lte($endOfMonth)) {
+            Inventory::create([
+                'item_id' => $itemId,
+                'stock_date' => $currentDate->toDateString(),
+                'stock_level' => $stockLevel
+            ]);
+            
+            $currentDate->addDay();
         }
     }
-}
 
 
     public function storeCategory(Request $request)
@@ -135,12 +129,19 @@ class InventoryController extends Controller
 
         $groups = ProductGroup::with(['items' => function ($query) use ($month, $year) {
             $query->with(['inventory' => function ($inventoryQuery) use ($month, $year) {
-                $inventoryQuery->whereYear('stock_date', $year)->whereMonth('stock_date', $month);
+                $inventoryQuery->whereYear('stock_date', $year)
+                    ->whereMonth('stock_date', $month)
+                    ->orderBy('stock_date');
             }]);
         }])->get();
 
         return view('stock.monthly', compact('groups', 'month', 'year'));
     }
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
 
     public function updateTodayStock(Request $request)
     {
@@ -150,49 +151,99 @@ class InventoryController extends Controller
             'description' => 'required|string|max:255',
         ]);
 
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Please login to update stock.');
+        }
+
         $itemId = $request->item_id;
         $quantity = $request->quantity;
         $description = $request->description;
         $today = now()->toDateString();
 
-        // Fetch today's inventory or initialize it with the most recent stock
-        $inventory = Inventory::firstOrNew(['item_id' => $itemId, 'stock_date' => $today]);
+        DB::transaction(function () use ($itemId, $quantity, $description, $today, $request) {
+            // Get today's inventory record or create new one
+            $inventory = Inventory::firstOrNew(['item_id' => $itemId, 'stock_date' => $today]);
 
-        if (!$inventory->exists) {
-            $previousInventory = Inventory::where('item_id', $itemId)
-                ->where('stock_date', '<', $today)
-                ->orderBy('stock_date', 'desc')
-                ->first();
+            if (!$inventory->exists) {
+                $previousInventory = Inventory::where('item_id', $itemId)
+                    ->where('stock_date', '<', $today)
+                    ->orderBy('stock_date', 'desc')
+                    ->first();
 
-            $inventory->stock_level = $previousInventory ? $previousInventory->stock_level : 0;
-        }
-
-        // Update today's stock based on action
-        $action = $request->action === 'add' ? 'add' : 'remove';
-
-        if ($action === 'add') {
-            $inventory->stock_level += $quantity;
-        } elseif ($action === 'remove') {
-            $inventory->stock_level -= $quantity;
-            if ($inventory->stock_level < 0) {
-                $inventory->stock_level = 0;
+                $inventory->stock_level = $previousInventory ? $previousInventory->stock_level : 0;
             }
-        }
 
-        $inventory->save();
+            // Calculate new stock level based on action
+            $action = $request->action === 'add' ? 'add' : 'remove';
+            $originalStockLevel = $inventory->stock_level;
 
-        // Propagate today's stock to future dates
-        $this->propagateStock($itemId, $today, $inventory->stock_level);
+            if ($action === 'add') {
+                $inventory->stock_level += $quantity;
+            } else {
+                $inventory->stock_level = max(0, $inventory->stock_level - $quantity);
+            }
 
-        // Log the action
-        StockLog::create([
-            'item_id' => $itemId,
-            'user_id' => Auth::id(),
-            'action' => $action,
-            'quantity' => $quantity,
-            'description' => $description,
-        ]);
+            $inventory->save();
+
+            // Only propagate if the stock level has changed
+            if ($originalStockLevel !== $inventory->stock_level) {
+                $this->propagateStock($itemId, $today, $inventory->stock_level);
+            }
+
+            // Create stock log with explicit user_id
+            StockLog::create([
+                'item_id' => $itemId,
+                'user_id' => Auth::id(), // Explicitly get the user ID
+                'action' => $action,
+                'quantity' => $quantity,
+                'description' => $description,
+            ]);
+        });
 
         return redirect()->back()->with('success', 'Stock updated successfully.');
     }
+
+
+    public function checkStockPropagation(Request $request)
+    {
+        // If no dates provided, set default range (today to next 7 days)
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->addDays(7)->toDateString());
+
+        // Get all groups and items for the dropdown
+        $groups = ProductGroup::with('items')->get();
+
+        // If an item is selected, get its stock data
+        if ($request->has('item_id')) {
+            $request->validate([
+                'item_id' => 'required|exists:items,id',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+            ]);
+
+            $item = Item::findOrFail($request->item_id);
+            
+            $stockLevels = Inventory::where('item_id', $request->item_id)
+                ->whereBetween('stock_date', [$request->start_date, $request->end_date])
+                ->orderBy('stock_date')
+                ->get()
+                ->map(function ($inventory) {
+                    return [
+                        'date' => $inventory->stock_date,
+                        'stock_level' => $inventory->stock_level,
+                    ];
+                });
+
+            if ($request->wantsJson()) {
+                return response()->json($stockLevels);
+            }
+
+            return view('stock.propagation-test', compact('stockLevels', 'item', 'groups', 'startDate', 'endDate'));
+        }
+
+        // Initial page load without item selection
+        return view('stock.propagation-test', compact('groups', 'startDate', 'endDate'));
+    }
+   
 }

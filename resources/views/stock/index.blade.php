@@ -67,7 +67,7 @@
             <button type="submit" name="action" value="add" class="btn btn-success">Add</button>
             <button type="submit" name="action" value="remove" class="btn btn-danger">Remove</button>
         </div>
-    </form>
+          </form>
 
     <!-- Stock Overview Section -->
     <h3 class="mt-5">Stock Overview for {{ DateTime::createFromFormat('!m', $currentMonth)->format('F') }} {{ $currentYear }}</h3>
@@ -165,5 +165,8 @@
             @endforeach
         </tbody>
     </table>
+    <a href="{{ route('stock.test-propagation') }}" class="btn btn-info">
+    Test Stock Propagation
+</a>
 </div>
 @endsection

@@ -110,7 +110,7 @@ Route::post('/categories', [InventoryController::class, 'storeCategory'])->name(
 Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.store');
 Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
 Route::post('/stock/update', [InventoryController::class, 'updateTodayStock'])->name('stock.update');
-
+Route::get('/stock/test-propagation', [InventoryController::class, 'checkStockPropagation'])->name('stock.test-propagation');
 // Expenses
 Route::resource('groups', GroupController::class);
 Route::resource('costs', CostController::class);

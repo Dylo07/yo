@@ -122,7 +122,7 @@
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{ url('/costs') }}">   
-    <h5>Expense</h5>
+    <h5>Daily Expense</h5>
         <a class="thumbnail" href="{{ url('/costs') }}">
             <img class="img-responsive"  width="50px" src="{{asset('image/expense.svg')}}"/> 
            

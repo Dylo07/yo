@@ -27,7 +27,9 @@
     </form>
 
     <!-- Summary of Expenses of the Month -->
-    <h3>Summary of Expenses of the Month</h3>
+    <h3 class="text-primary font-weight-bold">
+    Summary of Expenses of {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F Y') }}
+</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -38,30 +40,42 @@
             </tr>
         </thead>
         <tbody>
+        @php $groupIndex = 0; @endphp
             @foreach ($monthlyGroupedCosts as $group => $persons)
-                <tr>
-                    <td colspan="4"><strong>{{ $group }}</strong></td>
+                 <!-- Category Row -->
+                 <tr data-toggle="collapse" data-target=".group-{{ $groupIndex }}" class="clickable collapsed">
+                    <td colspan="4">
+                        <strong>{{ $group }}</strong>
+                        <span class="float-right">&#x25BC;</span>
+                    </td>
                 </tr>
+                @php $personIndex = 0; @endphp
                 @foreach ($persons as $person => $data)
-                    <tr>
+                    <!-- Person/Shop Row -->
+                    <tr class="collapse group-{{ $groupIndex }}">
                         <td></td>
                         <td colspan="3"><strong>{{ $person }}</strong></td>
                     </tr>
                     @foreach ($data['costs'] as $cost)
-                        <tr>
+                        <!-- Expense Row -->
+                        <tr class="collapse group-{{ $groupIndex }}">
                             <td></td>
                             <td></td>
                             <td>{{ number_format($cost->amount, 2) }}</td>
                             <td>{{ $cost->cost_date }}</td>
                         </tr>
                     @endforeach
-                    <tr>
+                    <!-- Total for Person/Shop -->
+                    <tr class="collapse group-{{ $groupIndex }}">
                         <td></td>
                         <td colspan="2" class="text-end"><strong>Total for {{ $person }}</strong></td>
                         <td><strong>{{ number_format($data['total'], 2) }}</strong></td>
                     </tr>
+                    @php $personIndex++; @endphp
                 @endforeach
+                @php $groupIndex++; @endphp
             @endforeach
+            <!-- Grand Total -->
             <tr>
                 <td colspan="3" class="text-end"><strong>Grand Total</strong></td>
                 <td><strong>{{ number_format($grandTotal, 2) }}</strong></td>
@@ -70,7 +84,9 @@
     </table>
 
     <!-- Summary of Expenses of the Day -->
-    <h3>Summary of Expenses of the Day</h3>
+    <h3 class="text-primary font-weight-bold">
+    Summary of Expenses of {{ \Carbon\Carbon::parse($selectedDate)->format('F j, Y') }}
+</h3>
 
     <!-- Date Selector -->
     <form action="{{ route('costs.index') }}" method="GET" class="mb-3">
@@ -119,7 +135,7 @@
     @endif
 
     <!-- Log Details -->
-    <h3>Stock Log Details</h3>
+    <h3 class="text-primary font-weight-bold">Stock Log Details Daily</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -147,4 +163,5 @@
         </tbody>
     </table>
 </div>
+
 @endsection

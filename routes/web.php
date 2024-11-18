@@ -10,6 +10,9 @@ use App\Http\Controllers\InvInventoryController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\CostController;
 use App\Http\Controllers\PersonController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskCategoryController;
+use App\Http\Controllers\CompletedTaskController;
 
 /*
 |--------------------------------------------------------------------------
@@ -128,6 +131,21 @@ Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthl
 Route::resource('groups', GroupController::class);
 Route::resource('costs', CostController::class);
 Route::resource('persons', PersonController::class);
+
+// Task
+// Home Route
+Route::get('/', function () {
+   return redirect()->route('tasks.index');
+});
+// Task Routes
+Route::resource('tasks', TaskController::class);
+Route::post('tasks/{id}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+// Task Category Routes
+Route::resource('task-categories', TaskCategoryController::class);
+Route::get('completed-tasks', [CompletedTaskController::class, 'index'])->name('completed-tasks.index');
+
+
+
 
 
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){

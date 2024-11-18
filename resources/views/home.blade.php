@@ -129,6 +129,15 @@
     </a>
     </a>
 </div>
+<div class="col-lg-4 col-md-4 col-xs-4 thumb">
+<a href="{{ url('/tasks') }}">   
+    <h5>Daily Tasks</h5>
+        <a class="thumbnail" href="{{ url('/tasks') }}">
+            <img class="img-responsive"  width="50px" src="{{asset('image/task.svg')}}"/> 
+           
+    </a>
+    </a>
+</div>
 
             </div>
         </div>

@@ -88,7 +88,7 @@ Route::resource('inventory/stock', App\Http\Controllers\Inventory\StockControlle
 Route::post('inventory/stockFilterByCategory', 'App\Http\Controllers\Inventory\StockController@index')->name('Stock.stockFilterByCategory');
 
 Route::get('inventory/stock/{itemid}', 'App\Http\Controllers\Inventory\StockController@show')->name('Stock.show');
-
+Route::get('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
 
 Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
 

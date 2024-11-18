@@ -172,5 +172,38 @@
     <a href="{{ route('stock.test-propagation') }}" class="btn btn-info">
     Test Stock Propagation
 </a>
+<!-- Month and Year Selection Form -->
+<form action="{{ route('stock.monthly') }}" method="GET" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="month" class="form-label">Select Month</label>
+            <select name="month" id="month" class="form-select">
+                @foreach(range(1, 12) as $m)
+                    @php
+                        $monthNum = str_pad($m, 2, '0', STR_PAD_LEFT);
+                        $dateObj = DateTime::createFromFormat('!m', $monthNum);
+                    @endphp
+                    <option value="{{ $monthNum }}" {{ $currentMonth == $monthNum ? 'selected' : '' }}>
+                        {{ $dateObj->format('F') }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="year" class="form-label">Select Year</label>
+            <select name="year" id="year" class="form-select">
+                @foreach(range($currentYear - 5, $currentYear + 5) as $y)
+                    <option value="{{ $y }}" {{ $currentYear == $y ? 'selected' : '' }}>
+                        {{ $y }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-3 align-self-end">
+            <button type="submit" class="btn btn-primary mt-2">View Stock</button>
+        </div>
+    </div>
+</form>
+
 
 @endsection

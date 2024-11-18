@@ -102,8 +102,18 @@
 
 <div class="col-lg-4 col-md-4 col-xs-4 thumb">
 <a href="{{ url('/stock') }}">   
-    <h5>Inventory</h5>
+    <h5>Grocery Item Store</h5>
         <a class="thumbnail" href="{{ url('/stock') }}">
+            <img class="img-responsive"  width="50px" src="{{asset('image/food.svg')}}"/> 
+           
+    </a>
+    </a>
+</div>
+
+<div class="col-lg-4 col-md-4 col-xs-4 thumb">
+<a href="{{ url('/inv-inventory') }}">   
+    <h5>Physical Item Inventory</h5>
+        <a class="thumbnail" href="{{ url('/inv-inventory') }}">
             <img class="img-responsive"  width="50px" src="{{asset('image/inv.svg')}}"/> 
            
     </a>

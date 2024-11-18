@@ -6,7 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PettycashController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InventoryController;
-
+use App\Http\Controllers\InvInventoryController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\CostController;
 use App\Http\Controllers\PersonController;
@@ -111,6 +111,19 @@ Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.st
 Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
 Route::post('/stock/update', [InventoryController::class, 'updateTodayStock'])->name('stock.update');
 Route::get('/stock/test-propagation', [InventoryController::class, 'checkStockPropagation'])->name('stock.test-propagation');
+
+// routes for inventory for physical Items
+// Inventory Dashboard
+Route::get('/inv-inventory', [InvInventoryController::class, 'index'])->name('inv_inventory.index');
+// Store Category
+Route::post('/inv-inventory/categories', [InvInventoryController::class, 'storeCategory'])->name('inv_inventory.categories.store');
+// Store Product
+Route::post('/inv-inventory/products', [InvInventoryController::class, 'storeProduct'])->name('inv_inventory.products.store');
+// Update Today's Stock
+Route::post('/inv-inventory/update', [InvInventoryController::class, 'updateTodayStock'])->name('inv_inventory.update');
+// View Monthly Stock
+Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthlyStock'])->name('inv_inventory.monthly');
+
 // Expenses
 Route::resource('groups', GroupController::class);
 Route::resource('costs', CostController::class);

@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mt-5">
-    <h2>Stock Management</h2>
+    <h2>Grocery Store Stock</h2>
 
     <!-- Form to Add New Category -->
     <form action="{{ route('categories.store') }}" method="POST" class="mb-4">

@@ -134,9 +134,7 @@ Route::resource('persons', PersonController::class);
 
 // Task
 // Home Route
-Route::get('/', function () {
-   return redirect()->route('tasks.index');
-});
+
 // Task Routes
 Route::resource('tasks', TaskController::class);
 Route::post('tasks/{id}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');

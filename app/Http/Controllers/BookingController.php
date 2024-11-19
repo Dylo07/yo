@@ -51,6 +51,7 @@ class BookingController extends Controller
         ]);
 
         $validated['room_numbers'] = json_encode($validated['room_numbers']);
+        $validated['user_id'] = auth()->id(); // Add user_id
 
         \Log::info('Incoming Booking Request:', $validated);
 
@@ -66,6 +67,7 @@ class BookingController extends Controller
             'contact_number' => $validated['contact_number'],
             'room_numbers' => $validated['room_numbers'],
             'guest_count' => $validated['guest_count'],
+            'user_id' => $validated['user_id'], // Add user_id
         ]);
 
         return response()->json(['message' => 'Booking created successfully!'], 201);
@@ -144,7 +146,26 @@ class BookingController extends Controller
         return response()->json(array_values($availableRooms)); // Ensure JSON response is clean
     }
     
-    
+    public function getLogs()
+{
+    $logs = Booking::with('user')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($booking) {
+            return [
+                'function_type' => $booking->function_type,
+                'created_at' => $booking->created_at,
+                'updated_at' => $booking->updated_at,
+                'user_name' => $booking->user ? $booking->user->name : null,
+                'advance_payment' => $booking->advance_payment,
+                'guest_count' => $booking->guest_count,
+                'start' => $booking->start,
+                'end' => $booking->end,
+            ];
+        });
+
+    return response()->json($logs);
+}
 
 
 

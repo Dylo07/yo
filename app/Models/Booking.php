@@ -23,6 +23,8 @@ class Booking extends Model
         'contact_number',    // Newly added        
         'room_numbers',      // Newly added
         'guest_count',       // Newly added
+        'user_id',
+        
     ];
     
 
@@ -71,5 +73,10 @@ class Booking extends Model
               ->whereDate('end', '>=', $date);
         });
     }
+
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
 
 }

@@ -103,7 +103,7 @@ Route::get('/bookings', [BookingController::class, 'index']);
 Route::post('/bookings', [BookingController::class, 'store']);
 Route::put('/bookings/{id}', [BookingController::class, 'update']);
 Route::get('/available-rooms', [BookingController::class, 'availableRooms']);
-
+Route::get('/booking-logs', [BookingController::class, 'getLogs']);
 
 
 // routes for inventory

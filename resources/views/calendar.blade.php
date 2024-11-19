@@ -113,10 +113,17 @@
                 <label for="contact_number" class="form-label">Contact Number:</label>
                 <input type="text" id="contact_number" name="contact_number" class="form-control" required>
             </div>
+
+
             <div class="mb-3">
                 <label for="time_slot" class="form-label">Advance Payment:</label>
                 <input type="text" id="time_slot" name="advance_payment" class="form-control" required>
             </div>
+            
+
+
+
+
             <div class="mb-3">
                 <label for="room_number" class="form-label">Room Numbers:</label>
                 <div class="checkbox-group">
@@ -189,7 +196,40 @@
             </div>
         </div>
     </div>
-
+    <div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Calendar Log Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Function Type</th>
+                            <th>Created At</th>
+                            <th>Updated At</th>
+                            <th>User</th>
+                            <th>Advance Payment</th>
+                            <th>Guest Count</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody">
+                        <!-- Data will be populated dynamically -->
+                    </tbody>
+                </table>
+                <nav>
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Pagination will be populated dynamically -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 
@@ -296,6 +336,7 @@
             </div>
         </div>
     </div>
+    
 </div>
 
 
@@ -304,6 +345,96 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    
+    <script>
+let currentPage = 1;
+const rowsPerPage = 15;
+let totalLogs = [];
+
+async function loadLogDetails() {
+    try {
+        const response = await axios.get('/booking-logs');
+        totalLogs = response.data;
+        displayPage(currentPage);
+        setupPagination();
+    } catch (error) {
+        console.error('Error loading log details:', error);
+    }
+}
+
+function displayPage(page) {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const pageData = totalLogs.slice(start, end);
+    const tableBody = document.getElementById('logTableBody');
+    tableBody.innerHTML = '';
+
+    pageData.forEach(log => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${log.function_type}</td>
+            <td>${new Date(log.created_at).toLocaleString()}</td>
+            <td>${new Date(log.updated_at).toLocaleString()}</td>
+            <td>${log.user_name || 'N/A'}</td>
+            <td>Rs. ${parseFloat(log.advance_payment).toFixed(2)}</td>
+            <td>${log.guest_count}</td>
+            <td>${new Date(log.start).toLocaleString()}</td>
+            <td>${log.end ? new Date(log.end).toLocaleString() : 'N/A'}</td>
+            <td>${getStatusBadge(log.created_at, log.updated_at)}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function setupPagination() {
+    const totalPages = Math.ceil(totalLogs.length / rowsPerPage);
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+
+    // Previous button
+    pagination.innerHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+        </li>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        pagination.innerHTML += `
+            <li class="page-item ${currentPage === i ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+            </li>
+        `;
+    }
+
+    // Next button
+    pagination.innerHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+        </li>
+    `;
+}
+
+function changePage(page) {
+    if (page < 1 || page > Math.ceil(totalLogs.length / rowsPerPage)) return;
+    currentPage = page;
+    displayPage(currentPage);
+    setupPagination();
+}
+
+function getStatusBadge(created, updated) {
+    if (created === updated) {
+        return '<span class="badge bg-success">Created</span>';
+    }
+    return '<span class="badge bg-warning">Updated</span>';
+}
+
+// Load logs when page loads
+document.addEventListener('DOMContentLoaded', loadLogDetails);
+</script>
+    
+    
     <script>
         document.getElementById("booking-form").addEventListener("submit", async function (e) {
             e.preventDefault();

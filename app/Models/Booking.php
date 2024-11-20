@@ -17,10 +17,7 @@ class Booking extends Model
     protected $fillable = [
         'start', 
         'end', 
-        'advance_payment',
-        'bill_number',      // New field
-        'advance_date',     // New field
-        'payment_method',   // New field
+        
         'name', 
         'function_type',
         'contact_number',        
@@ -39,8 +36,7 @@ class Booking extends Model
        'start' => 'datetime',
         'end' => 'datetime',
         'room_numbers' => 'array',
-        'advance_payment' => 'decimal:2',
-        'advance_date' => 'date',
+        
     ];
     public function setAdvancePaymentAttribute($value)
     {
@@ -74,6 +70,21 @@ class Booking extends Model
             $q->whereDate('start', '<=', $date)
               ->whereDate('end', '>=', $date);
         });
+    }
+    
+    public function payments()
+    {
+        return $this->hasMany(BookingPayment::class);
+    }
+
+    public function addPayment($data)
+    {
+        return $this->payments()->create([
+            'amount' => $data['advance_payment'],
+            'bill_number' => $data['bill_number'],
+            'payment_date' => $data['advance_date'],
+            'payment_method' => $data['payment_method']
+        ]);
     }
 
     public function user()

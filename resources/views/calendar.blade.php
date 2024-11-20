@@ -204,24 +204,27 @@
 
     <!-- Modal for Available Rooms -->
     <div id="availableRoomsModal" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Available Rooms</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p><strong>Date:</strong> <span id="selectedDate"></span></p>
-                    <ul id="availableRoomsList">
-                        <!-- Rooms will be listed here dynamically -->
-                    </ul>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Available Rooms</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Date:</strong> <span id="selectedDate"></span></p>
+                <ul id="availableRoomsList">
+                    <!-- Rooms will be listed here dynamically -->
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
+</div>
+
+
+
     <div class="container mt-5">
     <div class="card">
         <div class="card-header bg-primary text-white">
@@ -260,16 +263,28 @@
 
 
 
-    <!-- Modal for event details -->
-    <div id="eventModal" class="modal fade" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+   
+   <!-- Modal for event details -->
+<div id="eventModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Booking Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Event details will be injected here -->
+            <div class="modal-body">
+                <div class="booking-info mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">Basic Information</h6>
+                    <div id="modalBody">
+                        <!-- Basic booking details will be injected here -->
+                    </div>
+                </div>
+                <div class="payment-history">
+                    <h6 class="border-bottom pb-2 mb-3">Payment History</h6>
+                    <div id="paymentHistoryBody">
+                        <!-- Payment history will be injected here -->
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" id="editEvent" class="btn btn-primary">Edit</button>
@@ -278,6 +293,8 @@
         </div>
     </div>
 </div>
+
+
 <!-- Edit function   -->
 
 <div id="editModal" class="modal fade" tabindex="-1" role="dialog">
@@ -315,36 +332,45 @@
                         <label for="editContactNumber" class="form-label">Contact Number:</label>
                         <input type="text" id="editContactNumber" name="contact_number" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="editAdvancePayment" class="form-label">Advance Payment:</label>
-                        <input type="text" id="editAdvancePayment" name="advance_payment" class="form-control" required>
-                    </div>
+                    <!-- Add a toggle switch at the start of payment fields in editModal -->
+<div class="mb-3">
+    <div class="form-check">
+        <input type="checkbox" id="updatePayment" class="form-check-input">
+        <label class="form-check-label" for="updatePayment">Add New Payment</label>
+    </div>
+</div>
 
-                    <div class="row">
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="editBillNumber" class="form-label">Bill Number:</label>
-                    <input type="text" id="editBillNumber" name="bill_number" class="form-control" required>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="editAdvanceDate" class="form-label">Advance Date:</label>
-                    <input type="date" id="editAdvanceDate" name="advance_date" class="form-control" required>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="editPaymentMethod" class="form-label">Payment Method:</label>
-                    <select id="editPaymentMethod" name="payment_method" class="form-control" required>
-                        <option value="">Select Payment Method</option>
-                        <option value="online">Online</option>
-                        <option value="cash">Cash</option>
-                    </select>
-                </div>
+<div id="paymentFields" style="display: none;">
+    <div class="mb-3">
+        <label for="editAdvancePayment" class="form-label">Advance Payment:</label>
+        <input type="text" id="editAdvancePayment" name="advance_payment" class="form-control">
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="editBillNumber" class="form-label">Bill Number:</label>
+                <input type="text" id="editBillNumber" name="bill_number" class="form-control">
             </div>
         </div>
-
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="editAdvanceDate" class="form-label">Advance Date:</label>
+                <input type="date" id="editAdvanceDate" name="advance_date" class="form-control">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="editPaymentMethod" class="form-label">Payment Method:</label>
+                <select id="editPaymentMethod" name="payment_method" class="form-control">
+                    <option value="">Select Payment Method</option>
+                    <option value="online">Online</option>
+                    <option value="cash">Cash</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 
@@ -618,24 +644,53 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
                 },
                 eventClick: function (info) {
 
+                    const event = info.event;
+                    const props = event.extendedProps;
                     const advanceDate = info.event.extendedProps.advance_date 
         ? new Date(info.event.extendedProps.advance_date).toLocaleDateString() 
         : 'N/A';
     // Set the title and body of the modal with event details
     document.getElementById("modalTitle").textContent = `Booking Details - ${info.event.title}`;
     document.getElementById("modalBody").innerHTML = `
-        <p><strong>Function Type:</strong> ${info.event.extendedProps.function_type}</p>
-        <p><strong>Contact Number:</strong> ${info.event.extendedProps.contact_number}</p>
-        <p><strong>Room Numbers:</strong> ${info.event.extendedProps.room_numbers || 'N/A'}</p>
-        <p><strong>Guest Count:</strong> ${info.event.extendedProps.guest_count || 'N/A'}</p>
-        <p><strong>Advance Payment:</strong> ${info.event.extendedProps.advance_payment || 'N/A'}</p>
-        <p><strong>Bill Number:</strong> ${info.event.extendedProps.bill_number || 'N/A'}</p>
-        <p><strong>Advance Date:</strong> ${advanceDate}</p>
-        <p><strong>Payment Method:</strong> ${info.event.extendedProps.payment_method || 'N/A'}</p>
-        <p><strong>Description:</strong> ${info.event.extendedProps.name || 'N/A'}</p>
-        <p><strong>Start Time:</strong> ${new Date(info.event.start).toLocaleString()}</p>
-        <p><strong>End Time:</strong> ${info.event.end ? new Date(info.event.end).toLocaleString() : 'N/A'}</p>
-    `;
+       <p><strong>Function Type:</strong> ${props.function_type || 'N/A'}</p>
+                        <p><strong>Contact Number:</strong> ${props.contact_number || 'N/A'}</p>
+                        <p><strong>Room Numbers:</strong> ${props.room_numbers || 'N/A'}</p>
+                        <p><strong>Guest Count:</strong> ${props.guest_count || 'N/A'}</p>
+                        <p><strong>Description:</strong> ${props.name || 'N/A'}</p>
+                        <p><strong>Start Time:</strong> ${new Date(event.start).toLocaleString()}</p>
+                        <p><strong>End Time:</strong> ${event.end ? new Date(event.end).toLocaleString() : 'N/A'}</p>
+                    `;
+
+                    // Format payment history
+                    const payments = props.advancePayments || [];
+                    let paymentHistoryHTML = '';
+                    
+                    if (payments.length > 0) {
+                        payments.forEach((payment, index) => {
+                            paymentHistoryHTML += `
+                                <div class="payment-record mb-3 p-3 bg-light rounded">
+                                    <h6 class="text-primary mb-2">Payment #${index + 1}</h6>
+                                    <p class="mb-1"><strong>Amount:</strong> Rs. ${parseFloat(payment.amount).toFixed(2)}</p>
+                                    <p class="mb-1"><strong>Bill Number:</strong> ${payment.billNumber}</p>
+                                    <p class="mb-1"><strong>Date:</strong> ${new Date(payment.date).toLocaleDateString()}</p>
+                                    <p class="mb-1"><strong>Method:</strong> ${payment.method}</p>
+                                </div>
+                            `;
+                        });
+                    } else if (props.advance_payment) {
+                        paymentHistoryHTML = `
+                            <div class="payment-record mb-3 p-3 bg-light rounded">
+                                <h6 class="text-primary mb-2">Initial Payment</h6>
+                                <p class="mb-1"><strong>Amount:</strong> Rs. ${parseFloat(props.advance_payment).toFixed(2)}</p>
+                                <p class="mb-1"><strong>Bill Number:</strong> ${props.bill_number || 'N/A'}</p>
+                                <p class="mb-1"><strong>Date:</strong> ${props.advance_date ? new Date(props.advance_date).toLocaleDateString() : 'N/A'}</p>
+                                <p class="mb-1"><strong>Method:</strong> ${props.payment_method || 'N/A'}</p>
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById("paymentHistoryBody").innerHTML = paymentHistoryHTML || '<p>No payment history available</p>';
+
 
     // Show the modal
     const modal = new bootstrap.Modal(document.getElementById("eventModal"));
@@ -660,32 +715,48 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
 
        
     const roomNumbers = info.event.extendedProps.room_numbers 
-        ? info.event.extendedProps.room_numbers.split(", ") 
-        : [];
-    
-    // Uncheck all checkboxes first
-    document.querySelectorAll("#editRoomNumbers input[type='checkbox']").forEach((checkbox) => {
-        checkbox.checked = false;
-    });
+    ? JSON.parse(info.event.extendedProps.room_numbers) 
+    : [];
 
+   // Uncheck all checkboxes first
+document.querySelectorAll("#editRoomNumbers input[type='checkbox']").forEach((checkbox) => {
+    checkbox.checked = false;
+});
     // Check the relevant checkboxes
-    roomNumbers.forEach((room) => {
-        const checkbox = document.querySelector(`#editRoomNumbers input[value="${room}"]`);
-        if (checkbox) {
-            checkbox.checked = true;
-        }
-
-    });
-
+roomNumbers.forEach((room) => {
+    const checkbox = document.querySelector(`#editRoomNumbers input[value="${room}"]`);
+    if (checkbox) {
+        checkbox.checked = true;
+    }
+});
 
 
         // Show the edit modal
         const editModal = new bootstrap.Modal(document.getElementById("editModal"));
         editModal.show();
 
+
+        // Add this to your existing JavaScript
+document.getElementById('updatePayment').addEventListener('change', function() {
+    const paymentFields = document.getElementById('paymentFields');
+    paymentFields.style.display = this.checked ? 'block' : 'none';
+    
+    // Toggle required attribute on payment fields
+    const fields = paymentFields.querySelectorAll('input, select');
+    fields.forEach(field => {
+        field.required = this.checked;
+    });
+});
+
+
+
+
+
         // Save changes
         document.getElementById("editForm").onsubmit = async function (e) {
             e.preventDefault();
+
+            const addNewPayment = document.getElementById('updatePayment').checked;
 
              // Collect room numbers
     const roomNumbers = Array.from(document.querySelectorAll("#editRoomNumbers input:checked")).map(
@@ -693,19 +764,22 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
     );
 
             const updatedData = {
-                name: document.getElementById("editName").value, // Include name
+                name: document.getElementById("editName").value,
         start: document.getElementById("editStart").value,
         end: document.getElementById("editEnd").value,
         function_type: document.getElementById("editFunctionType").value,
         contact_number: document.getElementById("editContactNumber").value,
-        advance_payment: document.getElementById("editAdvancePayment").value,
-        bill_number: document.getElementById("editBillNumber").value,
-        advance_date: document.getElementById("editAdvanceDate").value,
-        payment_method: document.getElementById("editPaymentMethod").value,
-        
         guest_count: document.getElementById("editGuestCount").value,
-        room_numbers: roomNumbers,
-            };
+        room_numbers: Array.from(document.querySelectorAll("#editRoomNumbers input:checked"))
+            .map(checkbox => checkbox.value)
+    };
+    // Add payment data only if checkbox is checked
+    if (addNewPayment) {
+        updatedData.advance_payment = document.getElementById("editAdvancePayment").value;
+        updatedData.bill_number = document.getElementById("editBillNumber").value;
+        updatedData.advance_date = document.getElementById("editAdvanceDate").value;
+        updatedData.payment_method = document.getElementById("editPaymentMethod").value;
+    }
 
             try {
                 await axios.put(`/bookings/${info.event.id}`, updatedData, {

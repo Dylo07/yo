@@ -14,24 +14,34 @@ class BookingController extends Controller
      */
     public function index()
     {
-        $bookings = Booking::all();
-
+        $bookings = Booking::with('payments')->get();
+        
         return $bookings->map(function ($booking) {
+            $payments = $booking->payments->map(function ($payment) {
+                return [
+                    'amount' => $payment->amount,
+                    'billNumber' => $payment->bill_number,
+                    'date' => $payment->payment_date->format('Y-m-d'),
+                    'method' => $payment->payment_method
+                ];
+            });
+    
+            // Handle room_numbers as array
+            $roomNumbers = is_array($booking->room_numbers) ? 
+                implode(', ', $booking->room_numbers) : 
+                $booking->room_numbers;
+    
             return [
                 'id' => $booking->id,
-                'title' => $booking->time_slot . ' - ' . $booking->name,
+                'title' => $booking->name,
                 'start' => $booking->start,
                 'end' => $booking->end,
-                'advance_payment' => $booking->formatted_advance_payment,
-                'bill_number' => $booking->bill_number,          // Add this
-            'advance_date' => $booking->advance_date ? $booking->advance_date->format('Y-m-d') : null,  // Format the date
-            'payment_method' => $booking->payment_method,    // Add this
-                
-                'name' => $booking->name,
                 'function_type' => $booking->function_type,
                 'contact_number' => $booking->contact_number,
-                'room_numbers' => implode(', ', json_decode($booking->room_numbers) ?? []), // Convert array to string for display
+                'room_numbers' => json_encode($booking->room_numbers), // Encode the array as JSON
                 'guest_count' => $booking->guest_count,
+                'name' => $booking->name,
+                'advancePayments' => $payments
             ];
         });
     }
@@ -40,99 +50,121 @@ class BookingController extends Controller
      * Store a new booking.
      */
     public function store(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'start' => 'required|date',
-            'end' => 'nullable|date',
-            'advance_payment' => 'required|numeric|min:0',
-            'bill_number' => 'required|string',      // New validation
-            'advance_date' => 'required|date',       // New validation
-            'payment_method' => 'required|in:online,cash', // New validation
-        
-            'name' => 'required|string',
-            'function_type' => 'required|string',
-            'contact_number' => 'required|string|max:15',
-            'room_numbers' => 'nullable|array',
-            'guest_count' => 'required|string',
-        ]);
-
-        $validated['room_numbers'] = json_encode($validated['room_numbers']);
-        $validated['user_id'] = auth()->id(); // Add user_id
-
-        \Log::info('Incoming Booking Request:', $validated);
-
-        $start = Carbon::parse($validated['start'])->format('Y-m-d H:i:s');
-        $end = isset($validated['end']) ? Carbon::parse($validated['end'])->format('Y-m-d H:i:s') : null;
-
-        Booking::create([
-            'start' => $start,
-            'end' => $end,
-            'advance_payment' => $validated['advance_payment'], // Correctly map advance_payment to time_slot
-            'bill_number' => $validated['bill_number'],
-            'advance_date' => $validated['advance_date'],
-            'payment_method' => $validated['payment_method'],
-            
-            'name' => $validated['name'],
-            'function_type' => $validated['function_type'],
-            'contact_number' => $validated['contact_number'],
-            'room_numbers' => $validated['room_numbers'],
-            'guest_count' => $validated['guest_count'],
-            'user_id' => $validated['user_id'], // Add user_id
-        ]);
-
-        return response()->json(['message' => 'Booking created successfully!'], 201);
-    } catch (\Exception $e) {
-        \Log::error('Booking Error:', ['error' => $e->getMessage()]);
-        return response()->json(['error' => 'Failed to create booking.'], 500);
+    {
+        try {
+            $validated = $request->validate([
+                'start' => 'required|date',
+                'end' => 'nullable|date',
+                'name' => 'required|string',
+                'function_type' => 'required|string',
+                'contact_number' => 'required|string',
+                'room_numbers' => 'required|array',
+                'guest_count' => 'required|string',
+                'advance_payment' => 'required|numeric',
+                'bill_number' => 'required|string',
+                'advance_date' => 'required|date',
+                'payment_method' => 'required|in:online,cash'
+            ]);
+    
+            \DB::beginTransaction();
+    
+            // Create booking
+            $booking = Booking::create([
+                'start' => $validated['start'],
+                'end' => $validated['end'],
+                'name' => $validated['name'],
+                'function_type' => $validated['function_type'],
+                'contact_number' => $validated['contact_number'],
+                'room_numbers' => $validated['room_numbers'],
+                'guest_count' => $validated['guest_count'],
+                'user_id' => auth()->id()
+            ]);
+    
+            // Create payment record
+            $booking->addPayment([
+                'advance_payment' => $validated['advance_payment'],
+                'bill_number' => $validated['bill_number'],
+                'advance_date' => $validated['advance_date'],
+                'payment_method' => $validated['payment_method']
+            ]);
+    
+            \DB::commit();
+            return response()->json(['message' => 'Booking created successfully'], 201);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            Log::error('Booking Creation Error:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
-}
-
-
     
     /**
      * Update an existing booking.
      */
     public function update(Request $request, $id)
     {
-        try {
-            $validated = $request->validate([
-                'start' => 'required|date',
-                'end' => 'nullable|date',
-                'advance_payment' => 'required|numeric|min:0',
-                'bill_number' => 'required|string',      
-            'advance_date' => 'required|date',       
-            'payment_method' => 'required|in:online,cash',
-                
-                'name' => 'required|string',
-                'function_type' => 'required|string',
-                'contact_number' => 'required|string|max:15',
-                'room_numbers' => 'nullable|array',
-                'guest_count' => 'required|string',
-            ]);
+    try {
+        $booking = Booking::findOrFail($id);
+        
+        $validationRules = [
+            'start' => 'required|date',
+            'end' => 'nullable|date',
+            'name' => 'required|string',
+            'function_type' => 'required|string',
+            'contact_number' => 'required|string',
+            'room_numbers' => 'required|array',
+            'guest_count' => 'required|string',
+        ];
 
-            $validated['room_numbers'] = json_encode($validated['room_numbers']);
-
-            $booking = Booking::findOrFail($id);
-            $booking->update($validated);
-
-            return response()->json(['message' => 'Booking updated successfully!']);
-        } catch (\Exception $e) {
-            Log::error('Booking Update Error:', [
-                'error' => $e->getMessage(),
-                'request' => $request->all(),
-            ]);
-            return response()->json(['error' => 'Failed to update booking.'], 500);
+        // Add payment validation rules only if payment data is present
+        if ($request->has('advance_payment')) {
+            $validationRules += [
+                'advance_payment' => 'required|numeric',
+                'bill_number' => 'required|string',
+                'advance_date' => 'required|date',
+                'payment_method' => 'required|in:online,cash'
+            ];
         }
+
+        $validated = $request->validate($validationRules);
+
+        // Update booking details
+        $booking->update([
+            'start' => $validated['start'],
+            'end' => $validated['end'],
+            'name' => $validated['name'],
+            'function_type' => $validated['function_type'],
+            'contact_number' => $validated['contact_number'],
+            'room_numbers' => $validated['room_numbers'],
+            'guest_count' => $validated['guest_count']
+        ]);
+
+        // Add new payment only if payment data is present
+        if ($request->has('advance_payment')) {
+            $booking->addPayment([
+                'advance_payment' => $validated['advance_payment'],
+                'bill_number' => $validated['bill_number'],
+                'advance_date' => $validated['advance_date'],
+                'payment_method' => $validated['payment_method']
+            ]);
+        }
+
+        return response()->json(['message' => 'Booking updated successfully']);
+    } catch (\Exception $e) {
+        Log::error('Booking Update Error:', [
+            'error' => $e->getMessage(),
+            'request' => $request->all()
+        ]);
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
+
     public function availableRooms(Request $request)
     {
         $date = $request->query('date');
         if (!$date) {
-            return response()->json([], 400); // Bad request if no date is provided
+            return response()->json([], 400);
         }
     
-        // Define all rooms
         $allRooms = [
             'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
             'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
@@ -140,25 +172,24 @@ class BookingController extends Controller
             '103', '104', '105',
         ];
     
-        // Get all bookings that overlap with the selected date
+        // Modified this part to handle the room_numbers array properly
         $bookedRooms = Booking::where(function ($query) use ($date) {
             $query->whereDate('start', '<=', $date)
                   ->whereDate('end', '>=', $date)
                   ->orWhere(function ($query) use ($date) {
                       $query->whereDate('start', '=', $date)
-                            ->whereNull('end'); // Handle single-day bookings
+                            ->whereNull('end');
                   });
-        })->pluck('room_numbers');
+        })->get()
+          ->pluck('room_numbers')
+          ->flatten()
+          ->unique()
+          ->values()
+          ->toArray();
     
-        // Flatten and decode booked rooms into an array
-        $bookedRoomsArray = $bookedRooms->flatMap(function ($roomNumbers) {
-            return json_decode($roomNumbers, true) ?? [];
-        })->unique();
+        $availableRooms = array_diff($allRooms, $bookedRooms);
     
-        // Calculate available rooms
-        $availableRooms = array_diff($allRooms, $bookedRoomsArray->toArray());
-    
-        return response()->json(array_values($availableRooms)); // Ensure JSON response is clean
+        return response()->json(array_values($availableRooms));
     }
     
     public function getLogs()

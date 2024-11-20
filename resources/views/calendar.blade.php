@@ -119,6 +119,32 @@
                 <label for="time_slot" class="form-label">Advance Payment:</label>
                 <input type="text" id="time_slot" name="advance_payment" class="form-control" required>
             </div>
+
+            <!-- New fields -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="mb-3">
+            <label for="bill_number" class="form-label">Bill Number:</label>
+            <input type="text" id="bill_number" name="bill_number" class="form-control" required>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="mb-3">
+            <label for="advance_date" class="form-label">Advance Date:</label>
+            <input type="date" id="advance_date" name="advance_date" class="form-control" required>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="mb-3">
+            <label for="payment_method" class="form-label">Payment Method:</label>
+            <select id="payment_method" name="payment_method" class="form-control" required>
+                <option value="">Select Payment Method</option>
+                <option value="online">Online</option>
+                <option value="cash">Cash</option>
+            </select>
+        </div>
+    </div>
+</div>
             
 
 
@@ -293,6 +319,36 @@
                         <label for="editAdvancePayment" class="form-label">Advance Payment:</label>
                         <input type="text" id="editAdvancePayment" name="advance_payment" class="form-control" required>
                     </div>
+
+                    <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="editBillNumber" class="form-label">Bill Number:</label>
+                    <input type="text" id="editBillNumber" name="bill_number" class="form-control" required>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="editAdvanceDate" class="form-label">Advance Date:</label>
+                    <input type="date" id="editAdvanceDate" name="advance_date" class="form-control" required>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="editPaymentMethod" class="form-label">Payment Method:</label>
+                    <select id="editPaymentMethod" name="payment_method" class="form-control" required>
+                        <option value="">Select Payment Method</option>
+                        <option value="online">Online</option>
+                        <option value="cash">Cash</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
                     <div class="mb-3">
     <label for="editRoomNumbers" class="form-label">Room Numbers:</label>
     <div class="checkbox-group" id="editRoomNumbers">
@@ -451,6 +507,10 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
                     start: start,
                     end: end,
                     advance_payment: formData.get("advance_payment"),
+                    bill_number: formData.get("bill_number"),       // New field
+            advance_date: formData.get("advance_date"),     // New field
+            payment_method: formData.get("payment_method"), // New field
+                    
                     name: formData.get("name"),
                     function_type: formData.get("function_type"),
                     contact_number: formData.get("contact_number"),
@@ -557,6 +617,10 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
 
                 },
                 eventClick: function (info) {
+
+                    const advanceDate = info.event.extendedProps.advance_date 
+        ? new Date(info.event.extendedProps.advance_date).toLocaleDateString() 
+        : 'N/A';
     // Set the title and body of the modal with event details
     document.getElementById("modalTitle").textContent = `Booking Details - ${info.event.title}`;
     document.getElementById("modalBody").innerHTML = `
@@ -565,6 +629,9 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
         <p><strong>Room Numbers:</strong> ${info.event.extendedProps.room_numbers || 'N/A'}</p>
         <p><strong>Guest Count:</strong> ${info.event.extendedProps.guest_count || 'N/A'}</p>
         <p><strong>Advance Payment:</strong> ${info.event.extendedProps.advance_payment || 'N/A'}</p>
+        <p><strong>Bill Number:</strong> ${info.event.extendedProps.bill_number || 'N/A'}</p>
+        <p><strong>Advance Date:</strong> ${advanceDate}</p>
+        <p><strong>Payment Method:</strong> ${info.event.extendedProps.payment_method || 'N/A'}</p>
         <p><strong>Description:</strong> ${info.event.extendedProps.name || 'N/A'}</p>
         <p><strong>Start Time:</strong> ${new Date(info.event.start).toLocaleString()}</p>
         <p><strong>End Time:</strong> ${info.event.end ? new Date(info.event.end).toLocaleString() : 'N/A'}</p>
@@ -583,6 +650,11 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
         document.getElementById("editContactNumber").value = info.event.extendedProps.contact_number;
         document.getElementById("editAdvancePayment").value = info.event.extendedProps.advance_payment;
         document.getElementById("editGuestCount").value = info.event.extendedProps.guest_count;
+        // New fields population
+    document.getElementById("editBillNumber").value = info.event.extendedProps.bill_number || "";
+    document.getElementById("editAdvanceDate").value = info.event.extendedProps.advance_date || "";
+    document.getElementById("editPaymentMethod").value = info.event.extendedProps.payment_method || "";
+
 
 
 
@@ -627,6 +699,10 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
         function_type: document.getElementById("editFunctionType").value,
         contact_number: document.getElementById("editContactNumber").value,
         advance_payment: document.getElementById("editAdvancePayment").value,
+        bill_number: document.getElementById("editBillNumber").value,
+        advance_date: document.getElementById("editAdvanceDate").value,
+        payment_method: document.getElementById("editPaymentMethod").value,
+        
         guest_count: document.getElementById("editGuestCount").value,
         room_numbers: roomNumbers,
             };

@@ -23,6 +23,10 @@ class BookingController extends Controller
                 'start' => $booking->start,
                 'end' => $booking->end,
                 'advance_payment' => $booking->formatted_advance_payment,
+                'bill_number' => $booking->bill_number,          // Add this
+            'advance_date' => $booking->advance_date ? $booking->advance_date->format('Y-m-d') : null,  // Format the date
+            'payment_method' => $booking->payment_method,    // Add this
+                
                 'name' => $booking->name,
                 'function_type' => $booking->function_type,
                 'contact_number' => $booking->contact_number,
@@ -42,6 +46,9 @@ class BookingController extends Controller
             'start' => 'required|date',
             'end' => 'nullable|date',
             'advance_payment' => 'required|numeric|min:0',
+            'bill_number' => 'required|string',      // New validation
+            'advance_date' => 'required|date',       // New validation
+            'payment_method' => 'required|in:online,cash', // New validation
         
             'name' => 'required|string',
             'function_type' => 'required|string',
@@ -62,6 +69,10 @@ class BookingController extends Controller
             'start' => $start,
             'end' => $end,
             'advance_payment' => $validated['advance_payment'], // Correctly map advance_payment to time_slot
+            'bill_number' => $validated['bill_number'],
+            'advance_date' => $validated['advance_date'],
+            'payment_method' => $validated['payment_method'],
+            
             'name' => $validated['name'],
             'function_type' => $validated['function_type'],
             'contact_number' => $validated['contact_number'],
@@ -89,6 +100,10 @@ class BookingController extends Controller
                 'start' => 'required|date',
                 'end' => 'nullable|date',
                 'advance_payment' => 'required|numeric|min:0',
+                'bill_number' => 'required|string',      
+            'advance_date' => 'required|date',       
+            'payment_method' => 'required|in:online,cash',
+                
                 'name' => 'required|string',
                 'function_type' => 'required|string',
                 'contact_number' => 'required|string|max:15',
@@ -158,6 +173,9 @@ class BookingController extends Controller
                 'updated_at' => $booking->updated_at,
                 'user_name' => $booking->user ? $booking->user->name : null,
                 'advance_payment' => $booking->advance_payment,
+                'bill_number' => $booking->bill_number,
+                'advance_date' => $booking->advance_date,
+                'payment_method' => $booking->payment_method,
                 'guest_count' => $booking->guest_count,
                 'start' => $booking->start,
                 'end' => $booking->end,

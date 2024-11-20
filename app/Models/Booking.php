@@ -18,13 +18,15 @@ class Booking extends Model
         'start', 
         'end', 
         'advance_payment',
+        'bill_number',      // New field
+        'advance_date',     // New field
+        'payment_method',   // New field
         'name', 
-        'function_type',     // Newly added
-        'contact_number',    // Newly added        
-        'room_numbers',      // Newly added
-        'guest_count',       // Newly added
+        'function_type',
+        'contact_number',        
+        'room_numbers',
+        'guest_count',
         'user_id',
-        
     ];
     
 
@@ -34,11 +36,11 @@ class Booking extends Model
      * @var array
      */
     protected $casts = [
-        'start' => 'datetime',
+       'start' => 'datetime',
         'end' => 'datetime',
-        'room_numbers' => 'array', // Automatically converts JSON to array and vice versa
+        'room_numbers' => 'array',
         'advance_payment' => 'decimal:2',
-
+        'advance_date' => 'date',
     ];
     public function setAdvancePaymentAttribute($value)
     {

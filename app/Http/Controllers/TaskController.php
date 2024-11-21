@@ -4,75 +4,84 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\TaskCategory;
-use App\Models\CompletedTask;
-
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
+    /**
+     * Display a listing of tasks.
+     *
+     * @return \Illuminate\View\View
+     */
     public function index()
-{
-    // Existing code to retrieve tasks
-    $tasks = Task::with('taskCategory')
-            ->where('user', Auth::user()->name)
-            ->get();
-    
-            $completedTasks = CompletedTask::with('taskCategory')
-            ->where('user', Auth::user()->name)
-            ->get();
-    // Assign logged-in user's information to $log
-    $log = ['user' => Auth::user()->name];
+    {
+        // Fetch all tasks with their category
+        $tasks = Task::with('taskCategory')->get();
 
-    // Pass $log to the view
-    return view('tasks.index', compact('tasks', 'completedTasks', 'log'));
-}
+        // Separate pending and completed tasks
+        $pendingTasks = $tasks->where('is_done', false);
+        $completedTasks = $tasks->where('is_done', true);
+
+        // Return the index view with tasks
+        return view('tasks.index', compact('pendingTasks', 'completedTasks'));
+    }
+
+    /**
+     * Show the form for creating a new task.
+     *
+     * @return \Illuminate\View\View
+     */
     public function create()
     {
+        // Fetch all task categories
         $taskCategories = TaskCategory::all();
+
+        // Return the create view with categories
         return view('tasks.create', compact('taskCategories'));
     }
 
+    /**
+     * Store a newly created task in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
-{
-    $request->validate([
-        'date_added' => 'required|date',
-        'task' => 'required|string|max:500',
-        'task_category_id' => 'required|exists:task_categories,id',
-        'person_incharge' => 'required|string|max:255',
-        'priority_order' => 'required|in:High,Medium,Low',
-    ]);
+    {
+        // Validate the request data
+        $request->validate([
+            'user' => 'required|string',
+            'date_added' => 'required|date',
+            'task' => 'required|string',
+            'task_category_id' => 'required|exists:task_categories,id',
+            'person_incharge' => 'required|string',
+            'priority_order' => 'required|in:High,Medium,Low',
+            'is_done' => 'nullable|boolean',
+        ]);
 
-    Task::create([
-        'user' => Auth::user()->name,
-        'date_added' => $request->date_added,
-        'task' => $request->task,
-        'task_category_id' => $request->task_category_id,
-        'person_incharge' => $request->person_incharge,
-        'priority_order' => $request->priority_order,
-        'is_done' => false,
-    ]);
+        // Create the task
+        Task::create($request->all());
 
+        // Redirect back with a success message
         return redirect()->route('tasks.index')->with('success', 'Task created successfully!');
     }
 
+    /**
+     * Update the status of a task (mark as done).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function updateStatus(Request $request, $id)
-{
-    $task = Task::findOrFail($id);
+    {
+        // Find the task by ID
+        $task = Task::findOrFail($id);
 
-    if ($request->has('is_done')) {
-        // Move task to completed_tasks table
-        $completedTask = $task->replicate();
-        $completedTask->setTable('completed_tasks');
-        $completedTask->save();
+        // Update the 'is_done' status
+        $task->update(['is_done' => $request->has('is_done')]);
 
-        // Delete task from tasks table
-        $task->delete();
-
-        return redirect()->route('tasks.index')->with('success', 'Task marked as done and moved to completed tasks!');
-    } else {
-        return redirect()->route('tasks.index')->with('error', 'Invalid operation.');
+        // Redirect back with a success message
+        return redirect()->route('tasks.index')->with('success', 'Task status updated successfully!');
     }
-}
-
 }

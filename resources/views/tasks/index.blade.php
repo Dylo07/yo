@@ -35,7 +35,7 @@
 @section('content')
 <div class="container">
     <h1 class="my-4">Tasks</h1>
-    <p class="lead">Welcome, {{ $log['user'] }}!</p>
+    <p class="lead">Welcome, {{ Auth::user()->name ?? 'Guest' }}!</p>
 
     <div class="mb-4">
         <a href="{{ route('tasks.create') }}" class="btn btn-primary mr-2">
@@ -61,17 +61,14 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($tasks as $task)
+            @forelse($pendingTasks as $task)
             <tr>
                 <td>{{ $task->id }}</td>
-                <td>{{ $log['user'] }}</td>
+                <td>{{ $task->user }}</td>
                 <td>{{ $task->date_added }}</td>
                 <td class="my-4" width="40%" style="font-size: 1.1em; font-weight: bold; background-color: #ffffcc;">
-    {{ $task->task }}
-</td>
-
-
-
+                    {{ $task->task }}
+                </td>
                 <td>{{ $task->taskCategory->name }}</td>
                 <td>{{ $task->person_incharge }}</td>
                 <td>
@@ -89,7 +86,7 @@
                     <form action="{{ route('tasks.updateStatus', $task->id) }}" method="POST">
                         @csrf
                         <input type="hidden" name="is_done" value="1">
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-success" aria-label="Mark task as done">
                             <i class="fas fa-check"></i> Mark as Done
                         </button>
                     </form>
@@ -121,7 +118,7 @@
             @forelse($completedTasks as $completedTask)
             <tr>
                 <td>{{ $completedTask->id }}</td>
-                <td>{{ $log['user'] }}</td>
+                <td>{{ $completedTask->user }}</td>
                 <td>{{ $completedTask->date_added }}</td>
                 <td class="my-4" width="40%" style="font-size: 1.1em; font-weight: bold; background-color:#c2ffbd;">{{ $completedTask->task }}</td>
                 <td>{{ $completedTask->taskCategory->name }}</td>

@@ -45,35 +45,35 @@
                         <!-- Previous columns remain the same -->
                         <td class="align-middle">{{ $room->name }}</td>
                         <td>
-                            <form action="{{ route('rooms.update-checklist', $room->id) }}" method="POST">
-                                @csrf
-                                @foreach($room->checklistItems as $item)
-                                <div class="form-check mb-2">
-                                    <input type="checkbox" 
-                                           name="checklist[]" 
-                                           value="{{ $item->id }}"
-                                           class="form-check-input"
-                                           {{ $item->pivot->is_checked ? 'checked' : '' }}
-                                           {{ $room->is_booked ? 'disabled' : '' }}>
-                                    <label class="form-check-label {{ $room->is_booked ? 'text-muted' : '' }}">
-                                        {{ $item->name }}
-                                    </label>
-                                </div>
-                                @endforeach
-                                <button type="submit" 
-                                        class="btn btn-primary btn-sm mt-2"
-                                        {{ $room->is_booked ? 'disabled' : '' }}>
-                                    Save Checklist
-                                </button>
-                            </form>
-                        </td>
+                        <form action="{{ route('rooms.update-checklist', $room->id) }}" method="POST">
+        @csrf
+        @foreach($room->checklistItems as $item)
+        <div class="form-check mb-2">
+            <input type="checkbox" 
+                   name="checklist[]" 
+                   value="{{ $item->id }}"
+                   class="form-check-input"
+                   {{ $item->pivot->is_checked ? 'checked disabled' : '' }}
+                   {{ $room->is_booked ? 'disabled' : '' }}>
+            <label class="form-check-label {{ $room->is_booked || $item->pivot->is_checked ? 'text-muted' : '' }}">
+                {{ $item->name }}
+            </label>
+        </div>
+        @endforeach
+        <button type="submit" 
+                class="btn btn-primary btn-sm mt-2"
+                {{ $room->is_booked || $room->checklistItems->every(fn($item) => $item->pivot->is_checked) ? 'disabled' : '' }}>
+            Save Checklist
+        </button>
+    </form>
+</td>
                         <td class="align-middle text-center">
                             <form action="{{ route('rooms.daily-check', $room->id) }}" method="POST">
                                 @csrf
                                 <button type="submit" 
                                         class="btn {{ $room->daily_checked ? 'btn-success' : 'btn-warning' }}"
                                         {{ $room->is_booked ? 'disabled' : '' }}>
-                                    {{ $room->daily_checked ? 'Checked' : 'Check Room' }}
+                                    {{ $room->daily_checked ? 'Checked' : 'Need to Check Again' }}
                                 </button>
                             </form>
                         </td>
@@ -84,9 +84,9 @@
                                     return $item->pivot->is_checked;
                                 }) && $room->daily_checked;
                             @endphp
-                            <div class="status-badge {{ $isAvailable && !$room->is_booked ? 'status-available' : 'status-unavailable' }}">
-                                {{ $room->is_booked ? 'BOOKED' : ($isAvailable ? 'AVAILABLE' : 'NEED TO CLEAN') }}
-                            </div>
+                            <div class="status-badge {{ $isAvailable && !$room->is_booked ? 'status-available' : ($room->is_booked ? 'status-unavailable' : 'status-need-clean') }}">
+    {{ $room->is_booked ? 'BOOKED' : ($isAvailable ? 'AVAILABLE' : 'NEED TO CLEAN') }}
+</div>
                         </td>
                         <td class="align-middle text-center">
                             <div class="d-flex gap-2 justify-content-center">
@@ -152,6 +152,15 @@
     background-color: #28a745;
     color: white;
     animation: pulse 2s infinite;
+}
+/* Add this custom style for NEED TO CLEAN */
+.status-badge:contains('NEED TO CLEAN') {
+    background-color: #6f42c1;  /* Purple color */
+    color: white;
+}
+.status-need-clean {
+    background-color: #6f42c1;  /* Purple color */
+    color: white;
 }
 
 .status-unavailable {

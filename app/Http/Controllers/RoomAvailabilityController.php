@@ -5,15 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Room;
 use App\Models\ChecklistItem;
 use Illuminate\Http\Request;
+use App\Models\RoomLog;  // Add this at the top of your controller
 
 class RoomAvailabilityController extends Controller
 {
     public function index()
     {
         $rooms = Room::with('checklistItems')->get();
-        $checklistItems = ChecklistItem::all();
-        return view('rooms.availability', compact('rooms', 'checklistItems'));
+        $roomLogs = RoomLog::with(['room', 'user'])
+            ->latest()
+            ->paginate(10);
+        return view('rooms.availability', compact('rooms', 'roomLogs'));
     }
+    
 
     public function storeRoom(Request $request)
     {
@@ -91,27 +95,25 @@ public function toggleBooking($roomId)
         ->with('success', $room->is_booked ? 'Room booked and checklist reset' : 'Room booking cancelled');
 }
 public function updateChecklist($roomId, Request $request)
-    {
-        $room = Room::findOrFail($roomId);
-        
-        // Prevent updates if room is booked
-        if ($room->is_booked) {
-            return redirect()->route('rooms.availability')
-                ->with('error', 'Cannot modify checklist while room is booked');
-        }
-
-        $checkedItems = $request->input('checklist', []);
-        
-        foreach ($room->checklistItems as $item) {
-            $room->checklistItems()->updateExistingPivot(
-                $item->id,
-                ['is_checked' => in_array($item->id, $checkedItems)]
-            );
-        }
-        
-        return redirect()->route('rooms.availability')
-            ->with('success', 'Checklist updated successfully');
+{
+    $room = Room::findOrFail($roomId);
+    $checkedItems = $request->input('checklist', []);
+    
+    foreach ($room->checklistItems as $item) {
+        $isChecked = in_array($item->id, $checkedItems);
+        $room->checklistItems()->updateExistingPivot(
+            $item->id,
+            ['is_checked' => $isChecked]
+        );
     }
+    
+    $this->logRoomAction($room, 'checklist_updated', [
+        'checked_items' => $checkedItems
+    ]);
+    
+    return redirect()->route('rooms.availability')
+        ->with('success', 'Checklist updated successfully');
+}
 
 
 
@@ -160,5 +162,15 @@ public function updateChecklist($roomId, Request $request)
         return redirect()->route('rooms.availability')
             ->with('success', 'Guest checked out and room reset successfully');
     }
+
+    private function logRoomAction($room, $action, $details = null)
+{
+    RoomLog::create([
+        'room_id' => $room->id,
+        'user_id' => auth()->id(),
+        'action' => $action,
+        'details' => $details
+    ]);
+}
 
 }

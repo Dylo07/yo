@@ -115,7 +115,41 @@
         </div>
     </div>
 </div>
-
+<!-- Room Logs Table -->
+<div class="card mt-4">
+    <div class="card-header bg-info text-white">
+        <h4 class="mb-0">Room Activity Logs</h4>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Room</th>
+                    <th>Action</th>
+                    <th>User</th>
+                    <th>Date & Time</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($roomLogs as $log)
+                <tr>
+                    <td>{{ $log->room->name }}</td>
+                    <td>{{ ucfirst(str_replace('_', ' ', $log->action)) }}</td>
+                    <td>{{ $log->user->name }}</td>
+                    <td>{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                    <td>
+                        @if($log->details)
+                            <small class="text-muted">{{ json_encode($log->details) }}</small>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        {{ $roomLogs->links() }}
+    </div>
+</div>
 <style>
 .form-check {
     margin-bottom: 0.5rem;

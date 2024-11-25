@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->call([App\Http\Controllers\RoomAvailabilityController::class, 'resetDailyChecks'])
+        ->dailyAt('00:00');
     }
 
     /**
@@ -29,4 +30,5 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
     }
+    
 }

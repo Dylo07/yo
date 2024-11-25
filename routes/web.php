@@ -13,7 +13,7 @@ use App\Http\Controllers\PersonController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCategoryController;
 use App\Http\Controllers\CompletedTaskController;
-
+use App\Http\Controllers\RoomAvailabilityController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -143,8 +143,19 @@ Route::resource('task-categories', TaskCategoryController::class);
 Route::get('completed-tasks', [CompletedTaskController::class, 'index'])->name('completed-tasks.index');
 
 
+// Room Availability Management Routes
+// Room Availability Management Routes
+Route::get('/rooms/availability', [RoomAvailabilityController::class, 'index'])->name('rooms.availability');
+Route::post('/rooms/store', [RoomAvailabilityController::class, 'storeRoom'])->name('rooms.store');
+Route::post('/rooms/checklist-items', [RoomAvailabilityController::class, 'storeChecklistItem'])->name('rooms.checklist.store');
+Route::post('/rooms/{room}/daily-check', [RoomAvailabilityController::class, 'dailyCheck'])->name('rooms.daily-check');
+Route::post('/rooms/{room}/toggle-booking', [RoomAvailabilityController::class, 'toggleBooking'])->name('rooms.toggle-booking');
+Route::post('/rooms/{room}/update-checklist', [RoomAvailabilityController::class, 'updateChecklist'])
+    ->name('rooms.update-checklist');
 
-
+    Route::post('/rooms/{room}/guest-in', [RoomAvailabilityController::class, 'guestIn'])->name('rooms.guest-in');
+    Route::post('/rooms/{room}/guest-out', [RoomAvailabilityController::class, 'guestOut'])->name('rooms.guest-out');
+    
 
 Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 

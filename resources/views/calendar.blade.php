@@ -289,6 +289,8 @@
             <div class="modal-footer">
                 <button type="button" id="editEvent" class="btn btn-primary">Edit</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="printConfirmation" class="btn btn-info">Print Confirmation</button>
+            
             </div>
         </div>
     </div>
@@ -649,6 +651,17 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
                     const advanceDate = info.event.extendedProps.advance_date 
         ? new Date(info.event.extendedProps.advance_date).toLocaleDateString() 
         : 'N/A';
+
+
+        // Add this to your existing event click handler
+document.getElementById("printConfirmation").onclick = function() {
+    const bookingId = info.event.id;
+    // Open in new window
+    window.open(`/bookings/${bookingId}/print`, '_blank');
+};
+
+
+
     // Set the title and body of the modal with event details
     document.getElementById("modalTitle").textContent = `Booking Details - ${info.event.title}`;
     document.getElementById("modalBody").innerHTML = `

@@ -104,7 +104,7 @@ Route::post('/bookings', [BookingController::class, 'store']);
 Route::put('/bookings/{id}', [BookingController::class, 'update']);
 Route::get('/available-rooms', [BookingController::class, 'availableRooms']);
 Route::get('/booking-logs', [BookingController::class, 'getLogs']);
-
+Route::get('/bookings/{id}/print', [BookingController::class, 'printConfirmation'])->name('bookings.print');
 
 // routes for inventory
 Route::get('/stock', [InventoryController::class, 'index'])->name('stock.index');

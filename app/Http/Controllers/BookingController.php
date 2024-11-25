@@ -217,6 +217,21 @@ class BookingController extends Controller
 }
 
 
-
+public function printConfirmation($id)
+{
+    $booking = Booking::with(['payments' => function($query) {
+        $query->orderBy('payment_date', 'asc'); // Order payments by date
+    }])->findOrFail($id);
+    // Get the latest payment
+    $latestPayment = $booking->payments->last();
+    
+    $data = [
+        'booking' => $booking,
+        'payment' => $latestPayment,
+        'isWedding' => $booking->function_type === 'Wedding'
+    ];
+    
+    return view('bookings.print-confirmation', $data);
+}
 
 };

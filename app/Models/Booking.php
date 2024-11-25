@@ -91,5 +91,15 @@ class Booking extends Model
 {
     return $this->belongsTo(User::class);
 }
+// Get latest payment
+public function getLatestPaymentAttribute()
+{
+    return $this->payments()->latest()->first();
+}
+
+
+
+
+
 
 }

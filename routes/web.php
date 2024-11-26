@@ -132,6 +132,7 @@ Route::resource('groups', GroupController::class);
 Route::resource('costs', CostController::class);
 Route::resource('persons', PersonController::class);
 
+
 // Task
 // Home Route
 

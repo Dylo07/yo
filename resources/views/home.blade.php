@@ -1,155 +1,96 @@
 @extends('layouts.app')
 
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
-                                       onclick="event.preventDefault();
-                                                     document.getElementById('logout-form').submit();">
-                                        {{ __('Logout') }}
-                                    </a>
-
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                                        @csrf
-                                    </form>
-                                </div>
-                            </li>
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-primary text-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fa fa-chart-bar me-2"></i>Service Charge Summary</h5>
+                        <select name="month" class="form-select w-auto" onchange="this.form.submit()" form="month-form">
+                            @foreach($months as $value => $label)
+                                <option value="{{ $value }}" {{ $selectedMonth == $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <form id="month-form" action="{{ route('home') }}" method="GET"></form>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info shadow-sm text-center">
+                        <h4 class="mb-0">Total S/C for {{ Carbon\Carbon::parse($selectedMonth)->format('F Y') }}: 
+                            <span class="fw-bold">Rs {{ number_format($serviceCharge, 2) }}</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-primary text-white p-3">
+                    <h5 class="mb-0"><i class="fa fa-th-large me-2"></i>Dashboard</h5>
+                </div>
                 <div class="card-body">
                     @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
+                        <div class="alert alert-success" role="alert">{{ session('status') }}</div>
                     @endif
 
-                    <div class="row text-center">
-                    
-                        
-
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{route('management')}}">
-        <h5>Management</h5>
-        <a class="thumbnail" href="{{route('management')}}">
-            <img class="img-responsive" width="50px" src="{{asset('image/management.svg')}}"/> 
-            
-    </a>
-</a>
-
-</div>
-
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{route('cashier')}}">
-    <h5>cashier</h5>
-        <a class="thumbnail" href="{{route('cashier')}}">
-            <img class="img-responsive" width="50px" src="{{asset('image/cashier.svg')}}"/> 
-            
-    </a>
-    </a>
-
-
-</div>
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{route('inventory')}}">   
-    <h5>Beer & Soft Drink stock  </h5>
-        <a class="thumbnail" href="{{route('inventory')}}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/bottle.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-
-@if(Auth::user()->checkAdmin())
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{route('report')}}">   
-    <h5>report</h5>
-        <a class="thumbnail" href="{{route('report')}}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/report.svg')}}"/> 
-            
-    </a>
-    </a>
-</div>
-
-
-@endif
-<!--  
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{route('pettycash')}}">   
-    <h5>Petty Cash</h5>
-        <a class="thumbnail" href="{{route('pettycash')}}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/Pettycash.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
--->
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{ url('/calendar') }}">   
-    <h5>Booking Calendar</h5>
-        <a class="thumbnail" href="{{ url('/calendar') }}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/calendar.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{ url('/stock') }}">   
-    <h5>Grocery Item Store</h5>
-        <a class="thumbnail" href="{{ url('/stock') }}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/food.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{ url('/inv-inventory') }}">   
-    <h5>Physical Item Inventory</h5>
-        <a class="thumbnail" href="{{ url('/inv-inventory') }}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/inv.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{ url('/costs') }}">   
-    <h5>Daily Expense</h5>
-        <a class="thumbnail" href="{{ url('/costs') }}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/expense.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{ url('/tasks') }}">   
-    <h5>Daily Tasks</h5>
-        <a class="thumbnail" href="{{ url('/tasks') }}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/task.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-<div class="col-lg-4 col-md-4 col-xs-4 thumb">
-<a href="{{ url('/rooms/availability') }}">   
-    <h5>Room Availability</h5>
-        <a class="thumbnail" href="{{ url('/rooms/availability') }}">
-            <img class="img-responsive"  width="50px" src="{{asset('image/room.svg')}}"/> 
-           
-    </a>
-    </a>
-</div>
-
+                    <div class="row g-4">
+                        @foreach([
+                            ['route' => 'management', 'title' => 'Management', 'icon' => 'management'],
+                            ['route' => 'cashier', 'title' => 'Cashier', 'icon' => 'cashier'],
+                            ['route' => 'inventory', 'title' => 'Beer & Soft Drink Stock', 'icon' => 'bottle'],
+                            ['route' => 'report', 'title' => 'Report', 'icon' => 'report', 'admin' => true],
+                            ['url' => '/calendar', 'title' => 'Booking Calendar', 'icon' => 'calendar'],
+                            ['url' => '/stock', 'title' => 'Grocery Item Store', 'icon' => 'food'],
+                            ['url' => '/inv-inventory', 'title' => 'Physical Item Inventory', 'icon' => 'inv'],
+                            ['url' => '/costs', 'title' => 'Daily Expense', 'icon' => 'expense'],
+                            ['url' => '/tasks', 'title' => 'Daily Tasks', 'icon' => 'task'],
+                            ['url' => '/rooms/availability', 'title' => 'Room Availability', 'icon' => 'room']
+                        ] as $item)
+                            @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))
+                                <div class="col-lg-4 col-md-6">
+                                    <a href="{{ isset($item['route']) ? route($item['route']) : $item['url'] }}" 
+                                       class="text-decoration-none">
+                                        <div class="card h-100 shadow-hover">
+                                            <div class="card-body text-center p-4">
+                                                <img class="mb-3" width="60" src="{{ asset('image/' . $item['icon'] . '.svg') }}" alt="{{ $item['title'] }}"/>
+                                                <h5 class="text-primary mb-0">{{ $item['title'] }}</h5>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #000000, #000000);
+}
+.shadow-hover {
+    transition: all 0.3s ease;
+}
+.shadow-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+}
+.form-select {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+.form-select option {
+    background-color: white;
+    color: black;
+}
+</style>
 @endsection

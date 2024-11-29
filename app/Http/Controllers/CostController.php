@@ -183,20 +183,22 @@ class CostController extends Controller
     $dailyTotal = $dailyCosts->sum('amount');
     $transactionCount = $monthlyCosts->count();
 
-    // Calculate category breakdown
+    // Calculate category breakdown with proper sorting
     $categoryBreakdown = $monthlyCosts
         ->groupBy('group.name')
         ->map(function ($costs) {
             return [
-                'name' => $costs->first()->group->name,
+                'name' => $costs->first()->group->name ?? 'N/A',
                 'total' => $costs->sum('amount'),
                 'count' => $costs->count()
             ];
         })
-        ->sortByDesc('total')
+        ->sortByDesc(function($category) {
+            return $category['total'];
+        })
         ->values();
 
-    // Calculate average transaction amount with proper formatting
+    // Calculate average transaction amount
     $avgTransaction = $transactionCount > 0 
         ? round($monthlyTotal / $transactionCount, 2) 
         : 0;
@@ -211,44 +213,70 @@ class CostController extends Controller
         ? round((($monthlyTotal - $previousMonthTotal) / $previousMonthTotal) * 100, 1)
         : 0;
 
+    // Get top category data safely
+    $topCategory = $categoryBreakdown->first();
+
     return [
         'total_amount' => $monthlyTotal,
         'total_transactions' => $transactionCount,
         'avg_transaction' => $avgTransaction,
         'trend_percentage' => $trend_percentage,
         'category_breakdown' => $categoryBreakdown,
-        'daily_total' => $dailyTotal
+        'daily_total' => $dailyTotal,
+        'top_category' => [
+            'name' => $topCategory ? $topCategory['name'] : 'No Data',
+            'total' => $topCategory ? $topCategory['total'] : 0,
+            'count' => $topCategory ? $topCategory['count'] : 0
+        ]
     ];
 }
-    private function prepareChartData($costs)
-    {
-        // Daily expenses chart data
-        $dailyExpenses = $costs->groupBy(function($cost) {
-            return Carbon::parse($cost->cost_date)->format('Y-m-d');
+private function prepareChartData($costs)
+{
+    // Debug line to check costs
+    \Log::debug('Preparing chart data for costs:', [
+        'count' => $costs->count(),
+        'first_cost' => $costs->first()
+    ]);
+
+    try {
+        // Daily expenses chart data - ensure it returns a collection
+        $dailyExpenses = collect($costs->groupBy(function($cost) {
+            return $cost->cost_date->format('Y-m-d');
         })->map(function($dayCosts) {
             return [
-                'date' => Carbon::parse($dayCosts->first()->cost_date)->format('M d'),
+                'date' => $dayCosts->first()->cost_date->format('M d'),
                 'total' => $dayCosts->sum('amount')
             ];
-        })->sortKeys()->values();
+        })->sortKeys());
 
-        // Category distribution chart data
-        $categoryDistribution = $costs->groupBy('group.name')
+        // Category distribution chart data - ensure it returns a collection
+        $categoryDistribution = collect($costs->groupBy('group.name')
             ->map(function($categoryCosts, $categoryName) {
                 return [
                     'category' => $categoryName,
                     'total' => $categoryCosts->sum('amount')
                 ];
             })
-            ->sortByDesc('total')
-            ->values();
+            ->sortByDesc('total'));
+
+        // Debug the prepared data
+        \Log::debug('Chart data prepared:', [
+            'daily_expenses' => $dailyExpenses->toArray(),
+            'category_distribution' => $categoryDistribution->toArray()
+        ]);
 
         return [
             'dailyExpenses' => $dailyExpenses,
             'categoryDistribution' => $categoryDistribution
         ];
+    } catch (\Exception $e) {
+        \Log::error('Error preparing chart data: ' . $e->getMessage());
+        return [
+            'dailyExpenses' => collect(),
+            'categoryDistribution' => collect()
+        ];
     }
-
+}
     /**
      * Export expenses to CSV.
      */

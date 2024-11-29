@@ -33,15 +33,21 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Top Category</h5>
-                    <h3 class="card-text">{{ $analytics['category_breakdown']->first()?->name ?? 'N/A' }}</h3>
-                    <small>Rs. {{ number_format($analytics['category_breakdown']->first()?->total ?? 0, 2) }}</small>
-                </div>
-            </div>
+        <!-- In your index.blade.php, update the Top Category card -->
+<div class="col-md-3">
+    <div class="card bg-info text-white">
+        <div class="card-body">
+            <h5 class="card-title">Top Category</h5>
+            <h3 class="card-text">{{ $analytics['top_category']['name'] }}</h3>
+            @if($analytics['top_category']['total'] > 0)
+                <small>Rs. {{ number_format($analytics['top_category']['total'], 2) }} 
+                      ({{ $analytics['top_category']['count'] }} transactions)</small>
+            @else
+                <small>No expenses recorded</small>
+            @endif
         </div>
+    </div>
+</div>
         <div class="col-md-3">
             <div class="card bg-warning text-white">
                 <div class="card-body">
@@ -257,75 +263,111 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Category Distribution Chart
-    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-    new Chart(categoryCtx, {
-        type: 'doughnut',
-        data: {
-            labels: {!! json_encode($chartData['categoryDistribution']->pluck('category')) !!},
-            datasets: [{
-                data: {!! json_encode($chartData['categoryDistribution']->pluck('total')) !!},
-                backgroundColor: [
-                    '#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B',
-                    '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#D946EF'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                title: {
-                    display: true,
-                    text: 'Expense Distribution by Category'
-                }
-            }
-        }
+    
+    
+    
+    
+    // Debug logs to check if Chart.js is loaded
+    console.log('Chart.js loaded:', typeof Chart !== 'undefined');
+    
+    // Debug logs to check canvas elements
+    console.log('Category Chart Canvas:', document.getElementById('categoryChart'));
+    console.log('Daily Chart Canvas:', document.getElementById('dailyChart'));
+
+    // Debug logs for chart data
+    console.log('Category Distribution Data:', {
+        labels: {!! json_encode($chartData['categoryDistribution']->pluck('category')) !!},
+        data: {!! json_encode($chartData['categoryDistribution']->pluck('total')) !!}
     });
 
-    // Daily Expenses Chart
-    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-    new Chart(dailyCtx, {
-        type: 'bar',
-        data: {
-            labels: {!! json_encode($chartData['dailyExpenses']->pluck('date')) !!},
-            datasets: [{
-                label: 'Daily Expenses',
-                data: {!! json_encode($chartData['dailyExpenses']->pluck('total')) !!},
-                backgroundColor: '#3B82F6',
-                borderColor: '#2563EB',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return 'Rs. ' + value.toLocaleString();
-                        }
+    console.log('Daily Expenses Data:', {
+        labels: {!! json_encode($chartData['dailyExpenses']->pluck('date')) !!},
+        data: {!! json_encode($chartData['dailyExpenses']->pluck('total')) !!}
+    });
+
+    try {
+        // Category Distribution Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        console.log('Category Context:', categoryCtx);
+        
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {!! json_encode($chartData['categoryDistribution']->pluck('category')) !!},
+                datasets: [{
+                    data: {!! json_encode($chartData['categoryDistribution']->pluck('total')) !!},
+                    backgroundColor: [
+                        '#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B',
+                        '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#D946EF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Expense Distribution by Category'
                     }
                 }
+            }
+        });
+        console.log('Category Chart created successfully');
+    } catch (error) {
+        console.error('Error creating category chart:', error);
+    }
+
+    try {
+        // Daily Expenses Chart
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        console.log('Daily Context:', dailyCtx);
+        
+        const dailyChart = new Chart(dailyCtx, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode($chartData['dailyExpenses']->pluck('date')) !!},
+                datasets: [{
+                    label: 'Daily Expenses',
+                    data: {!! json_encode($chartData['dailyExpenses']->pluck('total')) !!},
+                    backgroundColor: '#3B82F6',
+                    borderColor: '#2563EB',
+                    borderWidth: 1
+                }]
             },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Daily Expenses Trend'
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rs. ' + value.toLocaleString();
+                            }
+                        }
+                    }
                 },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Rs. ' + context.raw.toLocaleString();
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daily Expenses Trend'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Rs. ' + context.raw.toLocaleString();
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+        console.log('Daily Chart created successfully');
+    } catch (error) {
+        console.error('Error creating daily chart:', error);
+    }
 
     // Initialize collapse functionality
     $('.clickable').click(function() {

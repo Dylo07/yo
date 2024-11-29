@@ -29,9 +29,14 @@
             <input type="number" name="amount" id="amount" class="form-control" placeholder="Enter amount" required>
         </div>
         <div class="form-group">
-            <label for="cost_date">Date</label>
-            <input type="date" name="cost_date" id="cost_date" class="form-control" required>
-        </div>
+    <label for="cost_date">Date</label>
+    <input type="date" 
+           name="cost_date" 
+           id="cost_date" 
+           class="form-control" 
+           value="{{ date('Y-m-d') }}" 
+           readonly>
+</div>
         <button type="submit" class="btn btn-primary mt-3">Save</button>
         <a href="{{ route('costs.index') }}" class="btn btn-secondary mt-3">Cancel</a>
     </form>

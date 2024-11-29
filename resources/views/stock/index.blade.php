@@ -93,51 +93,66 @@
 
     <!-- Stock Table -->
     @foreach($groups as $group)
-        @if(!request('category_id') || request('category_id') == $group->id)
-            <h4>{{ $group->name }}</h4>
-            <table class="table table-bordered">
-                <thead>
+    @if(!request('category_id') || request('category_id') == $group->id)
+        <h4>{{ $group->name }}</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    @for($i = 1; $i <= 31; $i++)
+                        <th>{{ $i }}</th>
+                    @endfor
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($group->items as $item)
                     <tr>
-                        <th>Item</th>
+                        <td>{{ $item->name }}</td>
                         @for($i = 1; $i <= 31; $i++)
-                            <th>{{ $i }}</th>
+                        @php
+    $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
+    $inventory = $item->inventory->firstWhere('stock_date', $date);
+    
+    // Get stock level
+    if ($inventory) {
+        $displayStock = $inventory->stock_level;
+    } else {
+        $previousInventory = $item->inventory
+            ->where('stock_date', '<', $date)
+            ->sortByDesc('stock_date')
+            ->first();
+        $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
+    }
+    
+    // Get stock movements
+    $stockLogs = $logs->where('item_id', $item->id)
+                     ->filter(function($log) use ($date) {
+                         return $log->created_at->format('Y-m-d') === $date;
+                     });
+    
+    $additions = $stockLogs->where('action', 'add')->sum('quantity');
+    $removals = $stockLogs->where('action', 'remove')->sum('quantity');
+@endphp
+                            <td>
+                                @if($date <= now()->toDateString())
+                                    <div>{{ $displayStock }}</div>
+                                    @if($additions)
+                                        <div class="text-success">+{{ $additions }}</div>
+                                    @endif
+                                    @if($removals)
+                                        <div class="text-danger">-{{ $removals }}</div>
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
                         @endfor
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach($group->items as $item)
-                        <tr>
-                            <td>{{ $item->name }}</td>
-                            @for($i = 1; $i <= 31; $i++)
-    @php
-        $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
-
-        // Get stock for this date
-        $inventory = $item->inventory->firstWhere('stock_date', $date);
-
-        // Determine the stock level to display
-                                if ($inventory) {
-                                    $displayStock = $inventory->stock_level;
-                                } else {
-                                    $previousInventory = $item->inventory->where('stock_date', '<', $date)->sortByDesc('stock_date')->first();
-                                    $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-                                }
-    @endphp
-    <td>
-        @if($date <= now()->toDateString())
-            {{ $displayStock }}
-        @else
-            -
-        @endif
-    </td>
-@endfor
-
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
-    @endforeach
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+@endforeach
 
     <!-- Log Details Section -->
     <h3 class="mt-5">Stock Log Details</h3>
@@ -167,7 +182,7 @@
     </table>
     <!-- Add Pagination Links -->
     <div class="d-flex justify-content-center">
-    {{ $logs->links('pagination::bootstrap-4') }}
+    {{ $recentLogs->links('pagination::bootstrap-4') }}
     </div>
     <a href="{{ route('stock.test-propagation') }}" class="btn btn-info">
     Test Stock Propagation
@@ -207,3 +222,20 @@
 
 
 @endsection
+<style>
+td {
+    padding: 8px !important;
+    font-size: 0.9em;
+}
+td div {
+    line-height: 1.2;
+}
+.text-success {
+    color: #28a745 !important;
+    font-weight: bold;
+}
+.text-danger {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+</style>

@@ -18,23 +18,28 @@ class InventoryController extends Controller
         $currentMonth = $request->input('month', now()->month);
         $currentYear = $request->input('year', now()->year);
         $categoryId = $request->input('category_id');
-
+    
         $groups = ProductGroup::with(['items.inventory' => function ($query) use ($currentYear, $currentMonth) {
             $query->whereYear('stock_date', $currentYear)->whereMonth('stock_date', $currentMonth);
         }]);
-
+    
         if ($categoryId) {
             $groups = $groups->where('id', $categoryId);
         }
-
+    
         $groups = $groups->get();
-
+    
+        // Get all logs for the current month
         $logs = StockLog::with(['user', 'item'])
+            ->whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
+            ->get();
+    
+        $recentLogs = StockLog::with(['user', 'item'])
             ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->appends($request->except('page'));
-
-        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
+            ->paginate(10);
+    
+        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs', 'recentLogs'));
     }
 
     public function store(Request $request)
@@ -67,18 +72,18 @@ class InventoryController extends Controller
         $startDateCarbon = Carbon::parse($startDate);
         
         // Get the end of current month as the maximum date for propagation
-        $endOfMonth = Carbon::parse($startDate)->endOfMonth();
+        $endOfNextMonth = Carbon::parse($startDate)->addMonths(3)->endOfMonth();
         
         // Delete any existing future records to prevent conflicts
         Inventory::where('item_id', $itemId)
             ->where('stock_date', '>', $startDate)
-            ->where('stock_date', '<=', $endOfMonth)
+            ->where('stock_date', '<=', $endOfNextMonth)
             ->delete();
             
         // Propagate the current stock level to all future dates until end of month
         $currentDate = $startDateCarbon->copy()->addDay();
         
-        while ($currentDate->lte($endOfMonth)) {
+        while ($currentDate->lte($endOfNextMonth)) {
             Inventory::create([
                 'item_id' => $itemId,
                 'stock_date' => $currentDate->toDateString(),
@@ -207,44 +212,50 @@ class InventoryController extends Controller
 
 
     public function checkStockPropagation(Request $request)
-    {
-        // If no dates provided, set default range (today to next 7 days)
-        $startDate = $request->input('start_date', now()->toDateString());
-        $endDate = $request->input('end_date', now()->addDays(7)->toDateString());
+{
+    $startDate = $request->input('start_date', now()->toDateString());
+    $endDate = $request->input('end_date', now()->addDays(7)->toDateString());
+    $groups = ProductGroup::with('items')->get();
 
-        // Get all groups and items for the dropdown
-        $groups = ProductGroup::with('items')->get();
+    if ($request->has('item_id')) {
+        $request->validate([
+            'item_id' => 'required|exists:items,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
 
-        // If an item is selected, get its stock data
-        if ($request->has('item_id')) {
-            $request->validate([
-                'item_id' => 'required|exists:items,id',
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
+        $item = Item::findOrFail($request->item_id);
+        
+        // Get the last known stock level before the start date
+        $lastKnownStock = Inventory::where('item_id', $request->item_id)
+            ->where('stock_date', '<=', $request->start_date)
+            ->orderBy('stock_date', 'desc')
+            ->first();
+
+        $stockLevel = $lastKnownStock ? $lastKnownStock->stock_level : 0;
+        
+        // Generate date range with this stock level
+        $stockLevels = collect();
+        $currentDate = Carbon::parse($request->start_date);
+        $endDate = Carbon::parse($request->end_date);
+        
+        while ($currentDate <= $endDate) {
+            $dateRecord = Inventory::where('item_id', $request->item_id)
+                ->where('stock_date', $currentDate->toDateString())
+                ->first();
+                
+            $stockLevels->push([
+                'date' => $currentDate->toDateString(),
+                'stock_level' => $dateRecord ? $dateRecord->stock_level : $stockLevel
             ]);
-
-            $item = Item::findOrFail($request->item_id);
             
-            $stockLevels = Inventory::where('item_id', $request->item_id)
-                ->whereBetween('stock_date', [$request->start_date, $request->end_date])
-                ->orderBy('stock_date')
-                ->get()
-                ->map(function ($inventory) {
-                    return [
-                        'date' => $inventory->stock_date,
-                        'stock_level' => $inventory->stock_level,
-                    ];
-                });
-
-            if ($request->wantsJson()) {
-                return response()->json($stockLevels);
-            }
-
-            return view('stock.propagation-test', compact('stockLevels', 'item', 'groups', 'startDate', 'endDate'));
+            $currentDate->addDay();
         }
 
-        // Initial page load without item selection
-        return view('stock.propagation-test', compact('groups', 'startDate', 'endDate'));
+        return view('stock.propagation-test', compact('stockLevels', 'item', 'groups', 'startDate', 'endDate'));
     }
+
+    return view('stock.propagation-test', compact('groups', 'startDate', 'endDate'));
+}
    
 }

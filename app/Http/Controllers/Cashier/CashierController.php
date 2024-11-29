@@ -128,62 +128,51 @@ class CashierController extends Controller
     private function getSaleDetails($sale_id){
         // list all saledetail
         $html = '<p>Sale ID: '.$sale_id.'</p>';
-        $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
-        $html .= '<div class="table-responsive-md" tabindex ="-1" style="overflow-y:scroll; min-height: 400px;  border: 1px solid #343A40">
-        <table class="table table-stripped table-dark">
-        <thead>
-            <tr>
-                
-                <th scope="col">Menu</th>
-                <th scope="col">Quantity</th>
-                <th scope="col">Price</th>
-                <th scope="col">Total</th>
-                <th scope="col">Status</th>
-            </tr>
-        </thead>
-        <tbody>';
-        $showBtnPayment = true;
-        foreach($saleDetails as $saleDetail){
-
-            $decreaseButton ='<button class="btn btn-danger btn-sm btn-decrease-quantity" disabled>-</button>';
-
-            if($saleDetail->quantity > 1) {
-                /* 
-                $decreaseButton = '<button data-id="'.$saleDetail->id.'" class="btn btn-danger btn-sm btn-decrease-quantity">-</button>';
-                <button data-id="'.$saleDetail->id.'" class="btn btn-primary btn-sm btn-increase-quantity">+</button>
-                */
+    $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
+    $html .= '<div class="table-responsive-md" tabindex ="-1" style="overflow-y:scroll; min-height: 400px;  border: 1px solid #343A40">
+    <table class="table table-stripped table-dark">
+    <thead>
+        <tr>
+            <th scope="col">Menu</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Price</th>
+            <th scope="col">Total</th>
+            <th scope="col">Status</th>
+        </tr>
+    </thead>
+    <tbody>';
+    $showBtnPayment = true;
+    foreach($saleDetails as $saleDetail){
+        $html .= '
+        <tr>
+            <td>'.$saleDetail->menu_name.'</td>
+            <td><input type="number" tabindex ="-1" class="change-quantity" data-id="'.$saleDetail->id.'" 
+                       style="width:50px;" value="'. $saleDetail->quantity.'"'. 
+                       ($saleDetail->status == "confirm" ? ' disabled' : '') .'></td>
+            <td>'.$saleDetail->menu_price.'</td>
+            <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>';
+            if($saleDetail->status == "noConfirm"){
+                $showBtnPayment = false;
+                $html .= '<td><a data-id="'.$saleDetail->id.'" class="btn btn-danger btn-delete-saledetail"><i class="far fa-trash-alt"></a></td>';
+            }else{
+                $html .= '<td><i class="fas fa-check-circle"></i></td>';
             }
-          
-            $html .= '
-            <tr>
-                
-                <td>'.$saleDetail->menu_name.'</td>
-                <td>  <input type="number" tabindex ="-1" class="change-quantity" data-id="'.$saleDetail->id.'" style="width:50px;" value="'. $saleDetail->quantity.'"></td>
-                <td>'.$saleDetail->menu_price.'</td>
-                <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>';
-                if($saleDetail->status == "noConfirm"){
-                    $showBtnPayment = false;
-                    $html .= '<td><a data-id="'.$saleDetail->id.'" class="btn btn-danger btn-delete-saledetail"><i class="far fa-trash-alt"></a></td>';
-                }else{ // status == "confirm"
-                    $html .= '<td><i class="fas fa-check-circle"></i></td>';
-                }
-            $html .= '</tr>';
-        }
-        $html .='</tbody></table></div>';
+        $html .= '</tr>';
+    }
+    $html .='</tbody></table></div>';
 
-        $sale = Sale::find($sale_id);
-        $html .= '<hr>';
-        $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
+    $sale = Sale::find($sale_id);
+    $html .= '<hr>';
+    $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
 
-        if($showBtnPayment){
-            $html .= '<button  data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
-            $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot"">Print KOT</button>';
-        }else{
-            $html .= '<button  data-id="'.$sale_id.'"  class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
-        }
-      
+    if($showBtnPayment){
+        $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
+        $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot"">Print KOT</button>';
+    }else{
+        $html .= '<button data-id="'.$sale_id.'"  class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
+    }
 
-        return $html;
+    return $html;
     }
 
     public function increaseQuantity(Request $request){

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Sale;
+use App\Models\RoomBooking;
 use Carbon\Carbon;
 use DB;
 
@@ -49,7 +50,17 @@ class HomeController extends Controller
             $months[$date->format('Y-m')] = $date->format('F Y');
         }
 
-        return view('home', compact('serviceCharge', 'months', 'selectedMonth'));
+        $selectedDate = $request->get('date', date('Y-m-d'));
+    
+        $bookedRooms = RoomBooking::with('room')
+            ->whereDate('guest_in_time', '<=', $selectedDate)
+            ->where(function($query) use ($selectedDate) {
+                $query->whereNull('guest_out_time')
+                      ->orWhereDate('guest_out_time', '>=', $selectedDate);
+            })
+            ->get();
+    
+        return view('home', compact('serviceCharge', 'months', 'selectedMonth', 'bookedRooms'));
     }
 
 }

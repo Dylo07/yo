@@ -5,10 +5,10 @@
     <div class="row">
         <div class="col-12 mb-4">
             <div class="card shadow-sm">
-                <div class="card-header bg-gradient-primary text-white p-3">
+                <div class="card-header bg-black text-white p-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fa fa-chart-bar me-2"></i>Service Charge Summary</h5>
-                        <select name="month" class="form-select w-auto" onchange="this.form.submit()" form="month-form">
+                        <h5 class="mb-0">Service Charge Summary</h5>
+                        <select name="month" class="form-select-dark w-auto" onchange="this.form.submit()" form="month-form">
                             @foreach($months as $value => $label)
                                 <option value="{{ $value }}" {{ $selectedMonth == $value ? 'selected' : '' }}>
                                     {{ $label }}
@@ -18,8 +18,8 @@
                         <form id="month-form" action="{{ route('home') }}" method="GET"></form>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info shadow-sm text-center">
+                <div class="card-body bg-light">
+                    <div class="alert alert-dark shadow-sm text-center">
                         <h4 class="mb-0">Total S/C for {{ Carbon\Carbon::parse($selectedMonth)->format('F Y') }}: 
                             <span class="fw-bold">Rs {{ number_format($serviceCharge, 2) }}</span>
                         </h4>
@@ -30,8 +30,8 @@
 
         <div class="col-12">
             <div class="card shadow-sm">
-                <div class="card-header bg-gradient-primary text-white p-3">
-                    <h5 class="mb-0"><i class="fa fa-th-large me-2"></i>Dashboard</h5>
+                <div class="card-header bg-black text-white p-3">
+                    <h5 class="mb-0">Dashboard</h5>
                 </div>
                 <div class="card-body">
                     @if (session('status'))
@@ -55,10 +55,10 @@
                                 <div class="col-lg-4 col-md-6">
                                     <a href="{{ isset($item['route']) ? route($item['route']) : $item['url'] }}" 
                                        class="text-decoration-none">
-                                        <div class="card h-100 shadow-hover">
+                                        <div class="card h-100 menu-card">
                                             <div class="card-body text-center p-4">
                                                 <img class="mb-3" width="60" src="{{ asset('image/' . $item['icon'] . '.svg') }}" alt="{{ $item['title'] }}"/>
-                                                <h5 class="text-primary mb-0">{{ $item['title'] }}</h5>
+                                                <h5 class="text-dark mb-0">{{ $item['title'] }}</h5>
                                             </div>
                                         </div>
                                     </a>
@@ -70,27 +70,104 @@
             </div>
         </div>
     </div>
+
+    <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+            <h5 class="mb-0">Today's Booked Rooms</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date" 
+                       name="date" 
+                       class="form-control form-control-sm me-2 dark-input" 
+                       value="{{ request('date', date('Y-m-d')) }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+            </form>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Room Name</th>
+                            <th>Guest In</th>
+                            <th>Guest Out</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($bookedRooms as $booking)
+                            <tr class="{{ $booking->spans_multiple_days ? 'table-warning' : '' }}">
+                                <td class="fw-bold">{{ $booking->room->name }}</td>
+                                <td>{{ $booking->guest_in_time->format('Y-m-d H:i:s') }}</td>
+                                <td>{{ $booking->guest_out_time ? $booking->guest_out_time->format('Y-m-d H:i:s') : 'Not checked out' }}</td>
+                                <td>
+                                    @if($booking->spans_multiple_days)
+                                        <span class="badge bg-warning text-dark">Multiple Days</span>
+                                    @else
+                                        <span class="badge bg-dark">Same Day</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    No rooms booked for selected date
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-.bg-gradient-primary {
-    background: linear-gradient(45deg, #000000, #000000);
+.bg-black {
+    background-color: #000000;
 }
-.shadow-hover {
+
+.form-select-dark {
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+}
+
+.form-select-dark option {
+    background-color: #000000;
+    color: white;
+}
+
+.dark-input {
+    background-color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.menu-card {
     transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.1);
 }
-.shadow-hover:hover {
+
+.menu-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    border: 1px solid rgba(0,0,0,0.2);
 }
-.form-select {
-    background-color: rgba(255,255,255,0.2);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.3);
+
+.card {
+    border-radius: 0.5rem;
+    overflow: hidden;
 }
-.form-select option {
-    background-color: white;
-    color: black;
+
+.alert-dark {
+    background-color: rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.1);
+    color: #000000;
+}
+
+.table-dark {
+    background-color: #000000;
 }
 </style>
 @endsection

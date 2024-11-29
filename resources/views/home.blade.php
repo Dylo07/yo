@@ -119,6 +119,71 @@
             </div>
         </div>
     </div>
+
+    <div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <h5 class="mb-0">Pending Tasks</h5>
+        <a href="{{ route('tasks.create') }}" class="btn btn-sm btn-outline-light">
+            Add Task
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Date Added</th>
+                        <th width="30%">Task</th>
+                        <th>Category</th>
+                        <th>Person Incharge</th>
+                        <th>Priority</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($pendingTasks as $task)
+                    <tr>
+                        <td>{{ $task->id }}</td>
+                        <td>{{ $task->user }}</td>
+                        <td>{{ $task->date_added }}</td>
+                        <td class="task-cell">{{ $task->task }}</td>
+                        <td>{{ $task->taskCategory->name }}</td>
+                        <td>{{ $task->person_incharge }}</td>
+                        <td>
+                            @if($task->priority_order == 'High')
+                                <span class="badge bg-danger">High</span>
+                            @elseif($task->priority_order == 'Medium')
+                                <span class="badge bg-warning text-dark">Medium</span>
+                            @else
+                                <span class="badge bg-success">Low</span>
+                            @endif
+                        </td>
+                        <td>
+                            <form action="{{ route('tasks.updateStatus', $task->id) }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="is_done" value="1">
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    Complete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            No pending tasks found
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
 </div>
 
 <style>
@@ -168,6 +233,16 @@
 
 .table-dark {
     background-color: #000000;
+}
+
+.task-cell {
+    background-color: #ffffcc;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.table td, .table th {
+    vertical-align: middle;
 }
 </style>
 @endsection

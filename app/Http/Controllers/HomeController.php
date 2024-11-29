@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\RoomBooking;
+use App\Models\Task;
 use Carbon\Carbon;
 use DB;
 
@@ -60,7 +61,11 @@ class HomeController extends Controller
             })
             ->get();
     
-        return view('home', compact('serviceCharge', 'months', 'selectedMonth', 'bookedRooms'));
+            $pendingTasks = Task::with('taskCategory')
+            ->where('is_done', false)
+            ->get();
+
+return view('home', compact('serviceCharge', 'months', 'selectedMonth', 'bookedRooms', 'pendingTasks'));
     }
 
 }

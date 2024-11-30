@@ -34,7 +34,7 @@
     </form>
 
     <!-- Stock Update Section -->
-    <h3>Update Today’s Stock</h3>
+    <h3>Update Today's Stock</h3>
     <form action="{{ route('stock.update') }}" method="POST" class="mb-4">
         @csrf
         <div class="mb-3">
@@ -67,7 +67,7 @@
             <button type="submit" name="action" value="add" class="btn btn-success">Add</button>
             <button type="submit" name="action" value="remove" class="btn btn-danger">Remove</button>
         </div>
-          </form>
+    </form>
 
     <!-- Stock Overview Section -->
     <h3 class="mt-5">Stock Overview for {{ DateTime::createFromFormat('!m', $currentMonth)->format('F') }} {{ $currentYear }}</h3>
@@ -93,66 +93,74 @@
 
     <!-- Stock Table -->
     @foreach($groups as $group)
-    @if(!request('category_id') || request('category_id') == $group->id)
-        <h4>{{ $group->name }}</h4>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    @for($i = 1; $i <= 31; $i++)
-                        <th>{{ $i }}</th>
-                    @endfor
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($group->items as $item)
+        @if(!request('category_id') || request('category_id') == $group->id)
+            <h4>{{ $group->name }}</h4>
+            <table class="table table-bordered">
+                <thead>
                     <tr>
-                        <td>{{ $item->name }}</td>
+                        <th>Item</th>
                         @for($i = 1; $i <= 31; $i++)
-                        @php
-    $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
-    $inventory = $item->inventory->firstWhere('stock_date', $date);
-    
-    // Get stock level
-    if ($inventory) {
-        $displayStock = $inventory->stock_level;
-    } else {
-        $previousInventory = $item->inventory
-            ->where('stock_date', '<', $date)
-            ->sortByDesc('stock_date')
-            ->first();
-        $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-    }
-    
-    // Get stock movements
-    $stockLogs = $logs->where('item_id', $item->id)
-                     ->filter(function($log) use ($date) {
-                         return $log->created_at->format('Y-m-d') === $date;
-                     });
-    
-    $additions = $stockLogs->where('action', 'add')->sum('quantity');
-    $removals = $stockLogs->where('action', 'remove')->sum('quantity');
-@endphp
-                            <td>
-                                @if($date <= now()->toDateString())
-                                    <div>{{ $displayStock }}</div>
-                                    @if($additions)
-                                        <div class="text-success">+{{ $additions }}</div>
-                                    @endif
-                                    @if($removals)
-                                        <div class="text-danger">-{{ $removals }}</div>
-                                    @endif
-                                @else
-                                    -
-                                @endif
-                            </td>
+                            <th>{{ $i }}</th>
                         @endfor
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-@endforeach
+                </thead>
+                <tbody>
+                    @foreach($group->items as $item)
+                        <tr>
+                            <td>{{ $item->name }}</td>
+                            @for($i = 1; $i <= 31; $i++)
+                                @php
+                                    $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
+                                    $inventory = $item->inventory->firstWhere('stock_date', $date);
+                                    
+                                    // Get stock level
+                                    if ($inventory) {
+                                        $displayStock = $inventory->stock_level;
+                                    } else {
+                                        // Look for the most recent stock level before this date
+                                        $previousInventory = $item->inventory
+                                            ->where('stock_date', '<', $date)
+                                            ->sortByDesc('stock_date')
+                                            ->first();
+                                        
+                                        // If we're on the first day of the month and no record exists,
+                                        // use the last day of previous month's stock level
+                                        if ($i === 1 && !$inventory && $previousInventory) {
+                                            $displayStock = $previousInventory->stock_level;
+                                        } else {
+                                            $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
+                                        }
+                                    }
+                                    
+                                    // Get stock movements
+                                    $stockLogs = $logs->where('item_id', $item->id)
+                                                     ->filter(function($log) use ($date) {
+                                                         return $log->created_at->format('Y-m-d') === $date;
+                                                     });
+                                    
+                                    $additions = $stockLogs->where('action', 'add')->sum('quantity');
+                                    $removals = $stockLogs->where('action', 'remove')->sum('quantity');
+                                @endphp
+                                <td>
+                                    @if($date <= now()->toDateString())
+                                        <div>{{ $displayStock }}</div>
+                                        @if($additions)
+                                            <div class="text-success">+{{ $additions }}</div>
+                                        @endif
+                                        @if($removals)
+                                            <div class="text-danger">-{{ $removals }}</div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            @endfor
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    @endforeach
 
     <!-- Log Details Section -->
     <h3 class="mt-5">Stock Log Details</h3>
@@ -180,48 +188,50 @@
             @endforeach
         </tbody>
     </table>
+
     <!-- Add Pagination Links -->
     <div class="d-flex justify-content-center">
-    {{ $recentLogs->links('pagination::bootstrap-4') }}
+        {{ $recentLogs->links('pagination::bootstrap-4') }}
     </div>
+
     <a href="{{ route('stock.test-propagation') }}" class="btn btn-info">
-    Test Stock Propagation
-</a>
-<!-- Month and Year Selection Form -->
-<form action="{{ route('stock.monthly') }}" method="GET" class="mb-4">
-    <div class="row">
-        <div class="col-md-3">
-            <label for="month" class="form-label">Select Month</label>
-            <select name="month" id="month" class="form-select">
-                @foreach(range(1, 12) as $m)
-                    @php
-                        $monthNum = str_pad($m, 2, '0', STR_PAD_LEFT);
-                        $dateObj = DateTime::createFromFormat('!m', $monthNum);
-                    @endphp
-                    <option value="{{ $monthNum }}" {{ $currentMonth == $monthNum ? 'selected' : '' }}>
-                        {{ $dateObj->format('F') }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label for="year" class="form-label">Select Year</label>
-            <select name="year" id="year" class="form-select">
-                @foreach(range($currentYear - 5, $currentYear + 5) as $y)
-                    <option value="{{ $y }}" {{ $currentYear == $y ? 'selected' : '' }}>
-                        {{ $y }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-3 align-self-end">
-            <button type="submit" class="btn btn-primary mt-2">View Stock</button>
-        </div>
-    </div>
-</form>
+        Test Stock Propagation
+    </a>
 
+    <!-- Month and Year Selection Form -->
+    <form action="{{ route('stock.monthly') }}" method="GET" class="mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="month" class="form-label">Select Month</label>
+                <select name="month" id="month" class="form-select">
+                    @foreach(range(1, 12) as $m)
+                        @php
+                            $monthNum = str_pad($m, 2, '0', STR_PAD_LEFT);
+                            $dateObj = DateTime::createFromFormat('!m', $monthNum);
+                        @endphp
+                        <option value="{{ $monthNum }}" {{ $currentMonth == $monthNum ? 'selected' : '' }}>
+                            {{ $dateObj->format('F') }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="year" class="form-label">Select Year</label>
+                <select name="year" id="year" class="form-select">
+                    @foreach(range($currentYear - 5, $currentYear + 5) as $y)
+                        <option value="{{ $y }}" {{ $currentYear == $y ? 'selected' : '' }}>
+                            {{ $y }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3 align-self-end">
+                <button type="submit" class="btn btn-primary mt-2">View Stock</button>
+            </div>
+        </div>
+    </form>
+</div>
 
-@endsection
 <style>
 td {
     padding: 8px !important;
@@ -239,3 +249,4 @@ td div {
     font-weight: bold;
 }
 </style>
+@endsection

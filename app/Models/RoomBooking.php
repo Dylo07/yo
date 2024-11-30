@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -24,18 +23,28 @@ class RoomBooking extends Model
     {
         if (!$this->guest_in_time) return 0;
         
-        $checkDate = request('date', now()->format('Y-m-d'));
-        $checkDate = Carbon::parse($checkDate);
-        $daysDiff = $this->guest_in_time->diffInDays($checkDate) + 1;
+        $checkDate = Carbon::parse(request('date', now()->format('Y-m-d')));
+        $checkInDate = Carbon::parse($this->guest_in_time->format('Y-m-d'));
         
-        return $daysDiff;
+        // If check date is before check-in date, it's a future booking
+        if ($checkDate->lt($checkInDate)) {
+            return 0;
+        }
+        
+        // Calculate days since check-in
+        return $checkInDate->diffInDays($checkDate) + 1;
     }
 
     public function getStayStatusAttribute()
     {
         $dayCount = $this->stay_day_count;
         
-        if ($dayCount <= 1) {
+        // Handle future bookings
+        if ($dayCount === 0) {
+            return 'Future Booking';
+        }
+        
+        if ($dayCount === 1) {
             return 'Same Day';
         }
         

@@ -4,10 +4,8 @@
 <div class="container mt-5">
     <h2>Grocery Store Stock</h2>
 
-
-
-     <!-- Form to Add New Category -->
-     <form action="{{ route('categories.store') }}" method="POST" class="mb-4">
+    <!-- Form to Add New Category -->
+    <form action="{{ route('categories.store') }}" method="POST" class="mb-4">
         @csrf
         <div class="mb-3">
             <label for="category_name" class="form-label">Add New Category</label>
@@ -35,10 +33,6 @@
         <button type="submit" class="btn btn-success">Add Item</button>
     </form>
 
-    
-
-
-
     <!-- Show only the selected category -->
     @php
         $selectedGroup = request('category_id') ? $groups->firstWhere('id', request('category_id')) : null;
@@ -62,6 +56,92 @@
             <input type="hidden" name="year" value="{{ $currentYear }}">
         </div>
     </form>
+
+    <!-- Month Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <form action="{{ route('stock.index') }}" method="GET" class="row g-3 align-items-end">
+                <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                
+                @php
+                    $currentDate = Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1);
+                    $previousMonth = $currentDate->copy()->subMonth();
+                    $nextMonth = $currentDate->copy()->addMonth();
+                @endphp
+                
+                <div class="col-auto">
+                    <!-- Month/Year Display with Navigation -->
+                    <div class="btn-group">
+                        <a href="{{ route('stock.index', [
+                            'month' => $previousMonth->month,
+                            'year' => $previousMonth->year,
+                            'category_id' => request('category_id')
+                        ]) }}" 
+                        class="btn btn-outline-primary">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                        
+                        <button type="button" class="btn btn-outline-primary" disabled>
+                            {{ $currentDate->format('F Y') }}
+                        </button>
+
+                        @if($nextMonth->lte(now()))
+                        <a href="{{ route('stock.index', [
+                            'month' => $nextMonth->month,
+                            'year' => $nextMonth->year,
+                            'category_id' => request('category_id')
+                        ]) }}" 
+                        class="btn btn-outline-primary">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="col-auto">
+                    <select name="month" class="form-select" onchange="this.form.submit()">
+                        @foreach(range(1, 12) as $m)
+                            @php
+                                $monthDate = Carbon\Carbon::createFromDate($currentYear, $m, 1);
+                                $isDisabled = $monthDate->isAfter(now());
+                            @endphp
+                            <option value="{{ $m }}" 
+                                    {{ $currentMonth == $m ? 'selected' : '' }}
+                                    {{ $isDisabled ? 'disabled' : '' }}>
+                                {{ $monthDate->format('F') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-auto">
+                    <select name="year" class="form-select" onchange="this.form.submit()">
+                        @foreach(range(now()->subYears(2)->year, now()->year) as $y)
+                            <option value="{{ $y }}" {{ $currentYear == $y ? 'selected' : '' }}>
+                                {{ $y }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-auto">
+                    <button type="submit" 
+                            name="month" 
+                            value="{{ now()->month }}" 
+                            class="btn btn-secondary">
+                        Current Month
+                    </button>
+                    <button type="submit" 
+                            name="month" 
+                            value="{{ now()->subMonth()->month }}" 
+                            class="btn btn-outline-secondary"
+                            onclick="this.form.year.value='{{ now()->subMonth()->year }}'">
+                        Last Month
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     @if($selectedGroup)
         <!-- Stock Table for Selected Category -->
@@ -152,7 +232,7 @@
             </div>
         </form>
 
-        <!-- Log Details Section with Date Picker -->
+        <!-- Log Details Section -->
         <h3 class="mt-5">Stock Log Details</h3>
         <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
             <input type="hidden" name="category_id" value="{{ request('category_id') }}">
@@ -179,13 +259,7 @@
                 </tr>
             </thead>
             <tbody>
-                @php
-                    $selectedDate = request('log_date', now()->toDateString());
-                    $dayLogs = $logs->filter(function($log) use ($selectedDate) {
-                        return $log->created_at->format('Y-m-d') === $selectedDate;
-                    });
-                @endphp
-                @foreach($dayLogs as $log)
+                @forelse($logs as $log)
                     <tr>
                         <td>{{ $log->created_at->format('H:i') }}</td>
                         <td>{{ $log->user->name }}</td>
@@ -194,14 +268,18 @@
                         <td>{{ $log->quantity }}</td>
                         <td>{{ $log->description }}</td>
                     </tr>
-                @endforeach
-                @if($dayLogs->isEmpty())
+                @empty
                     <tr>
                         <td colspan="6" class="text-center">No stock movements on this date</td>
                     </tr>
-                @endif
+                @endforelse
             </tbody>
         </table>
+
+        <!-- Pagination Links -->
+        <div class="d-flex justify-content-center">
+            {{ $logs->appends(request()->except('page'))->links('pagination::bootstrap-4') }}
+        </div>
     @else
         <div class="alert alert-info">
             Please select a category to view stock details

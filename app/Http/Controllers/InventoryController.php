@@ -18,40 +18,44 @@ class InventoryController extends Controller
         $currentMonth = $request->input('month', now()->month);
         $currentYear = $request->input('year', now()->year);
         $categoryId = $request->input('category_id');
+        $selectedDate = $request->input('log_date', now()->toDateString());
         
         // Create Carbon instances for the first and last day of the month
         $firstDayOfMonth = Carbon::createFromDate($currentYear, $currentMonth, 1);
         $lastDayOfPreviousMonth = $firstDayOfMonth->copy()->subDay();
         
-        $groups = ProductGroup::with(['items' => function ($query) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
-            $query->with(['inventory' => function ($invQuery) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
-                $invQuery->where(function ($q) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
-                    // Get records for current month
-                    $q->whereYear('stock_date', $currentYear)
-                      ->whereMonth('stock_date', $currentMonth)
-                    // Also get the last day of previous month
-                      ->orWhere('stock_date', $lastDayOfPreviousMonth->toDateString());
-                })->orderBy('stock_date');
-            }]);
-        }]);
-    
+        // Get all groups for the dropdown
+        $groups = ProductGroup::all();
+        
+        // If category is selected, load its items with inventory
         if ($categoryId) {
-            $groups = $groups->where('id', $categoryId);
+            $selectedGroup = ProductGroup::with(['items' => function ($query) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
+                $query->with(['inventory' => function ($invQuery) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
+                    $invQuery->where(function ($q) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
+                        $q->whereYear('stock_date', $currentYear)
+                          ->whereMonth('stock_date', $currentMonth)
+                          ->orWhere('stock_date', $lastDayOfPreviousMonth->toDateString());
+                    })->orderBy('stock_date');
+                }]);
+            }])->find($categoryId);
+            
+            if ($selectedGroup) {
+                $groups = $groups->map(function ($group) use ($selectedGroup) {
+                    if ($group->id === $selectedGroup->id) {
+                        return $selectedGroup;
+                    }
+                    return $group;
+                });
+            }
         }
-    
-        $groups = $groups->get();
-    
-        // Get all logs for the current month
+        
+        // Get logs only for the selected date
         $logs = StockLog::with(['user', 'item'])
-            ->whereYear('created_at', $currentYear)
-            ->whereMonth('created_at', $currentMonth)
+            ->whereDate('created_at', $selectedDate)
+            ->orderBy('created_at', 'desc')
             ->get();
     
-        $recentLogs = StockLog::with(['user', 'item'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs', 'recentLogs'));
+        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
     }
 
     public function store(Request $request)

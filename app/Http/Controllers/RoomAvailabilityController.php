@@ -16,9 +16,12 @@ class RoomAvailabilityController extends Controller
         $selectedDate = $request->get('date', date('Y-m-d'));
         
         $rooms = Room::with('checklistItems')->get();
+        
+        // Updated room logs query with date filter
         $roomLogs = RoomLog::with(['room', 'user'])
+            ->whereDate('created_at', $selectedDate)
             ->latest()
-            ->paginate(10);
+            ->paginate(5);
             
         $bookedRooms = RoomBooking::with('room')
             ->whereDate('guest_in_time', '<=', $selectedDate)
@@ -27,10 +30,9 @@ class RoomAvailabilityController extends Controller
                       ->orWhereDate('guest_out_time', '>=', $selectedDate);
             })
             ->get();
-
-        return view('rooms.availability', compact('rooms', 'roomLogs', 'bookedRooms'));
-    }
     
+        return view('rooms.availability', compact('rooms', 'roomLogs', 'bookedRooms', 'selectedDate'));
+    }
 
     public function storeRoom(Request $request)
     {

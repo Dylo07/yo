@@ -72,53 +72,53 @@
     </div>
 
     <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
-            <h5 class="mb-0">Today's Booked Rooms</h5>
-            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
-                <input type="date" 
-                       name="date" 
-                       class="form-control form-control-sm me-2 dark-input" 
-                       value="{{ request('date', date('Y-m-d')) }}">
-                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
-            </form>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-dark">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <h5 class="mb-0">Today's Booked Rooms</h5>
+        <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+            <input type="date" 
+                   name="date" 
+                   class="form-control form-control-sm me-2 dark-input" 
+                   value="{{ request('date', date('Y-m-d')) }}">
+            <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+        </form>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Room Name</th>
+                        <th>Guest In</th>
+                        <th>Guest Out</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($bookedRooms as $booking)
                         <tr>
-                            <th>Room Name</th>
-                            <th>Guest In</th>
-                            <th>Guest Out</th>
-                            <th>Status</th>
+                            <td class="fw-bold">{{ $booking->room->name }}</td>
+                            <td>{{ $booking->guest_in_time->format('Y-m-d H:i:s') }}</td>
+                            <td>{{ $booking->guest_out_time ? $booking->guest_out_time->format('Y-m-d H:i:s') : 'Not checked out' }}</td>
+                            <td>
+                                @if($booking->stay_day_count > 1)
+                                    <span class="badge bg-warning text-dark">{{ $booking->stay_status }}</span>
+                                @else
+                                    <span class="badge bg-dark">{{ $booking->stay_status }}</span>
+                                @endif
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($bookedRooms as $booking)
-                            <tr class="{{ $booking->spans_multiple_days ? 'table-warning' : '' }}">
-                                <td class="fw-bold">{{ $booking->room->name }}</td>
-                                <td>{{ $booking->guest_in_time->format('Y-m-d H:i:s') }}</td>
-                                <td>{{ $booking->guest_out_time ? $booking->guest_out_time->format('Y-m-d H:i:s') : 'Not checked out' }}</td>
-                                <td>
-                                    @if($booking->spans_multiple_days)
-                                        <span class="badge bg-warning text-dark">Multiple Days</span>
-                                    @else
-                                        <span class="badge bg-dark">Same Day</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">
-                                    No rooms booked for selected date
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                No rooms booked for selected date
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
     <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">

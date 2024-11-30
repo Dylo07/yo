@@ -117,7 +117,7 @@
 </div>
 
 
-<!-- Add this before Room Activity Logs section -->
+<!-- Today's Booked Rooms section -->
 <div class="card mt-4">
     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Today's Booked Rooms</h4>
@@ -141,16 +141,14 @@
             </thead>
             <tbody>
                 @foreach($bookedRooms as $booking)
-                <tr class="{{ $booking->spans_multiple_days ? 'table-warning' : '' }}">
+                <tr>
                     <td>{{ $booking->room->name }}</td>
                     <td>{{ $booking->guest_in_time->format('Y-m-d H:i:s') }}</td>
                     <td>{{ $booking->guest_out_time ? $booking->guest_out_time->format('Y-m-d H:i:s') : 'Not checked out' }}</td>
                     <td>
-                        @if($booking->spans_multiple_days)
-                            <span class="badge bg-warning">Multiple Days</span>
-                        @else
-                            <span class="badge bg-info">Same Day</span>
-                        @endif
+                        <span class="badge {{ $booking->stay_day_count > 1 ? 'bg-warning text-dark' : 'bg-info' }}">
+                            {{ $booking->stay_status }}
+                        </span>
                     </td>
                 </tr>
                 @endforeach
@@ -167,8 +165,15 @@
 
 <!-- Room Logs Table -->
 <div class="card mt-4">
-    <div class="card-header bg-info text-white">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
         <h4 class="mb-0">Room Activity Logs</h4>
+        <form action="{{ route('rooms.availability') }}" method="GET" class="d-flex align-items-center">
+            <input type="date" 
+                   name="date" 
+                   class="form-control me-2" 
+                   value="{{ request('date', date('Y-m-d')) }}">
+            <button type="submit" class="btn btn-light">Filter</button>
+        </form>
     </div>
     <div class="card-body">
         <table class="table table-striped">
@@ -177,29 +182,42 @@
                     <th>Room</th>
                     <th>Action</th>
                     <th>User</th>
-                    <th>Date & Time</th>
+                    <th>Time</th>
                     <th>Details</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($roomLogs as $log)
+                @forelse($roomLogs as $log)
                 <tr>
                     <td>{{ $log->room->name }}</td>
                     <td>{{ ucfirst(str_replace('_', ' ', $log->action)) }}</td>
                     <td>{{ $log->user->name }}</td>
-                    <td>{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                    <td>{{ $log->created_at->format('H:i:s') }}</td>
                     <td>
                         @if($log->details)
                             <small class="text-muted">{{ json_encode($log->details) }}</small>
                         @endif
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">
+                        No activity logs found for {{ \Carbon\Carbon::parse($selectedDate)->format('M d, Y') }}
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
-        {{ $roomLogs->links() }}
+        
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <small class="text-muted">
+                Showing {{ $roomLogs->firstItem() ?? 0 }} to {{ $roomLogs->lastItem() ?? 0 }} of {{ $roomLogs->total() }} logs
+            </small>
+            {{ $roomLogs->appends(request()->except('page'))->links() }}
+        </div>
     </div>
 </div>
+
 <style>
 .form-check {
     margin-bottom: 0.5rem;
@@ -286,6 +304,26 @@
     right: 0;
     height: 2px;
     background: rgba(255,255,255,0.5);
+}
+
+/* Add these styles to your existing CSS */
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    color: #17a2b8;  /* matches bg-info */
+    border-radius: 0.25rem;
+    margin: 0 2px;
+}
+
+.page-item.active .page-link {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.page-link:hover {
+    color: #117a8b;
 }
 </style>
 @endsection

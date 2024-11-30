@@ -16,6 +16,25 @@
         <button type="submit" class="btn btn-success">Add Category</button>
     </form>
 
+    <!-- Form to Add New Item -->
+    <form action="{{ route('items.store') }}" method="POST" class="mb-4">
+        @csrf
+        <div class="mb-3">
+            <label for="item_name" class="form-label">Add New Item</label>
+            <input type="text" name="name" id="item_name" class="form-control" placeholder="Enter item name" required>
+        </div>
+        <div class="mb-3">
+            <label for="item_category" class="form-label">Select Category</label>
+            <select name="group_id" id="item_category" class="form-select" required>
+                <option value="">Select a category</option>
+                @foreach($groups as $group)
+                    <option value="{{ $group->id }}">{{ $group->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Add Item</button>
+    </form>
+
     
 
 

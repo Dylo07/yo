@@ -54,6 +54,7 @@ class InventoryController extends Controller
             ->whereDate('created_at', $selectedDate)
             ->orderBy('created_at', 'desc')
             ->get();
+            
     
         return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
     }

@@ -95,6 +95,11 @@ Route::get('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->
 
 Route::resource('inventory/table', App\Http\Controllers\Inventory\TableController::class);
 
+Route::get('/categories-products', [InventoryController::class, 'categoriesProducts'])
+    ->name('categories-products.index');
+
+
+
 // routes for calender
 Route::get('/calendar', function () {
    return view('calendar');

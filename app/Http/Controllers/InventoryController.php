@@ -39,6 +39,9 @@ class InventoryController extends Controller
         // Get all groups for the dropdown
         $groups = ProductGroup::all();
         
+        // Initialize $selectedGroup as null
+        $selectedGroup = null;
+        
         // If category is selected, load its items with inventory
         if ($categoryId) {
             $selectedGroup = ProductGroup::with(['items' => function ($query) use ($currentDate, $lastDayOfPreviousMonth) {
@@ -67,7 +70,7 @@ class InventoryController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(5);
     
-        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs'));
+        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs', 'selectedGroup'));
     }
     public function store(Request $request)
     {
@@ -283,6 +286,11 @@ class InventoryController extends Controller
     }
 
     return view('stock.propagation-test', compact('groups', 'startDate', 'endDate'));
+}
+public function categoriesProducts()
+{
+    $groups = ProductGroup::withCount('items')->with('items')->get();
+    return view('stock.categories-products', compact('groups'));
 }
    
 }

@@ -1,49 +1,34 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <h2>Grocery Store Stock</h2>
-
-    <!-- Form to Add New Category -->
-    <form action="{{ route('categories.store') }}" method="POST" class="mb-4">
-        @csrf
-        <div class="mb-3">
-            <label for="category_name" class="form-label">Add New Category</label>
-            <input type="text" name="name" id="category_name" class="form-control" placeholder="Enter category name" required>
+<div class="container mx-auto p-4">
+    <!-- Card for Navigation -->
+    <div class="card mb-4">
+        <div class="card-body p-0">
+            <!-- Tab Navigation -->
+            <ul class="nav nav-tabs border-bottom-0">
+                <li class="nav-item">
+                    <a href="{{ route('stock.index') }}" 
+                       class="nav-link {{ Request::routeIs('stock.index') ? 'active' : '' }}">
+                        Stock Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('categories-products.index') }}" 
+                       class="nav-link {{ Request::routeIs('categories-products.index') ? 'active' : '' }}">
+                        Category & Product Management
+                    </a>
+                </li>
+            </ul>
         </div>
-        <button type="submit" class="btn btn-success">Add Category</button>
-    </form>
-
-    <!-- Form to Add New Item -->
-    <form action="{{ route('items.store') }}" method="POST" class="mb-4">
-        @csrf
-        <div class="mb-3">
-            <label for="item_name" class="form-label">Add New Item</label>
-            <input type="text" name="name" id="item_name" class="form-control" placeholder="Enter item name" required>
-        </div>
-        <div class="mb-3">
-            <label for="item_category" class="form-label">Select Category</label>
-            <select name="group_id" id="item_category" class="form-select" required>
-                <option value="">Select a category</option>
-                @foreach($groups as $group)
-                    <option value="{{ $group->id }}">{{ $group->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <button type="submit" class="btn btn-success">Add Item</button>
-    </form>
-
-    <!-- Show only the selected category -->
-    @php
-        $selectedGroup = request('category_id') ? $groups->firstWhere('id', request('category_id')) : null;
-    @endphp
+    </div>
 
     <!-- Category Selection Dropdown -->
     <form action="{{ route('stock.index') }}" method="GET" class="mb-4">
         <div class="row">
             <div class="col-md-4">
                 <label for="category_filter" class="form-label">Select Category</label>
-                <select name="category_id" id="category_filter" class="form-select" onchange="this.form.submit()" required>
+                <select name="category_id" id="category_filter" class="form-select" onchange="this.form.submit()">
                     <option value="">Please select a category</option>
                     @foreach($groups as $group)
                         <option value="{{ $group->id }}" {{ request('category_id') == $group->id ? 'selected' : '' }}>
@@ -70,7 +55,6 @@
                 @endphp
                 
                 <div class="col-auto">
-                    <!-- Month/Year Display with Navigation -->
                     <div class="btn-group">
                         <a href="{{ route('stock.index', [
                             'month' => $previousMonth->month,
@@ -125,15 +109,10 @@
                 </div>
 
                 <div class="col-auto">
-                    <button type="submit" 
-                            name="month" 
-                            value="{{ now()->month }}" 
-                            class="btn btn-secondary">
+                    <button type="submit" name="month" value="{{ now()->month }}" class="btn btn-secondary">
                         Current Month
                     </button>
-                    <button type="submit" 
-                            name="month" 
-                            value="{{ now()->subMonth()->month }}" 
+                    <button type="submit" name="month" value="{{ now()->subMonth()->month }}" 
                             class="btn btn-outline-secondary"
                             onclick="this.form.year.value='{{ now()->subMonth()->year }}'">
                         Last Month
@@ -146,139 +125,156 @@
     @if($selectedGroup)
         <!-- Stock Table for Selected Category -->
         <h4>{{ $selectedGroup->name }}</h4>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    @for($i = 1; $i <= 31; $i++)
-                        <th>{{ $i }}</th>
-                    @endfor
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($selectedGroup->items as $item)
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
                     <tr>
-                        <td>{{ $item->name }}</td>
+                        <th>Item</th>
                         @for($i = 1; $i <= 31; $i++)
-                            @php
-                                $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
-                                $inventory = $item->inventory->firstWhere('stock_date', $date);
-                                
-                                if ($inventory) {
-                                    $displayStock = $inventory->stock_level;
-                                } else {
-                                    $previousInventory = $item->inventory
-                                        ->where('stock_date', '<', $date)
-                                        ->sortByDesc('stock_date')
-                                        ->first();
-                                    
-                                    if ($i === 1 && !$inventory && $previousInventory) {
-                                        $displayStock = $previousInventory->stock_level;
-                                    } else {
-                                        $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-                                    }
-                                }
-                                
-                                $stockLogs = $logs->where('item_id', $item->id)
-                                                 ->filter(function($log) use ($date) {
-                                                     return $log->created_at->format('Y-m-d') === $date;
-                                                 });
-                                
-                                $additions = $stockLogs->where('action', 'add')->sum('quantity');
-                                $removals = $stockLogs->where('action', 'remove')->sum('quantity');
-                            @endphp
-                            <td>
-                                @if($date <= now()->toDateString())
-                                    <div>{{ $displayStock }}</div>
-                                    @if($additions)
-                                        <div class="text-success">+{{ $additions }}</div>
-                                    @endif
-                                    @if($removals)
-                                        <div class="text-danger">-{{ $removals }}</div>
-                                    @endif
-                                @else
-                                    -
-                                @endif
-                            </td>
+                            <th>{{ $i }}</th>
                         @endfor
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach($selectedGroup->items as $item)
+                        <tr>
+                            <td>{{ $item->name }}</td>
+                            @for($i = 1; $i <= 31; $i++)
+                                @php
+                                    $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
+                                    $inventory = $item->inventory->firstWhere('stock_date', $date);
+                                    
+                                    if ($inventory) {
+                                        $displayStock = $inventory->stock_level;
+                                    } else {
+                                        $previousInventory = $item->inventory
+                                            ->where('stock_date', '<', $date)
+                                            ->sortByDesc('stock_date')
+                                            ->first();
+                                        
+                                        if ($i === 1 && !$inventory && $previousInventory) {
+                                            $displayStock = $previousInventory->stock_level;
+                                        } else {
+                                            $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
+                                        }
+                                    }
+                                    
+                                    $stockLogs = $logs->where('item_id', $item->id)
+                                                     ->filter(function($log) use ($date) {
+                                                         return $log->created_at->format('Y-m-d') === $date;
+                                                     });
+                                    
+                                    $additions = $stockLogs->where('action', 'add')->sum('quantity');
+                                    $removals = $stockLogs->where('action', 'remove')->sum('quantity');
+                                @endphp
+                                <td>
+                                    @if($date <= now()->toDateString())
+                                        <div>{{ $displayStock }}</div>
+                                        @if($additions)
+                                            <div class="text-success">+{{ $additions }}</div>
+                                        @endif
+                                        @if($removals)
+                                            <div class="text-danger">-{{ $removals }}</div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            @endfor
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
         <!-- Stock Update Section -->
-        <h3>Update Stock</h3>
-        <form action="{{ route('stock.update') }}" method="POST" class="mb-4">
-            @csrf
-            <div class="mb-3">
-                <label for="item" class="form-label">Item</label>
-                <select name="item_id" id="item" class="form-select" required>
-                    @foreach($selectedGroup->items as $item)
-                        <option value="{{ $item->id }}">{{ $item->name }}</option>
-                    @endforeach
-                </select>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Update Stock</h3>
             </div>
-            <div class="mb-3">
-                <label for="quantity" class="form-label">Quantity</label>
-                <input type="number" name="quantity" id="quantity" class="form-control" step="0.01" min="0.01" required>
+            <div class="card-body">
+                <form action="{{ route('stock.update') }}" method="POST" class="mb-4">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="item" class="form-label">Item</label>
+                        <select name="item_id" id="item" class="form-select" required>
+                            @foreach($selectedGroup->items as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" name="quantity" id="quantity" class="form-control" 
+                               step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" name="description" id="description" class="form-control" 
+                               placeholder="Enter a description" required>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="add" class="btn btn-success">Add</button>
+                        <button type="submit" name="action" value="remove" class="btn btn-danger">Remove</button>
+                    </div>
+                </form>
             </div>
-            <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <input type="text" name="description" id="description" class="form-control" placeholder="Enter a description" required>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="submit" name="action" value="add" class="btn btn-success">Add</button>
-                <button type="submit" name="action" value="remove" class="btn btn-danger">Remove</button>
-            </div>
-        </form>
+        </div>
 
         <!-- Log Details Section -->
-        <h3 class="mt-5">Stock Log Details</h3>
-        <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
-            <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="log_date" class="form-label">Select Date</label>
-                    <input type="date" id="log_date" name="log_date" class="form-control" 
-                           value="{{ request('log_date', now()->toDateString()) }}"
-                           max="{{ now()->toDateString() }}"
-                           onchange="this.form.submit()">
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Stock Log Details</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
+                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="log_date" class="form-label">Select Date</label>
+                            <input type="date" id="log_date" name="log_date" class="form-control" 
+                                   value="{{ request('log_date', now()->toDateString()) }}"
+                                   max="{{ now()->toDateString() }}"
+                                   onchange="this.form.submit()">
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Item</th>
+                                <th>Action</th>
+                                <th>Quantity</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($logs as $log)
+                                <tr>
+                                    <td>{{ $log->created_at->format('H:i') }}</td>
+                                    <td>{{ $log->user->name }}</td>
+                                    <td>{{ $log->item->name }}</td>
+                                    <td>{{ ucfirst($log->action) }}</td>
+                                    <td>{{ $log->quantity }}</td>
+                                    <td>{{ $log->description }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center">No stock movements on this date</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-center mt-3">
+                    {{ $logs->appends(request()->except('page'))->links('pagination::bootstrap-4') }}
                 </div>
             </div>
-        </form>
-
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>User</th>
-                    <th>Item</th>
-                    <th>Action</th>
-                    <th>Quantity</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($logs as $log)
-                    <tr>
-                        <td>{{ $log->created_at->format('H:i') }}</td>
-                        <td>{{ $log->user->name }}</td>
-                        <td>{{ $log->item->name }}</td>
-                        <td>{{ ucfirst($log->action) }}</td>
-                        <td>{{ $log->quantity }}</td>
-                        <td>{{ $log->description }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="text-center">No stock movements on this date</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-
-        <!-- Pagination Links -->
-        <div class="d-flex justify-content-center">
-            {{ $logs->appends(request()->except('page'))->links('pagination::bootstrap-4') }}
         </div>
     @else
         <div class="alert alert-info">
@@ -302,6 +298,33 @@ td div {
 .text-danger {
     color: #dc3545 !important;
     font-weight: bold;
+}
+.nav-tabs {
+    border-bottom: none;
+    padding: 0.5rem 1rem 0;
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    padding: 0.75rem 1rem;
+    margin-right: 0.5rem;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+    background: transparent;
+}
+
+.card {
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 </style>
 @endsection

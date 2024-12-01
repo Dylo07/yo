@@ -24,24 +24,33 @@ class InvInventoryController extends Controller
         $currentMonth = $request->input('month', now()->month);
         $currentYear = $request->input('year', now()->year);
         $categoryId = $request->input('category_id');
-
-        $categories = InvProductCategory::with(['products.inventories' => function ($query) use ($currentYear, $currentMonth) {
-            $query->whereYear('stock_date', $currentYear)
-                  ->whereMonth('stock_date', $currentMonth);
+        $selectedDate = $request->input('log_date', now()->toDateString());
+    
+        // Create Carbon instances for the first day of current month and last day of previous month
+        $firstDayOfMonth = Carbon::createFromDate($currentYear, $currentMonth, 1);
+        $lastDayOfPreviousMonth = $firstDayOfMonth->copy()->subDay();
+    
+        $categories = InvProductCategory::with(['products.inventories' => function ($query) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
+            $query->where(function($q) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
+                $q->whereYear('stock_date', $currentYear)
+                  ->whereMonth('stock_date', $currentMonth)
+                  ->orWhere('stock_date', $lastDayOfPreviousMonth->toDateString());
+            })->orderBy('stock_date');
         }]);
-
+    
         if ($categoryId) {
             $categories = $categories->where('id', $categoryId);
         }
-
+    
         $categories = $categories->get();
-
+    
+        // Update log query to filter by date and limit to 5 per page
         $logs = InvInventoryLog::with(['user', 'product'])
+            ->whereDate('created_at', $selectedDate)
             ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->appends($request->except('page'));
-
-        return view('inv_inventory.index', compact('categories', 'currentMonth', 'currentYear', 'logs'));
+            ->paginate(5);
+    
+        return view('inventory.physical.index', compact('categories', 'currentMonth', 'currentYear', 'logs'));
     }
 
     // Store a new category
@@ -57,7 +66,6 @@ class InvInventoryController extends Controller
 
         return redirect()->back()->with('success', 'Category added successfully.');
     }
-
     // Store a new product
     public function storeProduct(Request $request)
     {
@@ -79,7 +87,7 @@ class InvInventoryController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:inv_products,id',
-            'quantity' => 'required|numeric|min:0.1',
+            'quantity' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:255',
             'action' => 'required|in:add,remove',
         ]);
@@ -128,6 +136,7 @@ class InvInventoryController extends Controller
         return redirect()->back()->with('success', 'Stock updated successfully.');
     }
 
+
     // Propagate stock level to future dates
     private function propagateStock($productId, $startDate, $stockLevel)
     {
@@ -152,26 +161,31 @@ class InvInventoryController extends Controller
         }
     }
 
+
     // View monthly stock
     public function viewMonthlyStock(Request $request)
     {
-        $maxYear = now()->year + 5;
-        $request->validate([
-            'month' => 'required|integer|min:1|max:12',
-            'year' => 'required|integer|min:2000|max:' . $maxYear,
-        ]);
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
 
-        $month = str_pad($request->month, 2, '0', STR_PAD_LEFT);
-        $year = $request->year;
-
-        $categories = InvProductCategory::with(['products' => function ($query) use ($month, $year) {
-            $query->with(['inventories' => function ($inventoryQuery) use ($month, $year) {
-                $inventoryQuery->whereYear('stock_date', $year)
-                    ->whereMonth('stock_date', $month)
-                    ->orderBy('stock_date');
-            }]);
+        $categories = InvProductCategory::with(['products.inventories' => function ($query) use ($month, $year) {
+            $query->whereYear('stock_date', $year)
+                  ->whereMonth('stock_date', $month)
+                  ->orderBy('stock_date');
         }])->get();
 
-        return view('inv_inventory.monthly', compact('categories', 'month', 'year'));
+        return view('inventory.physical.monthly', compact('categories', 'month', 'year'));
+    }
+    public function monthly(Request $request)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        $categories = InvCategory::with(['products.inventories' => function ($query) use ($month, $year) {
+            $query->whereYear('stock_date', $year)
+                  ->whereMonth('stock_date', $month);
+        }])->get();
+
+        return view('inventory.physical.monthly', compact('categories', 'month', 'year'));
     }
 }

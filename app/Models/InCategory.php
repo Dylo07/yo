@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class InCategory extends Model
+class InvCategory extends Model
 {
-    use HasFactory;
-    public function menus(){
-        return $this->hasmany(InMenu::class);
-}
+    protected $table = 'inv_product_categories';
+    protected $fillable = ['name'];
+
+    public function products()
+    {
+        return $this->hasMany(InvProduct::class, 'category_id');
+    }
 }

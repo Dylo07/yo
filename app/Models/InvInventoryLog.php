@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class InvInventoryLog extends Model
 {
-    protected $table = 'inv_inventory_logs';
     protected $fillable = ['product_id', 'user_id', 'action', 'quantity', 'description'];
 
     public function product()

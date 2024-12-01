@@ -127,6 +127,9 @@ Route::post('/inv-inventory/update', [InvInventoryController::class, 'updateToda
 // View Monthly Stock
 Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthlyStock'])->name('inv_inventory.monthly');
 
+
+
+
 // Expenses
 Route::resource('groups', GroupController::class);
 Route::resource('costs', CostController::class);

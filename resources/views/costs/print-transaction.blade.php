@@ -181,7 +181,7 @@
             </div>
             <div class="signature-field">
                 <div class="signature-line"></div>
-                <div class="signature-title">Person</div>
+                <div class="signature-title">Receiver</div>
                 <div class="signature-title"></div>
             </div>
             <div class="signature-field">

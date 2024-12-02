@@ -159,11 +159,10 @@
                                         }
                                     }
                                     
-                                    $stockLogs = $logs->where('item_id', $item->id)
-                                                     ->filter(function($log) use ($date) {
-                                                         return $log->created_at->format('Y-m-d') === $date;
-                                                     });
-                                    
+                                    $stockLogs = $allLogs->where('item_id', $item->id)
+    ->filter(function($log) use ($date) {
+        return $log->created_at->format('Y-m-d') === $date;
+    });
                                     $additions = $stockLogs->where('action', 'add')->sum('quantity');
                                     $removals = $stockLogs->where('action', 'remove')->sum('quantity');
                                 @endphp

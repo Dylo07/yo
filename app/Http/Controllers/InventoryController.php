@@ -64,14 +64,20 @@ class InventoryController extends Controller
             }
         }
         
-        // Get logs for the selected date with pagination
-        $logs = StockLog::with(['user', 'item'])
-            ->whereDate('created_at', $selectedDate)
-            ->orderBy('created_at', 'desc')
-            ->paginate(5);
+        // Get logs for the selected date WITHOUT pagination for stock calculations
+    $allLogs = StockLog::with(['user', 'item'])
+    ->whereDate('created_at', $selectedDate)
+    ->orderBy('created_at', 'desc')
+    ->get();
     
-        return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs', 'selectedGroup'));
-    }
+// Get paginated logs for display
+$logs = StockLog::with(['user', 'item'])
+    ->whereDate('created_at', $selectedDate)
+    ->orderBy('created_at', 'desc')
+    ->paginate(5);
+
+return view('stock.index', compact('groups', 'currentMonth', 'currentYear', 'logs', 'selectedGroup', 'allLogs'));
+}
     public function store(Request $request)
     {
         $request->validate([

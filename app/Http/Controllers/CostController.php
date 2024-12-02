@@ -339,4 +339,28 @@ private function prepareChartData($costs)
             return back()->with('error', 'Failed to export data: ' . $e->getMessage());
         }
     }
+
+    public function show(Cost $cost)
+    {
+        return view('costs.show', compact('cost'));
+    }
+
+
+    public function printDailyExpenses(Request $request)
+    {
+        $selectedDate = $request->get('date', Carbon::now()->format('Y-m-d'));
+        
+        $dailyCosts = Cost::with(['group', 'person', 'user'])
+            ->whereDate('cost_date', $selectedDate)
+            ->get();
+            
+        $dailyGroupedCosts = $this->groupCostsByCategory($dailyCosts);
+
+        return view('costs.print', compact('dailyGroupedCosts', 'selectedDate'));
+    }
+
+    public function printTransaction(Cost $cost)
+{
+    return view('costs.print-transaction', compact('cost'));
+}
 }

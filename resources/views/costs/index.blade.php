@@ -172,58 +172,73 @@
     </div>
 
     <!-- Daily Summary Section -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <div class="d-flex justify-content-between align-items-center">
             <h3 class="mb-0">Summary of Expenses of {{ \Carbon\Carbon::parse($selectedDate)->format('F j, Y') }}</h3>
-        </div>
-        <div class="card-body">
-            <!-- Date Selector -->
-            <form action="{{ route('costs.index') }}" method="GET" class="mb-3">
-                <div class="form-group row">
-                    <label for="date" class="col-form-label col-sm-2">Select Date</label>
-                    <div class="col-sm-4">
-                        <input type="date" name="date" id="date" class="form-control" value="{{ $selectedDate }}">
-                    </div>
-                    <div class="col-sm-2">
-                        <button type="submit" class="btn btn-secondary">Filter</button>
-                    </div>
-                </div>
-            </form>
-
-            @if ($dailyGroupedCosts->isEmpty())
-                <div class="alert alert-info">No expenses found for the selected date.</div>
-            @else
-                @foreach ($dailyGroupedCosts as $group => $persons)
-                    <h5 class="mt-4"><strong>{{ $group }}</strong></h5>
-                    <table class="table table-bordered table-hover mb-4">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Person/Shop</th>
-                                <th>Expense</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($persons as $person => $data)
-                                <tr class="table-secondary">
-                                    <td colspan="2"><strong>{{ $person }}</strong></td>
-                                </tr>
-                                @foreach ($data['costs'] as $cost)
-                                    <tr>
-                                        <td></td>
-                                        <td>Rs. {{ number_format($cost->amount, 2) }}</td>
-                                    </tr>
-                                @endforeach
-                                <tr class="table-info">
-                                    <td class="text-end"><strong>Total for {{ $person }}</strong></td>
-                                    <td><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endforeach
-            @endif
+            <a href="{{ route('costs.print.daily', ['date' => $selectedDate]) }}" 
+               target="_blank" 
+               class="btn btn-light btn-sm">
+                <i class="bi bi-printer"></i> Print Daily Report
+            </a>
         </div>
     </div>
+    <div class="card-body">
+        <!-- Date Selector -->
+        <form action="{{ route('costs.index') }}" method="GET" class="mb-3">
+            <div class="form-group row">
+                <label for="date" class="col-form-label col-sm-2">Select Date</label>
+                <div class="col-sm-4">
+                    <input type="date" name="date" id="date" class="form-control" value="{{ $selectedDate }}">
+                </div>
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-secondary">Filter</button>
+                </div>
+            </div>
+        </form>
+
+        @if ($dailyGroupedCosts->isEmpty())
+            <div class="alert alert-info">No expenses found for the selected date.</div>
+        @else
+            @foreach ($dailyGroupedCosts as $group => $persons)
+                <h5 class="mt-4"><strong>{{ $group }}</strong></h5>
+                <table class="table table-bordered table-hover mb-4">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Person/Shop</th>
+                            <th>Expense</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($persons as $person => $data)
+                            <tr class="table-secondary">
+                                <td colspan="3"><strong>{{ $person }}</strong></td>
+                            </tr>
+                            @foreach ($data['costs'] as $cost)
+                                <tr>
+                                    <td>{{ $person }}</td>
+                                    <td>Rs. {{ number_format($cost->amount, 2) }}</td>
+                                    <td>
+                                        <a href="{{ route('costs.print.transaction', $cost) }}" 
+                                           target="_blank"
+                                           class="btn btn-outline-info btn-sm">
+                                            <i class="bi bi-printer"></i> Print
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                            <tr class="table-info">
+                                <td class="text-end"><strong>Total for {{ $person }}</strong></td>
+                                <td colspan="2"><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endforeach
+        @endif
+    </div>
+</div>
 
     <!-- Log Details Section -->
 <div class="card">

@@ -136,11 +136,16 @@ Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthl
 
 
 // Expenses
-Route::resource('groups', GroupController::class);
-Route::resource('costs', CostController::class);
-Route::resource('persons', PersonController::class);
-
-
+Route::middleware(['auth'])->group(function () {
+   // Resource routes for groups and persons
+   Route::resource('groups', GroupController::class);
+   Route::resource('persons', PersonController::class);
+   
+   // Costs routes with print functionality
+   Route::resource('costs', CostController::class)->except(['show']);
+   Route::get('costs/print-daily', [CostController::class, 'printDailyExpenses'])->name('costs.print.daily');
+   Route::get('costs/{cost}/print', [CostController::class, 'printTransaction'])->name('costs.print.transaction');
+});
 // Task
 // Home Route
 

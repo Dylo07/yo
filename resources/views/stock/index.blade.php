@@ -159,7 +159,7 @@
                                         }
                                     }
                                     
-                                    $stockLogs = $allLogs->where('item_id', $item->id)
+                                    $stockLogs = $monthLogs->where('item_id', $item->id)
     ->filter(function($log) use ($date) {
         return $log->created_at->format('Y-m-d') === $date;
     });

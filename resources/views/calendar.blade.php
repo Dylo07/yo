@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="user-role" content="{{ Auth::user()->role }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 
@@ -67,6 +68,23 @@
             max-width: 1200px;
             margin: 30px auto;
         }
+
+        /* Add these new styles */
+    .payment-record {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+    }
+
+    .payment-checkbox {
+        margin-right: 10px;
+    }
+
+    .payment-details {
+        margin-left: 25px;
+    }
     </style>
 </head>
 
@@ -424,7 +442,8 @@
 </div>
 
 
-
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
@@ -432,6 +451,103 @@
     
     
     <script>
+// 1. Constants
+const functionTypeColors = {
+                "Wedding": "#ff5733",
+                "Night In Group": "#33ff57",
+                "Day Out": "#3375ff",
+                "Couple Package": "#ff33b8",
+                "Room Only": "#33f8ff",
+            };
+
+
+
+// 2. React Components - Payment History Component
+const PaymentHistory = ({ payments }) => {
+    const storedStates = JSON.parse(localStorage.getItem('paymentVerifications') || '{}');
+    const [verifications, setVerifications] = React.useState(storedStates);
+    
+    // Get user role from meta tag
+    const userRole = document.querySelector('meta[name="user-role"]')?.content;
+    const isAdmin = userRole === 'admin'; // Adjust based on your role naming
+    
+    const togglePayment = (index, paymentId) => {
+        const currentUser = document.querySelector('meta[name="user-name"]')?.content || 'Admin';
+        
+        const newStates = {
+            ...verifications,
+            [paymentId]: verifications[paymentId] 
+                ? null 
+                : {
+                    verified: true,
+                    date: new Date().toISOString(),
+                    verifiedBy: currentUser
+                }
+        };
+        setVerifications(newStates);
+        localStorage.setItem('paymentVerifications', JSON.stringify(newStates));
+    };
+    
+    return React.createElement('div', { className: 'payment-history-container' },
+        payments.map((payment, index) => {
+            const paymentId = `${payment.billNumber}-${payment.date}`;
+            const verificationStatus = verifications[paymentId];
+            
+            return React.createElement('div', { 
+                key: index,
+                className: 'payment-record'
+            }, [
+                React.createElement('div', { 
+                    className: 'form-check d-flex align-items-center justify-content-between'
+                }, [
+                    React.createElement('div', {
+                        className: 'd-flex align-items-center'
+                    }, [
+                        // Only show checkbox if user is admin and payment is not verified
+                        (isAdmin && !verificationStatus) && React.createElement('input', {
+                            type: 'checkbox',
+                            className: 'form-check-input payment-checkbox',
+                            onChange: () => togglePayment(index, paymentId),
+                            id: `payment-${paymentId}`
+                        }),
+                        React.createElement('h6', { 
+                            className: 'mb-0 ms-2'
+                        }, `Payment #${index + 1}`)
+                    ]),
+                    verificationStatus && React.createElement('div', {
+                        className: 'text-success ms-2 d-flex align-items-center'
+                    }, [
+                        React.createElement('span', { 
+                            className: 'badge bg-success me-2'
+                        }, 'Verified'),
+                        React.createElement('small', {
+                            className: 'text-muted'
+                        }, `on ${new Date(verificationStatus.date).toLocaleDateString()} by ${verificationStatus.verifiedBy}`)
+                    ])
+                ]),
+                React.createElement('div', { 
+                    className: 'payment-details mt-2'
+                }, [
+                    React.createElement('p', { className: 'mb-1' },
+                        `Amount: Rs. ${parseFloat(payment.amount).toFixed(2)}`
+                    ),
+                    React.createElement('p', { className: 'mb-1' },
+                        `Bill Number: ${payment.billNumber}`
+                    ),
+                    React.createElement('p', { className: 'mb-1' },
+                        `Date: ${new Date(payment.date).toLocaleDateString()}`
+                    ),
+                    React.createElement('p', { className: 'mb-1' },
+                        `Method: ${payment.method}`
+                    )
+                ])
+            ]);
+        })
+    );
+};
+
+ 
+// 3. Pagination Variables and Functions       
 let currentPage = 1;
 const rowsPerPage = 15;
 let totalLogs = [];
@@ -514,12 +630,10 @@ function getStatusBadge(created, updated) {
     return '<span class="badge bg-warning">Updated</span>';
 }
 
-// Load logs when page loads
-document.addEventListener('DOMContentLoaded', loadLogDetails);
-</script>
-    
-    
-    <script>
+// 4. Form Submission Handler - Load logs when page loads
+
+     
+
         document.getElementById("booking-form").addEventListener("submit", async function (e) {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -558,63 +672,39 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
             }
         });
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const calendarEl = document.getElementById("calendar");
-
-            const functionTypeColors = {
-                "Wedding": "#ff5733",
-                "Night In Group": "#33ff57",
-                "Day Out": "#3375ff",
-                "Couple Package": "#ff33b8",
-                "Room Only": "#33f8ff",
-            };
-
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: "dayGridMonth",
-                headerToolbar: {
-                    left: "prev,next today",
-                    center: "title",
-                    right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
-                },
-                events: "/bookings",
-                dateClick: async function (info) {
-    const selectedDate = info.dateStr; // The date clicked
-    document.getElementById("selectedDate").textContent = selectedDate;
-
-    try {
-        const response = await axios.get(`/available-rooms`, {
-            params: { date: selectedDate },
-        });
-
-        const availableRooms = response.data;
-
-        // Populate the modal with available rooms
-        const roomsList = document.getElementById("availableRoomsList");
-        roomsList.innerHTML = "";
-        if (availableRooms.length > 0) {
-            availableRooms.forEach((room) => {
-                const listItem = document.createElement("li");
-                listItem.textContent = room;
-                roomsList.appendChild(listItem);
-            });
-        } else {
-            roomsList.innerHTML = "<li>No rooms available</li>";
-        }
-
-        // Show the modal
-        const modal = new bootstrap.Modal(document.getElementById("availableRoomsModal"));
-        modal.show();
-    } catch (error) {
-        console.error("Error fetching available rooms:", error);
-        alert("Failed to fetch available rooms.");
-    }
-},
 
 
 
+        // 5. Calendar Initialization and Event Handlers
 
+       // 5. Calendar Initialization and Event Handlers
 
-                eventContent: function (info) {
+// Calendar Configuration Functions
+function getCalendarConfig() {
+    return {
+        initialView: "dayGridMonth",
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
+        },
+        events: "/bookings",
+        dateClick: handleDateClick,
+        eventContent: formatEventContent,
+        eventDidMount: handleEventDidMount,
+        eventClick: handleEventClick
+    };
+}
+
+function handleEventDidMount(info) {
+    const functionType = info.event.extendedProps.function_type;
+    const color = functionTypeColors[functionType] || "#6c757d";
+    info.el.style.backgroundColor = color;
+    info.el.style.borderColor = color;
+    info.el.style.color = "#fff";
+}
+
+function formatEventContent(info) {
     const functionType = info.event.extendedProps.function_type;
     const guestCount = info.event.extendedProps.guest_count;
 
@@ -629,29 +719,52 @@ document.addEventListener('DOMContentLoaded', loadLogDetails);
     wrapper.appendChild(guest);
 
     return { domNodes: [wrapper] };
-},
+}
+
+async function handleDateClick(info) {
+    const selectedDate = info.dateStr;
+    document.getElementById("selectedDate").textContent = selectedDate;
+
+    try {
+        const response = await axios.get(`/available-rooms`, {
+            params: { date: selectedDate },
+        });
+
+        const availableRooms = response.data;
+        const roomsList = document.getElementById("availableRoomsList");
+        roomsList.innerHTML = "";
+        
+        if (availableRooms.length > 0) {
+            availableRooms.forEach((room) => {
+                const listItem = document.createElement("li");
+                listItem.textContent = room;
+                roomsList.appendChild(listItem);
+            });
+        } else {
+            roomsList.innerHTML = "<li>No rooms available</li>";
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById("availableRoomsModal"));
+        modal.show();
+    } catch (error) {
+        console.error("Error fetching available rooms:", error);
+        alert("Failed to fetch available rooms.");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    loadLogDetails();
+    const calendarEl = document.getElementById("calendar");
+    const calendar = new FullCalendar.Calendar(calendarEl, getCalendarConfig());
+    calendar.render();
+});
 
 
+// 6. Event Click Handler
 
-
-
-
-                eventDidMount: function (info) {
-                    const functionType = info.event.extendedProps.function_type;
-                    const color = functionTypeColors[functionType] || "#6c757d"; // Default ash color
-                    info.el.style.backgroundColor = color;
-                    info.el.style.borderColor = color;
-                    info.el.style.color = "#fff"; // Ensure text visibility
-
-                },
-                eventClick: function (info) {
-
-                    const event = info.event;
-                    const props = event.extendedProps;
-                    const advanceDate = info.event.extendedProps.advance_date 
-        ? new Date(info.event.extendedProps.advance_date).toLocaleDateString() 
-        : 'N/A';
-
+function handleEventClick(info) {
+    const event = info.event;
+    const props = event.extendedProps;
 
         // Add this to your existing event click handler
 document.getElementById("printConfirmation").onclick = function() {
@@ -663,53 +776,91 @@ document.getElementById("printConfirmation").onclick = function() {
 
 
     // Set the title and body of the modal with event details
-    document.getElementById("modalTitle").textContent = `Booking Details - ${info.event.title}`;
-    document.getElementById("modalBody").innerHTML = `
-       <p><strong>Function Type:</strong> ${props.function_type || 'N/A'}</p>
-                        <p><strong>Contact Number:</strong> ${props.contact_number || 'N/A'}</p>
-                        <p><strong>Room Numbers:</strong> ${props.room_numbers || 'N/A'}</p>
-                        <p><strong>Guest Count:</strong> ${props.guest_count || 'N/A'}</p>
-                        <p><strong>Description:</strong> ${props.name || 'N/A'}</p>
-                        <p><strong>Start Time:</strong> ${new Date(event.start).toLocaleString()}</p>
-                        <p><strong>End Time:</strong> ${event.end ? new Date(event.end).toLocaleString() : 'N/A'}</p>
-                    `;
+    // Update modal content
+    document.getElementById('modalTitle').textContent = `Booking Details - ${event.title}`;
+                document.getElementById('modalBody').innerHTML = `
+                    <p><strong>Function Type:</strong> ${props.function_type || 'N/A'}</p>
+                    <p><strong>Contact Number:</strong> ${props.contact_number || 'N/A'}</p>
+                    <p><strong>Room Numbers:</strong> ${props.room_numbers || 'N/A'}</p>
+                    <p><strong>Guest Count:</strong> ${props.guest_count || 'N/A'}</p>
+                    <p><strong>Description:</strong> ${props.name || 'N/A'}</p>
+                    <p><strong>Start Time:</strong> ${new Date(event.start).toLocaleString()}</p>
+                    <p><strong>End Time:</strong> ${event.end ? new Date(event.end).toLocaleString() : 'N/A'}</p>
+                `;
 
-                    // Format payment history
-                    const payments = props.advancePayments || [];
-                    let paymentHistoryHTML = '';
-                    
-                    if (payments.length > 0) {
-                        payments.forEach((payment, index) => {
-                            paymentHistoryHTML += `
-                                <div class="payment-record mb-3 p-3 bg-light rounded">
-                                    <h6 class="text-primary mb-2">Payment #${index + 1}</h6>
-                                    <p class="mb-1"><strong>Amount:</strong> Rs. ${parseFloat(payment.amount).toFixed(2)}</p>
-                                    <p class="mb-1"><strong>Bill Number:</strong> ${payment.billNumber}</p>
-                                    <p class="mb-1"><strong>Date:</strong> ${new Date(payment.date).toLocaleDateString()}</p>
-                                    <p class="mb-1"><strong>Method:</strong> ${payment.method}</p>
-                                </div>
-                            `;
-                        });
-                    } else if (props.advance_payment) {
-                        paymentHistoryHTML = `
-                            <div class="payment-record mb-3 p-3 bg-light rounded">
-                                <h6 class="text-primary mb-2">Initial Payment</h6>
-                                <p class="mb-1"><strong>Amount:</strong> Rs. ${parseFloat(props.advance_payment).toFixed(2)}</p>
-                                <p class="mb-1"><strong>Bill Number:</strong> ${props.bill_number || 'N/A'}</p>
-                                <p class="mb-1"><strong>Date:</strong> ${props.advance_date ? new Date(props.advance_date).toLocaleDateString() : 'N/A'}</p>
-                                <p class="mb-1"><strong>Method:</strong> ${props.payment_method || 'N/A'}</p>
-                            </div>
-                        `;
-                    }
+  // Handle payment history
+  handlePaymentHistory(props);
 
-                    document.getElementById("paymentHistoryBody").innerHTML = paymentHistoryHTML || '<p>No payment history available</p>';
+// Show the modal
+const modal = new bootstrap.Modal(document.getElementById("eventModal"));
+modal.show();
+
+// Set up edit button handler
+setupEditHandler(info);
+}
 
 
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById("eventModal"));
-    modal.show();
- // Edit button logic
- document.getElementById("editEvent").onclick = function () {
+
+// 7. Payment History Handler
+
+
+function handlePaymentHistory(props) {
+    const payments = props.advancePayments || [];
+    if (payments.length > 0 || props.advance_payment) {
+        const paymentHistoryContainer = document.createElement('div');
+        paymentHistoryContainer.id = 'payment-history-root';
+        document.getElementById("paymentHistoryBody").innerHTML = '';
+        document.getElementById("paymentHistoryBody").appendChild(paymentHistoryContainer);
+        
+        const paymentData = payments.length > 0 ? payments : [{
+            amount: props.advance_payment,
+            billNumber: props.bill_number || 'N/A',
+            date: props.advance_date || new Date().toISOString(),
+            method: props.payment_method || 'N/A'
+        }];
+        
+        const root = ReactDOM.createRoot(paymentHistoryContainer);
+        root.render(React.createElement(PaymentHistory, { payments: paymentData }));
+    } else {
+        document.getElementById("paymentHistoryBody").innerHTML = '<p>No payment history available</p>';
+    }
+}
+
+
+// 8. Edit Handler Setup
+
+
+
+ // Show the edit modal
+ function setupEditHandler(info) {
+    document.getElementById("editEvent").onclick = function() {
+        populateEditForm(info);
+        const editModal = new bootstrap.Modal(document.getElementById("editModal"));
+        editModal.show();
+    };
+
+
+        // Add this to your existing JavaScript
+document.getElementById('updatePayment').addEventListener('change', function() {
+    const paymentFields = document.getElementById('paymentFields');
+    paymentFields.style.display = this.checked ? 'block' : 'none';
+    
+    // Toggle required attribute on payment fields
+    const fields = paymentFields.querySelectorAll('input, select');
+    fields.forEach(field => {
+        field.required = this.checked;
+    });
+});
+
+  // Set up form submission
+  setupEditFormSubmission(info);
+}
+
+
+
+// 9. Edit Form Population
+
+function populateEditForm(info) {
         // Populate the edit form
         document.getElementById("editFunctionType").value = info.event.extendedProps.function_type;
         document.getElementById("editName").value = info.event.extendedProps.name || ""; // Ensure name is pre-filled
@@ -725,7 +876,7 @@ document.getElementById("printConfirmation").onclick = function() {
 
 
 
-
+// Handle room number
        
     const roomNumbers = info.event.extendedProps.room_numbers 
     ? JSON.parse(info.event.extendedProps.room_numbers) 
@@ -743,80 +894,49 @@ roomNumbers.forEach((room) => {
     }
 });
 
+}
 
-        // Show the edit modal
-        const editModal = new bootstrap.Modal(document.getElementById("editModal"));
-        editModal.show();
+   // 10. Edit Form Submission Setup    
 
+   function setupEditFormSubmission(info) {
+    document.getElementById("editForm").onsubmit = async function(e) {
+        e.preventDefault();
 
-        // Add this to your existing JavaScript
-document.getElementById('updatePayment').addEventListener('change', function() {
-    const paymentFields = document.getElementById('paymentFields');
-    paymentFields.style.display = this.checked ? 'block' : 'none';
-    
-    // Toggle required attribute on payment fields
-    const fields = paymentFields.querySelectorAll('input, select');
-    fields.forEach(field => {
-        field.required = this.checked;
-    });
-});
-
-
-
-
-
-        // Save changes
-        document.getElementById("editForm").onsubmit = async function (e) {
-            e.preventDefault();
-
-            const addNewPayment = document.getElementById('updatePayment').checked;
-
-             // Collect room numbers
-    const roomNumbers = Array.from(document.querySelectorAll("#editRoomNumbers input:checked")).map(
-        (checkbox) => checkbox.value
-    );
-
-            const updatedData = {
-                name: document.getElementById("editName").value,
-        start: document.getElementById("editStart").value,
-        end: document.getElementById("editEnd").value,
-        function_type: document.getElementById("editFunctionType").value,
-        contact_number: document.getElementById("editContactNumber").value,
-        guest_count: document.getElementById("editGuestCount").value,
-        room_numbers: Array.from(document.querySelectorAll("#editRoomNumbers input:checked"))
-            .map(checkbox => checkbox.value)
-    };
-    // Add payment data only if checkbox is checked
-    if (addNewPayment) {
-        updatedData.advance_payment = document.getElementById("editAdvancePayment").value;
-        updatedData.bill_number = document.getElementById("editBillNumber").value;
-        updatedData.advance_date = document.getElementById("editAdvanceDate").value;
-        updatedData.payment_method = document.getElementById("editPaymentMethod").value;
-    }
-
-            try {
-                await axios.put(`/bookings/${info.event.id}`, updatedData, {
-                    headers: {
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
-                    },
-                });
-
-                alert("Booking updated successfully!");
-                location.reload();
-            } catch (error) {
-                console.error("Error updating booking:", error.response || error.message);
-                alert("Failed to update booking.");
-            }
+        const addNewPayment = document.getElementById('updatePayment').checked;
+        
+        const updatedData = {
+            name: document.getElementById("editName").value,
+            start: document.getElementById("editStart").value,
+            end: document.getElementById("editEnd").value,
+            function_type: document.getElementById("editFunctionType").value,
+            contact_number: document.getElementById("editContactNumber").value,
+            guest_count: document.getElementById("editGuestCount").value,
+            room_numbers: Array.from(document.querySelectorAll("#editRoomNumbers input:checked"))
+                .map(checkbox => checkbox.value)
         };
-    };
-},
 
+        if (addNewPayment) {
+            updatedData.advance_payment = document.getElementById("editAdvancePayment").value;
+            updatedData.bill_number = document.getElementById("editBillNumber").value;
+            updatedData.advance_date = document.getElementById("editAdvanceDate").value;
+            updatedData.payment_method = document.getElementById("editPaymentMethod").value;
+        }
 
-
+        try {
+            await axios.put(`/bookings/${info.event.id}`, updatedData, {
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
+                },
             });
 
-            calendar.render();
-        });
-    </script>
+            alert("Booking updated successfully!");
+            location.reload();
+        } catch (error) {
+            console.error("Error updating booking:", error.response || error.message);
+            alert("Failed to update booking.");
+        }
+    };
+}
+</script>
 </body>
 </html>

@@ -340,14 +340,27 @@
                             <option value="Room Only">Room Only</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="editStart" class="form-label">Start Date & Time:</label>
-                        <input type="datetime-local" id="editStart" name="start" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editEnd" class="form-label">End Date & Time:</label>
-                        <input type="datetime-local" id="editEnd" name="end" class="form-control">
-                    </div>
+                    
+                   <!-- Add this after the function type select -->
+<div class="mb-3">
+    <div class="form-check">
+        <input type="checkbox" id="updateDateTime" class="form-check-input">
+        <label class="form-check-label" for="updateDateTime">Change Date & Time</label>
+    </div>
+</div>
+
+<div id="dateTimeFields" style="display: none;">
+    <div class="mb-3">
+        <label for="editStart" class="form-label">Start Date & Time:</label>
+        <input type="datetime-local" id="editStart" name="start" class="form-control">
+    </div>
+    <div class="mb-3">
+        <label for="editEnd" class="form-label">End Date & Time:</label>
+        <input type="datetime-local" id="editEnd" name="end" class="form-control">
+    </div>
+</div>
+                    
+                    
                     <div class="mb-3">
                         <label for="editContactNumber" class="form-label">Contact Number:</label>
                         <input type="text" id="editContactNumber" name="contact_number" class="form-control" required>
@@ -852,6 +865,18 @@ document.getElementById('updatePayment').addEventListener('change', function() {
     });
 });
 
+
+// Handle date/time fields toggle
+document.getElementById('updateDateTime').addEventListener('change', function() {
+        const dateTimeFields = document.getElementById('dateTimeFields');
+        dateTimeFields.style.display = this.checked ? 'block' : 'none';
+        
+        const fields = dateTimeFields.querySelectorAll('input');
+        fields.forEach(field => {
+            field.required = this.checked;
+        });
+    });
+
   // Set up form submission
   setupEditFormSubmission(info);
 }
@@ -903,11 +928,11 @@ roomNumbers.forEach((room) => {
         e.preventDefault();
 
         const addNewPayment = document.getElementById('updatePayment').checked;
-        
+        const updateDateTime = document.getElementById('updateDateTime').checked;
+
+        // Create base data without dates
         const updatedData = {
             name: document.getElementById("editName").value,
-            start: document.getElementById("editStart").value,
-            end: document.getElementById("editEnd").value,
             function_type: document.getElementById("editFunctionType").value,
             contact_number: document.getElementById("editContactNumber").value,
             guest_count: document.getElementById("editGuestCount").value,
@@ -915,6 +940,13 @@ roomNumbers.forEach((room) => {
                 .map(checkbox => checkbox.value)
         };
 
+        // Only add date/time fields if the checkbox is checked
+        if (updateDateTime) {
+            updatedData.start = document.getElementById("editStart").value;
+            updatedData.end = document.getElementById("editEnd").value;
+        }
+
+        // Add payment data if checkbox is checked
         if (addNewPayment) {
             updatedData.advance_payment = document.getElementById("editAdvancePayment").value;
             updatedData.bill_number = document.getElementById("editBillNumber").value;

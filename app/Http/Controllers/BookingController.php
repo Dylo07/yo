@@ -102,62 +102,68 @@ class BookingController extends Controller
      */
     public function update(Request $request, $id)
     {
-    try {
-        $booking = Booking::findOrFail($id);
-        
-        $validationRules = [
-            'start' => 'required|date',
-            'end' => 'nullable|date',
-            'name' => 'required|string',
-            'function_type' => 'required|string',
-            'contact_number' => 'required|string',
-            'room_numbers' => 'required|array',
-            'guest_count' => 'required|string',
-        ];
-
-        // Add payment validation rules only if payment data is present
-        if ($request->has('advance_payment')) {
-            $validationRules += [
-                'advance_payment' => 'required|numeric',
-                'bill_number' => 'required|string',
-                'advance_date' => 'required|date',
-                'payment_method' => 'required|in:online,cash'
+        try {
+            $booking = Booking::findOrFail($id);
+            
+            // Base validation rules without dates
+            $validationRules = [
+                'name' => 'required|string',
+                'function_type' => 'required|string',
+                'contact_number' => 'required|string',
+                'room_numbers' => 'required|array',
+                'guest_count' => 'required|string',
             ];
-        }
-
-        $validated = $request->validate($validationRules);
-
-        // Update booking details
-        $booking->update([
-            'start' => $validated['start'],
-            'end' => $validated['end'],
-            'name' => $validated['name'],
-            'function_type' => $validated['function_type'],
-            'contact_number' => $validated['contact_number'],
-            'room_numbers' => $validated['room_numbers'],
-            'guest_count' => $validated['guest_count']
-        ]);
-
-        // Add new payment only if payment data is present
-        if ($request->has('advance_payment')) {
-            $booking->addPayment([
-                'advance_payment' => $validated['advance_payment'],
-                'bill_number' => $validated['bill_number'],
-                'advance_date' => $validated['advance_date'],
-                'payment_method' => $validated['payment_method']
+    
+            // Add date validation rules only if they are present in request
+            if ($request->has('start')) {
+                $validationRules['start'] = 'required|date';
+                $validationRules['end'] = 'nullable|date';
+            }
+    
+            // Add payment validation rules only if payment data is present
+            if ($request->has('advance_payment')) {
+                $validationRules += [
+                    'advance_payment' => 'required|numeric',
+                    'bill_number' => 'required|string',
+                    'advance_date' => 'required|date',
+                    'payment_method' => 'required|in:online,cash'
+                ];
+            }
+    
+            $validated = $request->validate($validationRules);
+    
+            // Update booking details - only update fields that are present in the request
+            $updateData = array_intersect_key($validated, array_flip([
+                'name', 'function_type', 'contact_number', 'room_numbers', 'guest_count'
+            ]));
+    
+            // Only include dates if they were provided
+            if ($request->has('start')) {
+                $updateData['start'] = $validated['start'];
+                $updateData['end'] = $validated['end'];
+            }
+    
+            $booking->update($updateData);
+    
+            // Add new payment only if payment data is present
+            if ($request->has('advance_payment')) {
+                $booking->addPayment([
+                    'advance_payment' => $validated['advance_payment'],
+                    'bill_number' => $validated['bill_number'],
+                    'advance_date' => $validated['advance_date'],
+                    'payment_method' => $validated['payment_method']
+                ]);
+            }
+    
+            return response()->json(['message' => 'Booking updated successfully']);
+        } catch (\Exception $e) {
+            Log::error('Booking Update Error:', [
+                'error' => $e->getMessage(),
+                'request' => $request->all()
             ]);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        return response()->json(['message' => 'Booking updated successfully']);
-    } catch (\Exception $e) {
-        Log::error('Booking Update Error:', [
-            'error' => $e->getMessage(),
-            'request' => $request->all()
-        ]);
-        return response()->json(['error' => $e->getMessage()], 500);
     }
-}
-
     public function availableRooms(Request $request)
     {
         $date = $request->query('date');

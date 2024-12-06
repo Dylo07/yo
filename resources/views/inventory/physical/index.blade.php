@@ -26,14 +26,19 @@
                     View Monthly Stock Details
                 </a>
             </div>
-
-            <!-- Stock Navigation -->
-            <form action="{{ route('inv_inventory.index') }}" method="GET" class="mb-4">
-                <div class="row g-3">
-                    <!-- Category Filter -->
-                    <div class="col-md-3">
-                        <label for="category_filter" class="form-label">Select Category</label>
-                        <select name="category_id" id="category_filter" class="form-select" onchange="this.form.submit()">
+<!-- Stock Navigation -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Stock Navigation</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ route('inv_inventory.index') }}" method="GET">
+            <div class="row g-3">
+                <!-- Category Filter -->
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="category_filter" class="form-label fw-bold">Select Category</label>
+                        <select name="category_id" id="category_filter" class="form-select border-primary" onchange="this.form.submit()">
                             <option value="">All Categories</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
@@ -42,50 +47,53 @@
                             @endforeach
                         </select>
                     </div>
+                </div>
 
-                    <!-- Month Selection -->
-                    <div class="col-md-3">
-                        <label for="month" class="form-label">Month</label>
-                        <select name="month" id="month" class="form-select" onchange="this.form.submit()">
-                            @foreach(range(1, 12) as $m)
-                                @php
-                                    $monthDate = Carbon\Carbon::createFromDate($currentYear, $m, 1);
-                                    $isDisabled = $monthDate->isAfter(now());
-                                @endphp
-                                <option value="{{ $m }}" 
-                                        {{ $currentMonth == $m ? 'selected' : '' }}
-                                        {{ $isDisabled ? 'disabled' : '' }}>
-                                    {{ $monthDate->format('F') }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                     <!-- Month Selection -->
+                <div class="col-md-3">
+                    <label for="month" class="form-label">Month</label>
+                    <select name="month" id="month" class="form-select" onchange="this.form.submit()">
+                        @foreach(range(1, 12) as $m)
+                            @php
+                                $monthDate = Carbon\Carbon::createFromDate($currentYear, $m, 1);
+                                $isDisabled = $monthDate->isAfter(now());
+                            @endphp
+                            <option value="{{ $m }}" 
+                                    {{ $currentMonth == $m ? 'selected' : '' }}
+                                    {{ $isDisabled ? 'disabled' : '' }}>
+                                {{ $monthDate->format('F') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    <!-- Year Selection -->
-                    <div class="col-md-3">
-                        <label for="year" class="form-label">Year</label>
-                        <select name="year" id="year" class="form-select" onchange="this.form.submit()">
-                            @foreach(range(now()->subYears(2)->year, now()->year) as $y)
-                                <option value="{{ $y }}" {{ $currentYear == $y ? 'selected' : '' }}>
-                                    {{ $y }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                     <!-- Year Selection -->
+                <div class="col-md-3">
+                    <label for="year" class="form-label">Year</label>
+                    <select name="year" id="year" class="form-select" onchange="this.form.submit()">
+                        @foreach(range(now()->subYears(2)->year, now()->year) as $y)
+                            <option value="{{ $y }}" {{ $currentYear == $y ? 'selected' : '' }}>
+                                {{ $y }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
 
                     <!-- Quick Navigation -->
-                    <div class="col-md-3 align-self-end">
-                        <button type="submit" name="month" value="{{ now()->month }}" 
-                                class="btn btn-secondary me-2">Current Month</button>
-                        <button type="submit" name="month" value="{{ now()->subMonth()->month }}" 
-                                class="btn btn-outline-secondary"
-                                onclick="this.form.year.value='{{ now()->subMonth()->year }}'">
-                            Last Month
-                        </button>
-                    </div>
+                <div class="col-md-3 align-self-end">
+                    <button type="submit" name="month" value="{{ now()->month }}" 
+                            class="btn btn-secondary me-2">Current Month</button>
+                    <button type="submit" name="month" value="{{ now()->subMonth()->month }}" 
+                            class="btn btn-outline-secondary"
+                            onclick="this.form.year.value='{{ now()->subMonth()->year }}'">
+                        Last Month
+                    </button>
                 </div>
-            </form>
-
+            </div>
+        </form>
+    </div>
+</div>
             <!-- Stock Update Section -->
             <div class="card mb-4">
                 <div class="card-header">
@@ -128,73 +136,92 @@
                 </div>
             </div>
 
-            <!-- Stock Overview Section -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">
-                        Stock Overview - {{ Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->format('F Y') }}
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        @php
-                            $daysInMonth = Carbon\Carbon::create($currentYear, $currentMonth)->daysInMonth;
-                        @endphp
+          <!-- Stock Overview Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title mb-0">
+            Stock Overview - {{ Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->format('F Y') }}
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            @php
+                $daysInMonth = Carbon\Carbon::create($currentYear, $currentMonth)->daysInMonth;
+            @endphp
 
-                        @foreach($categories as $category)
-                            @if(!request('category_id') || request('category_id') == $category->id)
-                                <h4 class="mt-3">{{ $category->name }}</h4>
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th class="position-sticky start-0 bg-light">Product</th>
-                                            @for($i = 1; $i <= $daysInMonth; $i++)
-                                                <th>{{ $i }}</th>
-                                            @endfor
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($category->products as $product)
-                                            <tr>
-                                                <td class="position-sticky start-0 bg-light">{{ $product->name }}</td>
-                                                @for($i = 1; $i <= $daysInMonth; $i++)
-                                                    @php
-                                                        $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
-                                                        $inventory = $product->inventories->firstWhere('stock_date', $date);
-                                                        
-                                                        if ($inventory) {
-                                                            $displayStock = $inventory->stock_level;
-                                                        } else {
-                                                            $previousInventory = $product->inventories
-                                                                ->where('stock_date', '<', $date)
-                                                                ->sortByDesc('stock_date')
-                                                                ->first();
-                                                            
-                                                            if ($i === 1 && !$inventory && $previousInventory) {
-                                                                $displayStock = $previousInventory->stock_level;
-                                                            } else {
-                                                                $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-                                                            }
-                                                        }
-                                                    @endphp
-                                                    <td class="{{ $date == now()->toDateString() ? 'table-primary' : '' }}">
-                                                        @if($date <= now()->toDateString())
-                                                            {{ $displayStock }}
-                                                        @else
-                                                            -
-                                                        @endif
-                                                    </td>
-                                                @endfor
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-            </div>
+            @if(request('category_id'))
+                @php
+                    $selectedCategory = $categories->firstWhere('id', request('category_id'));
+                @endphp
+                @if($selectedCategory)
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th class="position-sticky start-0 bg-light">Product</th>
+                                @for($i = 1; $i <= $daysInMonth; $i++)
+                                    <th>{{ $i }}</th>
+                                @endfor
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($selectedCategory->products as $product)
+                                <tr>
+                                    <td class="position-sticky start-0 bg-light">{{ $product->name }}</td>
+                                    @for($i = 1; $i <= $daysInMonth; $i++)
+                                        @php
+                                            $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
+                                            $inventory = $product->inventories->firstWhere('stock_date', $date);
+                                            
+                                            if ($inventory) {
+                                                $displayStock = $inventory->stock_level;
+                                            } else {
+                                                $previousInventory = $product->inventories
+                                                    ->where('stock_date', '<', $date)
+                                                    ->sortByDesc('stock_date')
+                                                    ->first();
+                                                
+                                                if ($i === 1 && !$inventory && $previousInventory) {
+                                                    $displayStock = $previousInventory->stock_level;
+                                                } else {
+                                                    $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
+                                                }
+                                            }
 
+                                            $stockLogs = $monthLogs->where('product_id', $product->id)
+                                                ->filter(function($log) use ($date) {
+                                                    return $log->created_at->format('Y-m-d') === $date;
+                                                });
+                                            
+                                            $additions = $stockLogs->where('action', 'add')->sum('quantity');
+                                            $removals = $stockLogs->where('action', 'remove')->sum('quantity');
+                                        @endphp
+                                        <td class="{{ $date == now()->toDateString() ? 'table-primary' : '' }}">
+                                            @if($date <= now()->toDateString())
+                                                <div>{{ $displayStock }}</div>
+                                                @if($additions)
+                                                    <div class="text-success">+{{ $additions }}</div>
+                                                @endif
+                                                @if($removals)
+                                                    <div class="text-danger">-{{ $removals }}</div>
+                                                @endif
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                    @endfor
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            @else
+                <div class="alert alert-info">
+                    Please select a category to view stock details
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
             <!-- Log Details Section -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -380,8 +407,45 @@
     font-weight: bold;
     color: #000;
 }
-</style>
 
+/* Add to your existing styles */
+.text-success {
+    color: #28a745 !important;
+    font-weight: bold;
+    font-size: 0.85em;
+}
+.text-danger {
+    color: #dc3545 !important;
+    font-weight: bold;
+    font-size: 0.85em;
+}
+td div {
+    line-height: 1.2;
+}
+.table-responsive {
+    overflow-x: auto;
+    max-height: 600px;
+}
+.position-sticky {
+    position: sticky;
+    z-index: 1;
+}
+.start-0 {
+    left: 0;
+}
+.form-select.border-primary {
+    border-width: 2px;
+}
+
+.form-label.fw-bold {
+    color: #0d6efd;
+    font-size: 1rem;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+</style>
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {

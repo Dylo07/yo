@@ -44,15 +44,26 @@ class InvInventoryController extends Controller
     
         $categories = $categories->get();
     
-        // Update log query to filter by date and limit to 5 per page
+        // Get all logs for the current month for stock movement indicators
+        $monthLogs = InvInventoryLog::with(['user', 'product'])
+            ->whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
+            ->get();
+    
+        // Get paginated logs for the selected date
         $logs = InvInventoryLog::with(['user', 'product'])
             ->whereDate('created_at', $selectedDate)
             ->orderBy('created_at', 'desc')
             ->paginate(5);
     
-        return view('inventory.physical.index', compact('categories', 'currentMonth', 'currentYear', 'logs'));
+        return view('inventory.physical.index', compact(
+            'categories', 
+            'currentMonth', 
+            'currentYear', 
+            'logs',
+            'monthLogs'  // Added this for stock movement indicators
+        ));
     }
-
     // Store a new category
     public function storeCategory(Request $request)
     {

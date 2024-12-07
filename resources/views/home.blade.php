@@ -181,9 +181,68 @@
             </table>
         </div>
     </div>
+
+
+<!-- Add this after the Pending Tasks section in resources/views/home.blade.php -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white p-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="mb-0">Salary Advances</h5>
+                    <select class="form-select form-select-sm bg-dark text-white border-secondary" 
+                            style="width: auto; min-width: 200px;"
+                            onchange="window.location.href='{{ route('home') }}?period=' + this.value">
+                        @foreach($periods as $index => $period)
+                            <option value="{{ $index }}" {{ $selectedPeriod == $index ? 'selected' : '' }}>
+                                {{ $period['label'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <h6 class="mb-0 me-3 text-warning">Total: Rs. {{ number_format($totalAdvance, 2) }}</h6>
+                <a href="{{ route('costs.create') }}" class="btn btn-sm btn-outline-light">Add Advance</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Employee Name</th>
+                        <th class="text-end">Total Amount</th>
+                        <th class="text-center">Number of Advances</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($salaryAdvances->groupBy('person.name') as $employeeName => $advances)
+                        <tr>
+                            <td><strong>{{ $employeeName }}</strong></td>
+                            <td class="text-end text-danger fw-bold">Rs. {{ number_format($advances->sum('amount'), 2) }}</td>
+                            <td class="text-center">{{ $advances->count() }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                No salary advances found for this period
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                <tfoot class="table-dark">
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td class="text-end text-warning"><strong>Rs. {{ number_format($totalAdvance, 2) }}</strong></td>
+                        <td class="text-center"><strong>{{ $salaryAdvances->count() }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
 </div>
-
-
 </div>
 
 <style>

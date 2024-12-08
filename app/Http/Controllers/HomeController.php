@@ -33,28 +33,26 @@ class HomeController extends Controller
          // Get selected month or default to current month
          $selectedMonth = $request->input('month', Carbon::now()->format('Y-m'));
          $today = Carbon::now();
-         $currentDay = $today->day;
      
-         // Calculate current period for service charge (10th to 10th)
-         if ($currentDay > 10) {
-             $scStartDate = Carbon::parse($selectedMonth)->setDay(10)->startOfDay();
-             $scEndDate = Carbon::parse($selectedMonth)->addMonth()->setDay(10)->endOfDay();
-         } else {
-             $scStartDate = Carbon::parse($selectedMonth)->subMonth()->setDay(10)->startOfDay();
-             $scEndDate = Carbon::parse($selectedMonth)->setDay(10)->endOfDay();
+         // Calculate regular month dates for service charge
+         $dateStart = Carbon::parse($selectedMonth)->startOfMonth();
+         $dateEnd = Carbon::parse($selectedMonth)->endOfMonth();
+     
+         // If it's current month, set end date to now
+         if ($selectedMonth === Carbon::now()->format('Y-m')) {
+             $dateEnd = Carbon::now();
          }
      
-         // Calculate previous period
-         $prevScStartDate = $scStartDate->copy()->subMonth();
-         $prevScEndDate = $scEndDate->copy()->subMonth();
-     
-         // Get current period sales
-         $currentSales = Sale::whereBetween('updated_at', [$scStartDate, $scEndDate])
+         // Get current month service charge
+         $currentSales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
                          ->where('sale_status', 'paid');
          $serviceCharge = $currentSales->sum('total_recieved');
      
-         // Get previous period sales
-         $previousSales = Sale::whereBetween('updated_at', [$prevScStartDate, $prevScEndDate])
+         // Get previous month service charge
+         $prevMonthStart = $dateStart->copy()->subMonth()->startOfMonth();
+         $prevMonthEnd = $dateStart->copy()->subMonth()->endOfMonth();
+         
+         $previousSales = Sale::whereBetween('updated_at', [$prevMonthStart, $prevMonthEnd])
                          ->where('sale_status', 'paid');
          $previousServiceCharge = $previousSales->sum('total_recieved');
      
@@ -89,6 +87,7 @@ class HomeController extends Controller
      
          // Add period navigation for salary advances
          $selectedPeriod = $request->get('period', 0);
+         $currentDay = $today->day;
          
          // Calculate periods for salary advances
          $periods = [];
@@ -126,8 +125,8 @@ class HomeController extends Controller
          $dateRangeText = $selectedPeriodDates['label'];
      
          // Service charge period labels
-         $periodLabel = $scStartDate->format('M d, Y') . ' - ' . $scEndDate->format('M d, Y');
-         $previousPeriodLabel = $prevScStartDate->format('M d, Y') . ' - ' . $prevScEndDate->format('M d, Y');
+         $periodLabel = $dateStart->format('M d, Y') . ' - ' . $dateEnd->format('M d, Y');
+         $previousPeriodLabel = $prevMonthStart->format('M d, Y') . ' - ' . $prevMonthEnd->format('M d, Y');
      
          return view('home', compact(
              'serviceCharge',

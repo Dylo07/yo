@@ -14,6 +14,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCategoryController;
 use App\Http\Controllers\CompletedTaskController;
 use App\Http\Controllers\RoomAvailabilityController;
+use App\Http\Controllers\StaffAttendanceController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -157,6 +158,15 @@ Route::resource('task-categories', TaskCategoryController::class);
 Route::get('completed-tasks', [CompletedTaskController::class, 'index'])->name('completed-tasks.index');
 
 
+Route::middleware(['auth'])->group(function () {
+   Route::get('/staff/attendance', [StaffAttendanceController::class, 'index'])->name('staff.attendance.index');
+   Route::post('/staff/attendance', [StaffAttendanceController::class, 'store'])->name('staff.attendance.store');
+   Route::post('/staff/attendance/checkout', [StaffAttendanceController::class, 'checkOut'])->name('staff.attendance.checkout');
+   Route::get('/staff/attendance/report', [StaffAttendanceController::class, 'report'])->name('staff.attendance.report');
+});
+
+// routes/api.php
+Route::post('/fingerprint/attendance', [FingerprintDeviceController::class, 'processAttendance']);
 // Room Availability Management Routes
 // Room Availability Management Routes
 Route::get('/rooms/availability', [RoomAvailabilityController::class, 'index'])->name('rooms.availability');

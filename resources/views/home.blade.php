@@ -49,7 +49,8 @@
                             ['url' => '/inv-inventory', 'title' => 'Physical Item Inventory', 'icon' => 'inv'],
                             ['url' => '/costs', 'title' => 'Daily Expense', 'icon' => 'expense'],
                             ['url' => '/tasks', 'title' => 'Daily Tasks', 'icon' => 'task'],
-                            ['url' => '/rooms/availability', 'title' => 'Room Availability', 'icon' => 'room']
+                            ['url' => '/rooms/availability', 'title' => 'Room Availability', 'icon' => 'room'],
+                            ['url' => '/staff/attendance', 'title' => 'Staff Attendance', 'icon' => 'attendance'] 
                         ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))
                                 <div class="col-lg-4 col-md-6">

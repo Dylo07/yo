@@ -6,32 +6,39 @@ use App\Models\Staff;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Imports\AttendanceImport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class StaffAttendanceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $staff = Staff::where('status', 'active')->get();
-        $currentDate = Carbon::now()->format('Y-m-d');
+        $staff = Staff::where('status', 'active')->orderBy('staff_code')->get();
         
-        $attendances = Attendance::with('staff')
-            ->whereDate('date', $currentDate)
+        // Get selected month or default to current month
+        $selectedDate = $request->month 
+            ? Carbon::createFromFormat('Y-m', $request->month)
+            : Carbon::now();
+        
+        // Get attendances for selected month
+        $attendances = Attendance::whereMonth('date', $selectedDate->month)
+            ->whereYear('date', $selectedDate->year)
             ->get()
-            ->keyBy('staff_id');
+            ->groupBy(function($item) {
+                return $item->staff_id . '-' . Carbon::parse($item->date)->format('d');
+            });
     
-        $punchHistory = Attendance::with('staff')
-            ->orderBy('created_at', 'desc')
-            ->take(20)
-            ->get();
+        // Add debug information
+        \Log::info('Staff count: ' . $staff->count());
+        \Log::info('Attendance records: ' . $attendances->count());
     
         return view('staff.attendance.index', compact(
             'staff', 
-            'attendances', 
-            'currentDate',
-            'punchHistory'
+            'attendances',
+            'selectedDate'
         ));
     }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -128,4 +135,21 @@ class StaffAttendanceController extends Controller
             'endDate'
         ));
     }
+
+
+    public function import(Request $request)
+{
+    $request->validate([
+        'attendance_file' => 'required|mimes:xlsx,xls',
+        'month' => 'nullable|date_format:Y-m'
+    ]);
+
+    try {
+        $month = $request->month ?? Carbon::now()->format('Y-m');
+        Excel::import(new AttendanceImport($month), $request->file('attendance_file'));
+        return back()->with('success', 'Attendance data imported successfully');
+    } catch (\Exception $e) {
+        return back()->with('error', 'Error importing attendance: ' . $e->getMessage());
+    }
+}
 }

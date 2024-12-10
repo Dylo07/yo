@@ -4,32 +4,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Attendance extends Model 
+class Attendance extends Model
 {
     protected $fillable = [
         'staff_id',
         'date',
-        'check_in',
-        'check_out',
-        'status',
-        'fingerprint_data',
-        'device_id',
-        'verification_status'
+        'raw_data',
+        'created_at',
+        'updated_at'
+    ];
+
+    protected $casts = [
+        'date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     protected $dates = [
         'date',
-        'check_in',
-        'check_out'
+        'created_at',
+        'updated_at'
     ];
 
+    // Define relationship with Staff model
     public function staff()
     {
-        return $this->belongsTo(Staff::class);
-    }
-
-    public function device()
-    {
-        return $this->belongsTo(Device::class);
+        return $this->belongsTo(Staff::class, 'staff_id');
     }
 }

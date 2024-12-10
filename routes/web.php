@@ -15,6 +15,7 @@ use App\Http\Controllers\TaskCategoryController;
 use App\Http\Controllers\CompletedTaskController;
 use App\Http\Controllers\RoomAvailabilityController;
 use App\Http\Controllers\StaffAttendanceController;
+use App\Http\Controllers\AttendanceController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -165,8 +166,10 @@ Route::middleware(['auth'])->group(function () {
    Route::get('/staff/attendance/report', [StaffAttendanceController::class, 'report'])->name('staff.attendance.report');
 });
 
+
 // routes/api.php
 Route::post('/fingerprint/attendance', [FingerprintDeviceController::class, 'processAttendance']);
+
 // Room Availability Management Routes
 // Room Availability Management Routes
 Route::get('/rooms/availability', [RoomAvailabilityController::class, 'index'])->name('rooms.availability');
@@ -185,7 +188,7 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
  
      
-     
+   Route::post('/staff/attendance/import', [StaffAttendanceController::class, 'import'])->name('staff.attendance.import');
      // routes for management
    
      Route::resource('management/user',App\Http\Controllers\Management\UserController::class);

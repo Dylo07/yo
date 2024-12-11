@@ -170,6 +170,12 @@ Route::middleware(['auth'])->group(function () {
 // routes/api.php
 Route::post('/fingerprint/attendance', [FingerprintDeviceController::class, 'processAttendance']);
 
+
+Route::middleware(['web', 'auth'])->group(function () {
+   Route::post('/staff/attendance/import', [StaffAttendanceController::class, 'import'])->name('staff.attendance.import');
+});
+
+
 // Room Availability Management Routes
 // Room Availability Management Routes
 Route::get('/rooms/availability', [RoomAvailabilityController::class, 'index'])->name('rooms.availability');
@@ -188,7 +194,6 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
  
      
-   Route::post('/staff/attendance/import', [StaffAttendanceController::class, 'import'])->name('staff.attendance.import');
      // routes for management
    
      Route::resource('management/user',App\Http\Controllers\Management\UserController::class);

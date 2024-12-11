@@ -10,15 +10,15 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option controls the default session "driver" that will be used on
-    | requests. By default, we will use the lightweight native driver but
-    | you may specify any of the other wonderful drivers provided here.
+    | requests. By default, we will use the database driver for better
+    | reliability in cloud environments.
     |
     | Supported: "file", "cookie", "database", "apc",
     |            "memcached", "redis", "dynamodb", "array"
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'file'),
+    'driver' => env('SESSION_DRIVER', 'database'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,12 +26,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the number of minutes that you wish the session
-    | to be allowed to remain idle before it expires. If you want them
-    | to immediately expire on the browser closing, set that option.
+    | to be allowed to remain idle before it expires. We've set a longer
+    | default timeout to handle file uploads better.
     |
     */
 
-    'lifetime' => env('SESSION_LIFETIME', 120),
+    'lifetime' => env('SESSION_LIFETIME', 240),
 
     'expire_on_close' => false,
 
@@ -46,7 +46,7 @@ return [
     |
     */
 
-    'encrypt' => false,
+    'encrypt' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -66,13 +66,13 @@ return [
     | Session Database Connection
     |--------------------------------------------------------------------------
     |
-    | When using the "database" or "redis" session drivers, you may specify a
+    | When using the "database" session driver, you may specify a different
     | connection that should be used to manage these sessions. This should
     | correspond to a connection in your database configuration options.
     |
     */
 
-    'connection' => env('SESSION_CONNECTION'),
+    'connection' => env('SESSION_CONNECTION', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -96,11 +96,9 @@ return [
     | list a cache store that should be used for these sessions. This value
     | must match with one of the application's configured cache "stores".
     |
-    | Affects: "apc", "dynamodb", "memcached", "redis"
-    |
     */
 
-    'store' => env('SESSION_STORE'),
+    'store' => env('SESSION_STORE', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -151,11 +149,11 @@ return [
     |
     | Here you may change the domain of the cookie used to identify a session
     | in your application. This will determine which domains the cookie is
-    | available to in your application. A sensible default has been set.
+    | available to in your application. Set this based on your domain.
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => env('SESSION_DOMAIN', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -168,7 +166,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -190,7 +188,7 @@ return [
     |
     | This option determines how your cookies behave when cross-site requests
     | take place, and can be used to mitigate CSRF attacks. By default, we
-    | will set this value to "lax" since this is a secure default value.
+    | set this to "lax" since this is a secure default value.
     |
     | Supported: "lax", "strict", "none", null
     |

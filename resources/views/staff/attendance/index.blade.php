@@ -86,12 +86,18 @@
                 <div class="card-body">
                 <form action="{{ route('staff.attendance.import') }}" method="POST" enctype="multipart/form-data" class="row g-3">
     @csrf
-    <input type="hidden" name="_token" value="{{ csrf_token() }}">
     
+    {{-- Add a hidden token field explicitly --}}
+    <input type="hidden" name="_token" value="{{ csrf_token() }}">
     
     <div class="col-md-6">
         <label class="form-label">Excel File</label>
         <input type="file" name="attendance_file" class="form-control" accept=".xlsx,.xls" required>
+    </div>
+    
+    <div class="col-md-4">
+        <label class="form-label">Month</label>
+        <input type="month" name="month" class="form-control" value="{{ now()->format('Y-m') }}">
     </div>
     
     <div class="col-md-12">
@@ -100,7 +106,6 @@
         </button>
     </div>
 </form>
-
                     @if(session('success'))
                         <div class="alert alert-success mt-3">
                             {{ session('success') }}

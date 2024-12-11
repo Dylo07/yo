@@ -84,21 +84,22 @@
                     </form>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('staff.attendance.import') }}" method="POST" enctype="multipart/form-data" class="row g-3">
-                        @csrf
-                        <input type="hidden" name="month" value="{{ request('month', now()->format('Y-m')) }}">
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Excel File</label>
-                            <input type="file" name="attendance_file" class="form-control" accept=".xlsx,.xls" required>
-                        </div>
-                        
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">
-                                Import Attendance
-                            </button>
-                        </div>
-                    </form>
+                <form action="{{ route('staff.attendance.import') }}" method="POST" enctype="multipart/form-data" class="row g-3">
+    @csrf
+    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+    
+    
+    <div class="col-md-6">
+        <label class="form-label">Excel File</label>
+        <input type="file" name="attendance_file" class="form-control" accept=".xlsx,.xls" required>
+    </div>
+    
+    <div class="col-md-12">
+        <button type="submit" class="btn btn-primary">
+            Import Attendance
+        </button>
+    </div>
+</form>
 
                     @if(session('success'))
                         <div class="alert alert-success mt-3">

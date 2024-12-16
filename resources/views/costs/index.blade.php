@@ -59,23 +59,31 @@
         </div>
     </div>
 
-    <!-- Charts Section -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <canvas id="categoryChart" height="300"></canvas>
-                </div>
+   <!-- Charts Section -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Expense Distribution by Category</h5>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <canvas id="dailyChart" height="300"></canvas>
-                </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="300"></canvas>
             </div>
         </div>
     </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Daily Expenses Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
     <!-- Category Totals Section -->
 <div class="card mb-4">
@@ -294,18 +302,22 @@ document.addEventListener('DOMContentLoaded', function() {
         labels: {!! json_encode($chartData['categoryDistribution']->pluck('category')) !!},
         data: {!! json_encode($chartData['categoryDistribution']->pluck('total')) !!}
     });
+    @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Charts
+    initializeCharts();
+    
+    // Initialize Collapse Functionality
+    initializeCollapse();
+});
 
-    console.log('Daily Expenses Data:', {
-        labels: {!! json_encode($chartData['dailyExpenses']->pluck('date')) !!},
-        data: {!! json_encode($chartData['dailyExpenses']->pluck('total')) !!}
-    });
-
+function initializeCharts() {
     try {
         // Category Distribution Chart
         const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-        console.log('Category Context:', categoryCtx);
-        
-        const categoryChart = new Chart(categoryCtx, {
+        new Chart(categoryCtx, {
             type: 'doughnut',
             data: {
                 labels: {!! json_encode($chartData['categoryDistribution']->pluck('category')) !!},
@@ -326,21 +338,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     title: {
                         display: true,
                         text: 'Expense Distribution by Category'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `Rs. ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
                     }
                 }
             }
         });
-        console.log('Category Chart created successfully');
-    } catch (error) {
-        console.error('Error creating category chart:', error);
-    }
 
-    try {
         // Daily Expenses Chart
         const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-        console.log('Daily Context:', dailyCtx);
-        
-        const dailyChart = new Chart(dailyCtx, {
+        new Chart(dailyCtx, {
             type: 'bar',
             data: {
                 labels: {!! json_encode($chartData['dailyExpenses']->pluck('date')) !!},
@@ -379,20 +394,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
-        console.log('Daily Chart created successfully');
     } catch (error) {
-        console.error('Error creating daily chart:', error);
+        console.error('Error initializing charts:', error);
     }
+}
 
-    // Initialize collapse functionality
-    $('.clickable').click(function() {
-        $(this).find('.float-right').text(function(_, value) {
-            return value === '▼' ? '▲' : '▼';
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-    // Handle collapse icons and functionality
+function initializeCollapse() {
     document.querySelectorAll('.clickable').forEach(function(element) {
         element.addEventListener('click', function() {
             const target = this.getAttribute('data-target');
@@ -411,12 +418,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
-
-
-
-
-});
-
+}
+</script>
 @endpush
 
 <style>
@@ -449,14 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .collapse.show {
     display: table-row;
-}
-
-.clickable {
-    cursor: pointer;
-}
-
-.clickable:hover {
-    background-color: rgba(0,0,0,.075);
 }
 
 .float-right {

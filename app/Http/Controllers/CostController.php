@@ -63,6 +63,17 @@ class CostController extends Controller
         $groups = Group::orderBy('name')->get();
         $persons = Person::orderBy('name')->get();
 
+
+         // Add this section for the pie chart data
+
+        $monthYear = Carbon::parse($month);
+        $startOfMonth = $monthYear->copy()->startOfMonth();
+        $endOfMonth = $monthYear->copy()->endOfMonth();
+        
+        // Get expense distribution
+        $expenseDistribution = Cost::getMonthlyDistribution($startOfMonth, $endOfMonth);
+        
+
         return view('costs.index', compact(
             'monthlyGroupedCosts',
             'dailyGroupedCosts',
@@ -73,7 +84,8 @@ class CostController extends Controller
             'persons',
             'analytics',
             'chartData',
-            'grandTotal'
+            'grandTotal',
+            'expenseDistribution' 
         ));
     }
 
@@ -232,43 +244,37 @@ class CostController extends Controller
 }
 private function prepareChartData($costs)
 {
-    // Debug line to check costs
-    \Log::debug('Preparing chart data for costs:', [
-        'count' => $costs->count(),
-        'first_cost' => $costs->first()
-    ]);
-
     try {
-        // Daily expenses chart data - ensure it returns a collection
-        $dailyExpenses = collect($costs->groupBy(function($cost) {
-            return $cost->cost_date->format('Y-m-d');
-        })->map(function($dayCosts) {
-            return [
-                'date' => $dayCosts->first()->cost_date->format('M d'),
-                'total' => $dayCosts->sum('amount')
-            ];
-        })->sortKeys());
-
-        // Category distribution chart data - ensure it returns a collection
-        $categoryDistribution = collect($costs->groupBy('group.name')
-            ->map(function($categoryCosts, $categoryName) {
+        // Daily expenses chart data
+        $dailyExpenses = $costs
+            ->groupBy(function($cost) {
+                return $cost->cost_date->format('Y-m-d');
+            })
+            ->map(function($dayCosts) {
                 return [
-                    'category' => $categoryName,
-                    'total' => $categoryCosts->sum('amount')
+                    'date' => $dayCosts->first()->cost_date->format('M d'),
+                    'total' => $dayCosts->sum('amount')
                 ];
             })
-            ->sortByDesc('total'));
+            ->values();
 
-        // Debug the prepared data
-        \Log::debug('Chart data prepared:', [
-            'daily_expenses' => $dailyExpenses->toArray(),
-            'category_distribution' => $categoryDistribution->toArray()
-        ]);
+        // Category distribution chart data
+        $categoryDistribution = $costs
+            ->groupBy('group.name')
+            ->map(function($groupCosts, $groupName) {
+                return [
+                    'category' => $groupName,
+                    'total' => $groupCosts->sum('amount')
+                ];
+            })
+            ->sortByDesc('total')
+            ->values();
 
         return [
             'dailyExpenses' => $dailyExpenses,
             'categoryDistribution' => $categoryDistribution
         ];
+
     } catch (\Exception $e) {
         \Log::error('Error preparing chart data: ' . $e->getMessage());
         return [

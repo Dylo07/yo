@@ -13,6 +13,19 @@ use Illuminate\Support\Facades\Log;
 
 class StaffAttendanceController extends Controller
 {
+    public function __construct()
+    {
+        // Ensure upload directory exists and is writable
+        $tempPath = storage_path('app/temp');
+        if (!file_exists($tempPath)) {
+            mkdir($tempPath, 0755, true);
+        }
+    }
+
+
+
+
+
     public function index(Request $request)
     {
         try {
@@ -164,75 +177,97 @@ class StaffAttendanceController extends Controller
 
     public function import(Request $request)
     {
-        // Start session if not already started
-        if (!session()->isStarted()) {
-            session()->start();
-        }
+        // Enable error reporting for debugging
+        ini_set('display_errors', 1);
+        error_reporting(E_ALL);
 
-        Log::info('Starting attendance import', [
-            'session_id' => session()->getId(),
-            'user_id' => auth()->id()
+        Log::info('Starting import process', [
+            'request_headers' => $request->headers->all(),
+            'session_id' => session()->getId()
         ]);
 
         try {
-            // Validate the request
+            // Validate the incoming request
             $validated = $request->validate([
-                'attendance_file' => 'required|file|mimes:xlsx,xls|max:10240', // 10MB max
-                'month' => 'nullable|date_format:Y-m'
+                'attendance_file' => [
+                    'required',
+                    'file',
+                    'mimes:xlsx,xls',
+                    'max:5120' // 5MB max
+                ]
             ]);
 
+            // Check if file exists and is valid
             if (!$request->hasFile('attendance_file') || !$request->file('attendance_file')->isValid()) {
-                throw new \Exception('Invalid file upload');
+                Log::error('Invalid file upload');
+                throw new \Exception('The uploaded file is invalid or corrupted');
             }
 
             $file = $request->file('attendance_file');
-            $month = $validated['month'] ?? Carbon::now()->format('Y-m');
-
-            // Log upload details
-            Log::info('Processing attendance file', [
+            
+            // Log file details
+            Log::info('File details', [
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
-                'month' => $month
+                'error' => $file->getError()
             ]);
 
-            // Store file temporarily
-            $tempPath = 'temp/attendance_' . time() . '.' . $file->getClientOriginalExtension();
-            Storage::put($tempPath, file_get_contents($file));
-
-            if (!Storage::exists($tempPath)) {
-                throw new \Exception('Failed to store uploaded file');
+            // Generate a unique filename
+            $filename = 'attendance_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
+            // Store file directly in storage path
+            $filePath = storage_path('app/temp/' . $filename);
+            
+            // Move uploaded file
+            if (!move_uploaded_file($file->getPathname(), $filePath)) {
+                throw new \Exception('Failed to move uploaded file');
             }
 
-            // Import the file
-            Excel::import(new AttendanceImport($month), Storage::path($tempPath));
+            // Process the Excel file
+            Excel::import(
+                new AttendanceImport($request->month ?? Carbon::now()->format('Y-m')),
+                $filePath
+            );
 
             // Clean up
-            Storage::delete($tempPath);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
 
-            Log::info('Attendance import completed successfully');
+            Log::info('Import completed successfully');
 
-            return back()->with('success', 'Attendance data imported successfully');
+            // Redirect with success message
+            return redirect()
+                ->route('staff.attendance.index')
+                ->with('success', 'Attendance data imported successfully');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation failed during import', [
-                'errors' => $e->errors()
+            Log::error('Validation error', [
+                'errors' => $e->errors(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
-            return back()
+
+            return redirect()
+                ->back()
                 ->withErrors($e->errors())
                 ->withInput();
 
         } catch (\Exception $e) {
-            Log::error('Error during attendance import', [
-                'error' => $e->getMessage(),
+            Log::error('Import error', [
+                'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return back()
-                ->with('error', 'Error importing attendance: ' . $e->getMessage())
+            return redirect()
+                ->back()
+                ->with('error', 'Import failed: ' . $e->getMessage())
                 ->withInput();
         }
     }
+
+
 }

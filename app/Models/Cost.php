@@ -54,4 +54,24 @@ class Cost extends Model
     {
         return $this->cost_date ? $this->cost_date->format('M d, Y') : 'N/A';
     }
+
+    public static function getMonthlyDistribution($startDate, $endDate)
+{
+    $totalExpenses = self::whereBetween('cost_date', [$startDate, $endDate])
+        ->sum('amount');
+
+    return self::join('groups', 'costs.group_id', '=', 'groups.id')
+        ->whereBetween('cost_date', [$startDate, $endDate])
+        ->groupBy('groups.name')
+        ->selectRaw('groups.name, SUM(amount) as total, (SUM(amount) / ? * 100) as percentage', [$totalExpenses])
+        ->orderByDesc('total')
+        ->get()
+        ->map(function ($item) {
+            return [
+                'name' => $item->name,
+                'value' => round($item->percentage, 1),
+                'total' => $item->total
+            ];
+        });
+}
 }

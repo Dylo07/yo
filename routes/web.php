@@ -16,6 +16,7 @@ use App\Http\Controllers\CompletedTaskController;
 use App\Http\Controllers\RoomAvailabilityController;
 use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\VehicleSecurityController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -133,6 +134,22 @@ Route::post('/inv-inventory/products', [InvInventoryController::class, 'storePro
 Route::post('/inv-inventory/update', [InvInventoryController::class, 'updateTodayStock'])->name('inv_inventory.update');
 // View Monthly Stock
 Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthlyStock'])->name('inv_inventory.monthly');
+
+
+
+
+// Vehicle Security Routes
+Route::middleware(['auth'])->group(function () {
+   Route::resource('vehicle-security', VehicleSecurityController::class);
+   Route::get('vehicle-security/date/{date?}', [VehicleSecurityController::class, 'showByDate'])
+    ->name('vehicle-security.by-date');
+    Route::post('vehicle-security/{id}/checkout', [VehicleSecurityController::class, 'checkout'])->name('vehicle-security.checkout');
+    Route::post('vehicle-security/{id}/temp-checkout', [VehicleSecurityController::class, 'tempCheckout'])->name('vehicle-security.temp-checkout');
+    Route::post('vehicle-security/{id}/temp-checkin', [VehicleSecurityController::class, 'tempCheckin'])->name('vehicle-security.temp-checkin');
+    Route::post('vehicle-security/{id}/update-team', [VehicleSecurityController::class, 'updateTeam'])->name('vehicle-security.update-team');
+   
+    Route::put('vehicle-security/{id}/update', [VehicleSecurityController::class, 'update'])->name('vehicle-security.update');
+});
 
 
 

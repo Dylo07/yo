@@ -24,10 +24,19 @@
             </select>
             <a href="{{ route('persons.create') }}" class="btn btn-link mt-2">Add New Person/Shop</a>
         </div>
+
+
         <div class="form-group">
             <label for="amount">Amount</label>
             <input type="number" name="amount" id="amount" class="form-control" placeholder="Enter amount" required>
         </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea name="description" id="description" class="form-control" rows="3" placeholder="Enter description"></textarea>
+        </div>
+
+        
         <div class="form-group">
     <label for="cost_date">Date</label>
     <input type="date" 

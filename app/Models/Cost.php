@@ -15,6 +15,7 @@ class Cost extends Model
         'person_id',
         'user_id',
         'amount',
+        'description',
         'cost_date',
     ];
 

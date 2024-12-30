@@ -111,6 +111,7 @@ class CostController extends Controller
             'person_id' => 'required|exists:persons,id',
             'amount' => 'required|numeric|min:0',
             'cost_date' => 'required|date',
+            'description' => 'nullable|string|max:1000',
         ]);
 
         Cost::create([

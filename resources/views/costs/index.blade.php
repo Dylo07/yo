@@ -149,7 +149,7 @@
                         <!-- Person/Shop Row -->
                         <tr class="collapse group-{{ $groupIndex }} table-light">
                             <td></td>
-                            <td colspan="3"><strong>{{ $person }}</strong></td>
+                            <td colspan="4"><strong>{{ $person }}</strong></td>
                         </tr>
                         @foreach ($data['costs'] as $cost)
                             <!-- Expense Row -->
@@ -214,6 +214,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Person/Shop</th>
+                            <th>Description</th>
                             <th>Expense</th>
                             <th>Actions</th>
                         </tr>
@@ -221,11 +222,12 @@
                     <tbody>
                         @foreach ($persons as $person => $data)
                             <tr class="table-secondary">
-                                <td colspan="3"><strong>{{ $person }}</strong></td>
+                                <td colspan="4"><strong>{{ $person }}</strong></td>
                             </tr>
                             @foreach ($data['costs'] as $cost)
                                 <tr>
                                     <td>{{ $person }}</td>
+                                    <td>{{ $cost->description ?? '-' }}</td>
                                     <td>Rs. {{ number_format($cost->amount, 2) }}</td>
                                     <td>
                                         <a href="{{ route('costs.print.transaction', $cost) }}" 
@@ -238,7 +240,7 @@
                             @endforeach
                             <tr class="table-info">
                                 <td class="text-end"><strong>Total for {{ $person }}</strong></td>
-                                <td colspan="2"><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
+                                <td colspan="3"><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
                             </tr>
                         @endforeach
                     </tbody>

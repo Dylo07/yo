@@ -284,6 +284,8 @@
         </table>
     </div>
 </div>
+</div>
+@endsection
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -465,4 +467,3 @@ function initializeCollapse() {
     transform: rotate(180deg);
 }
 </style>
-@endsection

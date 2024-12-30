@@ -53,55 +53,94 @@ function updateTeam(id, team) {
 }
 
 function addVehicle(event) {
-   event.preventDefault();
-   const form = event.target;
-   const formData = new FormData(form);
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Handle room numbers
+    const selectedRooms = [];
+    form.querySelectorAll('input[name="room_numbers[]"]:checked').forEach(checkbox => {
+        selectedRooms.push(checkbox.value);
+    });
+    formData.set('room_numbers', JSON.stringify(selectedRooms));
 
-   // Collect selected room numbers
-   const selectedRooms = [];
-   form.querySelectorAll('input[name="room_numbers[]"]:checked').forEach(checkbox => {
-       selectedRooms.push(checkbox.value);
-   });
-   formData.set('room_numbers', JSON.stringify(selectedRooms));
+    // Handle note status
+    const isNote = event.submitter && event.submitter.name === 'is_note';
+    if (isNote) {
+        formData.set('is_note', '1');
+    }
 
-   fetch(form.action, {
-       method: 'POST',
-       body: formData,
-       headers: {
-           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-       }
-   })
-   .then(response => response.json())
-   .then(data => {
-       if(data.success) {
-           const newRow = createVehicleRow(data.vehicle);
-           document.querySelector('#vehicleTableBody').insertAdjacentHTML('afterbegin', newRow);
-           form.reset();
-           document.getElementById('roomSection').style.display = 'none';
-           document.getElementById('poolSection').style.display = 'none';
-           showAlert('Vehicle entry created successfully');
-           const row = document.querySelector(`tr[data-vehicle-id="${data.vehicle.id}"]`);
-           row.classList.add('highlight');
-       }
-   })
-   .catch(error => {
-       showAlert('Error creating vehicle entry', 'danger');
-       console.error('Error:', error);
-   });
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            const newRow = createVehicleRow(data.vehicle);
+            document.querySelector('#vehicleTableBody').insertAdjacentHTML('afterbegin', newRow);
+            form.reset();
+            document.getElementById('roomSection').style.display = 'none';
+            document.getElementById('poolSection').style.display = 'none';
+            showAlert(data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('Error creating entry', 'danger');
+        console.error('Error:', error);
+    });
 }
 
 function createVehicleRow(vehicle) {
    const date = new Date(vehicle.created_at);
-   const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+   const formattedDate = date.toLocaleString('en-US', {
+       year: 'numeric',
+       month: '2-digit',
+       day: '2-digit',
+       hour: '2-digit',
+       minute: '2-digit',
+       hour12: true
+   });
 
-   // Create room badges if rooms exist
-   const roomBadges = vehicle.room_numbers ? 
-       JSON.parse(vehicle.room_numbers)
-           .map(room => `<span class="room-badge">${room}</span>`)
-           .join('') : '';
+   let actionsCell = '';
+   if(!vehicle.is_note) {
+       if(vehicle.checkout_time) {
+           actionsCell = `
+               <span class="checkout-status-badge">
+                   <i class="fas fa-check-circle"></i> Checked Out
+               </span>
+           `;
+       } else {
+           actionsCell = `
+               <div class="btn-group">
+                   <button type="button" class="btn btn-sm btn-primary" onclick="editVehicle(${vehicle.id})">
+                       <i class="fas fa-edit"></i> Edit
+                   </button>
+                   <form action="/vehicle-security/${vehicle.id}/checkout" method="POST" style="display:inline;" 
+                         onsubmit="checkoutVehicle(event, ${vehicle.id})">
+                       @csrf
+                       <button type="submit" class="btn btn-lg main-checkout-btn mx-2">
+                           <i class="fas fa-sign-out-alt"></i> CHECK OUT
+                       </button>
+                   </form>
+                   ${!vehicle.is_temp_out ? 
+                       `<button type="button" class="btn btn-sm btn-info" onclick="tempCheckout(${vehicle.id})">
+                           <i class="fas fa-clock"></i> Temp Out
+                       </button>` : 
+                       `<button type="button" class="btn btn-sm btn-success" onclick="tempCheckin(${vehicle.id})">
+                           <i class="fas fa-undo"></i> Temp In
+                       </button>`
+                   }
+               </div>
+           `;
+       }
+   }
 
    return `
-       <tr data-vehicle-id="${vehicle.id}" class="">
+       <tr data-vehicle-id="${vehicle.id}" class="${vehicle.team ? 'team-'.str_replace(' ', '', vehicle.team) : ''}">
            <td class="align-middle">
                <span class="checkin-badge">
                    ${formattedDate}
@@ -110,85 +149,119 @@ function createVehicleRow(vehicle) {
            <td class="align-middle vehicle-number">${vehicle.vehicle_number}</td>
            <td class="align-middle matter">${vehicle.matter}</td>
            <td class="align-middle description">${vehicle.description || ''}</td>
-           <td class="align-middle room">${roomBadges}</td>
+           <td class="align-middle room">
+               ${vehicle.room_numbers ? JSON.parse(vehicle.room_numbers).map(room => 
+                   `<span class="room-badge">${room}</span>`
+               ).join('') : ''}
+           </td>
            <td class="align-middle pool-cell">
                ${vehicle.adult_pool_count || vehicle.kids_pool_count ? 
                    `<span class="pool-badge">
                        ${vehicle.adult_pool_count}/${vehicle.kids_pool_count}
-                   </span>` : ''}
+                   </span>` : ''
+               }
            </td>
            <td class="align-middle checkout-cell">
-               <span class="text-warning">-</span>
+               ${vehicle.checkout_time ? 
+                   `<span class="checkout-badge">
+                       ${new Date(vehicle.checkout_time).toLocaleString('en-US', {
+                           year: 'numeric',
+                           month: '2-digit',
+                           day: '2-digit',
+                           hour: '2-digit',
+                           minute: '2-digit',
+                           hour12: true
+                       })}
+                       ${vehicle.duration_hours ? 
+                           `<br><small class="duration-time">Duration: ${vehicle.duration_hours} hours</small>` 
+                           : ''
+                       }
+                   </span>` :
+                   vehicle.temp_checkout_time ?
+                       `<span class="temp-badge">
+                           Temp Out: ${new Date(vehicle.temp_checkout_time).toLocaleString('en-US', {
+                               year: 'numeric',
+                               month: '2-digit',
+                               day: '2-digit',
+                               hour: '2-digit',
+                               minute: '2-digit',
+                               hour12: true
+                           })}<br>
+                           ${vehicle.temp_checkin_time ?
+                               `<small class="temp-in-time">
+                                   Temp In: ${new Date(vehicle.temp_checkin_time).toLocaleString('en-US', {
+                                       year: 'numeric',
+                                       month: '2-digit',
+                                       day: '2-digit',
+                                       hour: '2-digit',
+                                       minute: '2-digit',
+                                       hour12: true
+                                   })}
+                               </small>` : ''
+                           }
+                       </span>` :
+                       `<span class="text-warning">-</span>`
+               }
            </td>
            <td class="align-middle team-cell">
-               <select class="form-control form-control-sm" onchange="updateTeam(${vehicle.id}, this.value)">
-                   <option value="">Select Team</option>
-                   ${[1,2,3,4,5,6,7,8,9,10].map(i => 
-                       `<option value="Team ${i}">Team ${i}</option>`
-                   ).join('')}
-               </select>
+               ${!vehicle.checkout_time ?
+                   `<select class="form-control form-control-sm" onchange="updateTeam(${vehicle.id}, this.value)">
+                       <option value="">Select Team</option>
+                       ${[1,2,3,4,5,6,7,8,9,10].map(i => 
+                           `<option value="Team ${i}" ${vehicle.team === `Team ${i}` ? 'selected' : ''}>
+                               Team ${i}
+                           </option>`
+                       ).join('')}
+                   </select>` :
+                   vehicle.team ? 
+                       `<span class="team-badge team-badge-${vehicle.team.replace(' ', '')}">
+                           ${vehicle.team}
+                       </span>` : ''
+               }
            </td>
-           <td class="align-middle actions-cell">
-               <button type="button" class="btn btn-sm btn-primary" onclick="editVehicle(${vehicle.id})">
-                   <i class="fas fa-edit"></i> Edit
-               </button>
-               <form action="/vehicle-security/${vehicle.id}/checkout" method="POST" style="display:inline;" 
-                     onsubmit="checkoutVehicle(event, ${vehicle.id})">
-                   @csrf
-                   <button type="submit" class="btn btn-sm btn-warning">
-                       <i class="fas fa-sign-out-alt"></i> Check Out
-                   </button>
-               </form>
-           </td>
+           <td class="align-middle actions-cell">${actionsCell}</td>
        </tr>
    `;
 }
 
 function checkoutVehicle(event, id) {
-   event.preventDefault();
-   const form = event.target;
-   
-   fetch(form.action, {
-       method: 'POST',
-       headers: {
-           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-       }
-   })
-   .then(response => response.json())
-   .then(data => {
-       if(data.success) {
-           const row = document.querySelector(`tr[data-vehicle-id="${id}"]`);
-           
-           row.querySelector('.checkout-cell').innerHTML = `
-               <span class="checkout-badge">
-                   ${data.checkout_time}
-               </span>
-           `;
-           
-           const teamSelect = row.querySelector('.team-cell select');
-           if(teamSelect && teamSelect.value) {
-               const teamName = teamSelect.value;
-               row.querySelector('.team-cell').innerHTML = `
-                   <span class="team-badge team-badge-${teamName.replace(' ', '')}">
-                       ${teamName}
-                   </span>
-               `;
-           }
-           
-           row.querySelector('.actions-cell').innerHTML = `
-               <span class="checkout-status-badge">
-                   <i class="fas fa-check-circle"></i> Checked Out
-               </span>
-           `;
-           
-           row.classList.add('highlight');
-           showAlert('Vehicle checked out successfully');
-       }
-   })
-   .catch(error => {
-       showAlert('Error checking out vehicle', 'danger');
-       console.error('Error:', error);
-   });
+    event.preventDefault();
+    const form = event.target;
+    
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            const row = document.querySelector(`tr[data-vehicle-id="${id}"]`);
+            
+            // Update checkout time cell
+            row.querySelector('.checkout-cell').innerHTML = `
+                <span class="checkout-badge">
+                    ${data.checkout_time}
+                    <br>
+                    <small class="duration-time">Duration: ${data.duration_hours} hours</small>
+                </span>
+            `;
+            
+            // Update action cell to show checked out status
+            row.querySelector('.actions-cell').innerHTML = `
+                <span class="checkout-status-badge">
+                    <i class="fas fa-check-circle"></i> Checked Out
+                </span>
+            `;
+            
+            showAlert('Vehicle checked out successfully');
+        }
+    })
+    .catch(error => {
+        showAlert('Error checking out vehicle', 'danger');
+        console.error('Error:', error);
+    });
 }
 
 function editVehicle(id) {

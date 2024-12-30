@@ -1,68 +1,107 @@
 <style>
-/* Card and Header Styles */
-.card-header {
-    background: linear-gradient(45deg, #1a237e, #283593);
-}
+/* Base Styles */
+.card-header { background: linear-gradient(45deg, #1a237e, #283593); }
 
-/* Badge Styles */
+/* Badge Base Style */
 .badge-base {
-    color: white;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    display: inline-block;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+   color: white;
+   border-radius: 15px;
+   font-size: 0.9rem;
+   display: inline-block;
+   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+   padding: 6px 12px;
 }
 
+/* Badges */
 .checkin-badge {
-    composes: badge-base;
-    background: linear-gradient(45deg, #6c757d, #495057);
-    padding: 6px 12px;
+   background: linear-gradient(45deg, #6c757d, #495057);
 }
 
 .checkout-badge {
-    composes: badge-base;
-    background: linear-gradient(45deg, #20c997, #28a745);
-    padding: 8px 12px;
-    min-width: 200px;
+   background: linear-gradient(45deg, #20c997, #28a745);
+   min-width: 200px;
+   padding: 8px 12px;
 }
 
 .pool-badge {
-    composes: badge-base;
-    background: linear-gradient(45deg, #0dcaf0, #0d6efd);
-    padding: 6px 12px;
+   background: linear-gradient(45deg, #0dcaf0, #0d6efd);
 }
 
 .room-badge {
-    composes: badge-base;
-    background: linear-gradient(45deg, #17a2b8, #138496);
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    margin: 2px;
-}
-
-.checkout-status-badge {
-    composes: badge-base;
-    background: linear-gradient(45deg, #28a745, #20c997);
-    padding: 8px 12px;
-    border-radius: 20px;
+   background: linear-gradient(45deg, #17a2b8, #138496);
+   padding: 4px 8px;
+   border-radius: 12px;
+   font-size: 0.85rem;
+   margin: 2px;
 }
 
 .temp-badge {
-    composes: badge-base;
-    background: linear-gradient(45deg, #17a2b8, #0dcaf0);
-    padding: 6px 12px;
-    min-width: 200px;
+   background: linear-gradient(45deg, #17a2b8, #0dcaf0);
+   min-width: 200px;
 }
 
-/* Team Styles */
-.team-badge {
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    display: inline-block;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.checkout-status-badge {
+   background: linear-gradient(45deg, #28a745, #20c997);
+   border-radius: 20px;
+   padding: 8px 12px;
+}
+
+/* Button Base Style */
+.btn {
+   border: none;
+   color: white !important;
+   transition: all 0.3s ease;
+   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn:hover {
+   transform: translateY(-1px);
+   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* Button Types */
+.btn-primary {
+   background: linear-gradient(45deg, #0d6efd, #0b5ed7) !important;
+}
+
+.btn-warning, .btn-check-out {
+   background: linear-gradient(45deg, #dc3545, #c82333) !important;
+   font-weight: 600;
+   text-transform: uppercase;
+   letter-spacing: 1px;
+   padding: 10px 20px !important;
+}
+
+.btn-info {
+   background: linear-gradient(45deg, #17a2b8, #0dcaf0) !important;
+}
+
+.btn-success {
+   background: linear-gradient(45deg, #28a745, #20c997) !important;
+}
+
+/* Action Cell Buttons */
+.actions-cell .btn-check-out {
+   font-size: 1rem;
+   border-radius: 8px;
+   box-shadow: 0 4px 6px rgba(220, 53, 69, 0.3);
+}
+
+.actions-cell .btn-check-out:hover {
+   background: linear-gradient(45deg, #c82333, #bd2130) !important;
+   box-shadow: 0 6px 8px rgba(220, 53, 69, 0.4);
+}
+
+/* Button Groups */
+.btn-group {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+}
+
+.btn-group .btn {
+   border-radius: 4px;
+   margin: 0 2px;
 }
 
 /* Team Colors */
@@ -77,105 +116,37 @@
 .team-Team9 { background: linear-gradient(to bottom, #ccd9ff, #99b3ff) !important; border: 1px solid #668cff; }
 .team-Team10 { background: linear-gradient(to bottom, #fff2cc, #ffe699) !important; border: 1px solid #ffd966; }
 
-/* Temp Status Styles */
-.temp-status-base {
-    display: block;
-    font-size: 0.8rem;
-    margin-top: 2px;
-}
-
-.temp-history {
-    composes: temp-status-base;
-    opacity: 0.8;
-    margin-top: 4px;
-    color: #666;
-}
-
-.temp-in-time {
-    composes: temp-status-base;
-    opacity: 0.9;
-}
-
-/* Button Styles */
-.btn-base {
-    border: none;
-    color: white;
-    transition: all 0.3s ease;
-}
-
-.main-checkout-btn {
-    composes: btn-base;
-    background: linear-gradient(45deg, #dc3545, #c82333);
-    padding: 6px 12px;
-    font-weight: 500;
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
-}
-
-.main-checkout-btn:hover {
-    background: linear-gradient(45deg, #c82333, #bd2130);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(220, 53, 69, 0.4);
-}
-
-.main-checkout-btn:focus {
-    color: white;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-
-.temp-button {
-    composes: btn-base;
-    background: linear-gradient(45deg, #17a2b8, #0dcaf0);
-}
-
-.temp-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
 /* Form Elements */
 .room-checkboxes {
-    max-height: 150px;
-    overflow-y: auto;
-    padding: 10px;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    background: #fff;
+   max-height: 150px;
+   overflow-y: auto;
+   padding: 10px;
+   border: 1px solid #dee2e6;
+   border-radius: 5px;
+   background: #fff;
 }
 
-.custom-checkbox {
-    margin: 5px 10px;
-}
-
-.custom-switch {
-    padding-left: 2.25rem;
-}
+.custom-checkbox { margin: 5px 10px; }
+.custom-switch { padding-left: 2.25rem; }
 
 .form-control:focus {
-    border-color: #4d5aad;
-    box-shadow: 0 0 0 0.2rem rgba(29, 35, 126, 0.25);
+   border-color: #4d5aad;
+   box-shadow: 0 0 0 0.2rem rgba(29, 35, 126, 0.25);
 }
 
 /* Table Styles */
-.table td { 
-    vertical-align: middle !important;
-}
+.table td { vertical-align: middle !important; }
+.table tbody tr:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-.table tbody tr:hover {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Animations */
+/* Animation */
 @keyframes highlight {
-    0% { background-color: rgba(255, 255, 0, 0.5); }
-    100% { background-color: transparent; }
+   0% { background-color: rgba(255, 255, 0, 0.5); }
+   100% { background-color: transparent; }
 }
 
-.highlight {
-    animation: highlight 1s ease-out;
-}
+.highlight { animation: highlight 1s ease-out; }
 
-/* Additional Utility Classes */
+/* Utility Classes */
 .mr-1 { margin-right: 0.25rem !important; }
 .ml-1 { margin-left: 0.25rem !important; }
 .mt-2 { margin-top: 0.5rem !important; }

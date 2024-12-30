@@ -21,7 +21,8 @@ class VehicleSecurity extends Model
         'temp_checkin_time',
     'is_temp_out',
         'team',
-        'created_at'
+        'created_at',
+        'is_note'
     ];
 
     protected $casts = [
@@ -30,7 +31,8 @@ class VehicleSecurity extends Model
         'temp_checkout_time' => 'datetime',
         'temp_checkin_time' => 'datetime',
     'is_temp_out' => 'boolean',
-        'room_numbers' => 'json'
+        'room_numbers' => 'json',
+        'is_note' => 'boolean'
     ];
 
     public static function getMatterOptions()

@@ -10,18 +10,34 @@ class VehicleSecurityController extends Controller
 {
     public function index()
     {
-        $vehicles = VehicleSecurity::where(function($query) {
-            $query->whereDate('checkout_time', Carbon::today())
-                  ->orWhereNull('checkout_time')
-                  ->orWhereDate('created_at', Carbon::today());
+        $today = Carbon::today();
+        $vehicles = VehicleSecurity::where(function($query) use ($today) {
+            $query->where(function($q) {
+                // Show all unchecked vehicles
+                $q->whereNull('checkout_time')
+                  ->where('is_note', false);
+            })->orWhere(function($q) use ($today) {
+                // Show vehicles checked out today
+                $q->whereDate('checkout_time', $today)
+                  ->where('is_note', false);
+            })->orWhere(function($q) use ($today) {
+                // Show today's new entries
+                $q->whereDate('created_at', $today)
+                  ->where('is_note', false);
+            })->orWhere(function($q) use ($today) {
+                // Show only today's notes
+                $q->whereDate('created_at', $today)
+                  ->where('is_note', true);
+            });
         })->latest()->get();
-
+    
         return view('vehicle-security.index', [
             'vehicles' => $vehicles,
             'matterOptions' => VehicleSecurity::getMatterOptions(),
             'roomOptions' => VehicleSecurity::getRoomOptions()
         ]);
     }
+    
 
     public function store(Request $request)
     {
@@ -29,28 +45,46 @@ class VehicleSecurityController extends Controller
             'vehicle_number' => 'required|string',
             'matter' => 'required|string',
             'description' => 'nullable|string',
-            'room_numbers' => 'nullable|string',
+            'room_numbers' => 'nullable|json',
             'adult_pool_count' => 'nullable|integer|min:0',
             'kids_pool_count' => 'nullable|integer|min:0',
+            'is_note' => 'boolean'
         ]);
-
+    
+        $validated['is_note'] = $request->input('is_note', false);
+    
         $vehicle = VehicleSecurity::create($validated);
-
+    
         return response()->json([
             'success' => true,
-            'message' => 'Vehicle entry created successfully',
+            'message' => $validated['is_note'] ? 'Note saved successfully' : 'Vehicle entry created successfully',
             'vehicle' => $vehicle
         ]);
     }
 
     public function showByDate($date)
     {
-        $vehicles = VehicleSecurity::where(function($query) use ($date) {
-            $query->whereDate('checkout_time', $date)
-                  ->orWhereNull('checkout_time')
-                  ->orWhereDate('created_at', $date);
+        $selectedDate = Carbon::parse($date);
+        $vehicles = VehicleSecurity::where(function($query) use ($selectedDate) {
+            $query->where(function($q) {
+                // Show all unchecked vehicles
+                $q->whereNull('checkout_time')
+                  ->where('is_note', false);
+            })->orWhere(function($q) use ($selectedDate) {
+                // Show vehicles checked out on selected date
+                $q->whereDate('checkout_time', $selectedDate)
+                  ->where('is_note', false);
+            })->orWhere(function($q) use ($selectedDate) {
+                // Show selected date's new entries
+                $q->whereDate('created_at', $selectedDate)
+                  ->where('is_note', false);
+            })->orWhere(function($q) use ($selectedDate) {
+                // Show only selected date's notes
+                $q->whereDate('created_at', $selectedDate)
+                  ->where('is_note', true);
+            });
         })->latest()->get();
-
+    
         return view('vehicle-security.index', [
             'vehicles' => $vehicles,
             'selectedDate' => $date,
@@ -65,7 +99,7 @@ class VehicleSecurityController extends Controller
             'vehicle_number' => 'required|string',
             'matter' => 'required|string',
             'description' => 'nullable|string',
-           'room_numbers' => 'nullable|string',
+           'room_numbers' => 'nullable|json',
             'adult_pool_count' => 'nullable|integer|min:0',
             'kids_pool_count' => 'nullable|integer|min:0',
         ]);
@@ -83,16 +117,26 @@ class VehicleSecurityController extends Controller
     public function checkout($id)
     {
         $vehicle = VehicleSecurity::findOrFail($id);
-        $vehicle->update(['checkout_time' => now()]);
-
+        $checkoutTime = now();
+        $startTime = $vehicle->created_at;
+        
+        // Calculate duration in hours with decimal points
+        $duration = $startTime->diffInMinutes($checkoutTime) / 60;
+        $formattedDuration = number_format($duration, 1);
+        
+        $vehicle->update([
+            'checkout_time' => $checkoutTime,
+            'duration_hours' => $formattedDuration
+        ]);
+    
         return response()->json([
             'success' => true,
             'message' => 'Vehicle checked out successfully',
-            'checkout_time' => $vehicle->checkout_time->format('Y-m-d H:i'),
+            'checkout_time' => $checkoutTime->format('Y-m-d H:i'),
+            'duration_hours' => $formattedDuration,
             'vehicle' => $vehicle->fresh()
         ]);
     }
-
     public function updateTeam(Request $request, $id)
     {
         $validated = $request->validate([

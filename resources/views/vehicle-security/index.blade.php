@@ -100,9 +100,12 @@
                    </div>
                </div>
 
-               <button type="submit" class="btn btn-primary mt-3">
-                   <i class="fas fa-save mr-1"></i> Save Entry
-               </button>
+               <button type="submit" class="btn btn-primary mt-3 mr-2">
+    <i class="fas fa-save mr-1"></i> Save Entry
+</button>
+<button type="submit" name="is_note" value="1" class="btn btn-secondary mt-3">
+    <i class="fas fa-sticky-note mr-1"></i> Save as Note
+</button>
            </form>
            <div class="table-responsive">
                <table class="table table-bordered table-hover shadow-sm">
@@ -147,16 +150,15 @@
                            <td class="align-middle checkout-cell">
     @if($vehicle->checkout_time)
         <span class="checkout-badge">
-            {{ $vehicle->checkout_time->format('Y-m-d h:i A') }}
-            @if($vehicle->temp_checkout_time)
-                <br>
-                <small class="temp-history">
-                    Temp Out: {{ $vehicle->temp_checkout_time->format('Y-m-d h:i A') }}<br>
-                    @if($vehicle->temp_checkin_time)
-                        Temp In: {{ $vehicle->temp_checkin_time->format('Y-m-d h:i A') }}
-                    @endif
-                </small>
-            @endif
+            {{ $vehicle->checkout_time->format('Y-m-d h:i A') }}<br>
+            <span class="duration-badge">
+                Duration: {{ 
+                    number_format(
+                        $vehicle->created_at->diffInMinutes($vehicle->checkout_time) / 60, 
+                        1
+                    ) 
+                }} hours
+            </span>
         </span>
     @elseif($vehicle->temp_checkout_time)
         <span class="temp-badge">
@@ -188,43 +190,39 @@
                                @endif
                            </td>
                            <td class="align-middle actions-cell">
-    @if(!$vehicle->checkout_time)
-        <button type="button" class="btn btn-sm btn-primary mr-1" onclick="editVehicle({{ $vehicle->id }})">
-            <i class="fas fa-edit"></i> Edit
-        </button>
-        
-        <form action="{{ route('vehicle-security.checkout', $vehicle->id) }}" 
-              method="POST" style="display:inline;" 
-              onsubmit="checkoutVehicle(event, {{ $vehicle->id }})">
-            @csrf
-            <button type="submit" class="btn btn-sm main-checkout-btn">
-                <i class="fas fa-sign-out-alt"></i> Check Out
-            </button>
-        </form>
+    @if(!$vehicle->is_note)
+        @if(!$vehicle->checkout_time)
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-primary" onclick="editVehicle({{ $vehicle->id }})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                
+                <form action="{{ route('vehicle-security.checkout', $vehicle->id) }}" 
+                      method="POST" style="display:inline;" 
+                      onsubmit="checkoutVehicle(event, {{ $vehicle->id }})">
+                    @csrf
+                    <button type="submit" class="btn btn-lg main-checkout-btn mx-2">
+                        <i class="fas fa-sign-out-alt"></i> CHECK OUT
+                    </button>
+                </form>
 
-        @if(!$vehicle->is_temp_out)
-            <form action="{{ route('vehicle-security.temp-checkout', $vehicle->id) }}" 
-                  method="POST" style="display:inline;" 
-                  onsubmit="tempCheckout(event, {{ $vehicle->id }})">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-info ml-1">
-                    <i class="fas fa-clock"></i> Temp Out
-                </button>
-            </form>
+                @if(!$vehicle->is_temp_out)
+                    <button type="button" class="btn btn-sm btn-info" 
+                            onclick="tempCheckout({{ $vehicle->id }})">
+                        <i class="fas fa-clock"></i> Temp Out
+                    </button>
+                @else
+                    <button type="button" class="btn btn-sm btn-success" 
+                            onclick="tempCheckin({{ $vehicle->id }})">
+                        <i class="fas fa-undo"></i> Temp In
+                    </button>
+                @endif
+            </div>
         @else
-            <form action="{{ route('vehicle-security.temp-checkin', $vehicle->id) }}" 
-                  method="POST" style="display:inline;" 
-                  onsubmit="tempCheckin(event, {{ $vehicle->id }})">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-success ml-1">
-                    <i class="fas fa-undo"></i> Temp In
-                </button>
-            </form>
+            <span class="checkout-status-badge">
+                <i class="fas fa-check-circle"></i> Checked Out
+            </span>
         @endif
-    @else
-        <span class="checkout-status-badge">
-            <i class="fas fa-check-circle"></i> Checked Out
-        </span>
     @endif
 </td>
                        </tr>
@@ -446,6 +444,75 @@
     font-size: 0.9rem;
     display: inline-block;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Action Buttons */
+.btn-primary {
+    background: linear-gradient(45deg, #0d6efd, #0b5ed7);
+    border: none;
+    color: white !important;
+}
+
+.btn-warning, .btn-check-out {
+    background: linear-gradient(45deg, #dc3545, #c82333) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-info {
+    background: linear-gradient(45deg, #17a2b8, #0dcaf0);
+    border: none;
+    color: white !important;
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    color: white !important;
+}
+
+.btn {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* Update button styles */
+.btn-check-out {
+    background: linear-gradient(45deg, #dc3545, #c82333) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 20px !important;
+}
+
+/* Target specifically the checkout button in the table */
+.actions-cell .btn-check-out {
+    font-size: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(220, 53, 69, 0.3);
+}
+
+.actions-cell .btn-check-out:hover {
+    background: linear-gradient(45deg, #c82333, #bd2130) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(220, 53, 69, 0.4);
+}
+
+.duration-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #fff;
 }
 </style>
 

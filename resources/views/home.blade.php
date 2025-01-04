@@ -73,9 +73,11 @@
         </div>
     </div>
 
+
+    
     <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
-        <h5 class="mb-0">Today's Booked Rooms</h5>
+        <h5 class="mb-0">Room Check-in Vehicles</h5>
         <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
             <input type="date" 
                    name="date" 
@@ -89,30 +91,48 @@
             <table class="table table-hover">
                 <thead class="table-dark">
                     <tr>
-                        <th>Room Name</th>
-                        <th>Guest In</th>
-                        <th>Guest Out</th>
+                        <th>Check In Time</th>
+                        <th>Vehicle Number</th>
+                        <th>Room Numbers</th>
+                        <th>Description</th>
+                        <th>Check Out Time</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($bookedRooms as $booking)
-                        <tr>
-                            <td class="fw-bold">{{ $booking->room->name }}</td>
-                            <td>{{ $booking->guest_in_time->format('Y-m-d H:i:s') }}</td>
-                            <td>{{ $booking->guest_out_time ? $booking->guest_out_time->format('Y-m-d H:i:s') : 'Not checked out' }}</td>
+                    @forelse($roomVehicles as $vehicle)
+                        <tr class="{{ $vehicle->team ? 'team-'.str_replace(' ', '', $vehicle->team) : '' }}">
+                            <td>{{ $vehicle->created_at->format('Y-m-d H:i') }}</td>
+                            <td>{{ $vehicle->vehicle_number }}</td>
                             <td>
-                                @if($booking->stay_day_count > 1)
-                                    <span class="badge bg-warning text-dark">{{ $booking->stay_status }}</span>
+                                @if($vehicle->room_numbers)
+                                    @foreach(json_decode($vehicle->room_numbers) as $room)
+                                        <span class="room-badge">{{ $room }}</span>
+                                    @endforeach
+                                @endif
+                            </td>
+                            <td>{{ $vehicle->description }}</td>
+                            <td>
+                                @if($vehicle->checkout_time)
+                                    <span class="text-success">
+                                        {{ $vehicle->checkout_time->format('Y-m-d H:i') }}
+                                    </span>
                                 @else
-                                    <span class="badge bg-dark">{{ $booking->stay_status }}</span>
+                                    <span class="text-warning">Not checked out</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($vehicle->checkout_time)
+                                    <span class="badge bg-success">Checked Out</span>
+                                @else
+                                    <span class="badge bg-warning text-dark">Checked In</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
-                                No rooms booked for selected date
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No room check-ins found for selected date
                             </td>
                         </tr>
                     @endforelse
@@ -121,6 +141,8 @@
         </div>
     </div>
 </div>
+
+
 
     <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">

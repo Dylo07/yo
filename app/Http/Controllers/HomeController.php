@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\RoomBooking;
+use App\Models\VehicleSecurity;
 use App\Models\Cost; 
 use App\Models\Task;
 use Carbon\Carbon;
@@ -79,6 +80,20 @@ class HomeController extends Controller
                        ->orWhereDate('guest_out_time', '>=', $selectedDate);
              })
              ->get();
+
+
+             // Add this new query for vehicle room check-ins
+    $selectedDate = $request->get('date', date('Y-m-d'));
+    $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
+    ->where('is_note', false)
+        ->where(function($query) use ($selectedDate) {
+            $query->whereDate('created_at', $selectedDate)
+                  ->orWhere(function($q) {
+                      $q->whereNull('checkout_time');
+                  });
+        })
+        ->latest()
+        ->get();
      
          // Get pending tasks
          $pendingTasks = Task::with('taskCategory')
@@ -136,6 +151,7 @@ class HomeController extends Controller
              'previousPeriodLabel',
              'selectedMonth',
              'months',
+             'roomVehicles', 
              'bookedRooms',
              'pendingTasks',
              'salaryAdvances',

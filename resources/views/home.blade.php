@@ -74,72 +74,72 @@
     </div>
 
 
-    
+
     <div class="card mt-4 shadow-sm">
-    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
-        <h5 class="mb-0">Room Check-in Vehicles</h5>
-        <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
-            <input type="date" 
-                   name="date" 
-                   class="form-control form-control-sm me-2 dark-input" 
-                   value="{{ request('date', date('Y-m-d')) }}">
-            <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
-        </form>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Check In Time</th>
-                        <th>Vehicle Number</th>
-                        <th>Room Numbers</th>
-                        <th>Description</th>
-                        <th>Check Out Time</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($roomVehicles as $vehicle)
-                        <tr class="{{ $vehicle->team ? 'team-'.str_replace(' ', '', $vehicle->team) : '' }}">
-                            <td>{{ $vehicle->created_at->format('Y-m-d H:i') }}</td>
-                            <td>{{ $vehicle->vehicle_number }}</td>
-                            <td>
-                                @if($vehicle->room_numbers)
-                                    @foreach(json_decode($vehicle->room_numbers) as $room)
-                                        <span class="room-badge">{{ $room }}</span>
-                                    @endforeach
-                                @endif
-                            </td>
-                            <td>{{ $vehicle->description }}</td>
-                            <td>
-                                @if($vehicle->checkout_time)
-                                    <span class="text-success">
-                                        {{ $vehicle->checkout_time->format('Y-m-d H:i') }}
-                                    </span>
-                                @else
-                                    <span class="text-warning">Not checked out</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($vehicle->checkout_time)
-                                    <span class="badge bg-success">Checked Out</span>
-                                @else
-                                    <span class="badge bg-warning text-dark">Checked In</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                No room check-ins found for selected date
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+   <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+       <h5 class="mb-0">Room Check-in Vehicles</h5>
+       <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+           <input type="date" 
+                  name="date" 
+                  class="form-control form-control-sm me-2 dark-input" 
+                  value="{{ request('date', date('Y-m-d')) }}">
+           <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+       </form>
+   </div>
+   <div class="card-body">
+       <div class="table-responsive">
+           <table class="table table-hover">
+               <thead class="table-dark">
+                   <tr>
+                       <th>Check In Time</th>
+                       <th>Vehicle Number</th>
+                       <th>Room Numbers</th>
+                       <th>Description</th>
+                       <th>Check Out Time</th>
+                       <th>Status</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   @forelse($roomVehicles as $vehicle)
+                       @if($vehicle->room_numbers && is_array(json_decode($vehicle->room_numbers)) && !empty(json_decode($vehicle->room_numbers)))
+                           <tr class="{{ $vehicle->team ? 'team-'.str_replace(' ', '', $vehicle->team) : '' }}">
+                               <td>{{ $vehicle->created_at->format('Y-m-d H:i') }}</td>
+                               <td>{{ $vehicle->vehicle_number }}</td>
+                               <td>
+                                   @foreach(json_decode($vehicle->room_numbers) as $room)
+                                       <span class="room-badge">{{ $room }}</span>
+                                   @endforeach
+                               </td>
+                               <td>{{ $vehicle->description }}</td>
+                               <td>
+                                   @if($vehicle->checkout_time)
+                                       <span class="text-success">
+                                           {{ $vehicle->checkout_time->format('Y-m-d H:i') }}
+                                       </span>
+                                   @else
+                                       <span class="text-warning">Not checked out</span>
+                                   @endif
+                               </td>
+                               <td>
+                                   @if($vehicle->checkout_time)
+                                       <span class="badge bg-success">Checked Out</span>
+                                   @else
+                                       <span class="badge bg-warning text-dark">Checked In</span>
+                                   @endif
+                               </td>
+                           </tr>
+                       @endif
+                   @empty
+                       <tr>
+                           <td colspan="6" class="text-center text-muted py-4">
+                               No room check-ins found for selected date
+                           </td>
+                       </tr>
+                   @endforelse
+               </tbody>
+           </table>
+       </div>
+   </div>
 </div>
 
 

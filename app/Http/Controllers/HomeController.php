@@ -86,14 +86,16 @@ class HomeController extends Controller
     $selectedDate = $request->get('date', date('Y-m-d'));
     $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
     ->where('is_note', false)
-        ->where(function($query) use ($selectedDate) {
-            $query->whereDate('created_at', $selectedDate)
-                  ->orWhere(function($q) {
-                      $q->whereNull('checkout_time');
-                  });
-        })
-        ->latest()
-        ->get();
+    ->whereRaw("JSON_LENGTH(room_numbers) > 0")  // This ensures room_numbers array is not empty
+    ->where(function($query) use ($selectedDate) {
+        $query->whereDate('created_at', $selectedDate)
+              ->orWhere(function($q) {
+                  $q->whereNull('checkout_time')
+                    ->whereRaw("JSON_LENGTH(room_numbers) > 0");  // Double check for non-empty rooms
+              });
+    })
+    ->latest()
+    ->get();
      
          // Get pending tasks
          $pendingTasks = Task::with('taskCategory')

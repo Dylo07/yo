@@ -86,12 +86,13 @@ class HomeController extends Controller
     $selectedDate = $request->get('date', date('Y-m-d'));
     $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
     ->where('is_note', false)
-    ->whereRaw("JSON_LENGTH(room_numbers) > 0")  // This ensures room_numbers array is not empty
+    ->whereRaw("JSON_LENGTH(room_numbers) > 0")
     ->where(function($query) use ($selectedDate) {
-        $query->whereDate('created_at', $selectedDate)
+        $query->whereDate('created_at', $selectedDate)  // Check-ins on selected date
+              ->orWhereDate('checkout_time', $selectedDate)  // Check-outs on selected date
               ->orWhere(function($q) {
-                  $q->whereNull('checkout_time')
-                    ->whereRaw("JSON_LENGTH(room_numbers) > 0");  // Double check for non-empty rooms
+                  $q->whereNull('checkout_time')  // Not checked out yet
+                    ->whereRaw("JSON_LENGTH(room_numbers) > 0");
               });
     })
     ->latest()

@@ -67,7 +67,8 @@ class VehicleSecurity extends Model
             '107', '106', '108', '109', '121', '122', '123', '124',
             'orchid', 'ahela', 'sepalika', 'sudu araliya','Olu','Nelum',
             '130', '131', '132', '133', '134',
-            'Hansa', 'Lihini', 'Mayura'
+            'Hansa', 'Lihini', 'Mayura',
+            '101', '102', '103', '104', '105'
         ];
     }
 }

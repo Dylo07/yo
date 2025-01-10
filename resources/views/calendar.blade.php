@@ -65,7 +65,7 @@
             color: #ffffff !important;
         }
         .calendar-container {
-            max-width: 1200px;
+            max-width: 1800px;
             margin: 30px auto;
         }
 

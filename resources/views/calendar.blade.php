@@ -85,6 +85,28 @@
     .payment-details {
         margin-left: 25px;
     }
+
+    .checkbox-group label {
+    display: inline-block;
+    margin: 5px;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.checkbox-group label:hover {
+    background-color: #f8f9fa;
+}
+
+#availableRoomsMessage {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.checkbox-group input[type="checkbox"]:disabled + span {
+    color: #999;
+}
     </style>
 </head>
 
@@ -168,9 +190,9 @@
 
 
 
-            <div class="mb-3">
-                <label for="room_number" class="form-label">Room Numbers:</label>
-                <div class="checkbox-group">
+<div class="mb-3" id="roomNumbersSection" style="display: none;">
+    <label for="room_number" class="form-label">Room Numbers:</label>
+    <div class="checkbox-group" id="roomCheckboxes">
                     <label><input type="checkbox" name="room_number[]" value="Ahala"> Ahala</label>
                     <label><input type="checkbox" name="room_number[]" value="Sepalika"> Sepalika</label>
                     <label><input type="checkbox" name="room_number[]" value="Sudu Araliya"> Sudu Araliya</label>
@@ -202,6 +224,7 @@
                     
                     
                 </div>
+                <div id="availableRoomsMessage" class="text-info mt-2"></div>
                 </div>
             
             <div class="mb-3">
@@ -412,6 +435,7 @@
     <label for="editRoomNumbers" class="form-label">Room Numbers:</label>
     <div class="checkbox-group" id="editRoomNumbers">
 
+                    <label><input type="checkbox" name="room_number[]" value="Ahala"> Ahala</label>
                     <label><input type="checkbox" name="room_number[]" value="Sepalika"> Sepalika</label>
                     <label><input type="checkbox" name="room_number[]" value="Sudu Araliya"> Sudu Araliya</label>
                     <label><input type="checkbox" name="room_number[]" value="Orchid"> Orchid</label>
@@ -868,14 +892,15 @@ document.getElementById('updatePayment').addEventListener('change', function() {
 
 // Handle date/time fields toggle
 document.getElementById('updateDateTime').addEventListener('change', function() {
-        const dateTimeFields = document.getElementById('dateTimeFields');
-        dateTimeFields.style.display = this.checked ? 'block' : 'none';
-        
-        const fields = dateTimeFields.querySelectorAll('input');
-        fields.forEach(field => {
-            field.required = this.checked;
-        });
+    const dateTimeFields = document.getElementById('dateTimeFields');
+    dateTimeFields.style.display = this.checked ? 'block' : 'none';
+    
+    // Don't check room availability when dates change in edit mode
+    const fields = dateTimeFields.querySelectorAll('input');
+    fields.forEach(field => {
+        field.required = this.checked;
     });
+});
 
   // Set up form submission
   setupEditFormSubmission(info);
@@ -885,7 +910,22 @@ document.getElementById('updateDateTime').addEventListener('change', function() 
 
 // 9. Edit Form Population
 
-function populateEditForm(info) {
+// Add the new function here, before populateEditForm
+async function checkRoomAvailabilityForEdit(startDate, endDate, currentBookingId) {
+        try {
+            const response = await fetch(`/available-rooms?date=${startDate}&endDate=${endDate}&excludeBooking=${currentBookingId}`);
+            if (!response.ok) throw new Error('Failed to fetch room availability');
+            return await response.json();
+        } catch (error) {
+            console.error('Error checking room availability:', error);
+            return [];
+        }
+    }
+
+
+
+
+    async function populateEditForm(info) {
         // Populate the edit form
         document.getElementById("editFunctionType").value = info.event.extendedProps.function_type;
         document.getElementById("editName").value = info.event.extendedProps.name || ""; // Ensure name is pre-filled
@@ -900,25 +940,78 @@ function populateEditForm(info) {
     document.getElementById("editPaymentMethod").value = info.event.extendedProps.payment_method || "";
 
 
+// Get current booking's dates
+const startDate = new Date(info.event.start).toISOString();
+    const endDate = info.event.end ? new Date(info.event.end).toISOString() : startDate;
 
-// Handle room number
-       
-    const roomNumbers = info.event.extendedProps.room_numbers 
-    ? JSON.parse(info.event.extendedProps.room_numbers) 
-    : [];
+    // Set date/time fields if they exist
+    const editStart = document.getElementById("editStart");
+    const editEnd = document.getElementById("editEnd");
+    if (editStart) editStart.value = new Date(info.event.start).toISOString().slice(0, 16);
+    if (editEnd) editEnd.value = info.event.end ? new Date(info.event.end).toISOString().slice(0, 16) : '';
 
-   // Uncheck all checkboxes first
-document.querySelectorAll("#editRoomNumbers input[type='checkbox']").forEach((checkbox) => {
-    checkbox.checked = false;
-});
-    // Check the relevant checkboxes
-roomNumbers.forEach((room) => {
-    const checkbox = document.querySelector(`#editRoomNumbers input[value="${room}"]`);
-    if (checkbox) {
-        checkbox.checked = true;
+    // Get available rooms excluding current booking
+    const availableRooms = await checkRoomAvailabilityForEdit(startDate, endDate, info.event.id);
+
+    // Enable all room checkboxes in edit mode
+    const roomCheckboxes = document.querySelectorAll("#editRoomNumbers input[type='checkbox']");
+    
+    // Get the selected rooms
+    const selectedRooms = info.event.extendedProps.room_numbers 
+        ? JSON.parse(info.event.extendedProps.room_numbers) 
+        : [];
+
+    // Clear previous selections and styling
+    roomCheckboxes.forEach(checkbox => {
+        const label = checkbox.parentElement;
+        checkbox.checked = false;
+        checkbox.disabled = false;
+        // Reset styles
+        label.style.backgroundColor = '';
+        label.style.borderColor = '';
+        label.style.opacity = '1';
+    });
+
+    // Style and check rooms
+    roomCheckboxes.forEach(checkbox => {
+        const label = checkbox.parentElement;
+        
+        // If room is booked by others (not in available rooms and not in current booking)
+        if (!availableRooms.includes(checkbox.value) && !selectedRooms.includes(checkbox.value)) {
+            label.style.backgroundColor = '#ffebee'; // Light red background
+            label.style.borderColor = '#ffcdd2'; // Red border
+            // Add a tooltip
+            label.title = 'This room is booked by another reservation';
+        }
+
+        // Check if this room was selected in current booking
+        if (selectedRooms.includes(checkbox.value)) {
+            checkbox.checked = true;
+            label.style.backgroundColor = '#e3f2fd'; // Light blue background for selected rooms
+        }
+    });
+
+    // Add CSS if not already present
+    if (!document.getElementById('editRoomStyles')) {
+        const style = document.createElement('style');
+        style.id = 'editRoomStyles';
+        style.textContent = `
+            #editRoomNumbers label {
+                transition: all 0.3s ease;
+                position: relative;
+                cursor: pointer;
+                padding: 5px 10px;
+                margin: 3px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                display: inline-block;
+            }
+            #editRoomNumbers label:hover {
+                opacity: 0.8;
+            }
+        `;
+        document.head.appendChild(style);
     }
-});
-
 }
 
    // 10. Edit Form Submission Setup    
@@ -969,6 +1062,63 @@ roomNumbers.forEach((room) => {
         }
     };
 }
+
+
+// Add date and time change handlers
+document.addEventListener('DOMContentLoaded', function() {
+    const startDate = document.getElementById('date');
+    const startTime = document.getElementById('start_time');
+    const endDate = document.getElementById('end_date');
+    const endTime = document.getElementById('end_time');
+    const roomSection = document.getElementById('roomNumbersSection');
+    const roomCheckboxes = document.querySelectorAll('input[name="room_number[]"]');
+    const messageDiv = document.getElementById('availableRoomsMessage');
+
+    async function checkAvailability() {
+        // Only proceed if start date and time are filled
+        if (!startDate.value || !startTime.value) {
+            roomSection.style.display = 'none';
+            return;
+        }
+
+        try {
+            const start = `${startDate.value}T${startTime.value}`;
+            const end = (endDate.value && endTime.value) ? 
+                       `${endDate.value}T${endTime.value}` : 
+                       start;
+
+            const response = await fetch(`/available-rooms?date=${start}&endDate=${end}`);
+            const availableRooms = await response.json();
+
+            // Show the room section
+            roomSection.style.display = 'block';
+
+            // Reset all checkboxes
+            roomCheckboxes.forEach(checkbox => {
+                const isAvailable = availableRooms.includes(checkbox.value);
+                checkbox.disabled = !isAvailable;
+                checkbox.checked = false;
+                checkbox.parentElement.style.opacity = isAvailable ? '1' : '0.5';
+            });
+
+            // Update message
+            messageDiv.textContent = `${availableRooms.length} rooms available for selected dates`;
+            messageDiv.style.color = availableRooms.length > 0 ? 'green' : 'red';
+
+        } catch (error) {
+            console.error('Error checking room availability:', error);
+            messageDiv.textContent = 'Error checking room availability';
+            messageDiv.style.color = 'red';
+        }
+    }
+
+    // Add event listeners
+    [startDate, startTime, endDate, endTime].forEach(element => {
+        if (element) {
+            element.addEventListener('change', checkAvailability);
+        }
+    });
+});
 </script>
 </body>
 </html>

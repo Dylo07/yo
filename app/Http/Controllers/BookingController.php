@@ -165,38 +165,40 @@ class BookingController extends Controller
         }
     }
     public function availableRooms(Request $request)
-    {
-        $date = $request->query('date');
-        if (!$date) {
-            return response()->json([], 400);
-        }
-    
-        $allRooms = [
-            'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
-            'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
-            '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
-            '103', '104', '105',
-        ];
-    
-        // Modified this part to handle the room_numbers array properly
-        $bookedRooms = Booking::where(function ($query) use ($date) {
-            $query->whereDate('start', '<=', $date)
-                  ->whereDate('end', '>=', $date)
-                  ->orWhere(function ($query) use ($date) {
-                      $query->whereDate('start', '=', $date)
-                            ->whereNull('end');
-                  });
-        })->get()
-          ->pluck('room_numbers')
-          ->flatten()
-          ->unique()
-          ->values()
-          ->toArray();
-    
-        $availableRooms = array_diff($allRooms, $bookedRooms);
-    
-        return response()->json(array_values($availableRooms));
+{
+    $startDate = $request->query('date');
+    $endDate = $request->query('endDate', $startDate);
+
+    if (!$startDate) {
+        return response()->json([], 400);
     }
+
+    $allRooms = [
+        'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
+        'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
+        '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
+        '103', '104', '105',
+    ];
+
+    // Get booked rooms for the date range
+    $bookedRooms = Booking::where(function ($query) use ($startDate, $endDate) {
+        $query->where(function ($q) use ($startDate, $endDate) {
+            $q->where('start', '<=', $endDate)
+              ->where(function($q) use ($startDate) {
+                  $q->where('end', '>=', $startDate)
+                    ->orWhereNull('end');
+              });
+        });
+    })->get()
+    ->pluck('room_numbers')
+    ->flatten()
+    ->unique()
+    ->values()
+    ->toArray();
+
+    $availableRooms = array_values(array_diff($allRooms, $bookedRooms));
+    return response()->json($availableRooms);
+}
     
     public function getLogs()
 {

@@ -1075,42 +1075,49 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageDiv = document.getElementById('availableRoomsMessage');
 
     async function checkAvailability() {
-        // Only proceed if start date and time are filled
-        if (!startDate.value || !startTime.value) {
-            roomSection.style.display = 'none';
-            return;
-        }
-
-        try {
-            const start = `${startDate.value}T${startTime.value}`;
-            const end = (endDate.value && endTime.value) ? 
-                       `${endDate.value}T${endTime.value}` : 
-                       start;
-
-            const response = await fetch(`/available-rooms?date=${start}&endDate=${end}`);
-            const availableRooms = await response.json();
-
-            // Show the room section
-            roomSection.style.display = 'block';
-
-            // Reset all checkboxes
-            roomCheckboxes.forEach(checkbox => {
-                const isAvailable = availableRooms.includes(checkbox.value);
-                checkbox.disabled = !isAvailable;
-                checkbox.checked = false;
-                checkbox.parentElement.style.opacity = isAvailable ? '1' : '0.5';
-            });
-
-            // Update message
-            messageDiv.textContent = `${availableRooms.length} rooms available for selected dates`;
-            messageDiv.style.color = availableRooms.length > 0 ? 'green' : 'red';
-
-        } catch (error) {
-            console.error('Error checking room availability:', error);
-            messageDiv.textContent = 'Error checking room availability';
-            messageDiv.style.color = 'red';
-        }
+    if (!startDate.value || !startTime.value) {
+        roomSection.style.display = 'none';
+        return;
     }
+
+    try {
+        const start = `${startDate.value}T${startTime.value}`;
+        const end = (endDate.value && endTime.value) ? 
+                   `${endDate.value}T${endTime.value}` : 
+                   start;
+
+        console.log('Checking availability:', { start, end });
+
+        const response = await fetch(`/available-rooms?date=${start}&endDate=${end}`);
+        const availableRooms = await response.json();
+        
+        console.log('Available rooms response:', availableRooms);
+
+        roomSection.style.display = 'block';
+
+        roomCheckboxes.forEach(checkbox => {
+            const isAvailable = availableRooms.includes(checkbox.value);
+            console.log('Room check:', {
+                room: checkbox.value,
+                available: isAvailable,
+                exactMatch: availableRooms.indexOf(checkbox.value)
+            });
+            
+            checkbox.disabled = !isAvailable;
+            checkbox.checked = false;
+            const label = checkbox.parentElement;
+            label.style.opacity = isAvailable ? '1' : '0.5';
+        });
+
+        messageDiv.textContent = `${availableRooms.length} rooms available for selected dates`;
+        messageDiv.style.color = availableRooms.length > 0 ? 'green' : 'red';
+
+    } catch (error) {
+        console.error('Error checking room availability:', error);
+        messageDiv.textContent = 'Error checking room availability';
+        messageDiv.style.color = 'red';
+    }
+}
 
     // Add event listeners
     [startDate, startTime, endDate, endTime].forEach(element => {

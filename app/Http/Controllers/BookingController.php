@@ -165,41 +165,77 @@ class BookingController extends Controller
         }
     }
     public function availableRooms(Request $request)
-{
-    $startDate = $request->query('date');
-    $endDate = $request->query('endDate', $startDate);
-
-    if (!$startDate) {
-        return response()->json([], 400);
-    }
-
-    $allRooms = [
-        'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
-        'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
-        '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
-        '103', '104', '105',
-    ];
-
-    // Get booked rooms for the date range
-    $bookedRooms = Booking::where(function ($query) use ($startDate, $endDate) {
-        $query->where(function ($q) use ($startDate, $endDate) {
-            $q->where('start', '<=', $endDate)
-              ->where(function($q) use ($startDate) {
-                  $q->where('end', '>=', $startDate)
-                    ->orWhereNull('end');
-              });
-        });
-    })->get()
-    ->pluck('room_numbers')
-    ->flatten()
-    ->unique()
-    ->values()
-    ->toArray();
-
-    $availableRooms = array_values(array_diff($allRooms, $bookedRooms));
-    return response()->json($availableRooms);
-}
+    {
+        $startDate = $request->query('date');
+        $endDate = $request->query('endDate', $startDate);
+        $excludeBookingId = $request->query('excludeBooking');
     
+        if (!$startDate) {
+            return response()->json([], 400);
+        }
+    
+        $allRooms = [
+            'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
+            'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
+            '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
+            '103', '104', '105',
+        ];
+    
+        // Get bookings for the date range
+        $bookings = Booking::where(function ($query) use ($startDate, $endDate, $excludeBookingId) {
+            $query->where(function ($q) use ($startDate, $endDate) {
+                // Check for bookings with end date
+                $q->where('start', '<=', $endDate)
+                  ->where('end', '>=', $startDate)
+                  ->where('end', '!=', 'null');
+                  
+                // OR bookings with no end date (single day bookings)
+                $q->orWhere(function($sq) use ($startDate) {
+                    $sq->whereDate('start', $startDate)
+                       ->where(function($ssq) {
+                           $ssq->whereNull('end')
+                               ->orWhere('end', 'N/A')
+                               ->orWhere('end', '');
+                       });
+                });
+            });
+            
+            if ($excludeBookingId) {
+                $query->where('id', '!=', $excludeBookingId);
+            }
+        })->get();
+    
+        // Get all booked rooms from the bookings
+        $bookedRooms = [];
+        foreach ($bookings as $booking) {
+            $roomArray = $booking->room_numbers;
+            
+            // If it's a string, try to decode it
+            if (is_string($roomArray)) {
+                $roomArray = json_decode($roomArray, true);
+            }
+            
+            // If it's an array, process each room
+            if (is_array($roomArray)) {
+                foreach ($roomArray as $room) {
+                    $room = trim($room, '"\'[] ');
+                    $bookedRooms[] = $room;
+                }
+            }
+        }
+    
+        // Clean and filter booked rooms
+        $bookedRooms = array_unique(array_filter($bookedRooms));
+    
+        // Debug logging
+        \Log::info('Date Range:', ['start' => $startDate, 'end' => $endDate]);
+        \Log::info('Bookings found:', $bookings->toArray());
+        \Log::info('Booked Rooms:', $bookedRooms);
+    
+        $availableRooms = array_values(array_diff($allRooms, $bookedRooms));
+    
+        return response()->json($availableRooms);
+    }
     public function getLogs()
 {
     $logs = Booking::with('user')

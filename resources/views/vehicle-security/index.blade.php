@@ -106,6 +106,21 @@
 <button type="submit" name="is_note" value="1" class="btn btn-secondary mt-3">
     <i class="fas fa-sticky-note mr-1"></i> Save as Note
 </button>
+<div class="col-md-12 mt-3">
+    <div class="bg-white border rounded p-3 mb-3">
+        <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-door-open text-primary mr-2"></i>
+            <span class="font-weight-bold text-primary">Today Available Rooms : {{ count($availableRooms) }}</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @forelse($availableRooms as $room)
+                <span class="room-badge">{{ $room }}</span>
+            @empty
+                <span class="text-muted font-italic">No rooms available</span>
+            @endforelse
+        </div>
+    </div>
+</div>
            </form>
            <div class="table-responsive">
                <table class="table table-bordered table-hover shadow-sm">

@@ -31,10 +31,27 @@ class VehicleSecurityController extends Controller
             });
         })->latest()->get();
     
+        // Get all occupied rooms from unchecked out vehicles
+        $occupiedRooms = VehicleSecurity::whereNull('checkout_time')
+            ->whereNotNull('room_numbers')
+            ->where('is_note', false)
+            ->get()
+            ->pluck('room_numbers')
+            ->map(function($rooms) {
+                return json_decode($rooms);
+            })
+            ->flatten()
+            ->unique();
+    
+        // Get available rooms
+        $allRooms = VehicleSecurity::getRoomOptions();
+        $availableRooms = array_values(array_diff($allRooms, $occupiedRooms->toArray()));
+    
         return view('vehicle-security.index', [
             'vehicles' => $vehicles,
             'matterOptions' => VehicleSecurity::getMatterOptions(),
-            'roomOptions' => VehicleSecurity::getRoomOptions()
+            'roomOptions' => VehicleSecurity::getRoomOptions(),
+            'availableRooms' => $availableRooms
         ]);
     }
     

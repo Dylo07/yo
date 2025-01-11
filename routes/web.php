@@ -147,7 +147,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('vehicle-security/{id}/temp-checkout', [VehicleSecurityController::class, 'tempCheckout'])->name('vehicle-security.temp-checkout');
     Route::post('vehicle-security/{id}/temp-checkin', [VehicleSecurityController::class, 'tempCheckin'])->name('vehicle-security.temp-checkin');
     Route::post('vehicle-security/{id}/update-team', [VehicleSecurityController::class, 'updateTeam'])->name('vehicle-security.update-team');
-   
+    Route::get('vehicle-security/available-rooms', [VehicleSecurityController::class, 'getAvailableRooms'])
+    ->name('vehicle-security.available-rooms');
     Route::put('vehicle-security/{id}/update', [VehicleSecurityController::class, 'update'])->name('vehicle-security.update');
 });
 

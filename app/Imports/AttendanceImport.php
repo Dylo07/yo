@@ -4,64 +4,91 @@ namespace App\Imports;
 
 use App\Models\Staff;
 use App\Models\Attendance;
-use Maatwebsite\Excel\Concerns\ToArray;
+use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class AttendanceImport implements ToArray
+class AttendanceImport implements ToCollection
 {
-   private $targetMonth;
+    protected $selectedMonth;
 
-   public function __construct($month = null) 
-   {
-       $this->targetMonth = $month ? Carbon::createFromFormat('Y-m', $month) : Carbon::now();
-   }
+    public function __construct($selectedMonth)
+    {
+        $this->selectedMonth = $selectedMonth;
+    }
 
-   public function array(array $rows)
-   {
-       // Skip the header row
-       $dataRows = array_slice($rows, 1);
-       
-       foreach ($dataRows as $row) {
-           if (empty($row[0])) continue;
-           
-           $staffCode = $row[0];
-           $staff = Staff::where('staff_code', $staffCode)->first();
-           
-           if (!$staff) continue;
-           
-           // Process columns 2 through 31 (days of month)
-           for ($column = 2; $column <= 31; $column++) {
-               if (!isset($row[$column]) || empty($row[$column])) continue;
-               
-               $dayOfMonth = $column - 1;
-               $date = $this->targetMonth->copy()
-                   ->startOfMonth()
-                   ->addDays($dayOfMonth - 1)
-                   ->format('Y-m-d');
-               
-               // Format raw data
-               $rawData = $row[$column];
-               // Split times that are on new lines or spaces
-               $times = array_filter(preg_split('/[\s\n]+/', trim($rawData)));
-               
-               // Store multiple times as separate values
-               $formattedData = implode(' ', $times);
-               
-               try {
-                   Attendance::updateOrCreate(
-                       [
-                           'staff_id' => $staff->id,
-                           'date' => $date
-                       ],
-                       [
-                           'raw_data' => $formattedData
-                       ]
-                   );
-               } catch (\Exception $e) {
-                   \Log::error("Error importing attendance for staff {$staffCode} on {$date}: " . $e->getMessage());
-                   continue;
-               }
-           }
-       }
-   }
+    public function collection(Collection $rows)
+    {
+        try {
+            // Skip the header row
+            $rows = $rows->slice(1);
+            
+            foreach ($rows as $row) {
+                // Get staff code and name, with strict checking for empty values
+                $staffCode = trim($row[0] ?? '');
+                $staffName = trim($row[1] ?? '');
+
+                // Skip truly empty rows (both code and name are empty)
+                if (empty($staffCode) && empty($staffName)) {
+                    continue;
+                }
+
+                // Create or update staff record even if only code exists
+                if (!empty($staffCode)) {
+                    Log::info('Processing staff record', [
+                        'code' => $staffCode,
+                        'name' => $staffName
+                    ]);
+
+                    $staff = Staff::updateOrCreate(
+                        ['staff_code' => $staffCode],
+                        [
+                            'name' => $staffName ?: 'Unknown', // Default name if empty
+                            'status' => 'active'
+                        ]
+                    );
+
+                    // Process attendance data starting from column 2 (01-01, 01-02, etc.)
+                    for ($day = 1; $day <= 31; $day++) {
+                        $columnIndex = $day + 1;  // Adjust index based on your Excel structure
+                        
+                        // Get raw attendance data
+                        $rawTimes = $row[$columnIndex] ?? null;
+                        
+                        if (!empty($rawTimes)) {
+                            // Convert date
+                            $date = Carbon::createFromFormat(
+                                'Y-m-d', 
+                                $this->selectedMonth . '-' . str_pad($day, 2, '0', STR_PAD_LEFT)
+                            );
+
+                            // Update or create attendance record
+                            Attendance::updateOrCreate(
+                                [
+                                    'staff_id' => $staff->id,
+                                    'date' => $date->format('Y-m-d')
+                                ],
+                                [
+                                    'raw_data' => $rawTimes,
+                                    'created_at' => now(),
+                                    'updated_at' => now()
+                                ]
+                            );
+                        }
+                    }
+                }
+            }
+
+            Log::info('Attendance import completed successfully');
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Error in attendance import: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
 }

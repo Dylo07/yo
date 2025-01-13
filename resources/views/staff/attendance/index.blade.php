@@ -58,6 +58,8 @@
     .absent {
         color: #6c757d; /* Grey for absent */
     }
+
+    
 </style>
 
 @section('content')
@@ -67,21 +69,24 @@
             <!-- Attendance Manager -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Attendance Manager</span>
-                    <form method="GET" class="d-flex align-items-center">
-                        <select name="month" class="form-select me-2" onchange="this.form.submit()">
-                            @foreach(range(0, 11) as $m)
-                                @php
-                                    $date = now()->subMonths($m);
-                                    $value = $date->format('Y-m');
-                                @endphp
-                                <option value="{{ $value }}" 
-                                        {{ request('month', now()->format('Y-m')) == $value ? 'selected' : '' }}>
-                                    {{ $date->format('F Y') }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </form>
+                <span>Attendance Manager</span>
+                    <div class="d-flex align-items-center">
+                        <a href="/manual-attendance" class="btn btn-primary me-3">Manual Attendance</a>
+                        <form method="GET" class="d-flex align-items-center">
+                            <select name="month" class="form-select me-2" onchange="this.form.submit()">
+                                @foreach(range(0, 11) as $m)
+                                    @php
+                                        $date = now()->subMonths($m);
+                                        $value = $date->format('Y-m');
+                                    @endphp
+                                    <option value="{{ $value }}" 
+                                            {{ request('month', now()->format('Y-m')) == $value ? 'selected' : '' }}>
+                                        {{ $date->format('F Y') }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                    </div>
                 </div>
                 <div class="card-body">
                 <form action="{{ route('staff.attendance.import') }}" method="POST" enctype="multipart/form-data" class="row g-3">

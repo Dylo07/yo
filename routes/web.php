@@ -17,6 +17,7 @@ use App\Http\Controllers\RoomAvailabilityController;
 use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\VehicleSecurityController;
+use App\Http\Controllers\ManualAttendanceController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -193,6 +194,16 @@ Route::middleware(['web', 'auth'])->group(function () {
    Route::post('/staff/attendance/import', [StaffAttendanceController::class, 'import'])->name('staff.attendance.import');
 });
 
+//new attendance
+
+
+// Then update the routes to include the full namespace:
+Route::middleware(['auth'])->group(function () {
+    Route::get('/manual-attendance', [ManualAttendanceController::class, 'index'])->name('attendance.manual.index');
+    Route::post('/manual-attendance/mark', [ManualAttendanceController::class, 'markAttendance'])->name('attendance.manual.mark');
+    Route::post('/manual-attendance/checkout', [ManualAttendanceController::class, 'markCheckout'])->name('attendance.manual.checkout');
+    Route::get('/manual-attendance/report', [ManualAttendanceController::class, 'report'])->name('attendance.manual.report');
+});
 
 // Room Availability Management Routes
 // Room Availability Management Routes

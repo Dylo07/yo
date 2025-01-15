@@ -25,4 +25,16 @@ class Person extends Model
     {
         return $this->hasMany(Cost::class);
     }
+
+    // Add this new relationship
+    public function staffCode()
+    {
+        return $this->hasOne(StaffCode::class, 'person_id');
+    }
+
+    // Add relationship to manual attendances
+    public function manualAttendances()
+    {
+        return $this->hasMany(ManualAttendance::class);
+    }
 }

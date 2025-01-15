@@ -12,14 +12,25 @@ class ManualAttendanceController extends Controller
 {
     public function index()
     {
-        $staff = Person::where('type', 'individual')->get();
+        // Get staff members who have staff codes using relationship
+        $staff = Person::whereHas('staffCode', function($query) {
+                $query->where('is_active', 1);
+            })
+            ->where('type', 'individual')
+            ->orderBy('name')
+            ->get();
+    
         $today = Carbon::now()->format('Y-m-d');
         
         $attendances = ManualAttendance::whereDate('created_at', $today)
-                                ->with('person')
-                                ->get()
-                                ->keyBy('person_id');
-
+                ->with('person')
+                ->get()
+                ->keyBy('person_id');
+    
+        // Add debug logging
+        \Log::info('Staff count: ' . $staff->count());
+        \Log::info('Staff members:', $staff->pluck('name')->toArray());
+    
         return view('attendance.manual.index', compact('staff', 'attendances'));
     }
 
@@ -65,8 +76,12 @@ class ManualAttendanceController extends Controller
 
     public function report(Request $request)
     {
-        $staff = Person::where('type', 'individual')->get();
-        
+       // Get only staff members who have staff codes
+       $staff = Person::join('staff_codes', 'persons.id', '=', 'staff_codes.person_id')
+       ->where('persons.type', 'individual')
+       ->where('staff_codes.is_active', 1)
+       ->select('persons.*', 'staff_codes.staff_code')
+       ->get();
         // Default to current month if no dates selected
         $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->startOfMonth();
         $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now()->endOfMonth();
@@ -78,6 +93,10 @@ class ManualAttendanceController extends Controller
             $dates->push($currentDate->copy());
             $currentDate->addDay();
         }
+
+        // Default to current month if no dates selected
+    $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->startOfMonth();
+    $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now()->endOfMonth();
     
         // Base query for attendance records
         $query = ManualAttendance::whereBetween('created_at', [

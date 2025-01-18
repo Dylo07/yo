@@ -18,6 +18,8 @@ use App\Http\Controllers\StaffAttendanceController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\VehicleSecurityController;
 use App\Http\Controllers\ManualAttendanceController;
+use App\Http\Controllers\PackageController;
+use App\Http\Controllers\PackageCategoryController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -204,6 +206,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/manual-attendance/checkout', [ManualAttendanceController::class, 'markCheckout'])->name('attendance.manual.checkout');
     Route::get('/manual-attendance/report', [ManualAttendanceController::class, 'report'])->name('attendance.manual.report');
 });
+
+
+// Package Management Routes
+Route::middleware(['auth'])->group(function () {
+   Route::resource('package-categories', PackageCategoryController::class);
+   Route::resource('packages', PackageController::class);
+});
+
 
 // Room Availability Management Routes
 // Room Availability Management Routes

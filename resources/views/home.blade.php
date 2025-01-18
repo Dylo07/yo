@@ -51,7 +51,8 @@
                             ['url' => '/tasks', 'title' => 'Daily Tasks', 'icon' => 'task'],
                             ['url' => '/rooms/availability', 'title' => 'Room Availability', 'icon' => 'room'],
                             ['url' => '/staff/attendance', 'title' => 'Staff Attendance', 'icon' => 'attendance'], 
-                            ['url' => '/vehicle-security', 'title' => 'Security Management', 'icon' => 'vehicle'] 
+                            ['url' => '/vehicle-security', 'title' => 'Security Management', 'icon' => 'vehicle'],
+                            ['url' => '/packages', 'title' => 'Hotel Packages', 'icon' => 'package'],
                         ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))
                                 <div class="col-lg-4 col-md-6">

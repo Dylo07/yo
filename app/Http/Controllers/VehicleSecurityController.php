@@ -79,9 +79,12 @@ class VehicleSecurityController extends Controller
         ]);
     }
 
-    public function showByDate($date)
-    {
-        $selectedDate = Carbon::parse($date);
+    public function showByDate($date = null)
+{
+    try {
+        // If no date provided, use today's date
+        $selectedDate = $date ? Carbon::parse($date) : Carbon::today();
+        
         $vehicles = VehicleSecurity::where(function($query) use ($selectedDate) {
             $query->where(function($q) {
                 // Show all unchecked vehicles
@@ -101,14 +104,35 @@ class VehicleSecurityController extends Controller
                   ->where('is_note', true);
             });
         })->latest()->get();
-    
+
+        // Get all occupied rooms from unchecked out vehicles
+        $occupiedRooms = VehicleSecurity::whereNull('checkout_time')
+            ->whereNotNull('room_numbers')
+            ->where('is_note', false)
+            ->get()
+            ->pluck('room_numbers')
+            ->map(function($rooms) {
+                return json_decode($rooms) ?: [];
+            })
+            ->flatten()
+            ->unique()
+            ->values();
+
+        // Get available rooms
+        $allRooms = VehicleSecurity::getRoomOptions();
+        $availableRooms = array_values(array_diff($allRooms, $occupiedRooms->toArray()));
+
         return view('vehicle-security.index', [
             'vehicles' => $vehicles,
-            'selectedDate' => $date,
+            'selectedDate' => $selectedDate->format('Y-m-d'),
             'matterOptions' => VehicleSecurity::getMatterOptions(),
-            'roomOptions' => VehicleSecurity::getRoomOptions()
+            'roomOptions' => VehicleSecurity::getRoomOptions(),
+            'availableRooms' => $availableRooms
         ]);
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Invalid date format');
     }
+}
 
     public function update(Request $request, $id)
     {

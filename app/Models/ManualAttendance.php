@@ -12,18 +12,15 @@ class ManualAttendance extends Model
     protected $table = 'manual_attendances';
 
     protected $fillable = [
-        'person_id',
-        'status',
-        'check_in_time',
-        'check_out_time',
-        'remarks',
-        'marked_by',
-        'entry_type'
+       'person_id',
+    'status',
+    'attendance_date',
+    'remarks',
+    'marked_by',
     ];
 
     protected $casts = [
-        'check_in_time' => 'datetime',
-        'check_out_time' => 'datetime',
+        'attendance_date' => 'date',
     ];
 
     public function person()

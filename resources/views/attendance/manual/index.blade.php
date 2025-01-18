@@ -49,15 +49,17 @@
                                 </td>
                                 <td>
                                     <div class="input-group">
-                                        @if(Auth::user()->checkAdmin())
-                                            <input type="date" class="form-control form-control-sm attendance-date" 
-                                                id="date-{{ $member->id }}"
-                                                value="{{ Carbon\Carbon::now()->format('Y-m-d') }}" 
-                                                max="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
-                                        @else
-                                            <input type="hidden" id="date-{{ $member->id }}" 
-                                                value="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
-                                        @endif
+                                    @if(Auth::user()->checkAdmin())
+    <input type="date" 
+           class="form-control form-control-sm attendance-date" 
+           id="date-{{ $member->id }}"
+           value="{{ Carbon\Carbon::now()->format('Y-m-d') }}" 
+           max="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
+@else
+    <input type="hidden" 
+           id="date-{{ $member->id }}" 
+           value="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
+@endif
                                         <input type="text" class="form-control form-control-sm remarks-input" 
                                             id="remarks-{{ $member->id }}" placeholder="Remarks">
                                         <div class="input-group-append">
@@ -122,11 +124,16 @@ async function markAttendance(personId, status) {
                 person_id: personId,
                 status: status,
                 remarks: remarksInput.value,
-                attendance_date: dateInput.value
+                attendance_date: dateInput.value // This should now properly pass to the controller
             })
         });
 
         const data = await response.json();
+
+        if (response.status === 403) {
+            showAlert(data.message, 'danger');
+            return;
+        }
 
         if (data.success) {
             statusCell.innerHTML = data.status_badge;
@@ -137,6 +144,7 @@ async function markAttendance(personId, status) {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
+        console.error('Error:', error);
         showAlert('An error occurred while marking attendance', 'danger');
     }
 }

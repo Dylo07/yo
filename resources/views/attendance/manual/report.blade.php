@@ -89,58 +89,41 @@
 
             <!-- Attendance Table -->
             <div class="table-responsive">
-                <table class="table table-bordered table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            @if(!$selectedStaffMember)
-                                @foreach($staff as $member)
-                                    <th>{{ $member->name }}</th>
-                                @endforeach
-                            @else
-                                <th>Status</th>
-                                <th>Remarks</th>
-                                <th>Marked By</th>
+    <table class="table table-bordered table-sm">
+        <thead>
+            <tr>
+                <th class="align-middle">Date</th>
+                @foreach($staff as $member)
+                    <th class="align-middle text-center">{{ $member->name }}</th>
+                @endforeach
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($dates as $date)
+                <tr>
+                    <td class="align-middle">{{ \Carbon\Carbon::parse($date)->format('Y-m-d') }}</td>
+                    @foreach($staff as $member)
+                        <td class="text-center align-middle">
+                            @php
+                                $attendance = $attendanceMap[$date][$member->id] ?? null;
+                                $statusClass = !$attendance ? 'secondary' : 
+                                    ($attendance->status === 'present' ? 'success' : 
+                                    ($attendance->status === 'half' ? 'warning' : 'danger'));
+                                $statusText = !$attendance ? 'Not Marked' : ucfirst($attendance->status);
+                            @endphp
+                            <span class="badge badge-{{ $statusClass }}">
+                                {{ $statusText }}
+                            </span>
+                            @if($attendance && $attendance->remarks)
+                                <small class="d-block text-muted mt-1">{{ $attendance->remarks }}</small>
                             @endif
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($dates as $date)
-                            <tr>
-                                <td>{{ $date instanceof Carbon\Carbon ? $date->format('Y-m-d') : $date }}</td>
-                                @if(!$selectedStaffMember)
-                                    @foreach($staff as $member)
-                                        <td>
-                                            @php
-                                                $attendance = ($attendances[$date instanceof Carbon\Carbon ? $date->format('Y-m-d') : $date] ?? collect())
-                                                    ->firstWhere('person_id', $member->id);
-                                            @endphp
-                                            @if($attendance)
-                                                <span class="badge badge-{{ $attendance->status == 'present' ? 'success' : ($attendance->status == 'half' ? 'warning' : 'danger') }}">
-                                                    {{ ucfirst($attendance->status) }}
-                                                </span>
-                                            @else
-                                                <span class="badge badge-secondary">Not Marked</span>
-                                            @endif
-                                        </td>
-                                    @endforeach
-                                @else
-                                    @php
-                                        $attendance = ($attendances[$date instanceof Carbon\Carbon ? $date->format('Y-m-d') : $date] ?? collect())->first();
-                                    @endphp
-                                    <td>
-                                        <span class="badge badge-{{ $attendance->status == 'present' ? 'success' : ($attendance->status == 'half' ? 'warning' : 'danger') }}">
-                                            {{ ucfirst($attendance->status) }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $attendance->remarks ?? '-' }}</td>
-                                    <td>{{ $attendance->markedBy->name ?? '-' }}</td>
-                                @endif
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                        </td>
+                    @endforeach
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
         </div>
     </div>
 </div>

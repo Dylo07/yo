@@ -121,8 +121,9 @@
 <body>
     <div class="header">
         <div class="logo-section">
-        <img src="{{ public_path('image/Holidaym.png') }}" alt="Soba Lanka Logo" class="logo">
-        </div>
+        <img src="{{asset('image/Holidaym.png')}}" alt="Soba Lanka Logo" class="logo">
+        
+    </div>
         <div class="company-info">
             <h2>Soba Lanka Holiday Resort (PVT) LTD</h2>
             <div class="contact-info">

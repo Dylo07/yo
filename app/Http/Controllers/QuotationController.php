@@ -158,17 +158,8 @@ class QuotationController extends Controller
             'total_amount' => $quotation->total_amount
         ]);
 
-        // Prepare PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('quotations.print', [
-            'quotation' => $quotation
-        ])->setPaper('a4', 'portrait');
-
-        // Enable remote content and image loading
-        $pdf->getDomPDF()->set_option('enable_remote', true);
-        $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
-
-        // Stream PDF
-        return $pdf->stream("quotation-{$quotation->id}.pdf");
+        // Render printable HTML page
+        return view('quotations.print', ['quotation' => $quotation]);
 
     } catch (\Exception $e) {
         // Comprehensive error logging

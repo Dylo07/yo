@@ -216,19 +216,21 @@
                             <th>Person/Shop</th>
                             <th>Description</th>
                             <th>Expense</th>
+                            <th>Created Time</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($persons as $person => $data)
                             <tr class="table-secondary">
-                                <td colspan="4"><strong>{{ $person }}</strong></td>
+                                <td colspan="5"><strong>{{ $person }}</strong></td>
                             </tr>
                             @foreach ($data['costs'] as $cost)
                                 <tr>
                                     <td>{{ $person }}</td>
                                     <td>{{ $cost->description ?? '-' }}</td>
                                     <td>Rs. {{ number_format($cost->amount, 2) }}</td>
+                                    <td>{{ $cost->created_at->format('h:i A') }}</td>
                                     <td>
                                         <a href="{{ route('costs.print.transaction', $cost) }}" 
                                            target="_blank"
@@ -240,7 +242,7 @@
                             @endforeach
                             <tr class="table-info">
                                 <td class="text-end"><strong>Total for {{ $person }}</strong></td>
-                                <td colspan="3"><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
+                                <td colspan="4"><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -125,4 +125,8 @@ class PackageController extends Controller
         return redirect()->route('packages.index')
             ->with('success', 'Package deleted successfully');
     }
+    public function print(Package $package)
+{
+    return view('packages.print', compact('package'));
+}
 }

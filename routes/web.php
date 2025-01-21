@@ -212,6 +212,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
    Route::resource('package-categories', PackageCategoryController::class);
    Route::resource('packages', PackageController::class);
+   Route::get('/packages/{package}/print', [PackageController::class, 'print'])->name('packages.print');
 });
 
 

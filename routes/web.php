@@ -20,6 +20,7 @@ use App\Http\Controllers\VehicleSecurityController;
 use App\Http\Controllers\ManualAttendanceController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PackageCategoryController;
+use App\Http\Controllers\QuotationController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -215,7 +216,17 @@ Route::middleware(['auth'])->group(function () {
    Route::get('/packages/{package}/print', [PackageController::class, 'print'])->name('packages.print');
 });
 
-
+// Quotation Management Routes
+Route::middleware(['auth'])->group(function () {
+   // Existing quotation resource routes
+   Route::resource('quotations', QuotationController::class);
+   
+   // Add these new routes for quotation conversion and printing
+   Route::post('/quotations/{quotation}/convert', [QuotationController::class, 'convertToBooking'])
+       ->name('quotations.convert-to-booking');
+   Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])
+       ->name('quotations.print');
+});
 // Room Availability Management Routes
 // Room Availability Management Routes
 Route::get('/rooms/availability', [RoomAvailabilityController::class, 'index'])->name('rooms.availability');

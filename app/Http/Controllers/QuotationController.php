@@ -1,12 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Quotation;
 use Illuminate\Http\Request;
-use PDF;
 use Exception;
 use Illuminate\Support\Facades\Log;
+
 
 class QuotationController extends Controller
 {
@@ -119,60 +119,70 @@ class QuotationController extends Controller
     }
 
     public function print(Quotation $quotation)
-{
-    try {
-        // Transform items to ensure all fields are properly formatted
-        $quotation->items = collect($quotation->items)->map(function ($item) {
-            // Ensure numeric values are converted and formatted
-            $pricePerItem = isset($item['pricePerItem']) ? 
-                (is_numeric($item['pricePerItem']) ? floatval($item['pricePerItem']) : 0) : 
-                (isset($item['price_per_item']) ? floatval($item['price_per_item']) : 0);
-            
-            $pax = isset($item['pax']) ? intval($item['pax']) : 0;
-            $quantity = isset($item['quantity']) ? intval($item['quantity']) : 0;
-            
-            // Recalculate amount if not already set or is invalid
-            $amount = isset($item['amount']) && is_numeric($item['amount']) ? 
-                floatval($item['amount']) : 
-                ($pricePerItem * $pax * $quantity);
-
-            return [
-                'description' => $item['description'] ?? '',
-                'pricePerItem' => number_format($pricePerItem, 2),
-                'pax' => $pax,
-                'quantity' => $quantity,
-                'amount' => number_format($amount, 2)
-            ];
-        })->toArray();
-
-        // Debugging: Log the quotation data
-        \Log::info('Quotation Print Data', [
-            'quotation' => $quotation,
-            'items' => $quotation->items
-        ]);
-
-        $pdf = \PDF::loadView('quotations.print', [
-            'quotation' => $quotation
-        ])->setPaper('a4', 'portrait');
-        
-        $pdf->getDomPDF()->set_option('enable_remote', true);
-        $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
-
-        return $pdf->stream("quotation-{$quotation->id}.pdf");
-    } catch (\Exception $e) {
-        // Log the full error
-        \Log::error('PDF Generation Error', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        // Return a more informative error response
-        return response()->json([
-            'error' => 'PDF generation failed',
-            'details' => $e->getMessage()
-        ], 500);
+    {
+        try {
+            // Ensure items are properly formatted with robust error handling
+            $quotation->items = collect($quotation->items)->map(function ($item) {
+                // Handle multiple possible key variations
+                $pricePerItem = isset($item['pricePerItem']) ? floatval($item['pricePerItem']) : 
+                                (isset($item['price_per_item']) ? floatval($item['price_per_item']) : 0);
+                
+                $pax = isset($item['pax']) ? intval($item['pax']) : 1;
+                $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
+                
+                // Ensure consistent amount calculation
+                $amount = isset($item['amount']) ? floatval($item['amount']) : 
+                          ($pricePerItem * $pax * $quantity);
+    
+                return [
+                    'description' => $item['description'] ?? 'No Description',
+                    'pricePerItem' => number_format($pricePerItem, 2, '.', ''),
+                    'pax' => $pax,
+                    'quantity' => $quantity,
+                    'amount' => number_format($amount, 2, '.', '')
+                ];
+            })->toArray();
+    
+            // Additional safety checks
+            if (empty($quotation->items)) {
+                throw new \Exception('No items found in quotation');
+            }
+    
+            // Comprehensive logging
+            \Log::info('Quotation Print Attempt', [
+                'quotation_id' => $quotation->id,
+                'client_name' => $quotation->client_name,
+                'total_items' => count($quotation->items),
+                'total_amount' => $quotation->total_amount
+            ]);
+    
+            // PDF Generation with enhanced options
+            $pdf = \PDF::loadView('quotations.print', [
+                'quotation' => $quotation
+            ])->setPaper('a4', 'portrait');
+    
+            // Enable remote image loading if needed
+            $pdf->getDomPDF()->set_option('enable_remote', true);
+            $pdf->getDomPDF()->set_option('isRemoteEnabled', true);
+    
+            // Stream PDF
+            return $pdf->stream("quotation-{$quotation->id}.pdf");
+    
+        } catch (\Exception $e) {
+            // Comprehensive error logging
+            \Log::error('PDF Generation Critical Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'quotation_id' => $quotation->id ?? 'Unknown'
+            ]);
+    
+            // Fallback error handling
+            return response()->view('errors.500', [
+                'error' => 'PDF generation failed',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     public function convertToBooking(Quotation $quotation)
     {

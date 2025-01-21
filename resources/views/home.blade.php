@@ -53,7 +53,7 @@
                             ['url' => '/staff/attendance', 'title' => 'Staff Attendance', 'icon' => 'attendance'], 
                             ['url' => '/vehicle-security', 'title' => 'Security Management', 'icon' => 'vehicle'],
                             ['url' => '/packages', 'title' => 'Hotel Packages', 'icon' => 'package'],
-                            ['url' => '/quotations', 'title' => 'Quotations', 'icon' => 'quotation'],
+                            
                         
                             ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))

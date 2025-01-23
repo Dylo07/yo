@@ -21,6 +21,7 @@ use App\Http\Controllers\ManualAttendanceController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PackageCategoryController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\DamageItemController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -227,7 +228,13 @@ Route::middleware(['auth'])->group(function () {
    Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])
        ->name('quotations.print');
 });
-// Room Availability Management Routes
+
+
+// Damage Items Routes
+Route::get('/damage-items', [DamageItemController::class, 'index'])->name('damage-items.index');
+Route::post('/damage-items', [DamageItemController::class, 'store'])->name('damage-items.store');
+Route::get('/damage-items/monthly-report', [DamageItemController::class, 'monthlyReport'])->name('damage-items.monthly-report');
+
 // Room Availability Management Routes
 Route::get('/rooms/availability', [RoomAvailabilityController::class, 'index'])->name('rooms.availability');
 Route::post('/rooms/store', [RoomAvailabilityController::class, 'storeRoom'])->name('rooms.store');

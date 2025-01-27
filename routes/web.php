@@ -23,6 +23,7 @@ use App\Http\Controllers\PackageCategoryController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\DamageItemController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\ServiceChargeController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -232,6 +233,11 @@ Route::middleware(['auth'])->group(function () {
 
 
 
+
+
+
+
+
 // Damage Items Routes
 Route::get('/damage-items', [DamageItemController::class, 'index'])->name('damage-items.index');
 Route::post('/damage-items', [DamageItemController::class, 'store'])->name('damage-items.store');
@@ -289,5 +295,29 @@ Route::middleware(['auth'])->group(function () {
    Route::post('/person/update-basic-salary', [SalaryController::class, 'updateBasicSalary'])->name('person.updateBasicSalary');
 });
 
+
+//S/C
+Route::middleware(['auth'])->group(function () {
+    // Main index page for service charge
+    Route::get('/service-charge', [ServiceChargeController::class, 'index'])
+        ->name('service-charge.index');
+ 
+    // Update points for an employee
+    Route::post('/service-charge/update-points', [ServiceChargeController::class, 'updatePoints'])
+        ->name('service-charge.updatePoints');
+ 
+    // Generate service charge for a specific employee
+    Route::post('/service-charge/generate', [ServiceChargeController::class, 'generateServiceCharge'])
+        ->name('service-charge.generate');
+ 
+    // Print service charge receipt for a specific service charge record
+    Route::get('/service-charge/{id}/print', [ServiceChargeController::class, 'printServiceCharge'])
+        ->name('service-charge.print');
+ 
+        Route::get('/service-charge/points', [ServiceChargeController::class, 'managePoints'])
+     ->name('service-charge.points');
+ Route::post('/service-charge/points/update-bulk', [ServiceChargeController::class, 'updatePointsBulk'])
+     ->name('service-charge.points.update-bulk');
+ });
 
     });

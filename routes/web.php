@@ -22,6 +22,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PackageCategoryController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\DamageItemController;
+use App\Http\Controllers\SalaryController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -230,6 +231,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
+
 // Damage Items Routes
 Route::get('/damage-items', [DamageItemController::class, 'index'])->name('damage-items.index');
 Route::post('/damage-items', [DamageItemController::class, 'store'])->name('damage-items.store');
@@ -274,7 +276,18 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');
      
     
-
+//salary
+Route::middleware(['auth'])->group(function () {
+   Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
+   Route::post('/salary/calculate', [SalaryController::class, 'calculate'])->name('salary.calculate');
+   Route::get('/salary/{salary}/payslip', [SalaryController::class, 'payslip'])->name('salary.payslip');
+   Route::get('/salary/generate-payslip', [SalaryController::class, 'generatePayslip'])
+    ->name('salary.generatePayslip');
+    Route::get('/salary/{id}/payslip', [SalaryController::class, 'generatePayslip'])->name('salary.payslip');
+   Route::get('/salary/basic', [SalaryController::class, 'basicSalary'])->name('salary.basic');
+   Route::post('/salary/update-basic', [SalaryController::class, 'updateBasic'])->name('salary.updateBasic');
+   Route::post('/person/update-basic-salary', [SalaryController::class, 'updateBasicSalary'])->name('person.updateBasicSalary');
+});
 
 
     });

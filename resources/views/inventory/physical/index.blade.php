@@ -147,6 +147,8 @@
         <div class="table-responsive">
             @php
                 $daysInMonth = Carbon\Carbon::create($currentYear, $currentMonth)->daysInMonth;
+                $today = now();
+                $currentMonthStart = Carbon\Carbon::create($currentYear, $currentMonth, 1);
             @endphp
 
             @if(request('category_id'))
@@ -159,7 +161,12 @@
                             <tr>
                                 <th class="position-sticky start-0 bg-light">Product</th>
                                 @for($i = 1; $i <= $daysInMonth; $i++)
-                                    <th>{{ $i }}</th>
+                                    @php
+                                        $currentDate = Carbon\Carbon::create($currentYear, $currentMonth, $i);
+                                    @endphp
+                                    @if($currentDate->lte($today))
+                                        <th>{{ $i }}</th>
+                                    @endif
                                 @endfor
                             </tr>
                         </thead>
@@ -169,22 +176,26 @@
                                     <td class="position-sticky start-0 bg-light">{{ $product->name }}</td>
                                     @for($i = 1; $i <= $daysInMonth; $i++)
                                         @php
-                                            $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
+                                            $currentDate = Carbon\Carbon::create($currentYear, $currentMonth, $i);
+                                            if ($currentDate->gt($today)) {
+                                                continue;
+                                            }
+                                            
+                                            $date = $currentDate->format('Y-m-d');
+                                            
+                                            // Get inventory for this specific date
                                             $inventory = $product->inventories->firstWhere('stock_date', $date);
                                             
                                             if ($inventory) {
                                                 $displayStock = $inventory->stock_level;
                                             } else {
+                                                // If no inventory for this date, get the last known stock level
                                                 $previousInventory = $product->inventories
                                                     ->where('stock_date', '<', $date)
                                                     ->sortByDesc('stock_date')
                                                     ->first();
                                                 
-                                                if ($i === 1 && !$inventory && $previousInventory) {
-                                                    $displayStock = $previousInventory->stock_level;
-                                                } else {
-                                                    $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-                                                }
+                                                $displayStock = $previousInventory ? $previousInventory->stock_level : $product->lastKnownStockLevel;
                                             }
 
                                             $stockLogs = $monthLogs->where('product_id', $product->id)
@@ -196,16 +207,12 @@
                                             $removals = $stockLogs->where('action', 'remove')->sum('quantity');
                                         @endphp
                                         <td class="{{ $date == now()->toDateString() ? 'table-primary' : '' }}">
-                                            @if($date <= now()->toDateString())
-                                                <div>{{ $displayStock }}</div>
-                                                @if($additions)
-                                                    <div class="text-success">+{{ $additions }}</div>
-                                                @endif
-                                                @if($removals)
-                                                    <div class="text-danger">-{{ $removals }}</div>
-                                                @endif
-                                            @else
-                                                -
+                                            <div>{{ $displayStock }}</div>
+                                            @if($additions)
+                                                <div class="text-success">+{{ $additions }}</div>
+                                            @endif
+                                            @if($removals)
+                                                <div class="text-danger">-{{ $removals }}</div>
                                             @endif
                                         </td>
                                     @endfor

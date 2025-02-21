@@ -20,50 +20,58 @@ class InvInventoryController extends Controller
 
     // Display the inventory dashboard
     public function index(Request $request)
-    {
-        $currentMonth = $request->input('month', now()->month);
-        $currentYear = $request->input('year', now()->year);
-        $categoryId = $request->input('category_id');
-        $selectedDate = $request->input('log_date', now()->toDateString());
+{
+    $currentMonth = $request->input('month', now()->month);
+    $currentYear = $request->input('year', now()->year);
+    $categoryId = $request->input('category_id');
+    $selectedDate = $request->input('log_date', now()->toDateString());
+
+    $firstDayOfMonth = Carbon::createFromDate($currentYear, $currentMonth, 1);
     
-        // Create Carbon instances for the first day of current month and last day of previous month
-        $firstDayOfMonth = Carbon::createFromDate($currentYear, $currentMonth, 1);
-        $lastDayOfPreviousMonth = $firstDayOfMonth->copy()->subDay();
-    
-        $categories = InvProductCategory::with(['products.inventories' => function ($query) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
-            $query->where(function($q) use ($currentYear, $currentMonth, $lastDayOfPreviousMonth) {
-                $q->whereYear('stock_date', $currentYear)
-                  ->whereMonth('stock_date', $currentMonth)
-                  ->orWhere('stock_date', $lastDayOfPreviousMonth->toDateString());
-            })->orderBy('stock_date');
+    $categories = InvProductCategory::with(['products' => function ($query) {
+        $query->with(['inventories' => function ($query) {
+            $query->orderBy('stock_date', 'desc');
         }]);
-    
-        if ($categoryId) {
-            $categories = $categories->where('id', $categoryId);
-        }
-    
-        $categories = $categories->get();
-    
-        // Get all logs for the current month for stock movement indicators
-        $monthLogs = InvInventoryLog::with(['user', 'product'])
-            ->whereYear('created_at', $currentYear)
-            ->whereMonth('created_at', $currentMonth)
-            ->get();
-    
-        // Get paginated logs for the selected date
-        $logs = InvInventoryLog::with(['user', 'product'])
-            ->whereDate('created_at', $selectedDate)
-            ->orderBy('created_at', 'desc')
-            ->paginate(5);
-    
-        return view('inventory.physical.index', compact(
-            'categories', 
-            'currentMonth', 
-            'currentYear', 
-            'logs',
-            'monthLogs'  // Added this for stock movement indicators
-        ));
+    }]);
+
+    if ($categoryId) {
+        $categories = $categories->where('id', $categoryId);
     }
+
+    $categories = $categories->get();
+
+    // Get logs for the current month
+    $monthLogs = InvInventoryLog::with(['user', 'product'])
+        ->whereYear('created_at', $currentYear)
+        ->whereMonth('created_at', $currentMonth)
+        ->get();
+
+    // Get paginated logs for selected date
+    $logs = InvInventoryLog::with(['user', 'product'])
+        ->whereDate('created_at', $selectedDate)
+        ->orderBy('created_at', 'desc')
+        ->paginate(5);
+
+    // For each product, get the last known stock level before this month
+    foreach ($categories as $category) {
+        foreach ($category->products as $product) {
+            $lastKnownStock = InvInventory::where('product_id', $product->id)
+                ->where('stock_date', '<', $firstDayOfMonth->toDateString())
+                ->orderBy('stock_date', 'desc')
+                ->first();
+
+            $product->lastKnownStockLevel = $lastKnownStock ? $lastKnownStock->stock_level : 0;
+        }
+    }
+
+    return view('inventory.physical.index', compact(
+        'categories',
+        'currentMonth',
+        'currentYear',
+        'logs',
+        'monthLogs'
+    ));
+}
     // Store a new category
     public function storeCategory(Request $request)
     {
@@ -110,9 +118,11 @@ class InvInventoryController extends Controller
         $today = now()->toDateString();
 
         DB::transaction(function () use ($productId, $quantity, $description, $action, $today) {
+            // Get today's inventory record or create new one
             $inventory = InvInventory::firstOrNew(['product_id' => $productId, 'stock_date' => $today]);
 
             if (!$inventory->exists) {
+                // If no record exists for today, get the last known stock level
                 $previousInventory = InvInventory::where('product_id', $productId)
                     ->where('stock_date', '<', $today)
                     ->orderBy('stock_date', 'desc')
@@ -121,6 +131,7 @@ class InvInventoryController extends Controller
                 $inventory->stock_level = $previousInventory ? $previousInventory->stock_level : 0;
             }
 
+            // Calculate new stock level based on action
             $originalStockLevel = $inventory->stock_level;
 
             if ($action === 'add') {
@@ -131,10 +142,12 @@ class InvInventoryController extends Controller
 
             $inventory->save();
 
+            // Only propagate if stock level has changed
             if ($originalStockLevel !== $inventory->stock_level) {
                 $this->propagateStock($productId, $today, $inventory->stock_level);
             }
 
+            // Create log entry
             InvInventoryLog::create([
                 'product_id' => $productId,
                 'user_id' => Auth::id(),
@@ -147,31 +160,33 @@ class InvInventoryController extends Controller
         return redirect()->back()->with('success', 'Stock updated successfully.');
     }
 
-
     // Propagate stock level to future dates
     private function propagateStock($productId, $startDate, $stockLevel)
-    {
-        $startDateCarbon = Carbon::parse($startDate);
-        $endOfMonth = $startDateCarbon->copy()->endOfMonth();
-
+{
+    DB::transaction(function () use ($productId, $startDate, $stockLevel) {
+        // Delete all future records
         InvInventory::where('product_id', $productId)
             ->where('stock_date', '>', $startDate)
-            ->where('stock_date', '<=', $endOfMonth)
             ->delete();
 
-        $currentDate = $startDateCarbon->copy()->addDay();
+        // Create future records for the next 6 months
+        $currentDate = Carbon::parse($startDate)->addDay();
+        $endDate = Carbon::parse($startDate)->addMonths(6);
 
-        while ($currentDate->lte($endOfMonth)) {
-            InvInventory::create([
-                'product_id' => $productId,
-                'stock_date' => $currentDate->toDateString(),
-                'stock_level' => $stockLevel,
-            ]);
-
+        while ($currentDate->lte($endDate)) {
+            InvInventory::updateOrCreate(
+                [
+                    'product_id' => $productId,
+                    'stock_date' => $currentDate->toDateString()
+                ],
+                [
+                    'stock_level' => $stockLevel
+                ]
+            );
             $currentDate->addDay();
         }
-    }
-
+    });
+}
 
     // View monthly stock
     public function viewMonthlyStock(Request $request)

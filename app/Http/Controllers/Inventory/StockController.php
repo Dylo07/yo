@@ -25,6 +25,7 @@ class StockController extends Controller
     $categories = Category::whereIn('id', $categoryIds)->get();
     $menus = Menu::whereIn('category_id', $categoryIds)
         ->with('category') // Eager load the category relationship
+        ->orderBy('name') // Order items alphabetically by name
         ->get()
         ->groupBy('category_id'); // Group items by category
     

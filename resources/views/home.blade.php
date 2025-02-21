@@ -42,7 +42,7 @@
                         @foreach([
                             ['route' => 'management', 'title' => 'Management', 'icon' => 'management'],
                             ['route' => 'cashier', 'title' => 'Cashier', 'icon' => 'cashier'],
-                            ['route' => 'inventory', 'title' => 'Beer & Soft Drink Stock', 'icon' => 'bottle'],
+                            ['url' => '/inventory/stock', 'title' => 'Beer & Soft Drink Stock', 'icon' => 'bottle'],
                             ['route' => 'report', 'title' => 'Report', 'icon' => 'report', 'admin' => true],
                             ['url' => '/calendar', 'title' => 'Booking Calendar', 'icon' => 'calendar'],
                             ['url' => '/stock', 'title' => 'Grocery Item Store', 'icon' => 'food'],

@@ -54,19 +54,23 @@ class CashierBalanceController extends Controller
 
     private function calculateDaySales($date)
     {
-        $startDateTime = $date->copy()->startOfDay();
-        $endDateTime = $date->copy()->endOfDay();
+        // Format dates exactly like in ReportController
+        $startDateTime = date("Y-m-d H:i:s", strtotime($date->format('Y-m-d').' 00:00:00'));
+        $endDateTime = date("Y-m-d H:i:s", strtotime($date->format('Y-m-d').' 23:59:59'));
 
-        // Get total amount from sales table - total_price already includes service charge
-        return Sale::whereBetween('created_at', [$startDateTime, $endDateTime])
-            ->where('sale_status', 'paid')
-            ->sum('total_price');
+        // Calculate total sales using the same method as ReportController
+        $sales = Sale::whereBetween('updated_at', [$startDateTime, $endDateTime])
+            ->where('sale_status', 'paid');
+
+        // Return total using the same calculation method as report
+        return $sales->sum('change');
     }
 
     private function calculateDayExpenses($date)
     {
-        $startDateTime = $date->copy()->startOfDay();
-        $endDateTime = $date->copy()->endOfDay();
+        // Format dates to match the same time range
+        $startDateTime = date("Y-m-d H:i:s", strtotime($date->format('Y-m-d').' 00:00:00'));
+        $endDateTime = date("Y-m-d H:i:s", strtotime($date->format('Y-m-d').' 23:59:59'));
 
         return Cost::whereBetween('cost_date', [$startDateTime, $endDateTime])
             ->sum('amount');
@@ -204,20 +208,5 @@ class CashierBalanceController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'Failed to close day: ' . $e->getMessage());
         }
-    }
-
-    public function generateReport(Request $request)
-    {
-        $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date'
-        ]);
-
-        $balances = CashierBalance::whereBetween('date', [$request->start_date, $request->end_date])
-            ->with(['manualTransactions', 'createdBy', 'updatedBy'])
-            ->orderBy('date', 'desc')
-            ->get();
-
-        return view('cashier.report', compact('balances'));
     }
 }

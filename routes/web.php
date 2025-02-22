@@ -24,6 +24,9 @@ use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\DamageItemController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\ServiceChargeController;
+use App\Http\Controllers\CashierBalanceController;
+
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -319,5 +322,17 @@ Route::middleware(['auth'])->group(function () {
  Route::post('/service-charge/points/update-bulk', [ServiceChargeController::class, 'updatePointsBulk'])
      ->name('service-charge.points.update-bulk');
  });
+
+
+// Cashier Balance Routes
+Route::prefix('cashier')->name('cashier.')->group(function () {
+    Route::get('/balance', [CashierBalanceController::class, 'index'])->name('balance');
+    Route::post('/balance/update-opening', [CashierBalanceController::class, 'updateOpeningBalance'])->name('update-opening-balance');
+    Route::post('/balance/add-transaction', [CashierBalanceController::class, 'addManualTransaction'])->name('add-manual-transaction');
+    Route::post('/balance/close-day', [CashierBalanceController::class, 'closeDay'])->name('close-day');
+    Route::get('/balance/report', [CashierBalanceController::class, 'generateReport'])->name('report');
+});
+
+
 
     });

@@ -54,14 +54,22 @@ class CashierBalanceController extends Controller
 
     private function calculateDaySales($date)
     {
-        return Sale::whereDate('created_at', $date->format('Y-m-d'))
+        $startDateTime = $date->copy()->startOfDay();
+        $endDateTime = $date->copy()->endOfDay();
+
+        // Get total amount from sales table - total_price already includes service charge
+        return Sale::whereBetween('created_at', [$startDateTime, $endDateTime])
             ->where('sale_status', 'paid')
             ->sum('total_price');
     }
 
     private function calculateDayExpenses($date)
     {
-        return Cost::whereDate('cost_date', $date->format('Y-m-d'))->sum('amount');
+        $startDateTime = $date->copy()->startOfDay();
+        $endDateTime = $date->copy()->endOfDay();
+
+        return Cost::whereBetween('cost_date', [$startDateTime, $endDateTime])
+            ->sum('amount');
     }
 
     private function getPreviousClosingBalance($date)
@@ -89,7 +97,6 @@ class CashierBalanceController extends Controller
         return $balance->fresh();
     }
 
-    // Your existing methods remain the same
     public function updateOpeningBalance(Request $request)
     {
         $request->validate([
@@ -165,5 +172,52 @@ class CashierBalanceController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'Failed to add transaction: ' . $e->getMessage());
         }
+    }
+
+    public function closeDay(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $date = Carbon::parse($request->date)->format('Y-m-d');
+            $balance = CashierBalance::where('date', $date)->firstOrFail();
+            
+            // Do final calculations
+            $sales = $this->calculateDaySales(Carbon::parse($date));
+            $expenses = $this->calculateDayExpenses(Carbon::parse($date));
+            $this->updateBalanceCalculations($balance, $sales, $expenses);
+            
+            // Close the day
+            $balance->update([
+                'status' => 'closed',
+                'notes' => $request->notes,
+                'updated_by' => Auth::id()
+            ]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Day closed successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to close day: ' . $e->getMessage());
+        }
+    }
+
+    public function generateReport(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date'
+        ]);
+
+        $balances = CashierBalance::whereBetween('date', [$request->start_date, $request->end_date])
+            ->with(['manualTransactions', 'createdBy', 'updatedBy'])
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return view('cashier.report', compact('balances'));
     }
 }

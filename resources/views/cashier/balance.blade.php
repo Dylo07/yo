@@ -76,48 +76,58 @@
                         </div>
                     </div>
 
-                    <!-- Current Balance Summary -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-success text-white">
-                            Balance Summary for {{ $selectedDate->format('d M Y') }}
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="card bg-light">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Opening Balance</h5>
-                                            <h4>Rs. {{ number_format($currentBalance->opening_balance, 2) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="card bg-success text-white">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Sales</h5>
-                                            <h4>Rs. {{ number_format($currentBalance->total_sales, 2) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="card bg-danger text-white">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Expenses</h5>
-                                            <h4>Rs. {{ number_format($currentBalance->total_expenses + $currentBalance->manual_expenses, 2) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="card bg-info text-white">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Current Balance</h5>
-                                            <h4>Rs. {{ number_format($currentBalance->closing_balance, 2) }}</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Current Balance Summary Section -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        Balance Summary for {{ $selectedDate->format('d M Y') }}
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">Opening Balance</h5>
+                        <h4>Rs. {{ number_format($currentBalance->opening_balance, 2) }}</h4>
                     </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Today's Sales</h5>
+                        <h4>Rs. {{ number_format($currentBalance->total_sales, 2) }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Today's Expenses</h5>
+                        <h4>Rs. {{ number_format($currentBalance->total_expenses + $currentBalance->manual_expenses, 2) }}</h4>
+                        <small>Regular: Rs. {{ number_format($currentBalance->total_expenses, 2) }}</small><br>
+                        <small>Manual: Rs. {{ number_format($currentBalance->manual_expenses, 2) }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Current Balance</h5>
+                        <h4>Rs. {{ number_format($currentBalance->closing_balance, 2) }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Summary Alert -->
+<div class="alert alert-success mb-4" role="alert">
+    <h5>Daily Summary {{ $selectedDate->format('d M Y') }}</h5>
+    <p class="mb-1">Total Sales: Rs. {{ number_format($currentBalance->total_sales, 2) }}</p>
+    <p class="mb-1">Total Expenses: Rs. {{ number_format($currentBalance->total_expenses + $currentBalance->manual_expenses, 2) }}</p>
+    <p class="mb-0">Net Balance: Rs. {{ number_format($currentBalance->closing_balance, 2) }}</p>
+</div>
 
                     <!-- Manual Transaction Form -->
                     <div class="card mb-4">
@@ -259,6 +269,9 @@
     }
     .alert {
         margin-bottom: 1rem;
+    }
+    .small-text {
+        font-size: 0.875rem;
     }
 </style>
 @endpush

@@ -25,6 +25,7 @@ use App\Http\Controllers\DamageItemController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\ServiceChargeController;
 use App\Http\Controllers\CashierBalanceController;
+use App\Http\Controllers\SalesSummaryController;
 
 
 /*
@@ -110,6 +111,17 @@ Route::resource('inventory/table', App\Http\Controllers\Inventory\TableControlle
 
 Route::get('/categories-products', [InventoryController::class, 'categoriesProducts'])
     ->name('categories-products.index');
+
+
+// Routes for merged products management (add to the routes/web.php file)
+Route::middleware(['auth'])->group(function() {
+    Route::get('/inventory/merged-products', 'App\Http\Controllers\Inventory\MergedProductController@index')->name('merged-products.index');
+    Route::post('/inventory/merged-products/merge', 'App\Http\Controllers\Inventory\MergedProductController@merge')->name('merged-products.merge');
+    Route::get('/inventory/merged-products/unmerge/{parentId}', 'App\Http\Controllers\Inventory\MergedProductController@unmerge')->name('merged-products.unmerge');
+    Route::get('/inventory/merged-products/consolidate/{parentId}', 'App\Http\Controllers\Inventory\MergedProductController@consolidate')->name('merged-products.consolidate');
+    Route::post('/inventory/merged-products/redistribute', 'App\Http\Controllers\Inventory\MergedProductController@redistribute')->name('merged-products.redistribute');
+});
+
 
 
 
@@ -334,5 +346,11 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 });
 
 
+//summey page
+Route::middleware(['auth'])->group(function () {
+    Route::get('/sales/summary', [SalesSummaryController::class, 'index'])->name('sales.summary');
+    Route::get('/sales/summary/data', [SalesSummaryController::class, 'getSummaryData'])->name('sales.summary.data');
+    Route::get('/sales/summary/print', [SalesSummaryController::class, 'printSummary'])->name('sales.summary.print');
+});
 
     });

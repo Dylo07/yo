@@ -2,16 +2,29 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class InStock extends Model
 {
-    use HasFactory;
-    public function inMenu(){
-        return $this->belongsTo(Menu::class);
+    protected $table = 'in_stocks';
+    
+    protected $fillable = [
+        'menu_id', 'stock', 'user_id'
+    ];
+
+    /**
+     * Get the menu that owns the stock entry.
+     */
+    public function menu()
+    {
+        return $this->belongsTo(Menu::class, 'menu_id');
     }
-    public function user(){
-        return $this->belongsTo(User::class);
+
+    /**
+     * Get the user that created the stock entry.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

@@ -120,7 +120,35 @@ Route::middleware(['auth'])->group(function() {
     Route::get('/inventory/merged-products/unmerge/{parentId}', 'App\Http\Controllers\Inventory\MergedProductController@unmerge')->name('merged-products.unmerge');
     Route::get('/inventory/merged-products/consolidate/{parentId}', 'App\Http\Controllers\Inventory\MergedProductController@consolidate')->name('merged-products.consolidate');
     Route::post('/inventory/merged-products/redistribute', 'App\Http\Controllers\Inventory\MergedProductController@redistribute')->name('merged-products.redistribute');
+    // Remove the middleware group to make sure it's publicly accessible
+Route::get('/inventory/stock/daily-sales', 'App\Http\Controllers\Inventory\StockController@getDailySalesData')
+->name('stock.daily-sales');
+
+// And add this alternative route as a backup (with a different URL pattern)
+Route::get('/api/daily-sales', 'App\Http\Controllers\Inventory\StockController@getDailySalesData')
+->name('api.daily-sales');
+
+    Route::get('/test-daily-sales/{date?}', function($date = null) {
+        try {
+            if (!$date) {
+                $date = \Carbon\Carbon::today()->format('Y-m-d');
+            }
+            
+            $controller = new \App\Http\Controllers\Inventory\StockController();
+            $request = new \Illuminate\Http\Request();
+            $request->merge(['date' => $date]);
+            
+            return $controller->getDailySalesData($request);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    });
+
 });
+
 
 
 

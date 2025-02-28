@@ -30,6 +30,13 @@
             </div>
             @endif
             
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <!-- Include the Daily Sales Component -->
+                    @include('inventory.daily-sales')
+                </div>
+            </div>
+            
             <!-- Link to merged products management -->
             @if(isset($data['categories']) && $data['categories']->contains('id', 29))
             <div class="mb-3">

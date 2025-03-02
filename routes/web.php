@@ -26,7 +26,7 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\ServiceChargeController;
 use App\Http\Controllers\CashierBalanceController;
 use App\Http\Controllers\SalesSummaryController;
-
+use App\Http\Controllers\LenderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -275,7 +275,16 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
-
+// Lenders/Creditors Management Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/lenders', [App\Http\Controllers\LenderController::class, 'index'])->name('lenders.index');
+    Route::post('/lenders', [App\Http\Controllers\LenderController::class, 'store'])->name('lenders.store');
+    Route::get('/lenders/{id}/mark-paid', [App\Http\Controllers\LenderController::class, 'markAsPaid'])->name('lenders.mark-paid');
+    Route::delete('/lenders/{id}', [App\Http\Controllers\LenderController::class, 'destroy'])->name('lenders.destroy');
+    Route::resource('lenders', LenderController::class);
+    Route::get('/lenders/{id}/mark-paid', [App\Http\Controllers\LenderController::class, 'markAsPaid'])
+    ->name('lenders.mark-paid');
+});
 
 
 

@@ -8,6 +8,8 @@ use App\Models\RoomBooking;
 use App\Models\VehicleSecurity;
 use App\Models\Cost; 
 use App\Models\Task;
+use App\Models\StockLog; // Added for inventory changes
+use App\Models\Item; // Added for item details
 use Carbon\Carbon;
 use DB;
 
@@ -81,22 +83,21 @@ class HomeController extends Controller
              })
              ->get();
 
-
-             // Add this new query for vehicle room check-ins
-    $selectedDate = $request->get('date', date('Y-m-d'));
-    $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
-    ->where('is_note', false)
-    ->whereRaw("JSON_LENGTH(room_numbers) > 0")
-    ->where(function($query) use ($selectedDate) {
-        $query->whereDate('created_at', $selectedDate)  // Check-ins on selected date
-              ->orWhereDate('checkout_time', $selectedDate)  // Check-outs on selected date
-              ->orWhere(function($q) {
-                  $q->whereNull('checkout_time')  // Not checked out yet
-                    ->whereRaw("JSON_LENGTH(room_numbers) > 0");
-              });
-    })
-    ->latest()
-    ->get();
+         // Add this new query for vehicle room check-ins
+         $selectedDate = $request->get('date', date('Y-m-d'));
+         $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
+             ->where('is_note', false)
+             ->whereRaw("JSON_LENGTH(room_numbers) > 0")
+             ->where(function($query) use ($selectedDate) {
+                 $query->whereDate('created_at', $selectedDate)  // Check-ins on selected date
+                       ->orWhereDate('checkout_time', $selectedDate)  // Check-outs on selected date
+                       ->orWhere(function($q) {
+                           $q->whereNull('checkout_time')  // Not checked out yet
+                             ->whereRaw("JSON_LENGTH(room_numbers) > 0");
+                       });
+             })
+             ->latest()
+             ->get();
      
          // Get pending tasks
          $pendingTasks = Task::with('taskCategory')
@@ -145,6 +146,37 @@ class HomeController extends Controller
          // Service charge period labels
          $periodLabel = $dateStart->format('M d, Y') . ' - ' . $dateEnd->format('M d, Y');
          $previousPeriodLabel = $prevMonthStart->format('M d, Y') . ' - ' . $prevMonthEnd->format('M d, Y');
+
+         // Get inventory changes for selected date or default to today
+         $selectedInventoryDate = $request->input('inventory_date', Carbon::today()->format('Y-m-d'));
+         $inventoryChanges = StockLog::with(['user', 'item.group'])
+             ->whereDate('created_at', $selectedInventoryDate)
+             ->orderBy('created_at', 'desc')
+             ->get();
+         
+         // Get current stock levels for items with changes today
+         $itemIds = $inventoryChanges->pluck('item_id')->unique();
+         $currentDate = Carbon::today()->format('Y-m-d');
+         $currentStockLevels = [];
+         
+         if ($itemIds->count() > 0) {
+             $inventoryRecords = \App\Models\Inventory::whereIn('item_id', $itemIds)
+                 ->where('stock_date', '<=', $currentDate)
+                 ->orderBy('stock_date', 'desc')
+                 ->get()
+                 ->groupBy('item_id');
+             
+             foreach ($itemIds as $itemId) {
+                 if (isset($inventoryRecords[$itemId]) && $inventoryRecords[$itemId]->count() > 0) {
+                     $currentStockLevels[$itemId] = $inventoryRecords[$itemId]->first()->stock_level;
+                 } else {
+                     $currentStockLevels[$itemId] = 0;
+                 }
+             }
+         }
+         
+         // Pass the selected date and stock levels to the view
+         $inventoryDate = Carbon::parse($selectedInventoryDate)->format('Y-m-d');
      
          return view('home', compact(
              'serviceCharge',
@@ -161,7 +193,10 @@ class HomeController extends Controller
              'totalAdvance',
              'dateRangeText',
              'selectedPeriod',
-             'periods'
+             'periods',
+             'inventoryChanges',
+             'inventoryDate',
+             'currentStockLevels'
          ));
      }
 }

@@ -151,6 +151,87 @@
 </div>
 
 
+<!-- Inventory Changes Section -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3">Inventory Changes</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date" 
+                       name="inventory_date" 
+                       class="form-control form-control-sm me-2 dark-input" 
+                       value="{{ request('inventory_date', date('Y-m-d')) }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+                <!-- Preserve other request parameters -->
+                @if(request('date'))
+                    <input type="hidden" name="date" value="{{ request('date') }}">
+                @endif
+                @if(request('period'))
+                    <input type="hidden" name="period" value="{{ request('period') }}">
+                @endif
+                @if(request('month'))
+                    <input type="hidden" name="month" value="{{ request('month') }}">
+                @endif
+            </form>
+        </div>
+        <a href="{{ route('stock.index') }}" class="btn btn-sm btn-outline-light">
+            Manage Inventory
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Time</th>
+                        <th>Item</th>
+                        <th>Category</th>
+                        <th>Action</th>
+                        <th>Quantity</th>
+                        <th>Current Stock</th>
+                        <th>Updated By</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($inventoryChanges as $change)
+                    <tr>
+                        <td>{{ $change->created_at->format('H:i') }}</td>
+                        <td><strong>{{ $change->item ? $change->item->name : 'Unknown Item' }}</strong></td>
+                        <td>{{ ($change->item && $change->item->group) ? $change->item->group->name : 'Unknown Category' }}</td>
+                        <td>
+                            @if($change->action == 'add')
+                                <span class="badge bg-success">Added</span>
+                            @else
+                                <span class="badge bg-danger">Removed</span>
+                            @endif
+                        </td>
+                        <td class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
+                            <strong>{{ $change->quantity }}</strong>
+                        </td>
+                        <td class="fw-bold">
+                            @if(isset($currentStockLevels[$change->item_id]))
+                                {{ $currentStockLevels[$change->item_id] }}
+                            @else
+                                N/A
+                            @endif
+                        </td>
+                        <td>{{ $change->user ? $change->user->name : 'Unknown User' }}</td>
+                        <td>{{ $change->description }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            No inventory changes found for {{ \Carbon\Carbon::parse($inventoryDate)->format('M d, Y') }}
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 
     <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">

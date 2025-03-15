@@ -479,8 +479,6 @@
 </div>
 
 
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
@@ -840,15 +838,14 @@ setupEditHandler(info);
 
 // 7. Payment History Handler
 
+// Replace the existing PaymentHistory React component with this vanilla JS version
 
 function handlePaymentHistory(props) {
     const payments = props.advancePayments || [];
+    const paymentHistoryBody = document.getElementById("paymentHistoryBody");
+    
     if (payments.length > 0 || props.advance_payment) {
-        const paymentHistoryContainer = document.createElement('div');
-        paymentHistoryContainer.id = 'payment-history-root';
-        document.getElementById("paymentHistoryBody").innerHTML = '';
-        document.getElementById("paymentHistoryBody").appendChild(paymentHistoryContainer);
-        
+        // Create payment data array
         const paymentData = payments.length > 0 ? payments : [{
             amount: props.advance_payment,
             billNumber: props.bill_number || 'N/A',
@@ -856,10 +853,118 @@ function handlePaymentHistory(props) {
             method: props.payment_method || 'N/A'
         }];
         
-        const root = ReactDOM.createRoot(paymentHistoryContainer);
-        root.render(React.createElement(PaymentHistory, { payments: paymentData }));
+        // Clear the container
+        paymentHistoryBody.innerHTML = '';
+        
+        // Get user role from meta tag
+        const userRole = document.querySelector('meta[name="user-role"]')?.content;
+        const isAdmin = userRole === 'admin'; // Adjust based on your role naming
+        
+        // Get stored verification states
+        const storedStates = JSON.parse(localStorage.getItem('paymentVerifications') || '{}');
+        
+        // Create payment history elements
+        paymentData.forEach((payment, index) => {
+            const paymentId = `${payment.billNumber}-${payment.date}`;
+            const verificationStatus = storedStates[paymentId];
+            
+            // Create payment record div
+            const paymentRecord = document.createElement('div');
+            paymentRecord.className = 'payment-record';
+            
+            // Create header with checkbox
+            const header = document.createElement('div');
+            header.className = 'form-check d-flex align-items-center justify-content-between';
+            
+            const headerLeft = document.createElement('div');
+            headerLeft.className = 'd-flex align-items-center';
+            
+            // Only show checkbox if user is admin and payment is not verified
+            if (isAdmin && !verificationStatus) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-check-input payment-checkbox';
+                checkbox.id = `payment-${paymentId}`;
+                checkbox.addEventListener('change', function() {
+                    const currentUser = document.querySelector('meta[name="user-name"]')?.content || 'Admin';
+                    
+                    const newStates = {
+                        ...storedStates,
+                        [paymentId]: storedStates[paymentId] 
+                            ? null 
+                            : {
+                                verified: true,
+                                date: new Date().toISOString(),
+                                verifiedBy: currentUser
+                            }
+                    };
+                    
+                    localStorage.setItem('paymentVerifications', JSON.stringify(newStates));
+                    handlePaymentHistory(props); // Refresh the display
+                });
+                
+                headerLeft.appendChild(checkbox);
+            }
+            
+            const title = document.createElement('h6');
+            title.className = 'mb-0 ms-2';
+            title.textContent = `Payment #${index + 1}`;
+            headerLeft.appendChild(title);
+            
+            header.appendChild(headerLeft);
+            
+            // Add verification status if verified
+            if (verificationStatus) {
+                const verificationDiv = document.createElement('div');
+                verificationDiv.className = 'text-success ms-2 d-flex align-items-center';
+                
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-success me-2';
+                badge.textContent = 'Verified';
+                
+                const verificationInfo = document.createElement('small');
+                verificationInfo.className = 'text-muted';
+                verificationInfo.textContent = `on ${new Date(verificationStatus.date).toLocaleDateString()} by ${verificationStatus.verifiedBy}`;
+                
+                verificationDiv.appendChild(badge);
+                verificationDiv.appendChild(verificationInfo);
+                header.appendChild(verificationDiv);
+            }
+            
+            paymentRecord.appendChild(header);
+            
+            // Create payment details
+            const details = document.createElement('div');
+            details.className = 'payment-details mt-2';
+            
+            const amount = document.createElement('p');
+            amount.className = 'mb-1';
+            amount.textContent = `Amount: Rs. ${parseFloat(payment.amount).toFixed(2)}`;
+            
+            const billNumber = document.createElement('p');
+            billNumber.className = 'mb-1';
+            billNumber.textContent = `Bill Number: ${payment.billNumber}`;
+            
+            const date = document.createElement('p');
+            date.className = 'mb-1';
+            date.textContent = `Date: ${new Date(payment.date).toLocaleDateString()}`;
+            
+            const method = document.createElement('p');
+            method.className = 'mb-1';
+            method.textContent = `Method: ${payment.method}`;
+            
+            details.appendChild(amount);
+            details.appendChild(billNumber);
+            details.appendChild(date);
+            details.appendChild(method);
+            
+            paymentRecord.appendChild(details);
+            
+            // Add to container
+            paymentHistoryBody.appendChild(paymentRecord);
+        });
     } else {
-        document.getElementById("paymentHistoryBody").innerHTML = '<p>No payment history available</p>';
+        paymentHistoryBody.innerHTML = '<p>No payment history available</p>';
     }
 }
 

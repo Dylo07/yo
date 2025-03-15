@@ -13,16 +13,25 @@ class BookingPayment extends Model
         'amount',
         'bill_number',
         'payment_date',
-        'payment_method'
+        'payment_method',
+        'is_verified',
+    'verified_at',
+    'verified_by'
     ];
 
     protected $casts = [
         'payment_date' => 'date',
-        'amount' => 'decimal:2'
+        'amount' => 'decimal:2',
+        'is_verified' => 'boolean'
     ];
 
     public function booking()
     {
         return $this->belongsTo(Booking::class);
     }
+
+    public function verifier()
+{
+    return $this->belongsTo(User::class, 'verified_by');
+}
 }

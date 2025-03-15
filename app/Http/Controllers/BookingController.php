@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Booking;
+use App\Models\BookingPayment;
 use Carbon\Carbon;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
@@ -13,38 +15,42 @@ class BookingController extends Controller
      * Fetch all bookings for the calendar.
      */
     public function index()
-    {
-        $bookings = Booking::with('payments')->get();
-        
-        return $bookings->map(function ($booking) {
-            $payments = $booking->payments->map(function ($payment) {
-                return [
-                    'amount' => $payment->amount,
-                    'billNumber' => $payment->bill_number,
-                    'date' => $payment->payment_date->format('Y-m-d'),
-                    'method' => $payment->payment_method
-                ];
-            });
+{
+    $bookings = Booking::with(['payments', 'payments.verifier'])->get();
     
-            // Handle room_numbers as array
-            $roomNumbers = is_array($booking->room_numbers) ? 
-                implode(', ', $booking->room_numbers) : 
-                $booking->room_numbers;
-    
+    return $bookings->map(function ($booking) {
+        $payments = $booking->payments->map(function ($payment) {
             return [
-                'id' => $booking->id,
-                'title' => $booking->name,
-                'start' => $booking->start,
-                'end' => $booking->end,
-                'function_type' => $booking->function_type,
-                'contact_number' => $booking->contact_number,
-                'room_numbers' => json_encode($booking->room_numbers), // Encode the array as JSON
-                'guest_count' => $booking->guest_count,
-                'name' => $booking->name,
-                'advancePayments' => $payments
+                'id' => $payment->id,
+                'amount' => $payment->amount,
+                'billNumber' => $payment->bill_number,
+                'date' => $payment->payment_date->format('Y-m-d'),
+                'method' => $payment->payment_method,
+                'isVerified' => $payment->is_verified, 
+                'verifiedAt' => $payment->verified_at ? Carbon::parse($payment->verified_at)->format('Y-m-d H:i:s') : null,
+                'verifiedBy' => $payment->verifier ? $payment->verifier->name : null
             ];
         });
-    }
+
+        // Handle room_numbers as array
+        $roomNumbers = is_array($booking->room_numbers) ? 
+            implode(', ', $booking->room_numbers) : 
+            $booking->room_numbers;
+
+        return [
+            'id' => $booking->id,
+            'title' => $booking->name,
+            'start' => $booking->start,
+            'end' => $booking->end,
+            'function_type' => $booking->function_type,
+            'contact_number' => $booking->contact_number,
+            'room_numbers' => json_encode($booking->room_numbers),
+            'guest_count' => $booking->guest_count,
+            'name' => $booking->name,
+            'advancePayments' => $payments
+        ];
+    });
+}
 
     /**
      * Store a new booking.
@@ -264,8 +270,10 @@ class BookingController extends Controller
 public function printConfirmation($id)
 {
     $booking = Booking::with(['payments' => function($query) {
-        $query->orderBy('payment_date', 'asc'); // Order payments by date
+        $query->orderBy('payment_date', 'asc')
+              ->with('verifier'); // Load the verifier relationship
     }])->findOrFail($id);
+    
     // Get the latest payment
     $latestPayment = $booking->payments->last();
     
@@ -276,6 +284,44 @@ public function printConfirmation($id)
     ];
     
     return view('bookings.print-confirmation', $data);
+}
+// app/Http/Controllers/BookingController.php
+public function toggleVerification(Request $request, $paymentId)
+{
+    $payment = BookingPayment::findOrFail($paymentId);
+    
+    // Only admins can verify payments
+    if (auth()->user()->role !== 'admin') {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    
+    // Toggle verification status
+    if ($payment->is_verified) {
+        $payment->update([
+            'is_verified' => false,
+            'verified_at' => null,
+            'verified_by' => null
+        ]);
+        $message = 'Payment verification removed';
+    } else {
+        $payment->update([
+            'is_verified' => true,
+            'verified_at' => now(),
+            'verified_by' => auth()->id()
+        ]);
+        $message = 'Payment verified successfully';
+    }
+    
+    return response()->json([
+        'success' => true,
+        'message' => $message,
+        'payment' => [
+            'id' => $payment->id,
+            'is_verified' => $payment->is_verified,
+            'verified_at' => $payment->verified_at,
+            'verified_by' => $payment->verified_by ? auth()->user()->name : null
+        ]
+    ]);
 }
 
 };

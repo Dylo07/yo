@@ -164,6 +164,12 @@ Route::get('/available-rooms', [BookingController::class, 'availableRooms']);
 Route::get('/booking-logs', [BookingController::class, 'getLogs']);
 Route::get('/bookings/{id}/print', [BookingController::class, 'printConfirmation'])->name('bookings.print');
 
+// routes/web.php
+Route::post('/booking-payments/{payment}/toggle-verification', 
+    [BookingController::class, 'toggleVerification'])
+    ->middleware('auth')
+    ->name('booking-payments.toggle-verification');
+
 // routes for inventory
 Route::get('/stock', [InventoryController::class, 'index'])->name('stock.index');
 Route::post('/stock', [InventoryController::class, 'store'])->name('stock.store');

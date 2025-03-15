@@ -499,9 +499,7 @@ const functionTypeColors = {
 
 // 2. React Components - Payment History Component
 const PaymentHistory = ({ payments }) => {
-    const storedStates = JSON.parse(localStorage.getItem('paymentVerifications') || '{}');
-    const [verifications, setVerifications] = React.useState(storedStates);
-    
+   
     // Get user role from meta tag
     const userRole = document.querySelector('meta[name="user-role"]')?.content;
     const isAdmin = userRole === 'admin'; // Adjust based on your role naming
@@ -792,6 +790,11 @@ document.addEventListener("DOMContentLoaded", function() {
     const calendarEl = document.getElementById("calendar");
     const calendar = new FullCalendar.Calendar(calendarEl, getCalendarConfig());
     calendar.render();
+    
+    // Log events after calendar is rendered
+    calendar.on('eventsSet', function(events) {
+        console.log('Calendar events loaded:', events);
+    });
 });
 
 
@@ -847,10 +850,14 @@ function handlePaymentHistory(props) {
     if (payments.length > 0 || props.advance_payment) {
         // Create payment data array
         const paymentData = payments.length > 0 ? payments : [{
+            id: null, // For new bookings, ID might not exist yet
             amount: props.advance_payment,
             billNumber: props.bill_number || 'N/A',
             date: props.advance_date || new Date().toISOString(),
-            method: props.payment_method || 'N/A'
+            method: props.payment_method || 'N/A',
+            isVerified: false,
+            verifiedAt: null,
+            verifiedBy: null
         }];
         
         // Clear the container
@@ -860,14 +867,8 @@ function handlePaymentHistory(props) {
         const userRole = document.querySelector('meta[name="user-role"]')?.content;
         const isAdmin = userRole === 'admin'; // Adjust based on your role naming
         
-        // Get stored verification states
-        const storedStates = JSON.parse(localStorage.getItem('paymentVerifications') || '{}');
-        
         // Create payment history elements
         paymentData.forEach((payment, index) => {
-            const paymentId = `${payment.billNumber}-${payment.date}`;
-            const verificationStatus = storedStates[paymentId];
-            
             // Create payment record div
             const paymentRecord = document.createElement('div');
             paymentRecord.className = 'payment-record';
@@ -879,28 +880,14 @@ function handlePaymentHistory(props) {
             const headerLeft = document.createElement('div');
             headerLeft.className = 'd-flex align-items-center';
             
-            // Only show checkbox if user is admin and payment is not verified
-            if (isAdmin && !verificationStatus) {
+            // Only show checkbox if user is admin and payment is not verified and has an ID
+            if (isAdmin && !payment.isVerified && payment.id) {
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.className = 'form-check-input payment-checkbox';
-                checkbox.id = `payment-${paymentId}`;
+                checkbox.id = `payment-${payment.id}`;
                 checkbox.addEventListener('change', function() {
-                    const currentUser = document.querySelector('meta[name="user-name"]')?.content || 'Admin';
-                    
-                    const newStates = {
-                        ...storedStates,
-                        [paymentId]: storedStates[paymentId] 
-                            ? null 
-                            : {
-                                verified: true,
-                                date: new Date().toISOString(),
-                                verifiedBy: currentUser
-                            }
-                    };
-                    
-                    localStorage.setItem('paymentVerifications', JSON.stringify(newStates));
-                    handlePaymentHistory(props); // Refresh the display
+                    togglePaymentVerification(payment.id);
                 });
                 
                 headerLeft.appendChild(checkbox);
@@ -914,7 +901,7 @@ function handlePaymentHistory(props) {
             header.appendChild(headerLeft);
             
             // Add verification status if verified
-            if (verificationStatus) {
+            if (payment.isVerified) {
                 const verificationDiv = document.createElement('div');
                 verificationDiv.className = 'text-success ms-2 d-flex align-items-center';
                 
@@ -924,7 +911,8 @@ function handlePaymentHistory(props) {
                 
                 const verificationInfo = document.createElement('small');
                 verificationInfo.className = 'text-muted';
-                verificationInfo.textContent = `on ${new Date(verificationStatus.date).toLocaleDateString()} by ${verificationStatus.verifiedBy}`;
+                const verifiedDate = payment.verifiedAt ? new Date(payment.verifiedAt).toLocaleDateString() : 'N/A';
+                verificationInfo.textContent = `on ${verifiedDate} by ${payment.verifiedBy || 'Admin'}`;
                 
                 verificationDiv.appendChild(badge);
                 verificationDiv.appendChild(verificationInfo);
@@ -967,6 +955,54 @@ function handlePaymentHistory(props) {
         paymentHistoryBody.innerHTML = '<p>No payment history available</p>';
     }
 }
+
+
+// Add this function after handlePaymentHistory
+function togglePaymentVerification(paymentId) {
+    // Get CSRF token from meta tag
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Show loading indicator
+    const checkbox = document.getElementById(`payment-${paymentId}`);
+    if (checkbox) {
+        checkbox.disabled = true;
+    }
+    
+    // Make AJAX request to toggle verification
+    fetch(`/booking-payments/${paymentId}/toggle-verification`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': token,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Refresh the calendar to show updated data
+            location.reload();
+        } else {
+            alert(data.message || 'An error occurred');
+            if (checkbox) {
+                checkbox.disabled = false;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to update verification status');
+        if (checkbox) {
+            checkbox.disabled = false;
+        }
+    });
+}
+
 
 
 // 8. Edit Handler Setup

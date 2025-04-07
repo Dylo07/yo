@@ -111,11 +111,22 @@
 </head>
 
 <body>
-    <div class="container">
-        <h1 class="text-center my-4">Booking Calendar</h1>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="my-3">Booking Calendar</h1>
+        <div class="button-group">
+            <a href="/" class="btn btn-primary me-2">
+                <i class="fas fa-home me-1"></i> Home
+            </a>
+            <a href="{{ route('room.visualizer') }}" class="btn btn-info">
+                <i class="fas fa-chart-bar me-1"></i> Room Availability
+            </a>
+        </div>
+    </div>
+</div>
         
     <!-- Add the Home Button -->
-    <a href="/" class="btn btn-primary mb-3" style="float: right;">Home</a>
+    
         <form id="booking-form">
             <h1>Enter Booking Details</h1>
             <div class="mb-3">

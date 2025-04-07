@@ -293,7 +293,11 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
-
+// Room Availability Visualizer
+Route::get('/room-visualizer', [App\Http\Controllers\RoomAvailabilityVisualizerController::class, 'index'])
+    ->name('room.visualizer');
+Route::get('/room-visualizer/data', [App\Http\Controllers\RoomAvailabilityVisualizerController::class, 'getAvailabilityData'])
+    ->name('room.visualizer.data');
 
 
 // Damage Items Routes

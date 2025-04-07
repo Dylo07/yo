@@ -588,54 +588,85 @@
         let allData = null;
         let selectedDay = null;
         
-        function fetchAvailabilityData() {
-            const startDate = document.getElementById('start_date').value;
-            const endDate = document.getElementById('end_date').value;
-            
-            // Show loading indicator
-            document.getElementById('loadingIndicator').style.display = 'flex';
-            document.getElementById('statsContainer').style.display = 'none';
-            document.getElementById('heatMapContainer').style.display = 'none';
-            document.getElementById('calendarContainer').style.display = 'none';
-            document.getElementById('detailedViewContainer').style.display = 'none';
-            
-            // Make API call
-            axios.get('/room-visualizer/data', {
-                params: {
-                    start_date: startDate,
-                    end_date: endDate
-                }
-            })
-            .then(function(response) {
-                // Hide loading indicator
-                document.getElementById('loadingIndicator').style.display = 'none';
-                
-                // Store the data
-                allData = response.data;
-                
-                // Update the stats
-                updateStats(response.data.stats);
-                
-                // Render heat map
-                renderHeatMap(response.data.dateRange);
-                
-                // Render calendar view with all time slots initially
-                renderCalendarView(response.data.dateRange, 'all');
-                
-                // Render booking group legend
-                renderBookingGroupLegend(response.data.dateRange);
-                
-                // Show the containers
-                document.getElementById('statsContainer').style.display = 'flex';
-                document.getElementById('heatMapContainer').style.display = 'block';
-                document.getElementById('calendarContainer').style.display = 'block';
-            })
-            .catch(function(error) {
-                console.error('Error fetching availability data:', error);
-                document.getElementById('loadingIndicator').style.display = 'none';
-                alert('Error fetching availability data. Please try again.');
-            });
+      // Replace the fetchAvailabilityData function in your blade file with this improved version
+
+function fetchAvailabilityData() {
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    
+    // Show loading indicator
+    document.getElementById('loadingIndicator').style.display = 'flex';
+    document.getElementById('statsContainer').style.display = 'none';
+    document.getElementById('heatMapContainer').style.display = 'none';
+    document.getElementById('calendarContainer').style.display = 'none';
+    document.getElementById('detailedViewContainer').style.display = 'none';
+    
+    console.log('Fetching availability data for dates:', startDate, 'to', endDate);
+    
+    // Make API call
+    axios.get('/room-visualizer/data', {
+        params: {
+            start_date: startDate,
+            end_date: endDate
         }
+    })
+    .then(function(response) {
+        console.log('Data received successfully:', response.data);
+        
+        // Hide loading indicator
+        document.getElementById('loadingIndicator').style.display = 'none';
+        
+        // Store the data
+        allData = response.data;
+        
+        // Check if we got an error response
+        if (response.data.error) {
+            console.error('Error in response:', response.data.error);
+            alert('Error receiving data: ' + response.data.error);
+            return;
+        }
+        
+        // Update the stats
+        updateStats(response.data.stats);
+        
+        // Render heat map
+        renderHeatMap(response.data.dateRange);
+        
+        // Render calendar view with all time slots initially
+        renderCalendarView(response.data.dateRange, 'all');
+        
+        // Render booking group legend
+        renderBookingGroupLegend(response.data.dateRange);
+        
+        // Show the containers
+        document.getElementById('statsContainer').style.display = 'flex';
+        document.getElementById('heatMapContainer').style.display = 'block';
+        document.getElementById('calendarContainer').style.display = 'block';
+    })
+    .catch(function(error) {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        
+        console.error('Error fetching availability data:', error);
+        
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+            console.error('Response headers:', error.response.headers);
+            alert('Error fetching availability data: ' + 
+                  (error.response.data.error || error.response.data.message || 'Server responded with an error'));
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No response received:', error.request);
+            alert('Error fetching availability data: No response received from server');
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error setting up request:', error.message);
+            alert('Error fetching availability data: ' + error.message);
+        }
+    });
+}
         
         function updateStats(stats) {
             document.getElementById('totalDays').textContent = stats.totalDays;

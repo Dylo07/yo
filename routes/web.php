@@ -27,6 +27,7 @@ use App\Http\Controllers\ServiceChargeController;
 use App\Http\Controllers\CashierBalanceController;
 use App\Http\Controllers\SalesSummaryController;
 use App\Http\Controllers\LenderController;
+use App\Http\Controllers\RoomAvailabilityVisualizerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -298,7 +299,32 @@ Route::get('/room-visualizer', [App\Http\Controllers\RoomAvailabilityVisualizerC
     ->name('room.visualizer');
 Route::get('/room-visualizer/data', [App\Http\Controllers\RoomAvailabilityVisualizerController::class, 'getAvailabilityData'])
     ->name('room.visualizer.data');
+// Add this route to your web.php file for testing
 
+Route::get('/test-room-visualizer', function() {
+    try {
+        $controller = new \App\Http\Controllers\RoomAvailabilityVisualizerController();
+        $request = new \Illuminate\Http\Request();
+        $request->merge([
+            'start_date' => \Carbon\Carbon::today()->format('Y-m-d'),
+            'end_date' => \Carbon\Carbon::today()->addDays(7)->format('Y-m-d')
+        ]);
+        
+        return $controller->getAvailabilityData($request);
+    } catch (\Exception $e) {
+        \Log::error('Test route error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
 
 // Damage Items Routes
 Route::get('/damage-items', [DamageItemController::class, 'index'])->name('damage-items.index');

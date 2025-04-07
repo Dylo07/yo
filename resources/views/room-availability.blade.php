@@ -124,7 +124,7 @@
         }
         
         .available {
-            color: #198754;
+            color: #989e9b;
         }
         
         .booked {
@@ -162,7 +162,7 @@
         
         .legend-available {
             background-color: rgba(25, 135, 84, 0.2);
-            border: 1px solid #198754;
+            border: 1px solid #989e9b;
         }
         
         .legend-booked {
@@ -492,6 +492,7 @@
             <p class="text-muted">This view shows room availability across days with time slots</p>
             
             <!-- Add this HTML to your room-availability.blade.php file, right before the bookingGroupLegend div -->
+<!-- Update this in your HTML to ensure the legend structure is correct -->
 <div id="functionTypeLegend" class="booking-group-legend mb-3">
     <h5>Function Types</h5>
     <div class="d-flex flex-wrap gap-3">
@@ -581,44 +582,104 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Set default dates
-            const today = new Date();
-            const nextWeek = new Date();
-            nextWeek.setDate(today.getDate() + 7);
-            
-            document.getElementById('start_date').value = formatDate(today);
-            document.getElementById('end_date').value = formatDate(nextWeek);
-            
-            // Fetch initial data
-            fetchAvailabilityData();
-            
-            // Handle form submission
-            document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                fetchAvailabilityData();
-            });
-            
-            // Handle time slot radio buttons
-            document.querySelectorAll('input[name="timeSlotRadio"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (allData) {
-                        renderCalendarView(allData.dateRange, this.value);
-                    }
-                });
-            });
+    // Set default dates
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+    
+    document.getElementById('start_date').value = formatDate(today);
+    document.getElementById('end_date').value = formatDate(nextWeek);
+    
+    // Fetch initial data
+    fetchAvailabilityData();
+    
+    // Handle form submission
+    document.getElementById('dateRangeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        fetchAvailabilityData();
+    });
+    
+    // Handle time slot radio buttons
+    document.querySelectorAll('input[name="timeSlotRadio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (allData) {
+                renderCalendarView(allData.dateRange, this.value);
+            }
         });
+    });
+    
+    // Initialize function type legend
+    const functionTypeLegend = document.getElementById('functionTypeLegend');
+    if (functionTypeLegend) {
+        functionTypeLegend.style.display = 'block';
+    }
+});
+
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+let allData = null;
+let selectedDay = null;
+
+// Define a set of distinct colors for sequence numbers
+const sequenceColors = [
+    '#FF5733', // Orange-red
+    '#33FF57', // Bright green
+    '#3375FF', // Blue
+    '#FF33B8', // Pink
+    '#33F8FF', // Cyan
+    '#FFDA33', // Yellow
+    '#9C33FF', // Purple
+    '#FF8A33', // Orange
+    '#33FFA8', // Mint
+    '#FF336E'  // Deep pink
+];
+
+// Create a mapping of booking group IDs to sequence numbers and colors
+let bookingGroupSequence = new Map();
+let sequenceCounter = 0;
+
+// This function will assign a sequence number and color to each booking group
+function assignSequenceColors(dateRange) {
+    // Reset the mapping and counter
+    bookingGroupSequence.clear();
+    sequenceCounter = 0;
+    
+    if (!dateRange || !Array.isArray(dateRange)) {
+        return;
+    }
+    
+    // First, collect all unique booking groups
+    const groupIds = new Set();
+    
+    dateRange.forEach(day => {
+        if (!day || !day.bookingGroups || !Array.isArray(day.bookingGroups)) return;
         
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-        
-        let allData = null;
-        let selectedDay = null;
-        
-      // Replace the fetchAvailabilityData function in your blade file with this improved version
+        day.bookingGroups.forEach(group => {
+            if (group && group.id && !groupIds.has(group.id)) {
+                groupIds.add(group.id);
+                
+                // Assign a sequence number and color
+                const sequenceNum = sequenceCounter + 1;
+                const colorIndex = sequenceCounter % sequenceColors.length;
+                const color = sequenceColors[colorIndex];
+                
+                bookingGroupSequence.set(group.id, {
+                    sequenceNum,
+                    color
+                });
+                
+                sequenceCounter++;
+            }
+        });
+    });
+    
+    console.log('Assigned sequence colors:', bookingGroupSequence);
+}
 
 function fetchAvailabilityData() {
     const startDate = document.getElementById('start_date').value;
@@ -655,6 +716,9 @@ function fetchAvailabilityData() {
             alert('Error receiving data: ' + response.data.error);
             return;
         }
+        
+        // Assign sequence colors to booking groups
+        assignSequenceColors(response.data.dateRange);
         
         // Update the stats
         updateStats(response.data.stats);
@@ -697,14 +761,15 @@ function fetchAvailabilityData() {
         }
     });
 }
-        
-        function updateStats(stats) {
-            document.getElementById('totalDays').textContent = stats.totalDays;
-            document.getElementById('morningAvailability').textContent = stats.timeSlotStats.morning + '%';
-            document.getElementById('afternoonAvailability').textContent = stats.timeSlotStats.afternoon + '%';
-            document.getElementById('eveningAvailability').textContent = stats.timeSlotStats.evening + '%';
-        }
-        function renderHeatMap(dateRange) {
+
+function updateStats(stats) {
+    document.getElementById('totalDays').textContent = stats.totalDays;
+    document.getElementById('morningAvailability').textContent = stats.timeSlotStats.morning + '%';
+    document.getElementById('afternoonAvailability').textContent = stats.timeSlotStats.afternoon + '%';
+    document.getElementById('eveningAvailability').textContent = stats.timeSlotStats.evening + '%';
+}
+
+function renderHeatMap(dateRange) {
     const heatMapContainer = document.getElementById('heatMap');
     heatMapContainer.innerHTML = '';
     
@@ -781,7 +846,7 @@ function fetchAvailabilityData() {
         heatMapContainer.appendChild(heatMapDay);
     });
 }
-        
+
 function showDetailedView(day) {
     if (!day) {
         console.error('Invalid day data:', day);
@@ -809,7 +874,7 @@ function showDetailedView(day) {
     container.style.display = 'block';
     container.scrollIntoView({ behavior: 'smooth' });
 }
-        
+
 function populateTimeSlotTab(timeSlot, slotData) {
     if (!slotData) {
         console.error('Invalid slot data for', timeSlot);
@@ -829,7 +894,8 @@ function populateTimeSlotTab(timeSlot, slotData) {
         'Luxury Rooms': ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
         'Standard Rooms': ['121', '122', '123', '124', '106', '107', '108', '109'],
         'Special': ['CH Room'],
-        'Economy Rooms': ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
+        'Deluxe Rooms': ['130', '131', '132', '133', '134'],
+        'Economy Rooms': ['101', '102', '103', '104', '105']
     };
     
     // Add time slot summary
@@ -871,17 +937,35 @@ function populateTimeSlotTab(timeSlot, slotData) {
         rooms.forEach(room => {
             const isBooked = bookedRooms.includes(room);
             const bookingGroup = isBooked ? findBookingGroupForRoom(room) : null;
-            const cardColor = bookingGroup ? bookingGroup.color : (isBooked ? '#dc3545' : '#198754');
+            
+            // Get sequence color if available
+            let cardColor = '#989e9b';  // Default color for available
+            if (isBooked) {
+                if (bookingGroup && bookingGroup.id) {
+                    const sequenceInfo = bookingGroupSequence.get(bookingGroup.id);
+                    cardColor = sequenceInfo ? sequenceInfo.color : bookingGroup.color || '#dc3545';
+                } else {
+                    cardColor = '#dc3545';  // Default red for booked
+                }
+            }
             
             const roomCard = document.createElement('div');
             roomCard.className = 'card mb-0';
-            roomCard.style.width = '110px';
+            roomCard.style.width = '130px';  // Increased width for more content
             roomCard.style.borderColor = cardColor;
             roomCard.style.borderWidth = '2px';
             
             let bookingInfo = '';
             if (bookingGroup) {
-                bookingInfo = `<small class="text-muted">${bookingGroup.function_type || 'Unknown'}</small>`;
+                // Get sequence number if available
+                const sequenceInfo = bookingGroupSequence.get(bookingGroup.id);
+                const sequenceNum = sequenceInfo ? sequenceInfo.sequenceNum + '. ' : '';
+                
+                // Add sequence number, function type, and times to the booking info
+                bookingInfo = `
+                    <small class="text-muted d-block">${sequenceNum}${bookingGroup.function_type || 'Unknown'}</small>
+                    <small class="text-muted d-block">${bookingGroup.start_time || ''} - ${bookingGroup.end_time || ''}</small>
+                `;
             }
             
             roomCard.innerHTML = `
@@ -913,17 +997,23 @@ function populateTimeSlotTab(timeSlot, slotData) {
         slotData.bookingGroups.forEach(group => {
             if (!group) return;
             
+            // Get sequence info
+            const sequenceInfo = bookingGroupSequence.get(group.id);
+            const sequenceNum = sequenceInfo ? sequenceInfo.sequenceNum : '';
+            const color = sequenceInfo ? sequenceInfo.color : (group.color || '#cccccc');
+            
             const groupItem = document.createElement('div');
             groupItem.className = 'p-2 border rounded';
-            groupItem.style.borderColor = group.color || '#cccccc';
+            groupItem.style.borderColor = color;
             groupItem.style.borderWidth = '2px';
             
             groupItem.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <div style="width: 20px; height: 20px; background-color: ${group.color || '#cccccc'}; margin-right: 8px; border-radius: 4px;"></div>
+                    <div style="width: 20px; height: 20px; background-color: ${color}; margin-right: 8px; border-radius: 4px;"></div>
                     <div>
-                        <strong>${group.function_type || 'Unknown'}</strong>
+                        <strong>${sequenceNum}. ${group.function_type || 'Unknown'}</strong>
                         <small class="d-block text-muted">${group.name || 'Unknown'}</small>
+                        <small class="d-block text-muted">${group.start_time || ''} - ${group.end_time || ''}</small>
                     </div>
                 </div>
             `;
@@ -935,6 +1025,7 @@ function populateTimeSlotTab(timeSlot, slotData) {
         container.appendChild(legendDiv);
     }
 }
+
 function renderCalendarView(dateRange, timeSlotFilter = 'all') {
     if (!dateRange || !Array.isArray(dateRange)) {
         console.error('Invalid dateRange data:', dateRange);
@@ -976,7 +1067,8 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
         'Luxury Rooms': ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
         'Standard Rooms': ['121', '122', '123', '124', '106', '107', '108', '109'],
         'Special': ['CH Room'],
-        'Economy Rooms': ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
+        'Deluxe Rooms': ['130', '131', '132', '133', '134'],
+        'Economy Rooms': ['101', '102', '103', '104', '105']
     };
     
     // For each room type, create a type header and room rows
@@ -1036,7 +1128,7 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
                 statusCell.style.backgroundColor = isBooked ? 'rgba(220, 53, 69, 0.1)' : 'rgba(25, 135, 84, 0.1)';
                 
                 if (timeSlotFilter === 'all') {
-                    // For "all" view, show detailed time slot indicators with team colors
+                    // For "all" view, show detailed time slot indicators with sequence colors
                     
                     // Helper function to find booking group for a room in a time slot
                     const findBookingGroupForRoom = (timeSlot, roomName) => {
@@ -1079,23 +1171,79 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
                                            Array.isArray(day.timeSlots.evening.bookedRooms) && 
                                            day.timeSlots.evening.bookedRooms.includes(room);
                     
-                    // Create the time slot badges with team colors
+                    // Get sequence colors for each group
+                    const getMorningColor = () => {
+                        if (!isMorningBooked) return '#989e9b';  // Default gray for available
+                        if (!morningGroup) return '#dc3545';     // Default red for booked
+                        
+                        const sequenceInfo = bookingGroupSequence.get(morningGroup.id);
+                        return sequenceInfo ? sequenceInfo.color : morningGroup.color || '#dc3545';
+                    };
+                    
+                    const getAfternoonColor = () => {
+                        if (!isAfternoonBooked) return '#989e9b';  // Default gray for available
+                        if (!afternoonGroup) return '#dc3545';     // Default red for booked
+                        
+                        const sequenceInfo = bookingGroupSequence.get(afternoonGroup.id);
+                        return sequenceInfo ? sequenceInfo.color : afternoonGroup.color || '#dc3545';
+                    };
+                    
+                    const getEveningColor = () => {
+                        if (!isEveningBooked) return '#989e9b';  // Default gray for available
+                        if (!eveningGroup) return '#dc3545';     // Default red for booked
+                        
+                        const sequenceInfo = bookingGroupSequence.get(eveningGroup.id);
+                        return sequenceInfo ? sequenceInfo.color : eveningGroup.color || '#dc3545';
+                    };
+                    
+                    // Get sequence numbers for tooltips
+                    const getMorningTooltip = () => {
+                        if (!isMorningBooked) return 'Available: Morning';
+                        if (!morningGroup) return 'Booked: Morning';
+                        
+                        const sequenceInfo = bookingGroupSequence.get(morningGroup.id);
+                        const sequenceNum = sequenceInfo ? `${sequenceInfo.sequenceNum}. ` : '';
+                        
+                        return `${sequenceNum}${morningGroup.function_type} (${morningGroup.start_time} - ${morningGroup.end_time}): Morning`;
+                    };
+                    
+                    const getAfternoonTooltip = () => {
+                        if (!isAfternoonBooked) return 'Available: Afternoon';
+                        if (!afternoonGroup) return 'Booked: Afternoon';
+                        
+                        const sequenceInfo = bookingGroupSequence.get(afternoonGroup.id);
+                        const sequenceNum = sequenceInfo ? `${sequenceInfo.sequenceNum}. ` : '';
+                        
+                        return `${sequenceNum}${afternoonGroup.function_type} (${afternoonGroup.start_time} - ${afternoonGroup.end_time}): Afternoon`;
+                    };
+                    
+                    const getEveningTooltip = () => {
+                        if (!isEveningBooked) return 'Available: Evening';
+                        if (!eveningGroup) return 'Booked: Evening';
+                        
+                        const sequenceInfo = bookingGroupSequence.get(eveningGroup.id);
+                        const sequenceNum = sequenceInfo ? `${sequenceInfo.sequenceNum}. ` : '';
+                        
+                        return `${sequenceNum}${eveningGroup.function_type} (${eveningGroup.start_time} - ${eveningGroup.end_time}): Evening`;
+                    };
+                    
+                    // Create the time slot badges with sequence colors
                     statusCell.innerHTML = `
                         <div class="d-flex flex-column align-items-center justify-content-center w-100">
                             <div class="d-flex justify-content-around w-100">
                                 <span class="badge" 
-                                      style="background-color: ${isMorningBooked ? (morningGroup ? morningGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
-                                      title="${isMorningBooked ? (morningGroup ? morningGroup.function_type : 'Booked') : 'Available'}: Morning">
+                                      style="background-color: ${getMorningColor()}; border: none; color: white;" 
+                                      title="${getMorningTooltip()}">
                                     M
                                 </span>
                                 <span class="badge" 
-                                      style="background-color: ${isAfternoonBooked ? (afternoonGroup ? afternoonGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
-                                      title="${isAfternoonBooked ? (afternoonGroup ? afternoonGroup.function_type : 'Booked') : 'Available'}: Afternoon">
+                                      style="background-color: ${getAfternoonColor()}; border: none; color: white;" 
+                                      title="${getAfternoonTooltip()}">
                                     A
                                 </span>
                                 <span class="badge" 
-                                      style="background-color: ${isEveningBooked ? (eveningGroup ? eveningGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
-                                      title="${isEveningBooked ? (eveningGroup ? eveningGroup.function_type : 'Booked') : 'Available'}: Evening">
+                                      style="background-color: ${getEveningColor()}; border: none; color: white;" 
+                                      title="${getEveningTooltip()}">
                                     E
                                 </span>
                             </div>
@@ -1122,13 +1270,29 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
                         }
                     }
                     
-                    // Use the booking group color if available
-                    const badgeColor = bookingGroup ? bookingGroup.color : (isBooked ? '#dc3545' : '#198754');
+                    // Use sequence color if available
+                    let badgeColor = '#198754';  // Default green for available
+                    let tooltipText = 'Available';
+                    
+                    if (isBooked) {
+                        if (bookingGroup) {
+                            const sequenceInfo = bookingGroupSequence.get(bookingGroup.id);
+                            badgeColor = sequenceInfo ? sequenceInfo.color : (bookingGroup.color || '#dc3545');
+                            
+                          
+                            
+                            const sequenceNum = sequenceInfo ? `${sequenceInfo.sequenceNum}. ` : '';
+                            tooltipText = `${sequenceNum}${bookingGroup.function_type} (${bookingGroup.start_time} - ${bookingGroup.end_time})`;
+                        } else {
+                            badgeColor = '#dc3545';  // Default red for booked
+                            tooltipText = 'Booked';
+                        }
+                    }
                     
                     statusCell.innerHTML = `
                         <i class="fas fa-${isBooked ? 'times-circle' : 'check-circle'}" 
                            style="color: ${badgeColor};" 
-                           title="${isBooked ? (bookingGroup ? bookingGroup.function_type : 'Booked') : 'Available'}">
+                           title="${tooltipText}">
                         </i>
                     `;
                 }
@@ -1140,8 +1304,9 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
         });
     }
 }
-        
-        function renderBookingGroupLegend(dateRange) {
+
+// Update renderBookingGroupLegend to use sequence colors
+function renderBookingGroupLegend(dateRange) {
     // Get all unique booking groups across all dates
     const allGroups = [];
     const groupIds = new Set();
@@ -1151,6 +1316,9 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
         document.getElementById('bookingGroupLegend').style.display = 'none';
         return;
     }
+    
+    // First, ensure sequence numbers and colors are assigned to all booking groups
+    assignSequenceColors(dateRange);
     
     dateRange.forEach(day => {
         if (!day) return;
@@ -1183,22 +1351,22 @@ function renderCalendarView(dateRange, timeSlotFilter = 'all') {
     allGroups.forEach(group => {
         if (!group) return;
         
+        const sequenceInfo = bookingGroupSequence.get(group.id) || { sequenceNum: 0, color: group.color || '#cccccc' };
+        
         const legendItem = document.createElement('div');
         legendItem.className = 'legend-item';
         legendItem.innerHTML = `
-            <div class="legend-color" style="background-color: ${group.color || '#cccccc'};"></div>
-            <span>${group.function_type || 'Unknown'} - ${group.name || 'Unknown'}</span>
+            <div class="legend-color" style="background-color: ${sequenceInfo.color};"></div>
+            <div>
+                <span>${sequenceInfo.sequenceNum}. ${group.function_type || 'Unknown'} - ${group.name || 'Unknown'}</span>
+                <small class="d-block text-muted">${group.start_time || ''} - ${group.end_time || ''}</small>
+            </div>
         `;
         legendContainer.appendChild(legendItem);
     });
+    
 
 
-    // Show function type legend
-document.addEventListener('DOMContentLoaded', function() {
-    const functionTypeLegend = document.getElementById('functionTypeLegend');
-    if (functionTypeLegend) {
-        functionTypeLegend.style.display = 'block';
-    }
-});
+
 }
     </script>

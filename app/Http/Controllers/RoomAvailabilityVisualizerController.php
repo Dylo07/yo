@@ -27,7 +27,8 @@ class RoomAvailabilityVisualizerController extends Controller
                 'Luxury Rooms' => ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
                 'Standard Rooms' => ['121', '122', '123', '124', '106', '107', '108', '109'],
                 'Special' => ['CH Room'],
-                'Economy Rooms' => ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
+                'Deluxe Rooms' => ['130', '131', '132', '133', '134'],             
+                'Economy Rooms' => ['101', '102', '103', '104', '105']
             ];
 
             // Define time slots
@@ -247,7 +248,9 @@ class RoomAvailabilityVisualizerController extends Controller
                         'rooms' => $roomArray,
                         'color' => $color,
                         'start' => $bookingStart->format('Y-m-d H:i:s'),
-                        'end' => $bookingEnd->format('Y-m-d H:i:s')
+                        'end' => $bookingEnd->format('Y-m-d H:i:s'),
+                        'start_time' => $bookingStart->format('h:i A'),
+    'end_time' => $bookingEnd->format('h:i A')
                     ];
                         
                     while ($currentDate->lte($bookingEnd) && $currentDate->lte($end)) {

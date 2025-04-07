@@ -491,37 +491,7 @@
             <h3>Calendar View with Time Slots</h3>
             <p class="text-muted">This view shows room availability across days with time slots</p>
             
-            <!-- Add this HTML to your room-availability.blade.php file, right before the bookingGroupLegend div -->
-<!-- Update this in your HTML to ensure the legend structure is correct -->
-<div id="functionTypeLegend" class="booking-group-legend mb-3">
-    <h5>Function Types</h5>
-    <div class="d-flex flex-wrap gap-3">
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #FF5733;"></div>
-            <span>Wedding</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #33FF57;"></div>
-            <span>Night In Group</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #3375FF;"></div>
-            <span>Day Out</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #FF33B8;"></div>
-            <span>Couple Package</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #33F8FF;"></div>
-            <span>Room Only</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background-color: #FFDA33;"></div>
-            <span>Meeting</span>
-        </div>
-    </div>
-</div>
+ 
             <!-- Booking Group Legend -->
             <div id="bookingGroupLegend" class="booking-group-legend" style="display: none;">
                 <h5>Booking Groups Legend</h5>

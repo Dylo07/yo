@@ -491,6 +491,36 @@
             <h3>Calendar View with Time Slots</h3>
             <p class="text-muted">This view shows room availability across days with time slots</p>
             
+            <!-- Add this HTML to your room-availability.blade.php file, right before the bookingGroupLegend div -->
+<div id="functionTypeLegend" class="booking-group-legend mb-3">
+    <h5>Function Types</h5>
+    <div class="d-flex flex-wrap gap-3">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF5733;"></div>
+            <span>Wedding</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #33FF57;"></div>
+            <span>Night In Group</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #3375FF;"></div>
+            <span>Day Out</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FF33B8;"></div>
+            <span>Couple Package</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #33F8FF;"></div>
+            <span>Room Only</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #FFDA33;"></div>
+            <span>Meeting</span>
+        </div>
+    </div>
+</div>
             <!-- Booking Group Legend -->
             <div id="bookingGroupLegend" class="booking-group-legend" style="display: none;">
                 <h5>Booking Groups Legend</h5>
@@ -674,388 +704,501 @@ function fetchAvailabilityData() {
             document.getElementById('afternoonAvailability').textContent = stats.timeSlotStats.afternoon + '%';
             document.getElementById('eveningAvailability').textContent = stats.timeSlotStats.evening + '%';
         }
-        
         function renderHeatMap(dateRange) {
-            const heatMapContainer = document.getElementById('heatMap');
-            heatMapContainer.innerHTML = '';
-            
-            dateRange.forEach(day => {
-                const heatMapDay = document.createElement('div');
-                heatMapDay.className = 'heat-map-day';
-                
-                const dateHeader = document.createElement('div');
-                dateHeader.className = 'heat-map-date';
-                dateHeader.innerHTML = `${day.dayOfWeek} ${day.formattedDate.split(', ')[0]} <span class="heat-map-day-of-week">${day.dayOfWeek}</span>`;
-                
-                const timeSlotsContainer = document.createElement('div');
-                timeSlotsContainer.className = 'time-slots-container';
-                
-                // Morning slot
+    const heatMapContainer = document.getElementById('heatMap');
+    heatMapContainer.innerHTML = '';
+    
+    if (!dateRange || !Array.isArray(dateRange)) {
+        console.error('Invalid dateRange data:', dateRange);
+        return;
+    }
+    
+    dateRange.forEach(day => {
+        if (!day) return;
+        
+        const heatMapDay = document.createElement('div');
+        heatMapDay.className = 'heat-map-day';
+        
+        const dateHeader = document.createElement('div');
+        dateHeader.className = 'heat-map-date';
+        dateHeader.innerHTML = `${day.dayOfWeek} ${day.formattedDate ? day.formattedDate.split(', ')[0] : ''}`;
+        
+        const timeSlotsContainer = document.createElement('div');
+        timeSlotsContainer.className = 'time-slots-container';
+        
+        // Check if timeSlots exist before trying to access them
+        if (day.timeSlots) {
+            // Morning slot
+            if (day.timeSlots.morning) {
                 const morningSlot = document.createElement('div');
                 morningSlot.className = 'time-slot';
+                const availabilityPercentage = day.timeSlots.morning.availabilityPercentage || 0;
                 morningSlot.innerHTML = `
                     <div class="time-slot-label">Morning</div>
-                    <div class="time-slot-availability available-${Math.floor(day.timeSlots.morning.availabilityPercentage / 10) * 10}">
-                        ${day.timeSlots.morning.availabilityPercentage}%
+                    <div class="time-slot-availability available-${Math.floor(availabilityPercentage / 10) * 10}">
+                        ${availabilityPercentage}%
                     </div>
                 `;
-                
-                // Afternoon slot
-                const afternoonSlot = document.createElement('div');
-                afternoonSlot.className = 'time-slot';
-                afternoonSlot.innerHTML = `
-                    <div class="time-slot-label">Afternoon</div>
-                    <div class="time-slot-availability available-${Math.floor(day.timeSlots.afternoon.availabilityPercentage / 10) * 10}">
-                        ${day.timeSlots.afternoon.availabilityPercentage}%
-                    </div>
-                `;
-                
-                // Evening slot
-                const eveningSlot = document.createElement('div');
-                eveningSlot.className = 'time-slot';
-                eveningSlot.innerHTML = `
-                    <div class="time-slot-label">Evening</div>
-                    <div class="time-slot-availability available-${Math.floor(day.timeSlots.evening.availabilityPercentage / 10) * 10}">
-                        ${day.timeSlots.evening.availabilityPercentage}%
-                    </div>
-                `;
-                
                 timeSlotsContainer.appendChild(morningSlot);
-                timeSlotsContainer.appendChild(afternoonSlot);
-                timeSlotsContainer.appendChild(eveningSlot);
-                
-                heatMapDay.appendChild(dateHeader);
-                heatMapDay.appendChild(timeSlotsContainer);
-                
-                heatMapDay.addEventListener('click', () => {
-                    showDetailedView(day);
-                });
-                
-                heatMapContainer.appendChild(heatMapDay);
-            });
-        }
-        
-        function showDetailedView(day) {
-            selectedDay = day;
-            const container = document.getElementById('detailedViewContainer');
-            const title = document.getElementById('detailedViewTitle');
-            
-            title.textContent = `Room Availability for ${day.formattedDate}`;
-            
-            // Populate time slot tabs
-            populateTimeSlotTab('morning', day.timeSlots.morning);
-            populateTimeSlotTab('afternoon', day.timeSlots.afternoon);
-            populateTimeSlotTab('evening', day.timeSlots.evening);
-            
-            // Show first tab
-            const morningTab = new bootstrap.Tab(document.getElementById('morning-tab'));
-            morningTab.show();
-            
-            container.style.display = 'block';
-            container.scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function populateTimeSlotTab(timeSlot, slotData) {
-            const container = document.getElementById(`${timeSlot}AvailabilityContainer`);
-            container.innerHTML = '';
-            
-            // Group all rooms by type
-            const roomsByType = {
-                'Luxury Rooms': ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
-                'Standard Rooms': ['121', '122', '123', '124', '106', '107', '108', '109'],
-                'Special': ['CH Room'],
-                'Economy Rooms': ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
-            };
-            
-            // Add time slot summary
-            const summaryDiv = document.createElement('div');
-            summaryDiv.className = 'alert alert-info';
-            summaryDiv.innerHTML = `
-                <strong>Availability:</strong> ${slotData.availabilityPercentage}% of rooms available (${slotData.availableRooms.length} out of ${slotData.availableRooms.length + slotData.bookedRooms.length} rooms)
-            `;
-            container.appendChild(summaryDiv);
-            
-            // Helper function to find booking group for a room
-            const findBookingGroupForRoom = (roomName) => {
-                if (!slotData.bookingGroups) return null;
-                
-                for (const group of slotData.bookingGroups) {
-                    if (group.rooms.includes(roomName)) {
-                        return group;
-                    }
-                }
-                return null;
-            };
-            
-            // Render each room type
-            for (const [type, rooms] of Object.entries(roomsByType)) {
-                const typeHeader = document.createElement('div');
-                typeHeader.className = 'room-type-header';
-                typeHeader.textContent = type;
-                container.appendChild(typeHeader);
-                
-                const roomGrid = document.createElement('div');
-                roomGrid.className = 'd-flex flex-wrap gap-2 mb-4';
-                
-                rooms.forEach(room => {
-                    const isBooked = slotData.bookedRooms.includes(room);
-                    const bookingGroup = isBooked ? findBookingGroupForRoom(room) : null;
-                    const cardColor = bookingGroup ? bookingGroup.color : (isBooked ? '#dc3545' : '#198754');
-                    
-                    const roomCard = document.createElement('div');
-                    roomCard.className = 'card mb-0';
-                    roomCard.style.width = '110px';
-                    roomCard.style.borderColor = cardColor;
-                    roomCard.style.borderWidth = '2px';
-                    
-                    let bookingInfo = '';
-                    if (bookingGroup) {
-                        bookingInfo = `<small class="text-muted">${bookingGroup.function_type}</small>`;
-                    }
-                    
-                    roomCard.innerHTML = `
-                        <div class="card-body p-2 text-center">
-                            <h5 class="card-title mb-0">${room}</h5>
-                            <p class="card-text mt-2 mb-0" style="color: ${cardColor}">
-                                <i class="fas fa-${isBooked ? 'times-circle' : 'check-circle'}"></i>
-                                ${isBooked ? 'Booked' : 'Available'}
-                            </p>
-                            ${bookingInfo}
-                        </div>
-                    `;
-                    
-                    roomGrid.appendChild(roomCard);
-                });
-                
-                container.appendChild(roomGrid);
             }
             
-            // Add booking groups legend for this time slot
-            if (slotData.bookingGroups && slotData.bookingGroups.length > 0) {
-                const legendDiv = document.createElement('div');
-                legendDiv.className = 'mt-4';
-                legendDiv.innerHTML = '<h6>Booking Groups:</h6>';
+            // Afternoon slot
+            if (day.timeSlots.afternoon) {
+                const afternoonSlot = document.createElement('div');
+                afternoonSlot.className = 'time-slot';
+                const availabilityPercentage = day.timeSlots.afternoon.availabilityPercentage || 0;
+                afternoonSlot.innerHTML = `
+                    <div class="time-slot-label">Afternoon</div>
+                    <div class="time-slot-availability available-${Math.floor(availabilityPercentage / 10) * 10}">
+                        ${availabilityPercentage}%
+                    </div>
+                `;
+                timeSlotsContainer.appendChild(afternoonSlot);
+            }
+            
+            // Evening slot
+            if (day.timeSlots.evening) {
+                const eveningSlot = document.createElement('div');
+                eveningSlot.className = 'time-slot';
+                const availabilityPercentage = day.timeSlots.evening.availabilityPercentage || 0;
+                eveningSlot.innerHTML = `
+                    <div class="time-slot-label">Evening</div>
+                    <div class="time-slot-availability available-${Math.floor(availabilityPercentage / 10) * 10}">
+                        ${availabilityPercentage}%
+                    </div>
+                `;
+                timeSlotsContainer.appendChild(eveningSlot);
+            }
+        }
+        
+        heatMapDay.appendChild(dateHeader);
+        heatMapDay.appendChild(timeSlotsContainer);
+        
+        heatMapDay.addEventListener('click', () => {
+            showDetailedView(day);
+        });
+        
+        heatMapContainer.appendChild(heatMapDay);
+    });
+}
+        
+function showDetailedView(day) {
+    if (!day) {
+        console.error('Invalid day data:', day);
+        return;
+    }
+    
+    selectedDay = day;
+    const container = document.getElementById('detailedViewContainer');
+    const title = document.getElementById('detailedViewTitle');
+    
+    title.textContent = `Room Availability for ${day.formattedDate || 'Selected Date'}`;
+    
+    // Check if timeSlots exist before trying to access them
+    if (day.timeSlots) {
+        // Populate time slot tabs
+        if (day.timeSlots.morning) populateTimeSlotTab('morning', day.timeSlots.morning);
+        if (day.timeSlots.afternoon) populateTimeSlotTab('afternoon', day.timeSlots.afternoon);
+        if (day.timeSlots.evening) populateTimeSlotTab('evening', day.timeSlots.evening);
+    }
+    
+    // Show first tab
+    const morningTab = new bootstrap.Tab(document.getElementById('morning-tab'));
+    morningTab.show();
+    
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth' });
+}
+        
+function populateTimeSlotTab(timeSlot, slotData) {
+    if (!slotData) {
+        console.error('Invalid slot data for', timeSlot);
+        return;
+    }
+    
+    const container = document.getElementById(`${timeSlot}AvailabilityContainer`);
+    if (!container) {
+        console.error('Container not found for', timeSlot);
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    // Group all rooms by type
+    const roomsByType = {
+        'Luxury Rooms': ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
+        'Standard Rooms': ['121', '122', '123', '124', '106', '107', '108', '109'],
+        'Special': ['CH Room'],
+        'Economy Rooms': ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
+    };
+    
+    // Add time slot summary
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'alert alert-info';
+    
+    // Make sure to check if the properties exist
+    const availableRooms = Array.isArray(slotData.availableRooms) ? slotData.availableRooms : [];
+    const bookedRooms = Array.isArray(slotData.bookedRooms) ? slotData.bookedRooms : [];
+    const availabilityPercentage = slotData.availabilityPercentage || 0;
+    
+    summaryDiv.innerHTML = `
+        <strong>Availability:</strong> ${availabilityPercentage}% of rooms available (${availableRooms.length} out of ${availableRooms.length + bookedRooms.length} rooms)
+    `;
+    container.appendChild(summaryDiv);
+    
+    // Helper function to find booking group for a room
+    const findBookingGroupForRoom = (roomName) => {
+        if (!slotData.bookingGroups || !Array.isArray(slotData.bookingGroups)) return null;
+        
+        for (const group of slotData.bookingGroups) {
+            if (group && group.rooms && Array.isArray(group.rooms) && group.rooms.includes(roomName)) {
+                return group;
+            }
+        }
+        return null;
+    };
+    
+    // Render each room type
+    for (const [type, rooms] of Object.entries(roomsByType)) {
+        const typeHeader = document.createElement('div');
+        typeHeader.className = 'room-type-header';
+        typeHeader.textContent = type;
+        container.appendChild(typeHeader);
+        
+        const roomGrid = document.createElement('div');
+        roomGrid.className = 'd-flex flex-wrap gap-2 mb-4';
+        
+        rooms.forEach(room => {
+            const isBooked = bookedRooms.includes(room);
+            const bookingGroup = isBooked ? findBookingGroupForRoom(room) : null;
+            const cardColor = bookingGroup ? bookingGroup.color : (isBooked ? '#dc3545' : '#198754');
+            
+            const roomCard = document.createElement('div');
+            roomCard.className = 'card mb-0';
+            roomCard.style.width = '110px';
+            roomCard.style.borderColor = cardColor;
+            roomCard.style.borderWidth = '2px';
+            
+            let bookingInfo = '';
+            if (bookingGroup) {
+                bookingInfo = `<small class="text-muted">${bookingGroup.function_type || 'Unknown'}</small>`;
+            }
+            
+            roomCard.innerHTML = `
+                <div class="card-body p-2 text-center">
+                    <h5 class="card-title mb-0">${room}</h5>
+                    <p class="card-text mt-2 mb-0" style="color: ${cardColor}">
+                        <i class="fas fa-${isBooked ? 'times-circle' : 'check-circle'}"></i>
+                        ${isBooked ? 'Booked' : 'Available'}
+                    </p>
+                    ${bookingInfo}
+                </div>
+            `;
+            
+            roomGrid.appendChild(roomCard);
+        });
+        
+        container.appendChild(roomGrid);
+    }
+    
+    // Add booking groups legend for this time slot
+    if (slotData.bookingGroups && Array.isArray(slotData.bookingGroups) && slotData.bookingGroups.length > 0) {
+        const legendDiv = document.createElement('div');
+        legendDiv.className = 'mt-4';
+        legendDiv.innerHTML = '<h6>Booking Groups:</h6>';
+        
+        const legendGrid = document.createElement('div');
+        legendGrid.className = 'd-flex flex-wrap gap-2 mb-4';
+        
+        slotData.bookingGroups.forEach(group => {
+            if (!group) return;
+            
+            const groupItem = document.createElement('div');
+            groupItem.className = 'p-2 border rounded';
+            groupItem.style.borderColor = group.color || '#cccccc';
+            groupItem.style.borderWidth = '2px';
+            
+            groupItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div style="width: 20px; height: 20px; background-color: ${group.color || '#cccccc'}; margin-right: 8px; border-radius: 4px;"></div>
+                    <div>
+                        <strong>${group.function_type || 'Unknown'}</strong>
+                        <small class="d-block text-muted">${group.name || 'Unknown'}</small>
+                    </div>
+                </div>
+            `;
+            
+            legendGrid.appendChild(groupItem);
+        });
+        
+        legendDiv.appendChild(legendGrid);
+        container.appendChild(legendDiv);
+    }
+}
+function renderCalendarView(dateRange, timeSlotFilter = 'all') {
+    if (!dateRange || !Array.isArray(dateRange)) {
+        console.error('Invalid dateRange data:', dateRange);
+        return;
+    }
+    
+    const calendarHeader = document.getElementById('calendarHeader');
+    const calendarGrid = document.getElementById('calendarGrid');
+    
+    if (!calendarHeader || !calendarGrid) {
+        console.error('Calendar containers not found');
+        return;
+    }
+    
+    calendarHeader.innerHTML = '';
+    calendarGrid.innerHTML = '';
+    
+    // Add room name column header
+    const roomNameHeader = document.createElement('div');
+    roomNameHeader.className = 'room-name';
+    roomNameHeader.textContent = 'Room';
+    calendarHeader.appendChild(roomNameHeader);
+    
+    // Add date column headers
+    dateRange.forEach(day => {
+        if (!day) return;
+        
+        const dateHeader = document.createElement('div');
+        dateHeader.className = 'calendar-day date-header';
+        dateHeader.innerHTML = `
+            ${day.formattedDate || ''}
+            <div class="day-of-week">${day.dayOfWeek || ''}</div>
+        `;
+        calendarHeader.appendChild(dateHeader);
+    });
+    
+    // Group rooms by type for the grid
+    const roomsByType = {
+        'Luxury Rooms': ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
+        'Standard Rooms': ['121', '122', '123', '124', '106', '107', '108', '109'],
+        'Special': ['CH Room'],
+        'Economy Rooms': ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
+    };
+    
+    // For each room type, create a type header and room rows
+    for (const [type, rooms] of Object.entries(roomsByType)) {
+        // Create type header
+        const typeHeader = document.createElement('div');
+        typeHeader.className = 'room-row';
+        typeHeader.innerHTML = `<div class="room-name" style="background-color: #e9ecef; font-weight: bold;">${type}</div>`;
+        
+        // Add empty cells for each date
+        dateRange.forEach(() => {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'room-status';
+            emptyCell.style.backgroundColor = '#e9ecef';
+            typeHeader.appendChild(emptyCell);
+        });
+        
+        calendarGrid.appendChild(typeHeader);
+        
+        // Create rows for each room
+        rooms.forEach(room => {
+            const roomRow = document.createElement('div');
+            roomRow.className = 'room-row';
+            
+            // Add room name cell
+            const roomNameCell = document.createElement('div');
+            roomNameCell.className = 'room-name';
+            roomNameCell.textContent = room;
+            roomRow.appendChild(roomNameCell);
+            
+            // Add cells for each date
+            dateRange.forEach(day => {
+                if (!day) {
+                    // If day is invalid, add an empty cell
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'room-status';
+                    roomRow.appendChild(emptyCell);
+                    return;
+                }
                 
-                const legendGrid = document.createElement('div');
-                legendGrid.className = 'd-flex flex-wrap gap-2 mb-4';
+                let isBooked = false;
                 
-                slotData.bookingGroups.forEach(group => {
-                    const groupItem = document.createElement('div');
-                    groupItem.className = 'p-2 border rounded';
-                    groupItem.style.borderColor = group.color;
-                    groupItem.style.borderWidth = '2px';
+                // Check if booked based on the selected time slot filter
+                if (timeSlotFilter === 'all') {
+                    // For "all", check if booked in any time slot
+                    isBooked = Array.isArray(day.bookedRooms) && day.bookedRooms.includes(room);
+                } else {
+                    // Check the specific time slot
+                    isBooked = day.timeSlots && 
+                              day.timeSlots[timeSlotFilter] && 
+                              Array.isArray(day.timeSlots[timeSlotFilter].bookedRooms) && 
+                              day.timeSlots[timeSlotFilter].bookedRooms.includes(room);
+                }
+                
+                const statusCell = document.createElement('div');
+                statusCell.className = `room-status ${isBooked ? 'booked' : 'available'}`;
+                statusCell.style.backgroundColor = isBooked ? 'rgba(220, 53, 69, 0.1)' : 'rgba(25, 135, 84, 0.1)';
+                
+                if (timeSlotFilter === 'all') {
+                    // For "all" view, show detailed time slot indicators with team colors
                     
-                    groupItem.innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <div style="width: 20px; height: 20px; background-color: ${group.color}; margin-right: 8px; border-radius: 4px;"></div>
-                            <div>
-                                <strong>${group.function_type}</strong>
-                                <small class="d-block text-muted">${group.name}</small>
+                    // Helper function to find booking group for a room in a time slot
+                    const findBookingGroupForRoom = (timeSlot, roomName) => {
+                        if (!day.timeSlots || 
+                            !day.timeSlots[timeSlot] || 
+                            !day.timeSlots[timeSlot].bookingGroups || 
+                            !Array.isArray(day.timeSlots[timeSlot].bookingGroups)) {
+                            return null;
+                        }
+                        
+                        for (const group of day.timeSlots[timeSlot].bookingGroups) {
+                            if (group && 
+                                group.rooms && 
+                                Array.isArray(group.rooms) && 
+                                group.rooms.includes(roomName)) {
+                                return group;
+                            }
+                        }
+                        return null;
+                    };
+                    
+                    // Get booking groups for each time slot for this room
+                    const morningGroup = findBookingGroupForRoom('morning', room);
+                    const afternoonGroup = findBookingGroupForRoom('afternoon', room);
+                    const eveningGroup = findBookingGroupForRoom('evening', room);
+                    
+                    // Check if booked in each time slot
+                    const isMorningBooked = day.timeSlots && 
+                                          day.timeSlots.morning && 
+                                          Array.isArray(day.timeSlots.morning.bookedRooms) && 
+                                          day.timeSlots.morning.bookedRooms.includes(room);
+                    
+                    const isAfternoonBooked = day.timeSlots && 
+                                             day.timeSlots.afternoon && 
+                                             Array.isArray(day.timeSlots.afternoon.bookedRooms) && 
+                                             day.timeSlots.afternoon.bookedRooms.includes(room);
+                    
+                    const isEveningBooked = day.timeSlots && 
+                                           day.timeSlots.evening && 
+                                           Array.isArray(day.timeSlots.evening.bookedRooms) && 
+                                           day.timeSlots.evening.bookedRooms.includes(room);
+                    
+                    // Create the time slot badges with team colors
+                    statusCell.innerHTML = `
+                        <div class="d-flex flex-column align-items-center justify-content-center w-100">
+                            <div class="d-flex justify-content-around w-100">
+                                <span class="badge" 
+                                      style="background-color: ${isMorningBooked ? (morningGroup ? morningGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
+                                      title="${isMorningBooked ? (morningGroup ? morningGroup.function_type : 'Booked') : 'Available'}: Morning">
+                                    M
+                                </span>
+                                <span class="badge" 
+                                      style="background-color: ${isAfternoonBooked ? (afternoonGroup ? afternoonGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
+                                      title="${isAfternoonBooked ? (afternoonGroup ? afternoonGroup.function_type : 'Booked') : 'Available'}: Afternoon">
+                                    A
+                                </span>
+                                <span class="badge" 
+                                      style="background-color: ${isEveningBooked ? (eveningGroup ? eveningGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
+                                      title="${isEveningBooked ? (eveningGroup ? eveningGroup.function_type : 'Booked') : 'Available'}: Evening">
+                                    E
+                                </span>
                             </div>
                         </div>
                     `;
+                } else {
+                    // For specific time slot view, find the booking group if it exists
+                    let bookingGroup = null;
                     
-                    legendGrid.appendChild(groupItem);
-                });
+                    if (isBooked && 
+                        day.timeSlots && 
+                        day.timeSlots[timeSlotFilter] && 
+                        day.timeSlots[timeSlotFilter].bookingGroups && 
+                        Array.isArray(day.timeSlots[timeSlotFilter].bookingGroups)) {
+                        
+                        for (const group of day.timeSlots[timeSlotFilter].bookingGroups) {
+                            if (group && 
+                                group.rooms && 
+                                Array.isArray(group.rooms) && 
+                                group.rooms.includes(room)) {
+                                bookingGroup = group;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Use the booking group color if available
+                    const badgeColor = bookingGroup ? bookingGroup.color : (isBooked ? '#dc3545' : '#198754');
+                    
+                    statusCell.innerHTML = `
+                        <i class="fas fa-${isBooked ? 'times-circle' : 'check-circle'}" 
+                           style="color: ${badgeColor};" 
+                           title="${isBooked ? (bookingGroup ? bookingGroup.function_type : 'Booked') : 'Available'}">
+                        </i>
+                    `;
+                }
                 
-                legendDiv.appendChild(legendGrid);
-                container.appendChild(legendDiv);
-            }
-        }
-        
-        function renderCalendarView(dateRange, timeSlotFilter = 'all') {
-            const calendarHeader = document.getElementById('calendarHeader');
-            const calendarGrid = document.getElementById('calendarGrid');
-            
-            calendarHeader.innerHTML = '';
-            calendarGrid.innerHTML = '';
-            
-            // Add room name column header
-            const roomNameHeader = document.createElement('div');
-            roomNameHeader.className = 'room-name';
-            roomNameHeader.textContent = 'Room';
-            calendarHeader.appendChild(roomNameHeader);
-            
-            // Add date column headers
-            dateRange.forEach(day => {
-                const dateHeader = document.createElement('div');
-                dateHeader.className = 'calendar-day date-header';
-                dateHeader.innerHTML = `
-                    ${day.formattedDate}
-                    <div class="day-of-week">${day.dayOfWeek}</div>
-                `;
-                calendarHeader.appendChild(dateHeader);
+                roomRow.appendChild(statusCell);
             });
             
-            // Group rooms by type for the grid
-            const roomsByType = {
-                'Luxury Rooms': ['Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa', 'Mayura', 'Lihini'],
-                'Standard Rooms': ['121', '122', '123', '124', '106', '107', '108', '109'],
-                'Special': ['CH Room'],
-                'Economy Rooms': ['130', '131', '132', '133', '134', '101', '102', '103', '104', '105']
-            };
-            
-            // For each room type, create a type header and room rows
-            for (const [type, rooms] of Object.entries(roomsByType)) {
-                // Create type header
-                const typeHeader = document.createElement('div');
-                typeHeader.className = 'room-row';
-                typeHeader.innerHTML = `<div class="room-name" style="background-color: #e9ecef; font-weight: bold;">${type}</div>`;
-                
-                // Add empty cells for each date
-                dateRange.forEach(() => {
-                    const emptyCell = document.createElement('div');
-                    emptyCell.className = 'room-status';
-                    emptyCell.style.backgroundColor = '#e9ecef';
-                    typeHeader.appendChild(emptyCell);
-                });
-                
-                calendarGrid.appendChild(typeHeader);
-                
-                // Create rows for each room
-                rooms.forEach(room => {
-                    const roomRow = document.createElement('div');
-                    roomRow.className = 'room-row';
-                    
-                    // Add room name cell
-                    const roomNameCell = document.createElement('div');
-                    roomNameCell.className = 'room-name';
-                    roomNameCell.textContent = room;
-                    roomRow.appendChild(roomNameCell);
-                    
-                    // Add cells for each date
-                    dateRange.forEach(day => {
-                        let isBooked = false;
-                        
-                        // Check if booked based on the selected time slot filter
-                        if (timeSlotFilter === 'all') {
-                            // For "all", check if booked in any time slot
-                            isBooked = day.bookedRooms.includes(room);
-                        } else {
-                            // Check the specific time slot
-                            isBooked = day.timeSlots[timeSlotFilter].bookedRooms.includes(room);
-                        }
-                        
-                        const statusCell = document.createElement('div');
-                        statusCell.className = `room-status ${isBooked ? 'booked' : 'available'}`;
-                        statusCell.style.backgroundColor = isBooked ? 'rgba(220, 53, 69, 0.1)' : 'rgba(25, 135, 84, 0.1)';
-                        
-                        if (timeSlotFilter === 'all') {
-                            // For "all" view, show detailed time slot indicators with team colors
-                            
-                            // Helper function to find booking group for a room in a time slot
-                            const findBookingGroupForRoom = (timeSlot, roomName) => {
-                                if (!day.timeSlots[timeSlot].bookingGroups) return null;
-                                
-                                for (const group of day.timeSlots[timeSlot].bookingGroups) {
-                                    if (group.rooms.includes(roomName)) {
-                                        return group;
-                                    }
-                                }
-                                return null;
-                            };
-                            
-                            // Get booking groups for each time slot for this room
-                            const morningGroup = findBookingGroupForRoom('morning', room);
-                            const afternoonGroup = findBookingGroupForRoom('afternoon', room);
-                            const eveningGroup = findBookingGroupForRoom('evening', room);
-                            
-                            // Check if booked in each time slot
-                            const isMorningBooked = day.timeSlots.morning.bookedRooms.includes(room);
-                            const isAfternoonBooked = day.timeSlots.afternoon.bookedRooms.includes(room);
-                            const isEveningBooked = day.timeSlots.evening.bookedRooms.includes(room);
-                            
-                            // Create the time slot badges with team colors
-                            statusCell.innerHTML = `
-                                <div class="d-flex flex-column align-items-center justify-content-center w-100">
-                                    <div class="d-flex justify-content-around w-100">
-                                        <span class="badge" 
-                                              style="background-color: ${isMorningBooked ? (morningGroup ? morningGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
-                                              title="${isMorningBooked ? (morningGroup ? morningGroup.function_type : 'Booked') : 'Available'}: Morning">
-                                            M
-                                        </span>
-                                        <span class="badge" 
-                                              style="background-color: ${isAfternoonBooked ? (afternoonGroup ? afternoonGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
-                                              title="${isAfternoonBooked ? (afternoonGroup ? afternoonGroup.function_type : 'Booked') : 'Available'}: Afternoon">
-                                            A
-                                        </span>
-                                        <span class="badge" 
-                                              style="background-color: ${isEveningBooked ? (eveningGroup ? eveningGroup.color : '#dc3545') : '#198754'}; border: none; color: white;" 
-                                              title="${isEveningBooked ? (eveningGroup ? eveningGroup.function_type : 'Booked') : 'Available'}: Evening">
-                                            E
-                                        </span>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            // For specific time slot view, find the booking group if it exists
-                            let bookingGroup = null;
-                            if (isBooked && day.timeSlots[timeSlotFilter].bookingGroups) {
-                                for (const group of day.timeSlots[timeSlotFilter].bookingGroups) {
-                                    if (group.rooms.includes(room)) {
-                                        bookingGroup = group;
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            // Use the booking group color if available
-                            const badgeColor = bookingGroup ? bookingGroup.color : (isBooked ? '#dc3545' : '#198754');
-                            
-                            statusCell.innerHTML = `
-                                <i class="fas fa-${isBooked ? 'times-circle' : 'check-circle'}" 
-                                   style="color: ${badgeColor};" 
-                                   title="${isBooked ? (bookingGroup ? bookingGroup.function_type : 'Booked') : 'Available'}">
-                                </i>
-                            `;
-                        }
-                        
-                        roomRow.appendChild(statusCell);
-                    });
-                    
-                    calendarGrid.appendChild(roomRow);
-                });
-            }
-        }
+            calendarGrid.appendChild(roomRow);
+        });
+    }
+}
         
         function renderBookingGroupLegend(dateRange) {
-            // Get all unique booking groups across all dates
-            const allGroups = [];
-            const groupIds = new Set();
-            
-            dateRange.forEach(day => {
-                if (day.bookingGroups && day.bookingGroups.length > 0) {
-                    day.bookingGroups.forEach(group => {
-                        if (!groupIds.has(group.id)) {
-                            groupIds.add(group.id);
-                            allGroups.push(group);
-                        }
-                    });
+    // Get all unique booking groups across all dates
+    const allGroups = [];
+    const groupIds = new Set();
+    
+    if (!dateRange || !Array.isArray(dateRange)) {
+        console.error('Invalid dateRange data:', dateRange);
+        document.getElementById('bookingGroupLegend').style.display = 'none';
+        return;
+    }
+    
+    dateRange.forEach(day => {
+        if (!day) return;
+        
+        // Check if bookingGroups exists and is an array
+        if (day.bookingGroups && Array.isArray(day.bookingGroups)) {
+            day.bookingGroups.forEach(group => {
+                if (group && group.id && !groupIds.has(group.id)) {
+                    groupIds.add(group.id);
+                    allGroups.push(group);
                 }
             });
-            
-            // Create the legend container
-            const legendContainer = document.getElementById('bookingGroupLegend');
-            if (!legendContainer) return;
-            
-            legendContainer.innerHTML = '';
-            
-            if (allGroups.length === 0) {
-                legendContainer.style.display = 'none';
-                return;
-            }
-            
-            legendContainer.style.display = 'block';
-            
-            // Create a legend item for each booking group
-            allGroups.forEach(group => {
-                const legendItem = document.createElement('div');
-                legendItem.className = 'legend-item';
-                legendItem.innerHTML = `
-                    <div class="legend-color" style="background-color: ${group.color};"></div>
-                    <span>${group.function_type} - ${group.name}</span>
-                `;
-                legendContainer.appendChild(legendItem);
-            });
         }
+    });
+    
+    // Create the legend container
+    const legendContainer = document.getElementById('bookingGroupLegend');
+    if (!legendContainer) return;
+    
+    legendContainer.innerHTML = '';
+    
+    if (allGroups.length === 0) {
+        legendContainer.style.display = 'none';
+        return;
+    }
+    
+    legendContainer.style.display = 'block';
+    
+    // Create a legend item for each booking group
+    allGroups.forEach(group => {
+        if (!group) return;
+        
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${group.color || '#cccccc'};"></div>
+            <span>${group.function_type || 'Unknown'} - ${group.name || 'Unknown'}</span>
+        `;
+        legendContainer.appendChild(legendItem);
+    });
+
+
+    // Show function type legend
+document.addEventListener('DOMContentLoaded', function() {
+    const functionTypeLegend = document.getElementById('functionTypeLegend');
+    if (functionTypeLegend) {
+        functionTypeLegend.style.display = 'block';
+    }
+});
+}
     </script>

@@ -51,56 +51,16 @@ class FoodMenu extends Model
     }
 
     /**
-     * Determine if a meal should be shown based on booking times
+     * Always show all meals regardless of booking times
+     * This overrides the previous conditional logic
      * 
      * @param string $mealType breakfast|lunch|evening_snack|dinner
      * @return bool
      */
     public function shouldShowMeal($mealType)
     {
-        $booking = $this->booking;
-        if (!$booking) return false;
-        
-        $bookingDate = $this->date;
-        $startDate = $booking->start->startOfDay();
-        $endDate = $booking->end ? $booking->end->startOfDay() : $startDate;
-        
-        $isCheckInDay = $startDate->isSameDay($bookingDate);
-        $isCheckOutDay = $endDate->isSameDay($bookingDate);
-        
-        $startHour = $isCheckInDay ? $booking->start->hour : 0;
-        $endHour = $isCheckOutDay ? ($booking->end ? $booking->end->hour : 23) : 23;
-        
-        switch ($mealType) {
-            case 'breakfast':
-                // Show breakfast if check-in is before 10 AM and not check-out day
-                // OR if check-out is after 10 AM
-                return ($isCheckInDay && $startHour < 10) || 
-                       (!$isCheckInDay) || 
-                       ($isCheckOutDay && $endHour >= 10);
-                
-            case 'lunch':
-                // Show lunch if check-in is before 3 PM and not check-out day
-                // OR if check-out is after 3 PM
-                return ($isCheckInDay && $startHour < 15) || 
-                       (!$isCheckInDay) || 
-                       ($isCheckOutDay && $endHour >= 15);
-                
-            case 'evening_snack':
-                // Show evening snack if not check-out day
-                // OR if check-out is after 6 PM
-                return (!$isCheckOutDay) || 
-                       ($isCheckOutDay && $endHour >= 18);
-                
-            case 'dinner':
-                // Show dinner if not check-out day
-                // OR if check-out is after 8 PM
-                return (!$isCheckOutDay) || 
-                       ($isCheckOutDay && $endHour >= 20);
-                
-            default:
-                return false;
-        }
+        // Always return true to show all meals
+        return true;
     }
     
     /**
@@ -116,36 +76,6 @@ class FoodMenu extends Model
     }
     
     /**
-     * Get all food menus for active bookings on a specific date
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $date
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeActiveBookingsForDate($query, $date)
-    {
-        return $query->whereDate('date', $date)
-            ->whereHas('booking', function($q) use ($date) {
-                $q->where(function($sq) use ($date) {
-                    // Bookings with defined end date that include this day
-                    $sq->whereDate('start', '<=', $date)
-                      ->whereDate('end', '>=', $date)
-                      ->whereNotNull('end');
-                    
-                    // OR single day bookings on this day
-                    $sq->orWhere(function($ssq) use ($date) {
-                        $ssq->whereDate('start', $date)
-                           ->where(function($sssq) {
-                               $sssq->whereNull('end')
-                                  ->orWhere('end', 'N/A')
-                                  ->orWhere('end', '');
-                           });
-                    });
-                });
-            });
-    }
-    
-    /**
      * Get formatted date
      *
      * @return string
@@ -153,21 +83,6 @@ class FoodMenu extends Model
     public function getFormattedDateAttribute()
     {
         return $this->date->format('F j, Y');
-    }
-    
-    /**
-     * Get a summary of which meals are shown
-     *
-     * @return array
-     */
-    public function getMealStatusAttribute()
-    {
-        return [
-            'breakfast' => $this->shouldShowMeal('breakfast'),
-            'lunch' => $this->shouldShowMeal('lunch'),
-            'evening_snack' => $this->shouldShowMeal('evening_snack'),
-            'dinner' => $this->shouldShowMeal('dinner')
-        ];
     }
     
     /**

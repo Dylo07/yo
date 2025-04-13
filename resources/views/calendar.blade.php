@@ -121,6 +121,9 @@
             <a href="{{ route('room.visualizer') }}" class="btn btn-info">
                 <i class="fas fa-chart-bar me-1"></i> Room Availability
             </a>
+            <a href="{{ route('food-menu.index') }}" class="btn btn-info">
+    <i class="fas fa-utensils me-1"></i> Food Menus
+</a>
         </div>
     </div>
 </div>

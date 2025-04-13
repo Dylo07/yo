@@ -98,7 +98,24 @@ public function getLatestPaymentAttribute()
 }
 
 
+// This represents code you should add to your Booking.php model after the getLatestPaymentAttribute method
 
+/**
+ * Get the food menus for this booking.
+ */
+public function foodMenus()
+{
+    return $this->hasMany(FoodMenu::class);
+}
+
+/**
+ * Get today's food menu or create a new one.
+ */
+public function getTodayFoodMenuAttribute()
+{
+    $today = now()->format('Y-m-d');
+    return $this->foodMenus()->firstOrCreate(['date' => $today]);
+}
 
 
 

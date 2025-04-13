@@ -30,6 +30,8 @@
         "font-awesome": "^4.7.0",
         "fullcalendar": "^6.1.15",
         "moment": "^2.29.4",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
         "tempusdominus-bootstrap-4": "^5.39.2",
         "vue": "^3.2.36",
         "vue-loader": "^17.0.0"

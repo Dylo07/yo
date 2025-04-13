@@ -293,6 +293,101 @@ Route::middleware(['auth'])->group(function () {
     ->name('lenders.mark-paid');
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/food-menu', [App\Http\Controllers\FoodMenuController::class, 'index'])->name('food-menu.index');
+    Route::get('/food-menu/bookings', [App\Http\Controllers\FoodMenuController::class, 'getBookingsForDate'])->name('food-menu.bookings');
+    Route::post('/food-menu/save', [App\Http\Controllers\FoodMenuController::class, 'saveMenu'])->name('food-menu.save');
+    Route::get('/food-menu/print/{booking}/{date}', [App\Http\Controllers\FoodMenuController::class, 'printMenu'])->name('food-menu.print');
+});
+
+// Add this to your food menu routes
+Route::get('/food-menu/print-daily', [App\Http\Controllers\FoodMenuController::class, 'printDailyMenus'])->name('food-menu.print-daily');
+
+// Add this to your routes/web.php file for testing the bookings endpoint
+
+Route::get('/test-food-menu-bookings', function() {
+    try {
+        $date = request('date', now()->format('Y-m-d'));
+        $day = \Carbon\Carbon::parse($date);
+        
+        // Find bookings that are active on the selected date
+        $bookings = \App\Models\Booking::where(function ($query) use ($day) {
+            $query->where(function ($q) use ($day) {
+                // Bookings with defined end date that include this day
+                $q->whereDate('start', '<=', $day->format('Y-m-d'))
+                    ->whereDate('end', '>=', $day->format('Y-m-d'))
+                    ->whereNotNull('end');
+                    
+                // OR single day bookings on this day
+                $q->orWhere(function($sq) use ($day) {
+                    $sq->whereDate('start', $day->format('Y-m-d'))
+                        ->where(function($ssq) {
+                            $ssq->whereNull('end')
+                                ->orWhere('end', 'N/A')
+                                ->orWhere('end', '');
+                        });
+                });
+            });
+        })
+        ->get();
+        
+        // Transform the bookings to include formatted details
+        $formattedBookings = $bookings->map(function ($booking) use ($day) {
+            return [
+                'id' => $booking->id,
+                'title' => $booking->name,
+                'function_type' => $booking->function_type,
+                'contact_number' => $booking->contact_number,
+                'guest_count' => $booking->guest_count,
+                'room_numbers' => json_encode($booking->room_numbers),
+                'start' => $booking->start ? $booking->start->format('Y-m-d H:i:s') : null,
+                'end' => $booking->end ? $booking->end->format('Y-m-d H:i:s') : null,
+                'formatted_start' => $booking->start ? $booking->start->format('h:i A') : null,
+                'formatted_end' => $booking->end ? $booking->end->format('h:i A') : null,
+                // Include full booking for debugging
+                'full_booking' => $booking->toArray()
+            ];
+        });
+        
+        // Get raw SQL query for debugging
+        $bindings = [];
+        $sql = \App\Models\Booking::where(function ($query) use ($day) {
+            $query->where(function ($q) use ($day) {
+                $q->whereDate('start', '<=', $day->format('Y-m-d'))
+                    ->whereDate('end', '>=', $day->format('Y-m-d'))
+                    ->whereNotNull('end');
+                    
+                $q->orWhere(function($sq) use ($day) {
+                    $sq->whereDate('start', $day->format('Y-m-d'))
+                        ->where(function($ssq) {
+                            $ssq->whereNull('end')
+                                ->orWhere('end', 'N/A')
+                                ->orWhere('end', '');
+                        });
+                });
+            });
+        })->toSql();
+        
+        return response()->json([
+            'date' => $day->format('Y-m-d'),
+            'formatted_date' => $day->format('F j, Y'),
+            'bookings' => $formattedBookings,
+            'bookings_count' => $bookings->count(),
+            'sql_query' => $sql,
+            'bindings' => $bindings,
+            'all_bookings_count' => \App\Models\Booking::count()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
+
 
 // Room Availability Visualizer
 Route::get('/room-visualizer', [App\Http\Controllers\RoomAvailabilityVisualizerController::class, 'index'])

@@ -455,8 +455,12 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      Route::get('/report/show', 'App\Http\Controllers\Report\ReportController@show');
      
      // cashier
-   
-     // routes for inventory
+   // Add route for showing advance receipt
+Route::get('/cashier/showAdvanceRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceRecipt');
+ // Add this route to your web.php file in the appropriate cashier routes section
+Route::get('/cashier/showAdvanceWeddingRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceWeddingRecipt');   
+
+// routes for inventory
      Route::post('inventory/storestock/{itemid}', 'App\Http\Controllers\Inventory\StockController@store')->name('Stock.storeStock');
      Route::delete('inventory/removeStock/{itemid}', 'App\Http\Controllers\Inventory\StockController@destroy')->name('Stock.removeStock');
 

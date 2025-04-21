@@ -349,6 +349,25 @@ $(document).ready(function(){
       }
     });
   });
+
+// Add these event handlers to your script section in index.blade.php
+// Keep your existing Advance Payment button handler
+$("#order-detail").on("click", ".btn-advance-payment", function(){
+    var saleId = $(this).data('id');
+    
+    // Redirect directly to the function advance receipt page
+    window.location.href = "{{ url('/cashier/showAdvanceRecipt') }}/" + saleId;
 });
+
+// Add a new handler for the Wedding Advance Payment button
+$("#order-detail").on("click", ".btn-wedding-payment", function(){
+    var saleId = $(this).data('id');
+    
+    // Redirect directly to the wedding advance receipt page
+    window.location.href = "{{ url('/cashier/showAdvanceWeddingRecipt') }}/" + saleId;
+});
+});
+
+
 </script>
 @endsection

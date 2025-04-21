@@ -150,13 +150,20 @@ class CashierController extends Controller
         $html .= '<hr>';
         $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
 
-        if($showBtnPayment){
-            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
-            $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
-        }else{
-            $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
-        }
+        // Modify this section in the getSaleDetails function in CashierController.php
 
+if($showBtnPayment){
+    $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
+    $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
+    
+    // Change the "Advance Payment" button to use a different class
+    $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-primary btn-block btn-advance-payment">Advance Payment for functions</button>';
+    
+    // Add the new "Advance Payment for Wedding" button
+    $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-info btn-block btn-wedding-payment">Advance Payment for Wedding</button>';
+}else{
+    $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
+}
         return $html;
     }
 
@@ -293,4 +300,17 @@ class CashierController extends Controller
         $saleDetails = SaleDetail::get()->where('sale_id',$saleID)->where('count',2);
         return view('cashier.printOrder')->with('sale',$sale)->with('saleDetails', $saleDetails);
     }
+
+    public function showAdvanceRecipt($saleID){
+        $sale = Sale::find($saleID);
+        $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
+        return view('cashier.showAdvanceRecipt')->with('sale',$sale)->with('saleDetails', $saleDetails);
+    }
+    // Add this method to your CashierController.php file
+
+public function showAdvanceWeddingRecipt($saleID){
+    $sale = Sale::find($saleID);
+    $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
+    return view('cashier.showAdvanceWeddingRecipt')->with('sale',$sale)->with('saleDetails', $saleDetails);
+}
 }

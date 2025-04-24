@@ -121,6 +121,7 @@ class CashierController extends Controller
                 <th scope="col">Quantity</th>
                 <th scope="col">Price</th>
                 <th scope="col">Total</th>
+                <th scope="col">Updated Time</th>
                 <th scope="col">Status</th>
             </tr>
         </thead>
@@ -128,6 +129,7 @@ class CashierController extends Controller
         
         $showBtnPayment = true;
         foreach($saleDetails as $saleDetail){
+            $updatedDateTime = $saleDetail->updated_at ? $saleDetail->updated_at->format('d/m/Y H:i:s') : '';
             $html .= '
             <tr>
                 <td>'.$saleDetail->menu_name.'</td>
@@ -135,7 +137,8 @@ class CashierController extends Controller
                            style="width:50px;" value="'.$saleDetail->quantity.'"'.
                            ($saleDetail->status == "confirm" ? ' disabled' : '').'></td>
                 <td>'.$saleDetail->menu_price.'</td>
-                <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>';
+                <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>
+                <td>'.$updatedDateTime.'</td>';
                 if($saleDetail->status == "noConfirm"){
                     $showBtnPayment = false;
                     $html .= '<td><a data-id="'.$saleDetail->id.'" class="btn btn-danger btn-delete-saledetail"><i class="far fa-trash-alt"></a></td>';
@@ -145,28 +148,25 @@ class CashierController extends Controller
             $html .= '</tr>';
         }
         $html .='</tbody></table></div>';
-
+    
         $sale = Sale::find($sale_id);
         $html .= '<hr>';
         $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
-
-        // Modify this section in the getSaleDetails function in CashierController.php
-
-if($showBtnPayment){
-    $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
-    $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
     
-    // Change the "Advance Payment" button to use a different class
-    $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-primary btn-block btn-advance-payment">Advance Payment for functions</button>';
-    
-    // Add the new "Advance Payment for Wedding" button
-    $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-info btn-block btn-wedding-payment">Advance Payment for Wedding</button>';
-}else{
-    $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
-}
+        if($showBtnPayment){
+            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
+            $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
+            
+            // Change the "Advance Payment" button to use a different class
+            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-primary btn-block btn-advance-payment">Advance Payment for functions</button>';
+            
+            // Add the new "Advance Payment for Wedding" button
+            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-info btn-block btn-wedding-payment">Advance Payment for Wedding</button>';
+        }else{
+            $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
+        }
         return $html;
     }
-
     public function increaseQuantity(Request $request){
         $saleDetail_id = $request->saleDetail_id;
         $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();

@@ -201,7 +201,18 @@ Route::post('/inv-inventory/update', [InvInventoryController::class, 'updateToda
 Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthlyStock'])->name('inv_inventory.monthly');
 
 
+// Add these routes to your web.php file in the routes for reports section
 
+// Routes for daily sales summary
+Route::get('/report/daily-summary', 'App\Http\Controllers\Report\DailySalesSummaryController@index')->name('report.daily-summary');
+Route::get('/report/daily-summary/data', 'App\Http\Controllers\Report\DailySalesSummaryController@getSummaryData')->name('report.daily-summary.data');
+Route::post('/report/daily-summary/save', 'App\Http\Controllers\Report\DailySalesSummaryController@saveSummary')->name('report.daily-summary.save');
+Route::get('/report/daily-summary/print', 'App\Http\Controllers\Report\DailySalesSummaryController@printSummary')->name('report.daily-summary.print');
+Route::get('/report/check-bills/{date}', 'App\Http\Controllers\Report\DailySalesSummaryController@checkBillsForDate');
+Route::post('/report/daily-summary/toggle-verify', 'App\Http\Controllers\Report\DailySalesSummaryController@toggleVerify')->name('report.daily-summary.toggle-verify');
+// Add this route to your web.php file to help debug missing bills
+Route::get('/report/check-bills', 'App\Http\Controllers\Report\DailySalesSummaryController@checkBills')->name('report.check-bills');
+Route::post('/report/daily-summary/debug-verify', 'App\Http\Controllers\Report\DailySalesSummaryController@debugVerify');
 
 // Vehicle Security Routes
 Route::middleware(['auth'])->group(function () {

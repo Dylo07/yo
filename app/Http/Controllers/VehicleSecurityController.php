@@ -8,28 +8,71 @@ use Carbon\Carbon;
 
 class VehicleSecurityController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $today = Carbon::today();
-        $vehicles = VehicleSecurity::where(function($query) use ($today) {
-            $query->where(function($q) {
-                // Show all unchecked vehicles
-                $q->whereNull('checkout_time')
-                  ->where('is_note', false);
-            })->orWhere(function($q) use ($today) {
-                // Show vehicles checked out today
-                $q->whereDate('checkout_time', $today)
-                  ->where('is_note', false);
-            })->orWhere(function($q) use ($today) {
-                // Show today's new entries
-                $q->whereDate('created_at', $today)
-                  ->where('is_note', false);
-            })->orWhere(function($q) use ($today) {
-                // Show only today's notes
-                $q->whereDate('created_at', $today)
-                  ->where('is_note', true);
-            });
-        })->latest()->get();
+        $filter = $request->input('filter', 'all');
+        
+        $query = VehicleSecurity::query();
+        
+        switch ($filter) {
+            case 'in':
+                $query->whereNull('checkout_time')
+                      ->where('is_temp_out', false)
+                      ->where('is_note', false);
+                break;
+            case 'out':
+                $query->whereNotNull('checkout_time')
+                      ->where('is_note', false);
+                break;
+            case 'temp':
+                $query->whereNull('checkout_time')
+                      ->where('is_temp_out', true)
+                      ->where('is_note', false);
+                break;
+            case 'today':
+                $query->whereDate('created_at', $today)
+                      ->where('is_note', false);
+                break;
+            case 'room':
+                $query->whereNull('checkout_time')
+                      ->whereNotNull('room_numbers')
+                      ->where('room_numbers', '<>', '[]')
+                      ->where('is_note', false);
+                break;
+            case 'pool':
+                $query->whereNull('checkout_time')
+                      ->where(function($q) {
+                          $q->where('adult_pool_count', '>', 0)
+                            ->orWhere('kids_pool_count', '>', 0);
+                      })
+                      ->where('is_note', false);
+                break;
+            default:
+                // Default 'all' filter 
+                $query->where(function($query) use ($today) {
+                    $query->where(function($q) {
+                        // Show all unchecked vehicles
+                        $q->whereNull('checkout_time')
+                          ->where('is_note', false);
+                    })->orWhere(function($q) use ($today) {
+                        // Show vehicles checked out today
+                        $q->whereDate('checkout_time', $today)
+                          ->where('is_note', false);
+                    })->orWhere(function($q) use ($today) {
+                        // Show today's new entries
+                        $q->whereDate('created_at', $today)
+                          ->where('is_note', false);
+                    })->orWhere(function($q) use ($today) {
+                        // Show only today's notes
+                        $q->whereDate('created_at', $today)
+                          ->where('is_note', true);
+                    });
+                });
+                break;
+        }
+        
+        $vehicles = $query->latest()->get();
     
         // Get all occupied rooms from unchecked out vehicles
         $occupiedRooms = VehicleSecurity::whereNull('checkout_time')
@@ -38,23 +81,205 @@ class VehicleSecurityController extends Controller
             ->get()
             ->pluck('room_numbers')
             ->map(function($rooms) {
-                return json_decode($rooms);
+                return json_decode($rooms) ?: [];
             })
             ->flatten()
-            ->unique();
+            ->unique()
+            ->values();
     
         // Get available rooms
         $allRooms = VehicleSecurity::getRoomOptions();
         $availableRooms = array_values(array_diff($allRooms, $occupiedRooms->toArray()));
+        
+        // Get dashboard statistics
+        $stats = $this->getStats();
     
         return view('vehicle-security.index', [
             'vehicles' => $vehicles,
+            'selectedDate' => $request->input('date', $today->format('Y-m-d')),
+            'selectedFilter' => $filter,
             'matterOptions' => VehicleSecurity::getMatterOptions(),
             'roomOptions' => VehicleSecurity::getRoomOptions(),
-            'availableRooms' => $availableRooms
+            'availableRooms' => $availableRooms,
+            'stats' => $stats
         ]);
     }
     
+    /**
+     * Get dashboard statistics for the vehicle security system
+     * 
+     * @return array
+     */
+    private function getStats()
+    {
+        $today = Carbon::today();
+        
+        // Get vehicles on property (unchecked out)
+        $checkedIn = VehicleSecurity::whereNull('checkout_time')
+            ->where('is_note', false)
+            ->count();
+        
+        // Get vehicles checked out today
+        $checkedOut = VehicleSecurity::whereDate('checkout_time', $today)
+            ->where('is_note', false)
+            ->count();
+        
+        // Get temporarily out vehicles
+        $tempOut = VehicleSecurity::whereNull('checkout_time')
+            ->where('is_temp_out', true)
+            ->where('is_note', false)
+            ->count();
+        
+        // Get occupied and available rooms
+        $occupiedRooms = VehicleSecurity::whereNull('checkout_time')
+            ->whereNotNull('room_numbers')
+            ->where('is_note', false)
+            ->get()
+            ->pluck('room_numbers')
+            ->map(function($rooms) {
+                return json_decode($rooms) ?: [];
+            })
+            ->flatten()
+            ->unique()
+            ->count();
+        
+        $allRoomsCount = count(VehicleSecurity::getRoomOptions());
+        $availableRooms = $allRoomsCount - $occupiedRooms;
+        
+        // Get pool usage
+        $poolUsage = VehicleSecurity::whereNull('checkout_time')
+            ->where('is_note', false)
+            ->selectRaw('COALESCE(SUM(adult_pool_count), 0) as adults, COALESCE(SUM(kids_pool_count), 0) as kids')
+            ->first();
+        
+        return [
+            'totalVehicles' => $checkedIn + $checkedOut,
+            'checkedIn' => $checkedIn,
+            'checkedOut' => $checkedOut,
+            'tempOut' => $tempOut,
+            'occupiedRooms' => $occupiedRooms,
+            'availableRooms' => $availableRooms,
+            'poolUsage' => [
+                'adults' => (int)$poolUsage->adults,
+                'kids' => (int)$poolUsage->kids
+            ]
+        ];
+    }
+    
+    /**
+     * API endpoint to get dashboard statistics
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getDashboardStats()
+    {
+        return response()->json($this->getStats());
+    }
+
+    public function showByDate($date = null)
+    {
+        try {
+            // If no date provided, use today's date
+            $selectedDate = $date ? Carbon::parse($date) : Carbon::today();
+            $filter = request()->input('filter', 'all');
+            
+            $query = VehicleSecurity::query();
+            
+            // Apply filter first
+            switch ($filter) {
+                case 'in':
+                    $query->whereNull('checkout_time')
+                          ->where('is_temp_out', false)
+                          ->where('is_note', false);
+                    break;
+                case 'out':
+                    $query->whereNotNull('checkout_time')
+                          ->where('is_note', false);
+                    break;
+                case 'temp':
+                    $query->whereNull('checkout_time')
+                          ->where('is_temp_out', true)
+                          ->where('is_note', false);
+                    break;
+                case 'room':
+                    $query->whereNull('checkout_time')
+                          ->whereNotNull('room_numbers')
+                          ->where('room_numbers', '<>', '[]')
+                          ->where('is_note', false);
+                    break;
+                case 'pool':
+                    $query->whereNull('checkout_time')
+                          ->where(function($q) {
+                              $q->where('adult_pool_count', '>', 0)
+                                ->orWhere('kids_pool_count', '>', 0);
+                          })
+                          ->where('is_note', false);
+                    break;
+                default:
+                    // Only after applying filter, apply date constraints
+                    $query->where(function($query) use ($selectedDate) {
+                        $query->where(function($q) {
+                            // Show all unchecked vehicles
+                            $q->whereNull('checkout_time')
+                              ->where('is_note', false);
+                        })->orWhere(function($q) use ($selectedDate) {
+                            // Show vehicles checked out on selected date
+                            $q->whereDate('checkout_time', $selectedDate)
+                              ->where('is_note', false);
+                        })->orWhere(function($q) use ($selectedDate) {
+                            // Show selected date's new entries
+                            $q->whereDate('created_at', $selectedDate)
+                              ->where('is_note', false);
+                        })->orWhere(function($q) use ($selectedDate) {
+                            // Show only selected date's notes
+                            $q->whereDate('created_at', $selectedDate)
+                              ->where('is_note', true);
+                        });
+                    });
+                    break;
+            }
+            
+            // If we're using a filter other than 'all', and it's not today's date
+            // additionally restrict to that date
+            if ($filter !== 'all' && !$selectedDate->isToday()) {
+                $query->whereDate('created_at', $selectedDate);
+            }
+
+            $vehicles = $query->latest()->get();
+
+            // Get all occupied rooms from unchecked out vehicles
+            $occupiedRooms = VehicleSecurity::whereNull('checkout_time')
+                ->whereNotNull('room_numbers')
+                ->where('is_note', false)
+                ->get()
+                ->pluck('room_numbers')
+                ->map(function($rooms) {
+                    return json_decode($rooms) ?: [];
+                })
+                ->flatten()
+                ->unique()
+                ->values();
+
+            // Get available rooms
+            $allRooms = VehicleSecurity::getRoomOptions();
+            $availableRooms = array_values(array_diff($allRooms, $occupiedRooms->toArray()));
+            
+            // Get dashboard statistics
+            $stats = $this->getStats();
+
+            return view('vehicle-security.index', [
+                'vehicles' => $vehicles,
+                'selectedDate' => $selectedDate->format('Y-m-d'),
+                'selectedFilter' => $filter,
+                'matterOptions' => VehicleSecurity::getMatterOptions(),
+                'roomOptions' => VehicleSecurity::getRoomOptions(),
+                'availableRooms' => $availableRooms,
+                'stats' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Invalid date format: ' . $e->getMessage());
+        }
+    }
 
     public function store(Request $request)
     {
@@ -78,61 +303,6 @@ class VehicleSecurityController extends Controller
             'vehicle' => $vehicle
         ]);
     }
-
-    public function showByDate($date = null)
-{
-    try {
-        // If no date provided, use today's date
-        $selectedDate = $date ? Carbon::parse($date) : Carbon::today();
-        
-        $vehicles = VehicleSecurity::where(function($query) use ($selectedDate) {
-            $query->where(function($q) {
-                // Show all unchecked vehicles
-                $q->whereNull('checkout_time')
-                  ->where('is_note', false);
-            })->orWhere(function($q) use ($selectedDate) {
-                // Show vehicles checked out on selected date
-                $q->whereDate('checkout_time', $selectedDate)
-                  ->where('is_note', false);
-            })->orWhere(function($q) use ($selectedDate) {
-                // Show selected date's new entries
-                $q->whereDate('created_at', $selectedDate)
-                  ->where('is_note', false);
-            })->orWhere(function($q) use ($selectedDate) {
-                // Show only selected date's notes
-                $q->whereDate('created_at', $selectedDate)
-                  ->where('is_note', true);
-            });
-        })->latest()->get();
-
-        // Get all occupied rooms from unchecked out vehicles
-        $occupiedRooms = VehicleSecurity::whereNull('checkout_time')
-            ->whereNotNull('room_numbers')
-            ->where('is_note', false)
-            ->get()
-            ->pluck('room_numbers')
-            ->map(function($rooms) {
-                return json_decode($rooms) ?: [];
-            })
-            ->flatten()
-            ->unique()
-            ->values();
-
-        // Get available rooms
-        $allRooms = VehicleSecurity::getRoomOptions();
-        $availableRooms = array_values(array_diff($allRooms, $occupiedRooms->toArray()));
-
-        return view('vehicle-security.index', [
-            'vehicles' => $vehicles,
-            'selectedDate' => $selectedDate->format('Y-m-d'),
-            'matterOptions' => VehicleSecurity::getMatterOptions(),
-            'roomOptions' => VehicleSecurity::getRoomOptions(),
-            'availableRooms' => $availableRooms
-        ]);
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'Invalid date format');
-    }
-}
 
     public function update(Request $request, $id)
     {
@@ -178,6 +348,7 @@ class VehicleSecurityController extends Controller
             'vehicle' => $vehicle->fresh()
         ]);
     }
+    
     public function updateTeam(Request $request, $id)
     {
         $validated = $request->validate([
@@ -194,45 +365,40 @@ class VehicleSecurityController extends Controller
         ]);
     }
 
-
     public function tempCheckout($id)
-{
-    $vehicle = VehicleSecurity::findOrFail($id);
-    $vehicle->update([
-        'temp_checkout_time' => now(),
-        'is_temp_out' => true,
-        'temp_checkin_time' => null
-    ]);
+    {
+        $vehicle = VehicleSecurity::findOrFail($id);
+        $vehicle->update([
+            'temp_checkout_time' => now(),
+            'is_temp_out' => true,
+            'temp_checkin_time' => null
+        ]);
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Vehicle temporarily checked out',
-        'vehicle' => $vehicle->fresh()
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Vehicle temporarily checked out',
+            'vehicle' => $vehicle->fresh()
+        ]);
+    }
 
-public function tempCheckin($id)
-{
-    $vehicle = VehicleSecurity::findOrFail($id);
-    $vehicle->update([
-        'temp_checkin_time' => now(),
-        'is_temp_out' => false
-    ]);
+    public function tempCheckin($id)
+    {
+        $vehicle = VehicleSecurity::findOrFail($id);
+        $vehicle->update([
+            'temp_checkin_time' => now(),
+            'is_temp_out' => false
+        ]);
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Vehicle checked back in',
-        'vehicle' => $vehicle->fresh()
-    ]);
-}
-
-
+        return response()->json([
+            'success' => true,
+            'message' => 'Vehicle checked back in',
+            'vehicle' => $vehicle->fresh()
+        ]);
+    }
 
     public function edit($id)
     {
         $vehicle = VehicleSecurity::findOrFail($id);
         return response()->json($vehicle);
     }
-
-
 }

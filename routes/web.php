@@ -205,6 +205,11 @@ Route::get('/inv-inventory/monthly', [InvInventoryController::class, 'viewMonthl
 
 // Vehicle Security Routes
 Route::middleware(['auth'])->group(function () {
+
+    Route::get('vehicle-security/dashboard-stats', [VehicleSecurityController::class, 'getDashboardStats'])
+    ->name('vehicle-security.dashboard-stats');
+    Route::post('vehicle-security/reset-rooms', [VehicleSecurityController::class, 'resetRoomStatus'])
+    ->name('vehicle-security.reset-rooms');
    Route::resource('vehicle-security', VehicleSecurityController::class);
    Route::get('vehicle-security/date/{date?}', [VehicleSecurityController::class, 'showByDate'])
     ->name('vehicle-security.by-date');

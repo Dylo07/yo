@@ -625,11 +625,11 @@
 }
 
 .checkin-badge {
-    background: linear-gradient(45deg, #f5f5f5, #894aff);
+    background: linear-gradient(45deg, #f5f5f5, #f5f5f5);
 }
 
 .checkout-badge {
-    background: linear-gradient(45deg, #20c997, #28a745);
+    background: linear-gradient(45deg, #20c997, #f5f5f5);
     min-width: 200px;
     padding: 8px 12px;
 }
@@ -639,7 +639,7 @@
 }
 
 .room-badge {
-    background: linear-gradient(45deg, #17a2b8, #138496);
+    background: linear-gradient(45deg, #17a2b8, #f5f5f5);
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.85rem;

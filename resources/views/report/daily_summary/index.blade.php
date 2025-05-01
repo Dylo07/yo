@@ -538,7 +538,8 @@
                     <td>${parseFloat(sale.other).toFixed(2)}</td>
                     <td>${parseFloat(sale.service_charge).toFixed(2)}</td>
                     <td><input type="text" class="form-control description-input" value="${sale.description || ''}"></td>
-                    <td>${parseFloat(sale.total).toFixed(2)}</td>
+                    <td>${(parseFloat(sale.rooms) + parseFloat(sale.swimming_pool) + parseFloat(sale.arrack) + parseFloat(sale.beer) + parseFloat(sale.other) + parseFloat(sale.service_charge)).toFixed(2)}</td>
+                    
                     <td><input type="number" class="form-control cash-input" value="${parseFloat(sale.cash_payment) || 0}"></td>
                     <td><input type="number" class="form-control card-input" value="${parseFloat(sale.card_payment) || 0}"></td>
                     <td><input type="number" class="form-control bank-input" value="${parseFloat(sale.bank_payment) || 0}"></td>
@@ -630,92 +631,96 @@
 
         // Function to update totals
         function updateTotals() {
-            let totalRooms = 0;
-            let totalSwimming = 0;
-            let totalArrack = 0;
-            let totalBeer = 0;
-            let totalOther = 0;
-            let totalServiceCharge = 0;
-            let totalAmount = 0;
-            let totalCash = 0;
-            let totalCard = 0;
-            let totalBank = 0;
-            
-            $('#daily-summary-table tbody tr').each(function() {
-                const row = $(this);
-                const isManualRow = row.hasClass('manual-row');
-                
-                let rooms = 0;
-                let swimming = 0;
-                let arrack = 0;
-                let beer = 0;
-                let other = 0;
-                let serviceCharge = 0;
-                
-                if (isManualRow) {
-                    // For manual rows, get values from inputs
-                    rooms = parseFloat(row.find('.rooms-input').val()) || 0;
-                    swimming = parseFloat(row.find('.swimming-input').val()) || 0;
-                    arrack = parseFloat(row.find('.arrack-input').val()) || 0;
-                    beer = parseFloat(row.find('.beer-input').val()) || 0;
-                    other = parseFloat(row.find('.other-input').val()) || 0;
-                    serviceCharge = parseFloat(row.find('.service-charge-input').val()) || 0;
-                } else {
-                    // For system-generated rows, get values from cells
-                    rooms = parseFloat(row.find('td:eq(2)').text()) || 0;
-                    swimming = parseFloat(row.find('td:eq(3)').text()) || 0;
-                    arrack = parseFloat(row.find('td:eq(4)').text()) || 0;
-                    beer = parseFloat(row.find('td:eq(5)').text()) || 0;
-                    other = parseFloat(row.find('td:eq(6)').text()) || 0;
-                    serviceCharge = parseFloat(row.find('td:eq(7)').text()) || 0;
-                }
-                
-                // Sum up category totals
-                totalRooms += rooms;
-                totalSwimming += swimming;
-                totalArrack += arrack;
-                totalBeer += beer;
-                totalOther += other;
-                totalServiceCharge += serviceCharge;
-                
-                // Calculate row total excluding service charge
-                const rowTotal = rooms + swimming + arrack + beer + other;
-                totalAmount += rowTotal;
-                
-                // Payment totals
-                totalCash += parseFloat(row.find('.cash-input').val()) || 0;
-                totalCard += parseFloat(row.find('.card-input').val()) || 0;
-                totalBank += parseFloat(row.find('.bank-input').val()) || 0;
-            });
-            
-            // Update footer totals with 2 decimal places
-            $('#total-rooms').text(totalRooms.toFixed(2));
-            $('#total-swimming').text(totalSwimming.toFixed(2));
-            $('#total-arrack').text(totalArrack.toFixed(2));
-            $('#total-beer').text(totalBeer.toFixed(2));
-            $('#total-other').text(totalOther.toFixed(2));
-            $('#total-service-charge').text(totalServiceCharge.toFixed(2));
-            $('#total-amount').text(totalAmount.toFixed(2));
-            $('#total-cash').text(totalCash.toFixed(2));
-            $('#total-card').text(totalCard.toFixed(2));
-            $('#total-bank').text(totalBank.toFixed(2));
+    let totalRooms = 0;
+    let totalSwimming = 0;
+    let totalArrack = 0;
+    let totalBeer = 0;
+    let totalOther = 0;
+    let totalServiceCharge = 0;
+    let totalAmount = 0;
+    let totalCash = 0;
+    let totalCard = 0;
+    let totalBank = 0;
+    
+    $('#daily-summary-table tbody tr').each(function() {
+        const row = $(this);
+        const isManualRow = row.hasClass('manual-row');
+        
+        let rooms = 0;
+        let swimming = 0;
+        let arrack = 0;
+        let beer = 0;
+        let other = 0;
+        let serviceCharge = 0;
+        
+        if (isManualRow) {
+            // For manual rows, get values from inputs
+            rooms = parseFloat(row.find('.rooms-input').val()) || 0;
+            swimming = parseFloat(row.find('.swimming-input').val()) || 0;
+            arrack = parseFloat(row.find('.arrack-input').val()) || 0;
+            beer = parseFloat(row.find('.beer-input').val()) || 0;
+            other = parseFloat(row.find('.other-input').val()) || 0;
+            serviceCharge = parseFloat(row.find('.service-charge-input').val()) || 0;
+        } else {
+            // For system-generated rows, get values from cells
+            rooms = parseFloat(row.find('td:eq(2)').text()) || 0;
+            swimming = parseFloat(row.find('td:eq(3)').text()) || 0;
+            arrack = parseFloat(row.find('td:eq(4)').text()) || 0;
+            beer = parseFloat(row.find('td:eq(5)').text()) || 0;
+            other = parseFloat(row.find('td:eq(6)').text()) || 0;
+            serviceCharge = parseFloat(row.find('td:eq(7)').text()) || 0;
         }
+        
+        // Sum up category totals
+        totalRooms += rooms;
+        totalSwimming += swimming;
+        totalArrack += arrack;
+        totalBeer += beer;
+        totalOther += other;
+        totalServiceCharge += serviceCharge;
+        
+        // Calculate row total INCLUDING service charge
+        const categorySum = rooms + swimming + arrack + beer + other;
+        // Add service charge to total
+        const rowTotal = categorySum + serviceCharge;
+        totalAmount += rowTotal;
+        
+        // Payment totals
+        totalCash += parseFloat(row.find('.cash-input').val()) || 0;
+        totalCard += parseFloat(row.find('.card-input').val()) || 0;
+        totalBank += parseFloat(row.find('.bank-input').val()) || 0;
+    });
+    
+    // Update footer totals with 2 decimal places
+    $('#total-rooms').text(totalRooms.toFixed(2));
+    $('#total-swimming').text(totalSwimming.toFixed(2));
+    $('#total-arrack').text(totalArrack.toFixed(2));
+    $('#total-beer').text(totalBeer.toFixed(2));
+    $('#total-other').text(totalOther.toFixed(2));
+    $('#total-service-charge').text(totalServiceCharge.toFixed(2));
+    $('#total-amount').text(totalAmount.toFixed(2));
+    $('#total-cash').text(totalCash.toFixed(2));
+    $('#total-card').text(totalCard.toFixed(2));
+    $('#total-bank').text(totalBank.toFixed(2));
+}
 
-        // Function to update a single row's total
-        function updateRowTotal(row) {
-            if (row.hasClass('manual-row')) {
-                const rooms = parseFloat(row.find('.rooms-input').val()) || 0;
-                const swimming = parseFloat(row.find('.swimming-input').val()) || 0;
-                const arrack = parseFloat(row.find('.arrack-input').val()) || 0;
-                const beer = parseFloat(row.find('.beer-input').val()) || 0;
-                const other = parseFloat(row.find('.other-input').val()) || 0;
-                
-                // Don't include service charge in the total calculation
-                const total = rooms + swimming + arrack + beer + other;
-                row.find('.total-input').val(total.toFixed(2));
-            }
-        }
-
+// Function to update a single row's total - FIXED VERSION THAT INCLUDES SERVICE CHARGE
+function updateRowTotal(row) {
+    if (row.hasClass('manual-row')) {
+        const rooms = parseFloat(row.find('.rooms-input').val()) || 0;
+        const swimming = parseFloat(row.find('.swimming-input').val()) || 0;
+        const arrack = parseFloat(row.find('.arrack-input').val()) || 0;
+        const beer = parseFloat(row.find('.beer-input').val()) || 0;
+        const other = parseFloat(row.find('.other-input').val()) || 0;
+        const serviceCharge = parseFloat(row.find('.service-charge-input').val()) || 0;
+        
+        // Calculate total by adding all categories INCLUDING service charge
+        const categorySum = rooms + swimming + arrack + beer + other;
+        const total = categorySum + serviceCharge;
+        
+        row.find('.total-input').val(total.toFixed(2));
+    }
+}
         // Function to validate payment distribution in a row
         function updateRowPaymentDistribution(row) {
             const total = row.hasClass('manual-row') 

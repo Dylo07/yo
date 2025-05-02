@@ -213,6 +213,8 @@ Route::post('/report/daily-summary/toggle-verify', 'App\Http\Controllers\Report\
 // Add this route to your web.php file to help debug missing bills
 Route::get('/report/check-bills', 'App\Http\Controllers\Report\DailySalesSummaryController@checkBills')->name('report.check-bills');
 Route::post('/report/daily-summary/debug-verify', 'App\Http\Controllers\Report\DailySalesSummaryController@debugVerify');
+Route::get('/report/daily-summary/logs', 'App\Http\Controllers\Report\DailySalesSummaryController@getLogData')->name('report.daily-summary.logs');
+
 
 // Vehicle Security Routes
 Route::middleware(['auth'])->group(function () {

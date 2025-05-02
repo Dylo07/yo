@@ -181,7 +181,32 @@
         @endif
     </tr>
 </template>
-
+<!-- Log Summary Section -->
+<div class="card mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h4>User Activity Log</h4>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="activity-log-table" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Bill#</th>
+                        <th>Action</th>
+                        <th>Field</th>
+                        <th>Old Value</th>
+                        <th>New Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Log data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <!-- Include necessary scripts -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -243,21 +268,45 @@
         loadSummaryData();
 
         // Add new row
-        $('#add-row').click(function() {
-        const rowTemplate = document.getElementById('row-template');
-        const newRow = document.importNode(rowTemplate.content, true);
+     // Add new row
+$('#add-row').click(function() {
+    const rowTemplate = document.getElementById('row-template');
+    const newRow = document.importNode(rowTemplate.content, true);
+    
+    // Set current date/time with proper format including time and make it read-only
+    const currentDateTime = moment().format('MM/DD/YYYY HH:mm:ss');
+    $(newRow).find('.datetime-input').val(currentDateTime);
+    
+    // Add the new row
+    $('#daily-summary-table tbody').append(newRow);
+    
+    // Initialize total calculation for the new row
+    updateRowTotal($(newRow).closest('tr'));
+    
+    // Get all rows and sort them by bill number
+    const rows = $('#daily-summary-table tbody tr').toArray();
+    rows.sort(function(a, b) {
+        const idA = $(a).attr('data-sale-id') || $(a).find('.bill-number-input').val() || '';
+        const idB = $(b).attr('data-sale-id') || $(b).find('.bill-number-input').val() || '';
         
-        // Set current date/time with proper format including time and make it read-only
-        const currentDateTime = moment().format('MM/DD/YYYY HH:mm:ss');
-        $(newRow).find('.datetime-input').val(currentDateTime);
+        // If both are numeric, sort numerically
+        if (!isNaN(idA) && !isNaN(idB)) {
+            return parseInt(idA) - parseInt(idB);
+        }
         
-        // Add the new row
-        $('#daily-summary-table tbody').append(newRow);
-        
-        // Update totals
-        updateTotals();
+        // Otherwise fall back to string comparison
+        return String(idA).localeCompare(String(idB));
     });
-
+    
+    // Clear the table and re-add rows in sorted order
+    const tbody = $('#daily-summary-table tbody').empty();
+    $.each(rows, function(index, row) {
+        tbody.append(row);
+    });
+    
+    // Update totals
+    updateTotals();
+});
         // Save summary
         $('#save-summary').click(function() {
             // Show loading indicator
@@ -361,7 +410,10 @@
             contentType: false,
             success: function(response) {
                 console.log('Verification success:', response);
-                if (!response.success) {
+                if (response.success) {
+                    // Refresh the logs to show the verification action
+                    loadLogData();
+                } else {
                     // Revert UI changes if there was an error
                     row.toggleClass('table-success');
                     if (!isVerifying) {
@@ -400,68 +452,81 @@
         });
 
         // Update calculations when numbers change
-        $(document).on('change', 'input[type=number]', function() {
-            updateTotals();
-            
-            // If it's a payment input, update row's payment distribution
-            if ($(this).hasClass('cash-input') || $(this).hasClass('card-input') || $(this).hasClass('bank-input')) {
-                updateRowPaymentDistribution($(this).closest('tr'));
-            }
-            
-            // If it's a category input, update row's total
-            if ($(this).hasClass('rooms-input') || $(this).hasClass('swimming-input') || 
-                $(this).hasClass('arrack-input') || $(this).hasClass('beer-input') || 
-                $(this).hasClass('other-input')) {
-                updateRowTotal($(this).closest('tr'));
-            }
-        });
+        // Update calculations when numbers change
+$(document).on('change', 'input[type=number]', function() {
+    // If it's a service charge input, update row's total
+    if ($(this).hasClass('service-charge-input')) {
+        updateRowTotal($(this).closest('tr'));
+    }
+    
+    updateTotals();
+    
+    // If it's a payment input, update row's payment distribution
+    if ($(this).hasClass('cash-input') || $(this).hasClass('card-input') || $(this).hasClass('bank-input')) {
+        updateRowPaymentDistribution($(this).closest('tr'));
+    }
+    
+    // If it's a category input, update row's total
+    if ($(this).hasClass('rooms-input') || $(this).hasClass('swimming-input') || 
+        $(this).hasClass('arrack-input') || $(this).hasClass('beer-input') || 
+        $(this).hasClass('other-input') || $(this).hasClass('service-charge-input')) {
+        updateRowTotal($(this).closest('tr'));
+    }
+});
 
         // Function to load summary data
         function loadSummaryData() {
-            const date = $('#selected-date').val();
+    const date = $('#selected-date').val();
+    
+    // Update the summary date in the header
+    $('#summary-date').text(`Daily Sale Summary - ${date}`);
+    
+    $.ajax({
+        url: '/report/daily-summary/data',
+        method: 'GET',
+        data: {
+            date: date
+        },
+        success: function(response) {
+            console.log('Loaded summary data:', response);
             
-            // Update the summary date in the header
-            $('#summary-date').text(`Daily Sale Summary - ${date}`);
+            // Clear existing rows
+            $('#daily-summary-table tbody').empty();
             
-            $.ajax({
-                url: '/report/daily-summary/data',
-                method: 'GET',
-                data: {
-                    date: date
-                },
-                success: function(response) {
-                    console.log('Loaded summary data:', response);
-                    
-                    // Clear existing rows and add new ones
-                    $('#daily-summary-table tbody').empty();
-                    
-                    if (response.sales && response.sales.length > 0) {
-                        response.sales.forEach(function(sale) {
-                            addSaleRow(sale);
-                        });
-                    } else {
-                        console.log('No sales data found for date:', date);
-                    }
-                    
-                    // Update the totals
-                    updateTotals();
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error loading summary data:', {
-                        status: status,
-                        error: error,
-                        responseText: xhr.responseText
-                    });
-                    
-                    try {
-                        const errorResponse = JSON.parse(xhr.responseText);
-                        alert('Error loading summary data: ' + (errorResponse.message || 'Unknown error'));
-                    } catch(e) {
-                        alert('Error loading summary data. Please try again.');
-                    }
-                }
+            if (response.sales && response.sales.length > 0) {
+                // Sort the sales by bill number before adding to table
+                response.sales.sort(function(a, b) {
+                    // Convert to integers for proper numerical sorting
+                    return parseInt(a.id) - parseInt(b.id);
+                });
+                
+                // Add the sorted sales to the table
+                response.sales.forEach(function(sale) {
+                    addSaleRow(sale);
+                });
+            } else {
+                console.log('No sales data found for date:', date);
+            }
+            
+            // Update the totals
+            updateTotals();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading summary data:', {
+                status: status,
+                error: error,
+                responseText: xhr.responseText
             });
+            
+            try {
+                const errorResponse = JSON.parse(xhr.responseText);
+                alert('Error loading summary data: ' + (errorResponse.message || 'Unknown error'));
+            } catch(e) {
+                alert('Error loading summary data. Please try again.');
+            }
         }
+    });
+}
 
         // Function to add a sale row to the table
         function addSaleRow(sale) {
@@ -646,12 +711,7 @@
         const row = $(this);
         const isManualRow = row.hasClass('manual-row');
         
-        // Only include rows where status is 'paid' to match the report behavior
-        const status = isManualRow ? row.find('.status-select').val() : row.find('td:eq(13) select').val();
-        if (status !== 'paid') {
-            return; // Skip unpaid entries
-        }
-        
+        // Include all rows regardless of status for total calculation to match print view
         let rooms = 0;
         let swimming = 0;
         let arrack = 0;
@@ -689,7 +749,7 @@
         const rowTotal = rooms + swimming + arrack + beer + other + serviceCharge;
         totalAmount += rowTotal;
         
-        // Payment totals
+        // Payment totals - include all payment methods regardless of status
         totalCash += parseFloat(row.find('.cash-input').val()) || 0;
         totalCard += parseFloat(row.find('.card-input').val()) || 0;
         totalBank += parseFloat(row.find('.bank-input').val()) || 0;
@@ -708,6 +768,7 @@
     $('#total-bank').text(totalBank.toFixed(2));
 }
 // Function to update a single row's total - FIXED VERSION THAT INCLUDES SERVICE CHARGE
+// Function to update a single row's total - FIXED VERSION THAT INCLUDES SERVICE CHARGE
 function updateRowTotal(row) {
     if (row.hasClass('manual-row')) {
         const rooms = parseFloat(row.find('.rooms-input').val()) || 0;
@@ -718,8 +779,7 @@ function updateRowTotal(row) {
         const serviceCharge = parseFloat(row.find('.service-charge-input').val()) || 0;
         
         // Calculate total by adding all categories INCLUDING service charge
-        const categorySum = rooms + swimming + arrack + beer + other;
-        const total = categorySum + serviceCharge;
+        const total = rooms + swimming + arrack + beer + other + serviceCharge;
         
         row.find('.total-input').val(total.toFixed(2));
     }
@@ -753,8 +813,129 @@ function updateRowTotal(row) {
         }
     });
 
-
+// Function to load log data
+function loadLogData() {
+    const date = $('#selected-date').val();
     
+    $.ajax({
+        url: '/report/daily-summary/logs',
+        method: 'GET',
+        data: {
+            date: date
+        },
+        success: function(response) {
+            console.log('Loaded log data:', response);
+            
+            // Clear existing rows
+            $('#activity-log-table tbody').empty();
+            
+            if (response.logs && response.logs.length > 0) {
+                response.logs.forEach(function(log) {
+                    // Define colors for different actions
+                    let actionClass = '';
+                    switch (log.action) {
+                        case 'CREATE':
+                            actionClass = 'text-success';
+                            break;
+                        case 'UPDATE':
+                            actionClass = 'text-primary';
+                            break;
+                        case 'DELETE':
+                            actionClass = 'text-danger';
+                            break;
+                        case 'VERIFY':
+                            actionClass = 'text-warning';
+                            break;
+                    }
+                    
+                    // Build row HTML
+                    let rowHtml = `
+                    <tr>
+                        <td title="${log.timestamp}">${log.time_ago}</td>
+                        <td>${log.user_name}</td>
+                        <td>${log.bill_number}</td>
+                        <td class="${actionClass}">${log.action}</td>
+                        <td>${log.field_name || '-'}</td>
+                        <td>${log.old_value || '-'}</td>
+                        <td>${log.new_value || '-'}</td>
+                    </tr>`;
+                    
+                    $('#activity-log-table tbody').append(rowHtml);
+                });
+            } else {
+                $('#activity-log-table tbody').append('<tr><td colspan="7" class="text-center">No activity logs found for this date.</td></tr>');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading log data:', {
+                status: status,
+                error: error,
+                responseText: xhr.responseText
+            });
+            
+            $('#activity-log-table tbody').append('<tr><td colspan="7" class="text-center text-danger">Error loading log data. Please try refreshing the page.</td></tr>');
+        }
+    });
+}
+
+// Update existing functions to also load log data
+function loadSummaryData() {
+    const date = $('#selected-date').val();
+    
+    // Update the summary date in the header
+    $('#summary-date').text(`Daily Sale Summary - ${date}`);
+    
+    $.ajax({
+        url: '/report/daily-summary/data',
+        method: 'GET',
+        data: {
+            date: date
+        },
+        success: function(response) {
+            console.log('Loaded summary data:', response);
+            
+            // Clear existing rows
+            $('#daily-summary-table tbody').empty();
+            
+            if (response.sales && response.sales.length > 0) {
+                // Sort the sales by bill number before adding to table
+                response.sales.sort(function(a, b) {
+                    // Convert to integers for proper numerical sorting
+                    return parseInt(a.id) - parseInt(b.id);
+                });
+                
+                // Add the sorted sales to the table
+                response.sales.forEach(function(sale) {
+                    addSaleRow(sale);
+                });
+            } else {
+                console.log('No sales data found for date:', date);
+            }
+            
+            // Update the totals
+            updateTotals();
+            
+            // Load the log data for this date
+            loadLogData();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading summary data:', {
+                status: status,
+                error: error,
+                responseText: xhr.responseText
+            });
+            
+            try {
+                const errorResponse = JSON.parse(xhr.responseText);
+                alert('Error loading summary data: ' + (errorResponse.message || 'Unknown error'));
+            } catch(e) {
+                alert('Error loading summary data. Please try again.');
+            }
+        }
+    });
+}
+
+
 </script>
 <form id="verify-form" action="{{ route('report.daily-summary.toggle-verify') }}" method="POST" style="display:none;">
     @csrf

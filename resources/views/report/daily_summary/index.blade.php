@@ -646,6 +646,12 @@
         const row = $(this);
         const isManualRow = row.hasClass('manual-row');
         
+        // Only include rows where status is 'paid' to match the report behavior
+        const status = isManualRow ? row.find('.status-select').val() : row.find('td:eq(13) select').val();
+        if (status !== 'paid') {
+            return; // Skip unpaid entries
+        }
+        
         let rooms = 0;
         let swimming = 0;
         let arrack = 0;
@@ -680,9 +686,7 @@
         totalServiceCharge += serviceCharge;
         
         // Calculate row total INCLUDING service charge
-        const categorySum = rooms + swimming + arrack + beer + other;
-        // Add service charge to total
-        const rowTotal = categorySum + serviceCharge;
+        const rowTotal = rooms + swimming + arrack + beer + other + serviceCharge;
         totalAmount += rowTotal;
         
         // Payment totals
@@ -703,7 +707,6 @@
     $('#total-card').text(totalCard.toFixed(2));
     $('#total-bank').text(totalBank.toFixed(2));
 }
-
 // Function to update a single row's total - FIXED VERSION THAT INCLUDES SERVICE CHARGE
 function updateRowTotal(row) {
     if (row.hasClass('manual-row')) {

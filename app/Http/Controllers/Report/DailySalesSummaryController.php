@@ -25,77 +25,73 @@ class DailySalesSummaryController extends Controller
     }
 
     public function getSummaryData(Request $request)
-{
-    try {
-        // Parse date from request or use today
-        $date = $request->date ? Carbon::createFromFormat('d.m.Y', $request->date) : Carbon::today();
-        $formattedDate = $date->format('Y-m-d');
-        
-        // Log the request for debugging
-        Log::info('Getting summary data for date', [
-            'date_requested' => $request->date,
-            'parsed_date' => $formattedDate
-        ]);
-        
-        // First check if we have saved summaries for this date - QUERY DEBUGGING
-        $savedSummaries = DailySalesSummary::where('date', $formattedDate)->get();
-        
-        Log::info('Saved summaries query result', [
-            'query' => 'SELECT * FROM daily_sales_summaries WHERE date = "' . $formattedDate . '"',
-            'count' => $savedSummaries->count(),
-            'ids' => $savedSummaries->pluck('id')->toArray(),
-            'bill_numbers' => $savedSummaries->pluck('bill_number')->toArray(),
-            'verified_statuses' => $savedSummaries->pluck('verified', 'bill_number')->toArray(),
-        ]);
-        
-        // Get system sales data for reference
-        $startDate = $date->copy()->startOfDay();
-        $endDate = $date->copy()->endOfDay();
-        $sales = Sale::whereBetween('updated_at', [$startDate, $endDate])->get();
-        
-        // Initialize the final result array
-        $formattedSales = [];
-        
-        if ($savedSummaries->count() > 0) {
-            // Process saved summaries
-            foreach ($savedSummaries as $summary) {
-                $billNumber = $summary->bill_number;
-                
-                // Log each summary for debugging
-                Log::info('Processing saved summary', [
-                    'id' => $summary->id,
-                    'bill_number' => $billNumber,
-                    'verified' => $summary->verified,
-                    'is_manual' => $summary->is_manual
-                ]);
-                
-                $saleData = [
-                    'id' => $billNumber,
-                    'datetime' => $summary->datetime->format('m/d/Y H:i:s'),
-                    'rooms' => (float)$summary->rooms_amount,
-                    'swimming_pool' => (float)$summary->swimming_pool_amount,
-                    'arrack' => (float)$summary->arrack_amount,
-                    'beer' => (float)$summary->beer_amount,
-                    'other' => (float)$summary->other_amount,
-                    'service_charge' => (float)$summary->service_charge,
-                    'description' => $summary->description,
-                    'total' => (float)$summary->total_amount,
-                    'cash_payment' => (float)$summary->cash_payment,
-                    'card_payment' => (float)$summary->card_payment,
-                    'bank_payment' => (float)$summary->bank_payment,
-                    'status' => $summary->status,
-                    'verified' => (bool)$summary->verified, // Make sure to convert to boolean for JS
-                    'manual' => (bool)$summary->is_manual,
-                ];
-                
-                $formattedSales[] = $saleData;
-            }
+    {
+        try {
+            // Parse date from request or use today
+            $date = $request->date ? Carbon::createFromFormat('d.m.Y', $request->date) : Carbon::today();
+            $formattedDate = $date->format('Y-m-d');
+            $startDate = $date->copy()->startOfDay();
+            $endDate = $date->copy()->endOfDay();
             
-            // Check if there are any system sales that don't have a summary yet
-            $savedBillNumbers = $savedSummaries->pluck('bill_number')->toArray();
-            foreach ($sales as $sale) {
-                if (!in_array($sale->id, $savedBillNumbers)) {
-                    // Add this system sale that doesn't have a summary
+            // Log the request for debugging
+            Log::info('Getting summary data for date', [
+                'date_requested' => $request->date,
+                'parsed_date' => $formattedDate,
+                'start_date' => $startDate->format('Y-m-d H:i:s'),
+                'end_date' => $endDate->format('Y-m-d H:i:s')
+            ]);
+            
+            // First check if we have saved summaries for this date
+            $savedSummaries = DailySalesSummary::where('date', $formattedDate)->get();
+            
+            // Get system sales data for reference - UPDATED to match ReportController approach
+            // Only get fully completed/paid sales for this exact date range
+            $sales = Sale::whereBetween('updated_at', [$startDate, $endDate])
+                    ->where('sale_status', 'paid')
+                    ->get();
+            
+            // Log found sales for debugging
+            Log::info('Found system sales', [
+                'count' => $sales->count(),
+                'ids' => $sales->pluck('id')->toArray()
+            ]);
+            
+            // Initialize the final result array
+            $formattedSales = [];
+            
+            if ($savedSummaries->count() > 0) {
+                // Process saved summaries
+                foreach ($savedSummaries as $summary) {
+                    // Only include summaries for sales that were COMPLETED on this date
+                    // Check if this sale has a corresponding system sale that was completed today
+                    $billNumber = $summary->bill_number;
+                    $matchingSale = $sales->where('id', $billNumber)->first();
+                    
+                    // Only include if it's a manual entry or it has a matching system sale
+                    if ($summary->is_manual || $matchingSale) {
+                        $formattedSales[] = [
+                            'id' => $billNumber,
+                            'datetime' => $summary->datetime->format('m/d/Y H:i:s'),
+                            'rooms' => (float)$summary->rooms_amount,
+                            'swimming_pool' => (float)$summary->swimming_pool_amount,
+                            'arrack' => (float)$summary->arrack_amount,
+                            'beer' => (float)$summary->beer_amount,
+                            'other' => (float)$summary->other_amount,
+                            'service_charge' => (float)$summary->service_charge,
+                            'description' => $summary->description,
+                            'total' => (float)$summary->total_amount,
+                            'cash_payment' => (float)$summary->cash_payment,
+                            'card_payment' => (float)$summary->card_payment,
+                            'bank_payment' => (float)$summary->bank_payment,
+                            'status' => $summary->status,
+                            'verified' => (bool)$summary->verified,
+                            'manual' => (bool)$summary->is_manual,
+                        ];
+                    }
+                }
+            } else {
+                // No saved data, use the system sales that were COMPLETED today
+                foreach ($sales as $sale) {
                     $categoryTotals = $this->getSaleCategoryTotals($sale->id);
                     
                     $serviceCharge = 0;
@@ -123,135 +119,106 @@ class DailySalesSummaryController extends Controller
                     ];
                 }
             }
-        } else {
-            // No saved data, use the system sales
-            foreach ($sales as $sale) {
-                $categoryTotals = $this->getSaleCategoryTotals($sale->id);
-                
-                $serviceCharge = 0;
-                if (isset($sale->total_recieved) && $sale->total_recieved > 0) {
-                    $serviceCharge = (float)$sale->total_recieved;
-                }
-                
-                $formattedSales[] = [
-                    'id' => $sale->id,
-                    'datetime' => $sale->updated_at->format('m/d/Y H:i:s'),
-                    'rooms' => $categoryTotals['rooms'],
-                    'swimming_pool' => $categoryTotals['swimming_pool'],
-                    'arrack' => $categoryTotals['arrack'],
-                    'beer' => $categoryTotals['beer'],
-                    'other' => $categoryTotals['other'],
-                    'service_charge' => $serviceCharge,
-                    'description' => '',
-                    'total' => (float)$sale->total_price ?? (float)$sale->change ?? 0,
-                    'cash_payment' => 0,
-                    'card_payment' => 0,
-                    'bank_payment' => 0,
-                    'status' => $sale->sale_status,
-                    'verified' => false,
-                    'manual' => false
-                ];
-            }
-        }
-        
-        // Sort the sales by datetime
-        usort($formattedSales, function($a, $b) {
-            return strtotime($a['datetime']) - strtotime($b['datetime']);
-        });
-        
-        // Log the final formatted sales for debugging
-        Log::info('Returning formatted sales', [
-            'count' => count($formattedSales),
-            'verified_count' => count(array_filter($formattedSales, function($sale) {
-                return $sale['verified'] === true;
-            }))
-        ]);
-
-        return response()->json([
-            'sales' => $formattedSales,
-            'date' => $date->format('d.m.Y')
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error in getSummaryData: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString(),
-            'request' => $request->all()
-        ]);
-        
-        return response()->json([
-            'error' => true,
-            'message' => 'Error loading data: ' . $e->getMessage()
-        ], 500);
-    }
-}
-    private function getSaleCategoryTotals($saleId)
-    {
-        try {
-            // Calculate totals for each required category
-            $roomsCategoryIds = [24, 25, 222, 223]; // Added 222, 223 based on your sales data
-            $swimmingPoolCategoryId = [32, 252]; // Added 252 based on your sales data
-            $arrackCategoryId = 29;
-            $beerCategoryId = [28, 118, 120]; // Added 118, 120 based on your sales data
-
-            // Query to get sales details with category information
-            $saleDetails = DB::table('sale_details')
-                ->join('menus', 'sale_details.menu_id', '=', 'menus.id')
-                ->join('categories', 'menus.category_id', '=', 'categories.id')
-                ->where('sale_details.sale_id', $saleId)
-                ->select(
-                    'categories.id as category_id',
-                    'menus.id as menu_id',
-                    'menus.name as menu_name',
-                    DB::raw('SUM(sale_details.menu_price * sale_details.quantity) as total')
-                )
-                ->groupBy('categories.id', 'menus.id', 'menus.name')
-                ->get();
-
-            // Initialize category totals
-            $totals = [
-                'rooms' => 0,
-                'swimming_pool' => 0,
-                'arrack' => 0,
-                'beer' => 0,
-                'other' => 0,
-            ];
-
-            foreach ($saleDetails as $detail) {
-                $categoryId = $detail->category_id;
-                $menuId = $detail->menu_id;
-                $menuName = $detail->menu_name;
-                $amount = (float) $detail->total;
-
-                // Categorize based on category ID and menu information
-                if (in_array($categoryId, $roomsCategoryIds) || (stripos($menuName, 'room') !== false)) {
-                    $totals['rooms'] += $amount;
-                } elseif (in_array($categoryId, $swimmingPoolCategoryId) || (stripos($menuName, 'swimming') !== false || stripos($menuName, 'pool') !== false)) {
-                    $totals['swimming_pool'] += $amount;
-                } elseif ($categoryId == $arrackCategoryId || (stripos($menuName, 'arrack') !== false)) {
-                    $totals['arrack'] += $amount;
-                } elseif (in_array($categoryId, $beerCategoryId) || (stripos($menuName, 'beer') !== false || stripos($menuName, 'carlsberg') !== false)) {
-                    $totals['beer'] += $amount;
-                } else {
-                    $totals['other'] += $amount;
-                }
-            }
-
-            return $totals;
+            
+            // Sort the sales by datetime
+            usort($formattedSales, function($a, $b) {
+                return strtotime($a['datetime']) - strtotime($b['datetime']);
+            });
+            
+            // Log the final formatted sales for debugging
+            Log::info('Returning formatted sales', [
+                'count' => count($formattedSales),
+                'verified_count' => count(array_filter($formattedSales, function($sale) {
+                    return $sale['verified'] === true;
+                }))
+            ]);
+    
+            return response()->json([
+                'sales' => $formattedSales,
+                'date' => $date->format('d.m.Y')
+            ]);
         } catch (\Exception $e) {
-            Log::error('Error in getSaleCategoryTotals: ' . $e->getMessage(), [
+            Log::error('Error in getSummaryData: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'saleId' => $saleId
+                'request' => $request->all()
             ]);
             
-            // Return empty totals on error
-            return [
-                'rooms' => 0,
-                'swimming_pool' => 0,
-                'arrack' => 0,
-                'beer' => 0,
-                'other' => 0,
-            ];
+            return response()->json([
+                'error' => true,
+                'message' => 'Error loading data: ' . $e->getMessage()
+            ], 500);
         }
     }
+    private function getSaleCategoryTotals($saleId)
+{
+    try {
+        // Calculate totals for each required category
+        $roomsCategoryIds = [24, 25, 222, 223]; // Added 222, 223 based on your sales data
+        $swimmingPoolCategoryId = [32, 252]; // Added 252 based on your sales data
+        $arrackCategoryId = 29;
+        $beerCategoryId = [28, 118, 120]; // Added 118, 120 based on your sales data
+
+        // Query to get sales details with category information - only include items with positive quantities
+        $saleDetails = DB::table('sale_details')
+            ->join('menus', 'sale_details.menu_id', '=', 'menus.id')
+            ->join('categories', 'menus.category_id', '=', 'categories.id')
+            ->where('sale_details.sale_id', $saleId)
+            ->where('sale_details.quantity', '>', 0) // Only include positive quantities like in ReportController
+            ->select(
+                'categories.id as category_id',
+                'menus.id as menu_id',
+                'menus.name as menu_name',
+                DB::raw('SUM(sale_details.menu_price * sale_details.quantity) as total')
+            )
+            ->groupBy('categories.id', 'menus.id', 'menus.name')
+            ->get();
+
+        // Initialize category totals
+        $totals = [
+            'rooms' => 0,
+            'swimming_pool' => 0,
+            'arrack' => 0,
+            'beer' => 0,
+            'other' => 0,
+        ];
+
+        foreach ($saleDetails as $detail) {
+            $categoryId = $detail->category_id;
+            $menuId = $detail->menu_id;
+            $menuName = $detail->menu_name;
+            $amount = (float) $detail->total;
+
+            // Categorize based on category ID and menu information
+            if (in_array($categoryId, $roomsCategoryIds) || (stripos($menuName, 'room') !== false)) {
+                $totals['rooms'] += $amount;
+            } elseif (in_array($categoryId, $swimmingPoolCategoryId) || (stripos($menuName, 'swimming') !== false || stripos($menuName, 'pool') !== false)) {
+                $totals['swimming_pool'] += $amount;
+            } elseif ($categoryId == $arrackCategoryId || (stripos($menuName, 'arrack') !== false)) {
+                $totals['arrack'] += $amount;
+            } elseif (in_array($categoryId, $beerCategoryId) || (stripos($menuName, 'beer') !== false || stripos($menuName, 'carlsberg') !== false)) {
+                $totals['beer'] += $amount;
+            } else {
+                $totals['other'] += $amount;
+            }
+        }
+
+        return $totals;
+    } catch (\Exception $e) {
+        Log::error('Error in getSaleCategoryTotals: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'saleId' => $saleId
+        ]);
+        
+        // Return empty totals on error
+        return [
+            'rooms' => 0,
+            'swimming_pool' => 0,
+            'arrack' => 0,
+            'beer' => 0,
+            'other' => 0,
+        ];
+    }
+}
 
     
     // Replace your saveSummary method with this modified version that preserves verification status
@@ -397,47 +364,62 @@ class DailySalesSummaryController extends Controller
             $date = $request->date ? Carbon::createFromFormat('d.m.Y', $request->date) : Carbon::today();
             $formattedDate = $date->format('Y-m-d');
             
-            // Get system sales data for reference
+            // Get system sales data for reference - UPDATED to match ReportController behavior
             $startDate = $date->copy()->startOfDay();
             $endDate = $date->copy()->endOfDay();
-    
-            // Query to get all sales for the date range
-            $systemSales = Sale::whereBetween('updated_at', [$startDate, $endDate])->get()->keyBy('id');
+            
+            // Only get sales that were COMPLETED (paid) on this date
+            $systemSales = Sale::whereBetween('updated_at', [$startDate, $endDate])
+                             ->where('sale_status', 'paid')
+                             ->get()
+                             ->keyBy('id');
+            
+            // Debug log
+            Log::info('Print summary - system sales found', [
+                'date' => $formattedDate,
+                'count' => $systemSales->count(),
+                'ids' => $systemSales->pluck('id')->toArray()
+            ]);
             
             // Check if we have saved summaries for this date
             $savedSummaries = DailySalesSummary::where('date', $formattedDate)->get();
             
+            Log::info('Print summary - saved summaries found', [
+                'count' => $savedSummaries->count(),
+                'ids' => $savedSummaries->pluck('id')->toArray()
+            ]);
+            
             if ($savedSummaries->count() > 0) {
-                // Use saved summaries
-                $formattedSales = $savedSummaries->map(function($summary) use ($systemSales) {
+                // Only include saved summaries for sales that were COMPLETED today
+                $formattedSales = [];
+                
+                foreach ($savedSummaries as $summary) {
                     $billNumber = $summary->bill_number;
+                    $matchingSale = $systemSales->get($billNumber);
                     
-                    // Get service charge from system if available
-                    $serviceCharge = (float)$summary->service_charge;
-                    if ($serviceCharge <= 0 && isset($systemSales[$billNumber])) {
-                        $serviceCharge = (float)$systemSales[$billNumber]->total_recieved;
+                    // Only include if it's a manual entry or it has a matching system sale
+                    if ($summary->is_manual || $matchingSale) {
+                        $formattedSales[] = [
+                            'id' => $summary->bill_number,
+                            'datetime' => $summary->datetime->format('m/d/Y H:i:s'),
+                            'rooms' => (float)$summary->rooms_amount,
+                            'swimming_pool' => (float)$summary->swimming_pool_amount,
+                            'arrack' => (float)$summary->arrack_amount,
+                            'beer' => (float)$summary->beer_amount,
+                            'other' => (float)$summary->other_amount,
+                            'service_charge' => (float)$summary->service_charge,
+                            'description' => $summary->description,
+                            'total' => (float)$summary->total_amount,
+                            'cash_payment' => (float)$summary->cash_payment,
+                            'card_payment' => (float)$summary->card_payment,
+                            'bank_payment' => (float)$summary->bank_payment,
+                            'status' => $summary->status,
+                            'verified' => $summary->verified ? 1 : 0,
+                        ];
                     }
-                    
-                    return [
-                        'id' => $summary->bill_number,
-                        'datetime' => $summary->datetime->format('m/d/Y H:i:s'),
-                        'rooms' => (float)$summary->rooms_amount,
-                        'swimming_pool' => (float)$summary->swimming_pool_amount,
-                        'arrack' => (float)$summary->arrack_amount,
-                        'beer' => (float)$summary->beer_amount,
-                        'other' => (float)$summary->other_amount,
-                        'service_charge' => $serviceCharge,
-                        'description' => $summary->description,
-                        'total' => (float)$summary->total_amount,
-                        'cash_payment' => (float)$summary->cash_payment,
-                        'card_payment' => (float)$summary->card_payment,
-                        'bank_payment' => (float)$summary->bank_payment,
-                        'status' => $summary->status,
-                        'verified' => $summary->verified ? 1 : 0,
-                    ];
-                })->toArray();
+                }
             } else {
-                // Generate from sales data if no saved summaries exist
+                // Generate from today's COMPLETED sales data if no saved summaries exist
                 $formattedSales = [];
         
                 foreach ($systemSales as $sale) {
@@ -464,7 +446,11 @@ class DailySalesSummaryController extends Controller
                     $formattedSales[] = $formattedSale;
                 }
             }
-
+    
+            Log::info('Print summary - final formatted sales', [
+                'count' => count($formattedSales)
+            ]);
+    
             return view('report.daily_summary.print', [
                 'sales' => $formattedSales,
                 'date' => $date->format('d.m.Y')

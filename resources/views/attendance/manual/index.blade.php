@@ -513,6 +513,9 @@ async function addStaffMember() {
 }
 
 // Load attendance calendar for the selected month
+// Improved functions for attendance calendar
+
+// Load attendance calendar for the selected month
 async function loadAttendanceCalendar() {
     const personId = document.getElementById('modal-person-id').value;
     const month = document.getElementById('attendance-month').value;
@@ -527,13 +530,20 @@ async function loadAttendanceCalendar() {
     `;
     
     try {
-        const response = await fetch(`{{ url('manual-attendance/staff') }}/${personId}/history?month=${month}`, {
+        // Add a timestamp to prevent caching issues
+        const timestamp = new Date().getTime();
+        const response = await fetch(`{{ url('manual-attendance/staff') }}/${personId}/history?month=${month}&_=${timestamp}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
+            },
+            cache: 'no-store' // Prevent caching
         });
+        
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
         
         const data = await response.json();
         
@@ -547,6 +557,7 @@ async function loadAttendanceCalendar() {
         }
         
         if (data.success) {
+            console.log('Received attendance data:', data); // Debug log
             renderAttendanceDays(data.dates);
         } else {
             daysContainer.innerHTML = `
@@ -556,7 +567,7 @@ async function loadAttendanceCalendar() {
             `;
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error loading attendance data:', error);
         daysContainer.innerHTML = `
             <div class="alert alert-danger">
                 An error occurred while loading attendance data: ${error.message}
@@ -589,8 +600,11 @@ function renderAttendanceDays(datesData) {
     // Create a day for each date in the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
         const date = new Date(year, month, day);
-        const dateKey = date.toISOString().split('T')[0];
+        // Format date as YYYY-MM-DD consistently
+        const dateKey = formatDateYMD(date);
         const dateData = datesData[dateKey] || { status: 'not_marked', remarks: '' };
+        
+        console.log(`Day ${day} data:`, { dateKey, dateData }); // Debug log
         
         const isFuture = date > today;
         const dayName = date.toLocaleString('default', { weekday: 'short' });
@@ -632,12 +646,18 @@ function renderAttendanceDays(datesData) {
     
     html += `</div>`;
     
-    daysContainer.innerHTML = html;
+    daysContainer.innerHTML = html + `
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle"></i> Click on a date to toggle attendance status: Present → Half Day → Absent → Not Marked
+        </div>
+    `;
 }
 
 // Toggle attendance status when clicking on a calendar day
 async function toggleAttendance(date) {
     const personId = document.getElementById('modal-person-id').value;
+    
+    console.log(`Toggling attendance for person ${personId} on date ${date}`); // Debug log
     
     try {
         const response = await fetch('{{ route("attendance.manual.toggle") }}', {
@@ -652,7 +672,12 @@ async function toggleAttendance(date) {
             })
         });
         
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Toggle response:', data); // Debug log
         
         if (response.status === 403) {
             showAlert(data.message, 'danger');
@@ -661,15 +686,24 @@ async function toggleAttendance(date) {
         
         if (data.success) {
             // Reload the calendar to show the updated status
-            loadAttendanceCalendar();
+            await loadAttendanceCalendar();
             
             // Show a small notification
             showAlert(`Attendance ${data.status === 'not_marked' ? 'cleared' : 'marked as ' + data.status}`, 'success');
         }
     } catch (error) {
-        console.error('Error:', error);
-        showAlert('An error occurred while updating attendance', 'danger');
+        console.error('Error toggling attendance:', error);
+        showAlert('An error occurred while updating attendance: ' + error.message, 'danger');
     }
+}
+
+// Format date as YYYY-MM-DD
+function formatDateYMD(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
 }
 
 // Open attendance history modal

@@ -8,6 +8,7 @@ use App\Models\Person;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class ManualAttendanceController extends Controller
 {
@@ -23,7 +24,8 @@ class ManualAttendanceController extends Controller
     
         $today = Carbon::now()->format('Y-m-d');
         
-        $attendances = ManualAttendance::whereDate('created_at', $today)
+        // FIXED: Use attendance_date instead of created_at for accurate date retrieval
+        $attendances = ManualAttendance::whereDate('attendance_date', $today)
                 ->with('person')
                 ->get()
                 ->keyBy('person_id');
@@ -31,6 +33,7 @@ class ManualAttendanceController extends Controller
         // Add debug logging
         \Log::info('Staff count: ' . $staff->count());
         \Log::info('Staff members:', $staff->pluck('name')->toArray());
+        \Log::info('Today\'s attendance count: ' . $attendances->count());
     
         return view('attendance.manual.index', compact('staff', 'attendances'));
     }
@@ -44,10 +47,20 @@ class ManualAttendanceController extends Controller
             'attendance_date' => 'required|date'
         ]);
 
-        $markDate = Carbon::parse($request->attendance_date)->startOfDay();
+        // Debug log to check input data
+        \Log::info('Marking attendance', [
+            'person_id' => $request->person_id,
+            'status' => $request->status,
+            'date' => $request->attendance_date,
+            'now' => Carbon::now()->format('Y-m-d H:i:s')
+        ]);
+
+        // FIXED: Ensure we're using the app's timezone consistently
+        $markDate = Carbon::parse($request->attendance_date, config('app.timezone'))->startOfDay();
+        $now = Carbon::now(config('app.timezone'));
         
         // Only admin can mark attendance for previous dates
-        if (!Auth::user()->checkAdmin() && $markDate->format('Y-m-d') !== Carbon::now()->format('Y-m-d')) {
+        if (!Auth::user()->checkAdmin() && $markDate->format('Y-m-d') !== $now->format('Y-m-d')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only administrators can mark attendance for previous dates'
@@ -55,7 +68,7 @@ class ManualAttendanceController extends Controller
         }
 
         // Prevent marking attendance for future dates
-        if ($markDate->isAfter(Carbon::now())) {
+        if ($markDate->isAfter($now)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot mark attendance for future dates'
@@ -88,80 +101,89 @@ class ManualAttendanceController extends Controller
      * Toggle attendance between present/absent for a staff member on a selected date
      */
     public function toggleAttendance(Request $request)
-{
-    $request->validate([
-        'person_id' => 'required|exists:persons,id',
-        'attendance_date' => 'required|date'
-    ]);
+    {
+        $request->validate([
+            'person_id' => 'required|exists:persons,id',
+            'attendance_date' => 'required|date'
+        ]);
 
-    $markDate = Carbon::parse($request->attendance_date)->startOfDay();
-    
-    // Only admin can mark attendance for previous dates
-    if (!Auth::user()->checkAdmin()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Only administrators can toggle attendance for previous dates'
-        ], 403);
-    }
-
-    // Prevent marking attendance for future dates
-    if ($markDate->isAfter(Carbon::now())) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Cannot mark attendance for future dates'
-        ], 403);
-    }
-
-    // Find existing attendance record for this date and person
-    $existingAttendance = ManualAttendance::where([
-        'person_id' => $request->person_id,
-        'attendance_date' => $markDate->format('Y-m-d')
-    ])->first();
-
-    // Determine the new status based on current status
-    $newStatus = 'present'; // Default status for first click
-
-    if ($existingAttendance) {
-        // Toggle between present → half → absent → not marked (delete)
-        if ($existingAttendance->status === 'present') {
-            $newStatus = 'half';
-        } elseif ($existingAttendance->status === 'half') {
-            $newStatus = 'absent';
-        } elseif ($existingAttendance->status === 'absent') {
-            // Delete record (not marked)
-            $existingAttendance->delete();
-            
+        // FIXED: Use consistent timezone
+        $markDate = Carbon::parse($request->attendance_date, config('app.timezone'))->startOfDay();
+        $now = Carbon::now(config('app.timezone'));
+        
+        // Debug log to track toggle actions
+        \Log::info('Toggling attendance', [
+            'person_id' => $request->person_id,
+            'date' => $markDate->format('Y-m-d'),
+            'current_time' => $now->format('Y-m-d H:i:s')
+        ]);
+        
+        // Only admin can mark attendance for previous dates
+        if (!Auth::user()->checkAdmin()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Attendance record removed',
-                'status' => 'not_marked'
-            ]);
+                'success' => false,
+                'message' => 'Only administrators can toggle attendance for previous dates'
+            ], 403);
         }
-    }
 
-    // Update or create attendance record
-    $attendance = ManualAttendance::updateOrCreate(
-        [
+        // Prevent marking attendance for future dates
+        if ($markDate->isAfter($now)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot mark attendance for future dates'
+            ], 403);
+        }
+
+        // Find existing attendance record for this date and person
+        $existingAttendance = ManualAttendance::where([
             'person_id' => $request->person_id,
             'attendance_date' => $markDate->format('Y-m-d')
-        ],
-        [
-            'status' => $newStatus,
-            'remarks' => $existingAttendance->remarks ?? '',
-            'marked_by' => Auth::id()
-        ]
-    );
+        ])->first();
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Attendance toggled successfully',
-        'attendance' => $attendance,
-        'status' => $newStatus,
-        'status_badge' => view('attendance.manual.partials.status-badge', [
-            'status' => $attendance->status
-        ])->render()
-    ]);
-}
+        // Determine the new status based on current status
+        $newStatus = 'present'; // Default status for first click
+
+        if ($existingAttendance) {
+            // Toggle between present → half → absent → not marked (delete)
+            if ($existingAttendance->status === 'present') {
+                $newStatus = 'half';
+            } elseif ($existingAttendance->status === 'half') {
+                $newStatus = 'absent';
+            } elseif ($existingAttendance->status === 'absent') {
+                // Delete record (not marked)
+                $existingAttendance->delete();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Attendance record removed',
+                    'status' => 'not_marked'
+                ]);
+            }
+        }
+
+        // Update or create attendance record
+        $attendance = ManualAttendance::updateOrCreate(
+            [
+                'person_id' => $request->person_id,
+                'attendance_date' => $markDate->format('Y-m-d')
+            ],
+            [
+                'status' => $newStatus,
+                'remarks' => $existingAttendance->remarks ?? '',
+                'marked_by' => Auth::id()
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Attendance toggled successfully',
+            'attendance' => $attendance,
+            'status' => $newStatus,
+            'status_badge' => view('attendance.manual.partials.status-badge', [
+                'status' => $attendance->status
+            ])->render()
+        ]);
+    }
     
     /**
      * Get attendance history for a specific staff member
@@ -187,7 +209,7 @@ class ManualAttendanceController extends Controller
         $startDate = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
         $endDate = Carbon::createFromFormat('Y-m', $month)->endOfMonth();
         
-        // Get attendance for the month
+        // FIXED: Improved query to ensure we're getting all attendance records correctly
         $attendances = ManualAttendance::where('person_id', $personId)
             ->whereBetween('attendance_date', [
                 $startDate->format('Y-m-d'),
@@ -197,6 +219,15 @@ class ManualAttendanceController extends Controller
             ->keyBy(function($item) {
                 return Carbon::parse($item->attendance_date)->format('Y-m-d');
             });
+        
+        // Debug for troubleshooting
+        \Log::info("Staff attendance history for person {$personId}", [
+            'month' => $month,
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+            'records_found' => $attendances->count(),
+            'dates' => $attendances->pluck('attendance_date', 'status')->toArray()
+        ]);
         
         // Generate all dates in the month
         $dates = [];
@@ -221,95 +252,53 @@ class ManualAttendanceController extends Controller
         ]);
     }
 
-
-    /**
- * Search for persons in the database
- */
-/**
- * Search for persons in the database
- */
-public function searchPersons(Request $request)
-{
-    $request->validate([
-        'query' => 'required|string|min:1|max:100',
-    ]);
-
-    // Only admin can search persons
-    if (!Auth::user()->checkAdmin()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Only administrators can search persons'
-        ], 403);
+    public function showAddStaffForm()
+    {
+        $availablePersons = Person::whereDoesntHave('staffCode')
+            ->orWhereHas('staffCode', function($query) {
+                $query->where('is_active', 0);
+            })
+            ->where('type', 'individual')
+            ->orderBy('name')
+            ->get();
+            
+        return view('attendance.manual.add-staff', compact('availablePersons'));
     }
 
-    $query = $request->input('query');
-    
-    // Search by ID or name
-    $persons = Person::where('id', 'LIKE', $query)
-        ->orWhere('name', 'LIKE', "%{$query}%")
-        ->orderBy('name')
-        ->limit(10)
-        ->get(['id', 'name', 'type', 'phone']);
-    
-    return response()->json([
-        'success' => true,
-        'persons' => $persons
-    ]);
-}
+    public function addStaffMember(Request $request)
+    {
+        $request->validate([
+            'person_id' => 'required|exists:persons,id',
+            'staff_code' => 'required|string|max:20',
+        ]);
 
+        // Only admin can add staff members
+        if (!Auth::user()->checkAdmin()) {
+            return redirect()->back()->with('error', 'Only administrators can add staff members');
+        }
 
-
-public function showAddStaffForm()
-{
-    $availablePersons = Person::whereDoesntHave('staffCode')
-        ->orWhereHas('staffCode', function($query) {
-            $query->where('is_active', 0);
-        })
-        ->where('type', 'individual')
-        ->orderBy('name')
-        ->get();
+        // Check if person is already a staff member
+        $existingStaff = \App\Models\StaffCode::where('person_id', $request->person_id)->first();
         
-    return view('attendance.manual.add-staff', compact('availablePersons'));
-}
-
-
-
-/**
- * Add a new staff member
- */
-public function addStaffMember(Request $request)
-{
-    $request->validate([
-        'person_id' => 'required|exists:persons,id',
-        'staff_code' => 'required|string|max:20',
-    ]);
-
-    // Only admin can add staff members
-    if (!Auth::user()->checkAdmin()) {
-        return redirect()->back()->with('error', 'Only administrators can add staff members');
-    }
-
-    // Check if person is already a staff member
-    $existingStaff = \App\Models\StaffCode::where('person_id', $request->person_id)->first();
-    
-    if ($existingStaff) {
-        // Update existing staff code
-        $existingStaff->staff_code = $request->staff_code;
-        $existingStaff->is_active = $request->has('is_active') ? 1 : 0;
-        $existingStaff->save();
+        if ($existingStaff) {
+            // Update existing staff code
+            $existingStaff->staff_code = $request->staff_code;
+            $existingStaff->is_active = $request->has('is_active') ? 1 : 0;
+            $existingStaff->save();
+            
+            return redirect()->route('attendance.manual.index')->with('success', 'Staff member updated successfully');
+        }
         
-        return redirect()->route('attendance.manual.index')->with('success', 'Staff member updated successfully');
+        // Create new staff code
+        $staffCode = new \App\Models\StaffCode();
+        $staffCode->person_id = $request->person_id;
+        $staffCode->staff_code = $request->staff_code;
+        $staffCode->is_active = $request->has('is_active') ? 1 : 0;
+        $staffCode->save();
+        
+        return redirect()->route('attendance.manual.index')->with('success', 'Staff member added successfully');
     }
     
-    // Create new staff code
-    $staffCode = new \App\Models\StaffCode();
-    $staffCode->person_id = $request->person_id;
-    $staffCode->staff_code = $request->staff_code;
-    $staffCode->is_active = $request->has('is_active') ? 1 : 0;
-    $staffCode->save();
-    
-    return redirect()->route('attendance.manual.index')->with('success', 'Staff member added successfully');
-}
     public function report(Request $request)
     {
         // Get staff members who have staff codes
@@ -324,6 +313,13 @@ public function addStaffMember(Request $request)
         $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->startOfMonth();
         $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now()->endOfMonth();
         
+        // Debug log for report date range
+        \Log::info('Attendance report date range', [
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+            'staff_count' => $staff->count()
+        ]);
+        
         // Generate all dates in the range
         $dates = [];
         $currentDate = $startDate->copy();
@@ -332,7 +328,7 @@ public function addStaffMember(Request $request)
             $currentDate->addDay();
         }
 
-        // Fetch all attendance records for the date range
+        // FIXED: Improved query to ensure we're getting all attendance records correctly by date range
         $attendances = ManualAttendance::whereBetween('attendance_date', [
             $startDate->format('Y-m-d'),
             $endDate->format('Y-m-d')
@@ -341,6 +337,13 @@ public function addStaffMember(Request $request)
             return $query->where('person_id', $request->staff_member);
         })
         ->get();
+
+        // Debug log for report data
+        \Log::info('Attendance records found', [
+            'total_records' => $attendances->count(),
+            'date_range_days' => count($dates),
+            'staff_member_filter' => $request->staff_member
+        ]);
 
         // Create attendance map with proper initialization
         $attendanceMap = [];

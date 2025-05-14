@@ -75,11 +75,30 @@ class FoodMenuController extends Controller
             $validated = $request->validate([
                 'booking_id' => 'required|integer',
                 'date' => 'required|date',
+                'bed_tea' => 'nullable|string',
+                'bed_tea_time' => 'nullable|string',
                 'breakfast' => 'nullable|string',
+                'breakfast_time' => 'nullable|string',
+                'morning_snack' => 'nullable|string',
+                'morning_snack_time' => 'nullable|string',
                 'lunch' => 'nullable|string',
+                'lunch_time' => 'nullable|string',
                 'evening_snack' => 'nullable|string',
-                'dinner' => 'nullable|string'
+                'evening_snack_time' => 'nullable|string',
+                'dinner' => 'nullable|string',
+                'dinner_time' => 'nullable|string'
             ]);
+            
+            // Format times if provided
+            $times = ['bed_tea_time', 'breakfast_time', 'morning_snack_time', 'lunch_time', 'evening_snack_time', 'dinner_time'];
+            foreach ($times as $timeField) {
+                if (!empty($validated[$timeField])) {
+                    // Combine the date with the time
+                    $validated[$timeField] = Carbon::parse($validated['date'] . ' ' . $validated[$timeField]);
+                } else {
+                    $validated[$timeField] = null;
+                }
+            }
             
             // Find existing menu or create new one
             $menu = FoodMenu::updateOrCreate(
@@ -88,10 +107,18 @@ class FoodMenuController extends Controller
                     'date' => $validated['date']
                 ],
                 [
+                    'bed_tea' => $validated['bed_tea'] ?? null,
+                    'bed_tea_time' => $validated['bed_tea_time'],
                     'breakfast' => $validated['breakfast'] ?? null,
+                    'breakfast_time' => $validated['breakfast_time'],
+                    'morning_snack' => $validated['morning_snack'] ?? null,
+                    'morning_snack_time' => $validated['morning_snack_time'],
                     'lunch' => $validated['lunch'] ?? null,
+                    'lunch_time' => $validated['lunch_time'],
                     'evening_snack' => $validated['evening_snack'] ?? null,
+                    'evening_snack_time' => $validated['evening_snack_time'],
                     'dinner' => $validated['dinner'] ?? null,
+                    'dinner_time' => $validated['dinner_time'],
                     'created_by' => auth()->id()
                 ]
             );

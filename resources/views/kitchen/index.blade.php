@@ -163,27 +163,49 @@
             </div>
         </header>
         
-        <!-- Navigation Tabs -->
-        <div class="bg-blue-800 text-white">
-            <div class="flex">
-                <button class="tab-button active-tab flex items-center px-6 py-3" data-tab="orders">
-                    <i class="fas fa-clipboard-list mr-2"></i>
-                    Active Orders
-                </button>
-                <button class="tab-button flex items-center px-6 py-3" data-tab="today">
-                    <i class="fas fa-calendar-day mr-2"></i>
-                    Today's Events
-                </button>
-                <button class="tab-button flex items-center px-6 py-3" data-tab="tomorrow">
-                    <i class="fas fa-calendar-week mr-2"></i>
-                    Tomorrow's Events
-                </button>
-                <button class="tab-button flex items-center px-6 py-3" data-tab="analytics">
-                    <i class="fas fa-chart-bar mr-2"></i>
-                    Analytics
-                </button>
-            </div>
-        </div>
+       <!-- Navigation Tabs -->
+<div class="bg-blue-800 text-white">
+    <div class="flex flex-wrap">
+        <button class="tab-button active-tab flex items-center px-4 py-3" data-tab="orders">
+            <i class="fas fa-clipboard-list mr-2"></i>
+            Active Orders
+        </button>
+        
+        <button class="tab-button flex items-center px-4 py-3" data-tab="today">
+            <i class="fas fa-calendar-day mr-2"></i>
+            Today
+        </button>
+        <button class="tab-button flex items-center px-4 py-3" data-tab="tomorrow">
+            <i class="fas fa-calendar-plus mr-2"></i>
+            Tomorrow
+        </button>
+        <button class="tab-button flex items-center px-4 py-3" data-tab="day3">
+            <i class="fas fa-calendar-week mr-2"></i>
+            {{ now()->addDays(2)->format('D, M j') }}
+        </button>
+        <button class="tab-button flex items-center px-4 py-3" data-tab="day4">
+            <i class="fas fa-calendar-week mr-2"></i>
+            {{ now()->addDays(3)->format('D, M j') }}
+        </button>
+        <button class="tab-button flex items-center px-4 py-3" data-tab="day5">
+            <i class="fas fa-calendar-week mr-2"></i>
+            {{ now()->addDays(4)->format('D, M j') }}
+        </button>
+        <button class="tab-button flex items-center px-4 py-3" data-tab="day6">
+            <i class="fas fa-calendar-week mr-2"></i>
+            {{ now()->addDays(5)->format('D, M j') }}
+        </button>
+
+        <button class="tab-button flex items-center px-4 py-3" data-tab="yesterday">
+            <i class="fas fa-calendar-minus mr-2"></i>
+            Yesterday
+        </button>
+        <button class="tab-button flex items-center px-4 py-3" data-tab="analytics">
+            <i class="fas fa-chart-bar mr-2"></i>
+            Analytics
+        </button>
+    </div>
+</div>
         
         <!-- Filter Bar - Only show for orders tab -->
         <div id="orders-filter" class="bg-white border-b border-gray-200 p-2">
@@ -336,6 +358,29 @@
             <div id="tomorrow-tab" class="tab-content hidden">
                 @include('kitchen.tomorrow-events', ['tomorrowBookings' => $tomorrowBookings])
             </div>
+             <!-- Yesterday's Events Tab -->
+    <div id="yesterday-tab" class="tab-content hidden">
+        @include('kitchen.yesterday-events', ['yesterdayBookings' => $yesterdayBookings])
+    </div>
+    <!-- Day 3 Tab -->
+    <div id="day3-tab" class="tab-content hidden">
+        @include('kitchen.day3-events', ['day3Bookings' => $day3Bookings])
+    </div>
+    
+    <!-- Day 4 Tab -->
+    <div id="day4-tab" class="tab-content hidden">
+        @include('kitchen.day4-events', ['day4Bookings' => $day4Bookings])
+    </div>
+    
+    <!-- Day 5 Tab -->
+    <div id="day5-tab" class="tab-content hidden">
+        @include('kitchen.day5-events', ['day5Bookings' => $day5Bookings])
+    </div>
+    
+    <!-- Day 6 Tab -->
+    <div id="day6-tab" class="tab-content hidden">
+        @include('kitchen.day6-events', ['day6Bookings' => $day6Bookings])
+    </div>
             
             <!-- Analytics Tab - Simplified -->
             <div id="analytics-tab" class="tab-content hidden">

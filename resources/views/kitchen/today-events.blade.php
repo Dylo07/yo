@@ -8,7 +8,7 @@
         <div class="flex justify-between items-center mb-2">
             <div class="text-xl font-bold">{{ $booking->function_type }}</div>
             <div class="text-lg">
-                {{ \Carbon\Carbon::parse($booking->start)->format('d M, H:i') }} - 
+                Check In - {{ \Carbon\Carbon::parse($booking->start)->format('d M, H:i') }} | Check Out - 
                 {{ $booking->end ? \Carbon\Carbon::parse($booking->end)->format('d M, H:i') : 'N/A' }}
             </div>
         </div>
@@ -44,13 +44,50 @@
         @if($booking->menu)
         <div class="mt-3 pt-3 border-t">
             <div class="food-menu-summary">
+                @if($booking->menu->bed_tea)
+                <div class="mb-3">
+                    <div class="font-semibold text-emerald-700 text-base mb-1">
+                        <i class="fas fa-mug-hot mr-1"></i> Bed Tea
+                        @if($booking->menu->bed_tea_time)
+                            <span class="text-sm text-gray-600 ml-2">
+                                {{ \Carbon\Carbon::parse($booking->menu->bed_tea_time)->format('g:i A') }}
+                            </span>
+                        @endif
+                    </div>
+                    <div class="text-sm text-gray-800 ml-6 whitespace-normal">
+                        {{ $booking->menu->bed_tea }}
+                    </div>
+                </div>
+                @endif
+                
                 @if($booking->menu->breakfast)
                 <div class="mb-3">
                     <div class="font-semibold text-blue-700 text-base mb-1">
                         <i class="fas fa-coffee mr-1"></i> Breakfast
+                        @if($booking->menu->breakfast_time)
+                            <span class="text-sm text-gray-600 ml-2">
+                                {{ \Carbon\Carbon::parse($booking->menu->breakfast_time)->format('g:i A') }}
+                            </span>
+                        @endif
                     </div>
                     <div class="text-sm text-gray-800 ml-6 whitespace-normal">
                         {{ $booking->menu->breakfast }}
+                    </div>
+                </div>
+                @endif
+                
+                @if($booking->menu->morning_snack)
+                <div class="mb-3">
+                    <div class="font-semibold text-amber-700 text-base mb-1">
+                        <i class="fas fa-bread-slice mr-1"></i> Morning Snack
+                        @if($booking->menu->morning_snack_time)
+                            <span class="text-sm text-gray-600 ml-2">
+                                {{ \Carbon\Carbon::parse($booking->menu->morning_snack_time)->format('g:i A') }}
+                            </span>
+                        @endif
+                    </div>
+                    <div class="text-sm text-gray-800 ml-6 whitespace-normal">
+                        {{ $booking->menu->morning_snack }}
                     </div>
                 </div>
                 @endif
@@ -59,6 +96,11 @@
                 <div class="mb-3">
                     <div class="font-semibold text-green-700 text-base mb-1">
                         <i class="fas fa-hamburger mr-1"></i> Lunch
+                        @if($booking->menu->lunch_time)
+                            <span class="text-sm text-gray-600 ml-2">
+                                {{ \Carbon\Carbon::parse($booking->menu->lunch_time)->format('g:i A') }}
+                            </span>
+                        @endif
                     </div>
                     <div class="text-sm text-gray-800 ml-6 whitespace-normal">
                         {{ $booking->menu->lunch }}
@@ -70,6 +112,11 @@
                 <div class="mb-3">
                     <div class="font-semibold text-orange-700 text-base mb-1">
                         <i class="fas fa-cookie mr-1"></i> Evening Snack
+                        @if($booking->menu->evening_snack_time)
+                            <span class="text-sm text-gray-600 ml-2">
+                                {{ \Carbon\Carbon::parse($booking->menu->evening_snack_time)->format('g:i A') }}
+                            </span>
+                        @endif
                     </div>
                     <div class="text-sm text-gray-800 ml-6 whitespace-normal">
                         {{ $booking->menu->evening_snack }}
@@ -81,6 +128,11 @@
                 <div class="mb-2">
                     <div class="font-semibold text-purple-700 text-base mb-1">
                         <i class="fas fa-utensils mr-1"></i> Dinner
+                        @if($booking->menu->dinner_time)
+                            <span class="text-sm text-gray-600 ml-2">
+                                {{ \Carbon\Carbon::parse($booking->menu->dinner_time)->format('g:i A') }}
+                            </span>
+                        @endif
                     </div>
                     <div class="text-sm text-gray-800 ml-6 whitespace-normal">
                         {{ $booking->menu->dinner }}

@@ -51,6 +51,7 @@
         .menu-grid td, .menu-grid th {
             border: 2px solid #000;
             padding: 8px;
+            font-size: 10pt;
         }
         
         .menu-header {
@@ -82,6 +83,13 @@
             font-size: 8pt;
             vertical-align: super;
         }
+        
+        .meal-time {
+            display: block;
+            font-size: 8pt;
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -95,9 +103,11 @@
         <thead>
             <tr>
                 <th class="function-info"></th>
+                <th class="menu-header">Bed Tea</th>
                 <th class="menu-header">Breakfast</th>
+                <th class="menu-header">Morning Snack</th>
                 <th class="menu-header">Lunch</th>
-                <th class="menu-header">Snack</th>
+                <th class="menu-header">Evening Snack</th>
                 <th class="menu-header">Dinner</th>
             </tr>
         </thead>
@@ -125,23 +135,61 @@
                         </div>
                     </td>
                     
+                    <!-- Bed Tea -->
+                    <td>
+                        {{ $item['menu']->bed_tea ?: '-' }}
+                        @if($item['menu']->bed_tea_time)
+                            <span class="meal-time">{{ $item['menu']->getFormattedTime('bed_tea_time') }}</span>
+                        @endif
+                    </td>
+                    
                     <!-- Breakfast -->
-                    <td>{{ $item['menu']->breakfast ?: '-' }}</td>
+                    <td>
+                        {{ $item['menu']->breakfast ?: '-' }}
+                        @if($item['menu']->breakfast_time)
+                            <span class="meal-time">{{ $item['menu']->getFormattedTime('breakfast_time') }}</span>
+                        @endif
+                    </td>
+                    
+                    <!-- Morning Snack -->
+                    <td>
+                        {{ $item['menu']->morning_snack ?: '-' }}
+                        @if($item['menu']->morning_snack_time)
+                            <span class="meal-time">{{ $item['menu']->getFormattedTime('morning_snack_time') }}</span>
+                        @endif
+                    </td>
                     
                     <!-- Lunch -->
-                    <td>{{ $item['menu']->lunch ?: '-' }}</td>
+                    <td>
+                        {{ $item['menu']->lunch ?: '-' }}
+                        @if($item['menu']->lunch_time)
+                            <span class="meal-time">{{ $item['menu']->getFormattedTime('lunch_time') }}</span>
+                        @endif
+                    </td>
                     
-                    <!-- Evening Snack (renamed to Snack) -->
-                    <td>{{ $item['menu']->evening_snack ?: '-' }}</td>
+                    <!-- Evening Snack -->
+                    <td>
+                        {{ $item['menu']->evening_snack ?: '-' }}
+                        @if($item['menu']->evening_snack_time)
+                            <span class="meal-time">{{ $item['menu']->getFormattedTime('evening_snack_time') }}</span>
+                        @endif
+                    </td>
                     
                     <!-- Dinner -->
-                    <td>{{ $item['menu']->dinner ?: '-' }}</td>
+                    <td>
+                        {{ $item['menu']->dinner ?: '-' }}
+                        @if($item['menu']->dinner_time)
+                            <span class="meal-time">{{ $item['menu']->getFormattedTime('dinner_time') }}</span>
+                        @endif
+                    </td>
                 </tr>
             @endforeach
             
             <!-- Empty row at the bottom -->
             <tr>
                 <td class="function-info"></td>
+                <td></td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>

@@ -26,6 +26,7 @@ use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\ServiceChargeController;
 use App\Http\Controllers\CashierBalanceController;
 use App\Http\Controllers\SalesSummaryController;
+use App\Http\Controllers\KitchenOrderController;
 use App\Http\Controllers\LenderController;
 use App\Http\Controllers\RoomAvailabilityVisualizerController;
 
@@ -297,18 +298,30 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
-// In routes/web.php
-Route::put('/kitchen/items/{id}/status', [App\Http\Controllers\KitchenItemController::class, 'updateStatus']);
-// Add these routes to your web.php file
 
+
+// Kitchen Display System Routes
 Route::middleware(['auth'])->prefix('kitchen')->group(function () {
-    Route::get('/', [App\Http\Controllers\KitchenOrderController::class, 'index'])->name('kitchen.index');
-    Route::get('/orders/filter', [App\Http\Controllers\KitchenOrderController::class, 'getOrdersBySource'])->name('kitchen.filter');
-    Route::put('/orders/{id}/status', [App\Http\Controllers\KitchenOrderController::class, 'updateOrderStatus'])->name('kitchen.update-order-status');
-    Route::put('/items/{id}/status', [App\Http\Controllers\KitchenOrderController::class, 'updateItemStatus'])->name('kitchen.update-item-status');
-    Route::get('/events/today', [App\Http\Controllers\KitchenOrderController::class, 'getTodayEvents'])->name('kitchen.today-events');
-    Route::get('/events/tomorrow', [App\Http\Controllers\KitchenOrderController::class, 'getTomorrowEvents'])->name('kitchen.tomorrow-events');
-    Route::get('/analytics', [App\Http\Controllers\KitchenOrderController::class, 'getAnalyticsData'])->name('kitchen.analytics');
+    // Main kitchen display
+    Route::get('/', [KitchenOrderController::class, 'index'])->name('kitchen.index');
+    
+    // Order management routes
+    Route::put('/orders/{id}/status', [KitchenOrderController::class, 'updateOrderStatus']);
+    Route::put('/items/{id}/status', [KitchenOrderController::class, 'updateItemStatus']);
+    Route::get('/orders/filter', [KitchenOrderController::class, 'getOrdersBySource']);
+    
+    // Event routes
+    Route::get('/yesterday-events', [KitchenOrderController::class, 'getYesterdayEvents']);
+    Route::get('/today-events', [KitchenOrderController::class, 'getTodayEvents']);
+    Route::get('/tomorrow-events', [KitchenOrderController::class, 'getTomorrowEvents']);
+    Route::get('/day3-events', [KitchenOrderController::class, 'getDay3Events']);
+    Route::get('/day4-events', [KitchenOrderController::class, 'getDay4Events']);
+    Route::get('/day5-events', [KitchenOrderController::class, 'getDay5Events']);
+    Route::get('/day6-events', [KitchenOrderController::class, 'getDay6Events']);
+    
+    // Other routes
+    Route::get('/menus', [KitchenOrderController::class, 'getMenus']);
+    Route::get('/analytics', [KitchenOrderController::class, 'getAnalyticsData']);
 });
 
 // Package Management Routes

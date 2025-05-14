@@ -18,10 +18,18 @@ class FoodMenu extends Model
     protected $fillable = [
         'booking_id',
         'date',
+        'bed_tea',
+        'bed_tea_time',
         'breakfast',
+        'breakfast_time',
+        'morning_snack',
+        'morning_snack_time',
         'lunch',
+        'lunch_time',
         'evening_snack',
+        'evening_snack_time',
         'dinner',
+        'dinner_time',
         'created_by'
     ];
 
@@ -32,6 +40,12 @@ class FoodMenu extends Model
      */
     protected $casts = [
         'date' => 'date',
+        'bed_tea_time' => 'datetime',
+        'breakfast_time' => 'datetime',
+        'morning_snack_time' => 'datetime',
+        'lunch_time' => 'datetime',
+        'evening_snack_time' => 'datetime',
+        'dinner_time' => 'datetime',
     ];
 
     /**
@@ -54,7 +68,7 @@ class FoodMenu extends Model
      * Always show all meals regardless of booking times
      * This overrides the previous conditional logic
      * 
-     * @param string $mealType breakfast|lunch|evening_snack|dinner
+     * @param string $mealType bed_tea|breakfast|morning_snack|lunch|evening_snack|dinner
      * @return bool
      */
     public function shouldShowMeal($mealType)
@@ -112,6 +126,21 @@ class FoodMenu extends Model
         return array_map(function($room) {
             return trim($room, '"\'[] ');
         }, $rooms);
+    }
+    
+    /**
+     * Format time for display
+     * 
+     * @param string $timeField 
+     * @return string|null
+     */
+    public function getFormattedTime($timeField)
+    {
+        if (!$this->$timeField) {
+            return null;
+        }
+        
+        return Carbon::parse($this->$timeField)->format('g:i A');
     }
     
     /**

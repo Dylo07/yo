@@ -21,7 +21,7 @@ class KitchenOrderController extends Controller
     /**
      * Display the kitchen order dashboard
      */
-    public function index()
+  public function index()
     {
         // Manually sync active tables from cashier system to kitchen
         $this->syncCashierToKitchen();
@@ -33,82 +33,106 @@ class KitchenOrderController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
             
+        // Get yesterday's events
+        $yesterdayBookings = $this->getBookingsByDate(Carbon::yesterday());
+            
         // Get today's events
-        $todayBookings = $this->getTodayBookings();
+        $todayBookings = $this->getBookingsByDate(Carbon::today());
             
         // Get tomorrow's events
-        $tomorrowBookings = $this->getTomorrowBookings();
+        $tomorrowBookings = $this->getBookingsByDate(Carbon::tomorrow());
+        
+        // Get bookings for the next 4 days
+        $day3Bookings = $this->getBookingsByDate(Carbon::today()->addDays(2));
+        $day4Bookings = $this->getBookingsByDate(Carbon::today()->addDays(3));
+        $day5Bookings = $this->getBookingsByDate(Carbon::today()->addDays(4));
+        $day6Bookings = $this->getBookingsByDate(Carbon::today()->addDays(5));
             
-        return view('kitchen.index', compact('activeOrders', 'todayBookings', 'tomorrowBookings'));
+        return view('kitchen.index', compact(
+            'activeOrders', 
+            'yesterdayBookings',
+            'todayBookings', 
+            'tomorrowBookings',
+            'day3Bookings',
+            'day4Bookings',
+            'day5Bookings',
+            'day6Bookings'
+        ));
     }
+    
     
     /**
      * Get today's bookings with food menus
      */
-    private function getTodayBookings()
-    {
-        $today = Carbon::today();
-        
-        // Find all bookings for today
-        $bookings = Booking::where(function($query) use ($today) {
-            $query->whereDate('start', '<=', $today)
-                  ->whereDate('end', '>=', $today)
-                  ->whereNotNull('end');
-                  
-            $query->orWhere(function($q) use ($today) {
-                $q->whereDate('start', $today)
-                  ->where(function($sq) {
-                      $sq->whereNull('end')
-                         ->orWhere('end', 'N/A')
-                         ->orWhere('end', '');
-                  });
-            });
-        })->get();
-        
-        // Load food menus for each booking
-        $bookings->each(function($booking) use ($today) {
-            $booking->menu = FoodMenu::where('booking_id', $booking->id)
-                                    ->where('date', $today->format('Y-m-d'))
-                                    ->first();
-            return $booking;
-        });
-        
-        return $bookings;
-    }
-    
     /**
-     * Get tomorrow's bookings with food menus
-     */
-    private function getTomorrowBookings()
-    {
-        $tomorrow = Carbon::tomorrow();
-        
-        // Find all bookings for tomorrow
-        $bookings = Booking::where(function($query) use ($tomorrow) {
-            $query->whereDate('start', '<=', $tomorrow)
-                  ->whereDate('end', '>=', $tomorrow)
-                  ->whereNotNull('end');
-                  
-            $query->orWhere(function($q) use ($tomorrow) {
-                $q->whereDate('start', $tomorrow)
-                  ->where(function($sq) {
-                      $sq->whereNull('end')
-                         ->orWhere('end', 'N/A')
-                         ->orWhere('end', '');
-                  });
-            });
-        })->get();
-        
-        // Load food menus for each booking
-        $bookings->each(function($booking) use ($tomorrow) {
-            $booking->menu = FoodMenu::where('booking_id', $booking->id)
-                                    ->where('date', $tomorrow->format('Y-m-d'))
-                                    ->first();
-            return $booking;
+ * Get today's bookings with food menus
+ */
+private function getTodayBookings()
+{
+    $today = Carbon::today();
+    
+    // Find all bookings for today
+    $bookings = Booking::where(function($query) use ($today) {
+        $query->whereDate('start', '<=', $today)
+              ->whereDate('end', '>=', $today)
+              ->whereNotNull('end');
+              
+        $query->orWhere(function($q) use ($today) {
+            $q->whereDate('start', $today)
+              ->where(function($sq) {
+                  $sq->whereNull('end')
+                     ->orWhere('end', 'N/A')
+                     ->orWhere('end', '');
+              });
         });
-        
-        return $bookings;
-    }
+    })->get();
+    
+    // Load food menus for each booking
+    $bookings->each(function($booking) use ($today) {
+        $booking->menu = FoodMenu::where('booking_id', $booking->id)
+                                ->where('date', $today->format('Y-m-d'))
+                                ->first();
+        return $booking;
+    });
+    
+    return $bookings;
+}
+
+/**
+ * Get tomorrow's bookings with food menus
+ */
+private function getTomorrowBookings()
+{
+    $tomorrow = Carbon::tomorrow();
+    
+    // Find all bookings for tomorrow
+    $bookings = Booking::where(function($query) use ($tomorrow) {
+        $query->whereDate('start', '<=', $tomorrow)
+              ->whereDate('end', '>=', $tomorrow)
+              ->whereNotNull('end');
+              
+        $query->orWhere(function($q) use ($tomorrow) {
+            $q->whereDate('start', $tomorrow)
+              ->where(function($sq) {
+                  $sq->whereNull('end')
+                     ->orWhere('end', 'N/A')
+                     ->orWhere('end', '');
+              });
+        });
+    })->get();
+    
+    // Load food menus for each booking
+    $bookings->each(function($booking) use ($tomorrow) {
+        $booking->menu = FoodMenu::where('booking_id', $booking->id)
+                                ->where('date', $tomorrow->format('Y-m-d'))
+                                ->first();
+        return $booking;
+    });
+    
+    return $bookings;
+}
+
+
     
     private function syncCashierToKitchen()
     {
@@ -401,7 +425,56 @@ class KitchenOrderController extends Controller
             
         return response()->json($bookings);
     }
+
     
+    /**
+     * Get yesterday's events - Using updated method
+     */
+    public function getYesterdayEvents()
+    {
+        $bookings = $this->getBookingsByDate(Carbon::yesterday());
+        return response()->json($bookings);
+    }
+
+    /**
+     * Get events for day 3 - New method
+     */
+    public function getDay3Events()
+    {
+        $bookings = $this->getBookingsByDate(Carbon::today()->addDays(2));
+        return response()->json($bookings);
+    }
+    
+    /**
+     * Get events for day 4 - New method
+     */
+    public function getDay4Events()
+    {
+        $bookings = $this->getBookingsByDate(Carbon::today()->addDays(3));
+        return response()->json($bookings);
+    }
+    
+    /**
+     * Get events for day 5 - New method
+     */
+    public function getDay5Events()
+    {
+        $bookings = $this->getBookingsByDate(Carbon::today()->addDays(4));
+        return response()->json($bookings);
+    }
+    
+    /**
+     * Get events for day 6 - New method
+     */
+    public function getDay6Events()
+    {
+        $bookings = $this->getBookingsByDate(Carbon::today()->addDays(5));
+        return response()->json($bookings);
+    }
+    
+    
+
+
     /**
      * Get menus
      */
@@ -488,6 +561,43 @@ class KitchenOrderController extends Controller
             return $order;
         });
     }
+
+
+
+    /**
+ * Get bookings with food menus for a specific date
+ * 
+ * @param \Carbon\Carbon $date
+ * @return \Illuminate\Database\Eloquent\Collection
+ */
+private function getBookingsByDate(Carbon $date)
+{
+    // Find all bookings for the given date
+    $bookings = Booking::where(function($query) use ($date) {
+        $query->whereDate('start', '<=', $date)
+              ->whereDate('end', '>=', $date)
+              ->whereNotNull('end');
+              
+        $query->orWhere(function($q) use ($date) {
+            $q->whereDate('start', $date)
+              ->where(function($sq) {
+                  $sq->whereNull('end')
+                     ->orWhere('end', 'N/A')
+                     ->orWhere('end', '');
+              });
+        });
+    })->get();
+    
+    // Load food menus for each booking
+    $bookings->each(function($booking) use ($date) {
+        $booking->menu = FoodMenu::where('booking_id', $booking->id)
+                                ->where('date', $date->format('Y-m-d'))
+                                ->first();
+        return $booking;
+    });
+    
+    return $bookings;
+}
 
     /**
      * Update an item's status directly

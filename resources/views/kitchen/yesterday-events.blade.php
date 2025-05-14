@@ -1,9 +1,9 @@
-<!-- Tomorrow's Events Tab Content with Date and Time -->
-<h2 class="text-2xl font-bold mb-4">Tomorrow's Functions & Menus</h2>
+<!-- Yesterday's Events Tab Content with Date and Time -->
+<h2 class="text-2xl font-bold mb-4">Yesterday's Functions & Menus ({{ now()->subDay()->format('F j, Y') }})</h2>
 
-@if(count($tomorrowBookings) > 0)
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="tomorrow-events-container">
-    @foreach($tomorrowBookings as $booking)
+@if(count($yesterdayBookings) > 0)
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="yesterday-events-container">
+    @foreach($yesterdayBookings as $booking)
     <div class="border rounded-lg shadow-md p-4 bg-white">
         <div class="flex justify-between items-center mb-2">
             <div class="text-xl font-bold">{{ $booking->function_type }}</div>
@@ -139,12 +139,12 @@
         @endif
         
         <div class="flex justify-end gap-2 mt-3">
-            <a href="{{ route('food-menu.index', ['date' => now()->addDay()->format('Y-m-d'), 'booking_id' => $booking->id]) }}" 
+            <a href="{{ route('food-menu.index', ['date' => now()->subDay()->format('Y-m-d'), 'booking_id' => $booking->id]) }}" 
                class="bg-blue-600 text-white px-3 py-1 rounded text-sm action-button">
                 <i class="fas fa-edit mr-1"></i> Manage Menu
             </a>
             @if($booking->menu)
-            <a href="{{ route('food-menu.print', ['booking' => $booking->id, 'date' => now()->addDay()->format('Y-m-d')]) }}" 
+            <a href="{{ route('food-menu.print', ['booking' => $booking->id, 'date' => now()->subDay()->format('Y-m-d')]) }}" 
                target="_blank" class="bg-green-500 text-white px-3 py-1 rounded text-sm action-button">
                 <i class="fas fa-print mr-1"></i> Print Menu
             </a>
@@ -155,15 +155,15 @@
 </div>
 @else
 <div class="bg-white rounded-lg shadow-md p-8 text-center">
-    <i class="fas fa-calendar-week text-gray-400 text-5xl mb-4"></i>
-    <h3 class="text-xl font-semibold text-gray-700 mb-2">No Events Tomorrow</h3>
-    <p class="text-gray-500">There are no scheduled events or functions for tomorrow.</p>
+    <i class="fas fa-calendar-minus text-gray-400 text-5xl mb-4"></i>
+    <h3 class="text-xl font-semibold text-gray-700 mb-2">No Events Yesterday</h3>
+    <p class="text-gray-500">There were no scheduled events or functions for yesterday.</p>
 </div>
 @endif
 
 <!-- Link to food menu generator -->
 <div class="mt-6 text-center">
-    <a href="{{ route('food-menu.index', ['date' => now()->addDay()->format('Y-m-d')]) }}" class="bg-blue-600 text-white px-4 py-2 rounded shadow-md hover:bg-blue-700 transition">
+    <a href="{{ route('food-menu.index', ['date' => now()->subDay()->format('Y-m-d')]) }}" class="bg-blue-600 text-white px-4 py-2 rounded shadow-md hover:bg-blue-700 transition">
         <i class="fas fa-edit mr-2"></i> Go to Food Menu Generator
     </a>
 </div>

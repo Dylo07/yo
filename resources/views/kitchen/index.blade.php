@@ -129,17 +129,7 @@
             </div>
         </nav>
 
-        <!-- Alert Bar -->
-        <div id="alert-bar" class="bg-blue-800 text-white p-2 flex justify-between items-center">
-            <div class="flex items-center">
-                <i class="fas fa-info-circle mr-2"></i>
-                <span>Staff meeting today at 3:00 PM. Chef Pascal will review new seasonal menu items.</span>
-            </div>
-            <button class="text-white hover:text-blue-200" onclick="document.getElementById('alert-bar').style.display = 'none';">
-                ×
-            </button>
-        </div>
-        
+    
         <!-- Header with time and date -->
         <header class="bg-blue-700 text-white p-4">
             <div class="flex justify-between items-center">
@@ -214,18 +204,7 @@
                     <button class="source-filter px-3 py-1 rounded-md bg-blue-600 text-white" data-source="all">
                         All Orders
                     </button>
-                    <button class="source-filter px-3 py-1 rounded-md bg-gray-200" data-source="restaurant">
-                        Restaurant
-                    </button>
-                    <button class="source-filter px-3 py-1 rounded-md bg-gray-200" data-source="roomservice">
-                        Room Service
-                    </button>
-                    <button class="source-filter px-3 py-1 rounded-md bg-gray-200" data-source="banquet">
-                        Banquet
-                    </button>
-                    <button class="source-filter px-3 py-1 rounded-md bg-gray-200" data-source="pickup">
-                        Pickup
-                    </button>
+                    
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-sm text-gray-600">Auto-refresh:</span>

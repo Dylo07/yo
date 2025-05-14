@@ -7,10 +7,19 @@
     <div class="border rounded-lg shadow-md p-4 bg-white">
         <div class="flex justify-between items-center mb-2">
             <div class="text-xl font-bold">{{ $booking->function_type }}</div>
-            <div class="text-lg">
-                {{ \Carbon\Carbon::parse($booking->start)->format('d M, H:i') }} - 
-                {{ $booking->end ? \Carbon\Carbon::parse($booking->end)->format('d M, H:i') : 'N/A' }}
-            </div>
+           <div class="text-lg flex flex-wrap items-center bg-gray-100 px-3 py-1 rounded-lg">
+    <div class="flex items-center mr-2">
+        <i class="fas fa-sign-in-alt text-blue-600 mr-1"></i>
+        <span class="font-medium">Check In:</span>
+        <span class="ml-1">{{ \Carbon\Carbon::parse($booking->start)->format('d M, g:i A') }}</span>
+    </div>
+    <div class="mx-1 text-gray-400">|</div>
+    <div class="flex items-center">
+        <i class="fas fa-sign-out-alt text-red-600 mr-1"></i>
+        <span class="font-medium">Check Out:</span>
+        <span class="ml-1">{{ $booking->end ? \Carbon\Carbon::parse($booking->end)->format('d M, g:i A') : 'N/A' }}</span>
+    </div>
+</div>
         </div>
         <div class="grid grid-cols-2 gap-4 mb-3">
             <div class="flex items-center text-gray-600">

@@ -60,6 +60,7 @@
                             ['url' => '/cashier/balance', 'title' => 'Balance', 'icon' => 'balance'],
                             ['url' => '/lenders', 'title' => 'Creditors', 'icon' => 'credit'],
                             ['url' => '/report/daily-summary', 'title' => 'Daily Summary', 'icon' => 'dail'],
+                            ['url' => '/kitchen', 'title' => 'Kitchen', 'icon' => 'kitchen'],
                         
                             ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))

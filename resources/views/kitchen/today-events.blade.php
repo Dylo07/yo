@@ -1,0 +1,129 @@
+<!-- Today's Events Tab Content with Date and Time -->
+<h2 class="text-2xl font-bold mb-4">Today's Functions & Menus</h2>
+
+@if(count($todayBookings) > 0)
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="today-events-container">
+    @foreach($todayBookings as $booking)
+    <div class="border rounded-lg shadow-md p-4 bg-white">
+        <div class="flex justify-between items-center mb-2">
+            <div class="text-xl font-bold">{{ $booking->function_type }}</div>
+            <div class="text-lg">
+                {{ \Carbon\Carbon::parse($booking->start)->format('d M, H:i') }} - 
+                {{ $booking->end ? \Carbon\Carbon::parse($booking->end)->format('d M, H:i') : 'N/A' }}
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-3">
+            <div class="flex items-center text-gray-600">
+                <i class="fas fa-users mr-2"></i>
+                <span>{{ $booking->guest_count ?? '0' }} guests</span>
+            </div>
+            <div class="flex items-center text-gray-600">
+                <i class="fas fa-map-marker-alt mr-2"></i>
+                <span>{{ $booking->location ?? 'Main Venue' }}</span>
+            </div>
+            <div class="flex items-center text-gray-600">
+                <i class="fas fa-bed mr-2"></i>
+                <span>
+                    @if(is_array($booking->room_numbers))
+                        {{ implode(', ', $booking->room_numbers) }}
+                    @elseif(is_string($booking->room_numbers))
+                        {{ $booking->room_numbers }}
+                    @else
+                        Room(s) not assigned
+                    @endif
+                </span>
+            </div>
+            <div class="flex items-center text-gray-600">
+                <i class="fas fa-utensils mr-2"></i>
+                <span class="capitalize {{ $booking->menu ? 'text-green-600' : 'text-yellow-600' }}">
+                    {{ $booking->menu ? 'Menu Created' : 'No Menu' }}
+                </span>
+            </div>
+        </div>
+        
+        @if($booking->menu)
+        <div class="mt-3 pt-3 border-t">
+            <div class="food-menu-summary">
+                @if($booking->menu->breakfast)
+                <div class="mb-3">
+                    <div class="font-semibold text-blue-700 text-base mb-1">
+                        <i class="fas fa-coffee mr-1"></i> Breakfast
+                    </div>
+                    <div class="text-sm text-gray-800 ml-6 whitespace-normal">
+                        {{ $booking->menu->breakfast }}
+                    </div>
+                </div>
+                @endif
+                
+                @if($booking->menu->lunch)
+                <div class="mb-3">
+                    <div class="font-semibold text-green-700 text-base mb-1">
+                        <i class="fas fa-hamburger mr-1"></i> Lunch
+                    </div>
+                    <div class="text-sm text-gray-800 ml-6 whitespace-normal">
+                        {{ $booking->menu->lunch }}
+                    </div>
+                </div>
+                @endif
+                
+                @if($booking->menu->evening_snack)
+                <div class="mb-3">
+                    <div class="font-semibold text-orange-700 text-base mb-1">
+                        <i class="fas fa-cookie mr-1"></i> Evening Snack
+                    </div>
+                    <div class="text-sm text-gray-800 ml-6 whitespace-normal">
+                        {{ $booking->menu->evening_snack }}
+                    </div>
+                </div>
+                @endif
+                
+                @if($booking->menu->dinner)
+                <div class="mb-2">
+                    <div class="font-semibold text-purple-700 text-base mb-1">
+                        <i class="fas fa-utensils mr-1"></i> Dinner
+                    </div>
+                    <div class="text-sm text-gray-800 ml-6 whitespace-normal">
+                        {{ $booking->menu->dinner }}
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+        @elseif(!empty($booking->special_requests))
+        <div class="special-request">
+            <div class="flex">
+                <i class="fas fa-exclamation-triangle mr-2 text-yellow-500"></i>
+                <span class="text-sm">{{ $booking->special_requests }}</span>
+            </div>
+        </div>
+        @endif
+
+        <div class="flex justify-end gap-2 mt-3">
+            <a href="{{ route('food-menu.index', ['date' => now()->format('Y-m-d'), 'booking_id' => $booking->id]) }}" 
+               class="bg-blue-600 text-white px-3 py-1 rounded text-sm action-button">
+                <i class="fas fa-edit mr-1"></i> Manage Menu
+            </a>
+            @if($booking->menu)
+            <a href="{{ route('food-menu.print', ['booking' => $booking->id, 'date' => now()->format('Y-m-d')]) }}" 
+               target="_blank" class="bg-green-500 text-white px-3 py-1 rounded text-sm action-button">
+                <i class="fas fa-print mr-1"></i> Print Menu
+            </a>
+            @endif
+        </div>
+    </div>
+    @endforeach
+</div>
+@else
+<div class="bg-white rounded-lg shadow-md p-8 text-center">
+    <i class="fas fa-calendar-day text-gray-400 text-5xl mb-4"></i>
+    <h3 class="text-xl font-semibold text-gray-700 mb-2">No Events Today</h3>
+    <p class="text-gray-500">There are no scheduled events or functions for today.</p>
+</div>
+@endif
+
+<!-- Link to food menu generator -->
+<div class="mt-6 text-center">
+    <a href="{{ route('food-menu.index', ['date' => now()->format('Y-m-d')]) }}" class="bg-blue-600 text-white px-4 py-2 rounded shadow-md hover:bg-blue-700 transition">
+        <i class="fas fa-edit mr-2"></i> Go to Food Menu Generator
+    </a>
+</div>

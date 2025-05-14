@@ -297,6 +297,20 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
+// In routes/web.php
+Route::put('/kitchen/items/{id}/status', [App\Http\Controllers\KitchenItemController::class, 'updateStatus']);
+// Add these routes to your web.php file
+
+Route::middleware(['auth'])->prefix('kitchen')->group(function () {
+    Route::get('/', [App\Http\Controllers\KitchenOrderController::class, 'index'])->name('kitchen.index');
+    Route::get('/orders/filter', [App\Http\Controllers\KitchenOrderController::class, 'getOrdersBySource'])->name('kitchen.filter');
+    Route::put('/orders/{id}/status', [App\Http\Controllers\KitchenOrderController::class, 'updateOrderStatus'])->name('kitchen.update-order-status');
+    Route::put('/items/{id}/status', [App\Http\Controllers\KitchenOrderController::class, 'updateItemStatus'])->name('kitchen.update-item-status');
+    Route::get('/events/today', [App\Http\Controllers\KitchenOrderController::class, 'getTodayEvents'])->name('kitchen.today-events');
+    Route::get('/events/tomorrow', [App\Http\Controllers\KitchenOrderController::class, 'getTomorrowEvents'])->name('kitchen.tomorrow-events');
+    Route::get('/analytics', [App\Http\Controllers\KitchenOrderController::class, 'getAnalyticsData'])->name('kitchen.analytics');
+});
+
 // Package Management Routes
 Route::middleware(['auth'])->group(function () {
    Route::resource('package-categories', PackageCategoryController::class);

@@ -11,7 +11,7 @@ use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\InStock;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\DB;
 class CashierController extends Controller
 {
     public function index() {
@@ -251,12 +251,15 @@ class CashierController extends Controller
         }
         return $html;
     }
-
-    public function savePayment(Request $request){
-        $saleID = $request->saleID;
-        $recievedAmount = $request->recievedAmount;
-        $paymentType = $request->PaymentType;
-        
+public function savePayment(Request $request){
+    $saleID = $request->saleID;
+    $recievedAmount = $request->recievedAmount;
+    $paymentType = $request->PaymentType;
+    
+    // Begin transaction for data consistency
+    DB::beginTransaction();
+    
+    try {
         $sale = Sale::find($saleID);
         $sale->total_recieved = $recievedAmount;
         $sale->change = $recievedAmount + $sale->total_price;
@@ -268,22 +271,33 @@ class CashierController extends Controller
         $table->status = "available";
         $table->save();
         
-        $saleDetail = SaleDetail::get()->where('sale_id',$request->saleID);
-        foreach ($saleDetail as $value) {
-            $user = Auth::user();
-            $stock = new InStock();
-            $stock->menu_id = $value->menu_id;
-            $stock->stock = -intval($value->quantity);
-            $stock->user_id = $user->id;
-            $stock->save();
-
-            $menu = Menu::find($value->menu_id);
-            $menu->stock = intval($menu->stock)-($value->quantity);
-            $menu->save();     
+        // Only reduce stock if it hasn't been reduced yet
+        if (!$this->hasStockBeenReduced($saleID)) {
+            $saleDetail = SaleDetail::where('sale_id', $saleID)->get();
+            
+            foreach ($saleDetail as $value) {
+                $user = Auth::user();
+                $stock = new InStock();
+                $stock->menu_id = $value->menu_id;
+                $stock->stock = -intval($value->quantity);
+                $stock->user_id = $user->id;
+                $stock->sale_id = $saleID; // Track which sale this stock reduction belongs to
+                $stock->save();
+    
+                $menu = Menu::find($value->menu_id);
+                $menu->stock = intval($menu->stock) - ($value->quantity);
+                $menu->save();     
+            }
         }
         
+        DB::commit();
         return url('/cashier/showRecipt')."/".$saleID;
+    } catch (\Exception $e) {
+        DB::rollback();
+        \Log::error('Error in savePayment: ' . $e->getMessage());
+        return response()->json(['error' => 'An error occurred while processing payment.'], 500);
     }
+}
 
     public function showRecipt($saleID){
         $sale = Sale::find($saleID);
@@ -300,6 +314,23 @@ class CashierController extends Controller
         $saleDetails = SaleDetail::get()->where('sale_id',$saleID)->where('count',2);
         return view('cashier.printOrder')->with('sale',$sale)->with('saleDetails', $saleDetails);
     }
+
+
+    /**
+ * Check if stock has already been reduced for this sale
+ * 
+ * @param int $saleId
+ * @return bool
+ */
+private function hasStockBeenReduced($saleId)
+{
+    // Look for stock reduction records related to this sale
+    $count = \App\Models\InStock::where('sale_id', $saleId)
+        ->where('stock', '<', 0)
+        ->count();
+    
+    return $count > 0;
+}
 
     public function showAdvanceRecipt($saleID){
         $sale = Sale::find($saleID);

@@ -7,19 +7,19 @@
     <div class="border rounded-lg shadow-md p-4 bg-white">
         <div class="flex justify-between items-center mb-2">
             <div class="text-xl font-bold">{{ $booking->function_type }}</div>
-            <div class="text-lg flex flex-wrap items-center bg-gray-100 px-3 py-1 rounded-lg">
-    <div class="flex items-center mr-2">
-        <i class="fas fa-sign-in-alt text-blue-600 mr-1"></i>
-        <span class="font-medium">Check In:</span>
-        <span class="ml-1">{{ \Carbon\Carbon::parse($booking->start)->format('d M, g:i A') }}</span>
-    </div>
-    <div class="mx-1 text-gray-400">|</div>
-    <div class="flex items-center">
-        <i class="fas fa-sign-out-alt text-red-600 mr-1"></i>
-        <span class="font-medium">Check Out:</span>
-        <span class="ml-1">{{ $booking->end ? \Carbon\Carbon::parse($booking->end)->format('d M, g:i A') : 'N/A' }}</span>
-    </div>
-</div>
+            <div class="flex flex-wrap text-sm bg-gray-100 px-3 py-1 rounded-lg">
+                <div class="flex items-center mr-2">
+                    <i class="fas fa-sign-in-alt text-blue-600 mr-1"></i>
+                    <span class="font-medium">Check In:</span>
+                    <span class="ml-1">{{ \Carbon\Carbon::parse($booking->start)->format('d M, g:i A') }}</span>
+                </div>
+                <div class="mx-1 text-gray-400">|</div>
+                <div class="flex items-center">
+                    <i class="fas fa-sign-out-alt text-red-600 mr-1"></i>
+                    <span class="font-medium">Check Out:</span>
+                    <span class="ml-1">{{ $booking->end ? \Carbon\Carbon::parse($booking->end)->format('d M, g:i A') : 'N/A' }}</span>
+                </div>
+            </div>
         </div>
         <div class="grid grid-cols-2 gap-4 mb-3">
             <div class="flex items-center text-gray-600">
@@ -54,86 +54,182 @@
         <div class="mt-3 pt-3 border-t">
             <div class="food-menu-summary">
                 @if($booking->menu->bed_tea)
-                <div class="mb-2">
-                    <div class="font-semibold text-emerald-700">
-                        <i class="fas fa-mug-hot mr-1"></i> Bed Tea
+                <div class="mb-3">
+                    <div class="font-semibold text-emerald-700 flex items-center">
+                        <i class="fas fa-mug-hot mr-2"></i> Bed Tea
                         @if($booking->menu->bed_tea_time)
-                            <span class="text-sm text-gray-600 ml-2">
+                            <span class="ml-2 text-sm text-gray-600">
                                 {{ \Carbon\Carbon::parse($booking->menu->bed_tea_time)->format('g:i A') }}
                             </span>
                         @endif
                     </div>
-                    <div class="text-sm text-gray-600 ml-6">{{ Str::limit($booking->menu->bed_tea, 100) }}</div>
+                    <div class="text-sm text-gray-800 ml-6 mt-1">
+                        @php
+                            $bedTeaItems = preg_split('/\r\n|\r|\n/', $booking->menu->bed_tea);
+                        @endphp
+                        
+                        @if(count($bedTeaItems) > 1)
+                            <ul class="list-disc pl-4">
+                                @foreach($bedTeaItems as $item)
+                                    @if(trim($item) !== '')
+                                        <li>{{ trim($item) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @else
+                            {{ $booking->menu->bed_tea }}
+                        @endif
+                    </div>
                 </div>
                 @endif
                 
                 @if($booking->menu->breakfast)
-                <div class="mb-2">
-                    <div class="font-semibold text-blue-700">
-                        <i class="fas fa-coffee mr-1"></i> Breakfast
+                <div class="mb-3">
+                    <div class="font-semibold text-blue-700 flex items-center">
+                        <i class="fas fa-coffee mr-2"></i> Breakfast
                         @if($booking->menu->breakfast_time)
-                            <span class="text-sm text-gray-600 ml-2">
+                            <span class="ml-2 text-sm text-gray-600">
                                 {{ \Carbon\Carbon::parse($booking->menu->breakfast_time)->format('g:i A') }}
                             </span>
                         @endif
                     </div>
-                    <div class="text-sm text-gray-600 ml-6">{{ Str::limit($booking->menu->breakfast, 100) }}</div>
+                    <div class="text-sm text-gray-800 ml-6 mt-1">
+                        @php
+                            $breakfastItems = preg_split('/\r\n|\r|\n/', $booking->menu->breakfast);
+                        @endphp
+                        
+                        @if(count($breakfastItems) > 1)
+                            <ul class="list-disc pl-4">
+                                @foreach($breakfastItems as $item)
+                                    @if(trim($item) !== '')
+                                        <li>{{ trim($item) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @else
+                            {{ $booking->menu->breakfast }}
+                        @endif
+                    </div>
                 </div>
                 @endif
                 
                 @if($booking->menu->morning_snack)
-                <div class="mb-2">
-                    <div class="font-semibold text-amber-700">
-                        <i class="fas fa-bread-slice mr-1"></i> Morning Snack
+                <div class="mb-3">
+                    <div class="font-semibold text-amber-700 flex items-center">
+                        <i class="fas fa-bread-slice mr-2"></i> Morning Snack
                         @if($booking->menu->morning_snack_time)
-                            <span class="text-sm text-gray-600 ml-2">
+                            <span class="ml-2 text-sm text-gray-600">
                                 {{ \Carbon\Carbon::parse($booking->menu->morning_snack_time)->format('g:i A') }}
                             </span>
                         @endif
                     </div>
-                    <div class="text-sm text-gray-600 ml-6">{{ Str::limit($booking->menu->morning_snack, 100) }}</div>
+                    <div class="text-sm text-gray-800 ml-6 mt-1">
+                        @php
+                            $morningSnackItems = preg_split('/\r\n|\r|\n/', $booking->menu->morning_snack);
+                        @endphp
+                        
+                        @if(count($morningSnackItems) > 1)
+                            <ul class="list-disc pl-4">
+                                @foreach($morningSnackItems as $item)
+                                    @if(trim($item) !== '')
+                                        <li>{{ trim($item) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @else
+                            {{ $booking->menu->morning_snack }}
+                        @endif
+                    </div>
                 </div>
                 @endif
                 
                 @if($booking->menu->lunch)
-                <div class="mb-2">
-                    <div class="font-semibold text-green-700">
-                        <i class="fas fa-hamburger mr-1"></i> Lunch
+                <div class="mb-3">
+                    <div class="font-semibold text-green-700 flex items-center">
+                        <i class="fas fa-hamburger mr-2"></i> Lunch
                         @if($booking->menu->lunch_time)
-                            <span class="text-sm text-gray-600 ml-2">
+                            <span class="ml-2 text-sm text-gray-600">
                                 {{ \Carbon\Carbon::parse($booking->menu->lunch_time)->format('g:i A') }}
                             </span>
                         @endif
                     </div>
-                    <div class="text-sm text-gray-600 ml-6">{{ Str::limit($booking->menu->lunch, 100) }}</div>
+                    <div class="text-sm text-gray-800 ml-6 mt-1">
+                        @php
+                            $lunchItems = preg_split('/\r\n|\r|\n/', $booking->menu->lunch);
+                        @endphp
+                        
+                        @if(count($lunchItems) > 1)
+                            <ul class="list-disc pl-4">
+                                @foreach($lunchItems as $item)
+                                    @if(trim($item) !== '')
+                                        <li>{{ trim($item) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @else
+                            {{ $booking->menu->lunch }}
+                        @endif
+                    </div>
                 </div>
                 @endif
                 
                 @if($booking->menu->evening_snack)
-                <div class="mb-2">
-                    <div class="font-semibold text-orange-700">
-                        <i class="fas fa-cookie mr-1"></i> Evening Snack
+                <div class="mb-3">
+                    <div class="font-semibold text-orange-700 flex items-center">
+                        <i class="fas fa-cookie mr-2"></i> Evening Snack
                         @if($booking->menu->evening_snack_time)
-                            <span class="text-sm text-gray-600 ml-2">
+                            <span class="ml-2 text-sm text-gray-600">
                                 {{ \Carbon\Carbon::parse($booking->menu->evening_snack_time)->format('g:i A') }}
                             </span>
                         @endif
                     </div>
-                    <div class="text-sm text-gray-600 ml-6">{{ Str::limit($booking->menu->evening_snack, 100) }}</div>
+                    <div class="text-sm text-gray-800 ml-6 mt-1">
+                        @php
+                            $eveningSnackItems = preg_split('/\r\n|\r|\n/', $booking->menu->evening_snack);
+                        @endphp
+                        
+                        @if(count($eveningSnackItems) > 1)
+                            <ul class="list-disc pl-4">
+                                @foreach($eveningSnackItems as $item)
+                                    @if(trim($item) !== '')
+                                        <li>{{ trim($item) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @else
+                            {{ $booking->menu->evening_snack }}
+                        @endif
+                    </div>
                 </div>
                 @endif
                 
                 @if($booking->menu->dinner)
                 <div class="mb-2">
-                    <div class="font-semibold text-purple-700">
-                        <i class="fas fa-utensils mr-1"></i> Dinner
+                    <div class="font-semibold text-purple-700 flex items-center">
+                        <i class="fas fa-utensils mr-2"></i> Dinner
                         @if($booking->menu->dinner_time)
-                            <span class="text-sm text-gray-600 ml-2">
+                            <span class="ml-2 text-sm text-gray-600">
                                 {{ \Carbon\Carbon::parse($booking->menu->dinner_time)->format('g:i A') }}
                             </span>
                         @endif
                     </div>
-                    <div class="text-sm text-gray-600 ml-6">{{ Str::limit($booking->menu->dinner, 100) }}</div>
+                    <div class="text-sm text-gray-800 ml-6 mt-1">
+                        @php
+                            $dinnerItems = preg_split('/\r\n|\r|\n/', $booking->menu->dinner);
+                        @endphp
+                        
+                        @if(count($dinnerItems) > 1)
+                            <ul class="list-disc pl-4">
+                                @foreach($dinnerItems as $item)
+                                    @if(trim($item) !== '')
+                                        <li>{{ trim($item) }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @else
+                            {{ $booking->menu->dinner }}
+                        @endif
+                    </div>
                 </div>
                 @endif
             </div>

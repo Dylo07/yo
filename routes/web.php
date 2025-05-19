@@ -77,7 +77,22 @@ Route::middleware(['auth'])->group(function(){
 
      Route::post('/cashier/printOrder', 'App\Http\Controllers\Cashier\CashierController@printOrder');
      
-      // routes for petty cash
+
+// Advance Payment Routes
+Route::get('/cashier/advance-payment/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvancePaymentSelection')
+    ->name('cashier.advancePaymentSelection');
+Route::get('/cashier/advance-payment/{saleID}/{type}', 'App\Http\Controllers\Cashier\CashierController@showAdvancePaymentForm')
+    ->name('cashier.advancePaymentForm');
+Route::post('/cashier/advance-payment/submit', 'App\Http\Controllers\Cashier\CashierController@submitAdvancePayment')
+    ->name('cashier.submitAdvancePayment');
+
+   Route::get('/cashier/showAdvanceRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceRecipt')
+    ->name('cashier.showAdvanceRecipt');
+Route::get('/cashier/showAdvanceWeddingRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceWeddingRecipt')
+    ->name('cashier.showAdvanceWeddingRecipt');
+
+    Route::get('/cashier/setup-advance-payment/{table_id}', 'App\Http\Controllers\Cashier\CashierController@setupAdvancePayment')
+    ->name('cashier.setupAdvancePayment');
 
     Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
     Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
@@ -88,13 +103,6 @@ Route::middleware(['auth'])->group(function(){
  })->name('management');
  
  
-   // cashier
-   // Add route for showing advance receipt
-   Route::get('/cashier/showAdvanceRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceRecipt');
-   // Add this route to your web.php file in the appropriate cashier routes section
-  Route::get('/cashier/showAdvanceWeddingRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceWeddingRecipt');   
-  
-
 
  
  // routes for management

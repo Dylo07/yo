@@ -61,43 +61,49 @@ class CashierController extends Controller
     }
 
     public function orderFood(Request $request){
-        $menu = Menu::find($request->menu_id);
-        $table_id = $request->table_id;
-        $table_name = $request->table_name;
-        $sale = Sale::where('table_id', $table_id)->where('sale_status','unpaid')->first();
-        
-        if(!$sale){
-            $user = Auth::user();
-            $sale = new Sale();
-            $sale->table_id = $table_id;
-            $sale->table_name = $table_name;
-            $sale->user_id = $user->id;
-            $sale->user_name = $user->name;
-            $sale->save();
-            $sale_id = $sale->id;
-            
-            $table = Table::find($table_id);
-            $table->status = "unavailable";
-            $table->save();
-        }else{
-            $sale_id = $sale->id;
-        }
-
-        $saleDetail = new SaleDetail();
-        $saleDetail->sale_id = $sale_id;
-        $saleDetail->menu_id = $menu->id;
-        $saleDetail->menu_name = $menu->name;
-        $saleDetail->menu_price = $menu->price;
-        $saleDetail->quantity = $request->quantity;
-        $saleDetail->count = 1;
-        $saleDetail->save();
-
-        $sale->total_price = $sale->total_price + ($request->quantity * $menu->price);
+    $menu = Menu::find($request->menu_id);
+    $table_id = $request->table_id;
+    $table_name = $request->table_name;
+    $sale = Sale::where('table_id', $table_id)->where('sale_status','unpaid')->first();
+    
+    $tableStatusChanged = false;
+    
+    if(!$sale){
+        $user = Auth::user();
+        $sale = new Sale();
+        $sale->table_id = $table_id;
+        $sale->table_name = $table_name;
+        $sale->user_id = $user->id;
+        $sale->user_name = $user->name;
         $sale->save();
-
-        return $this->getSaleDetails($sale_id);
+        $sale_id = $sale->id;
+        
+        $table = Table::find($table_id);
+        $table->status = "unavailable";
+        $table->save();
+        $tableStatusChanged = true;
+    }else{
+        $sale_id = $sale->id;
     }
 
+    $saleDetail = new SaleDetail();
+    $saleDetail->sale_id = $sale_id;
+    $saleDetail->menu_id = $menu->id;
+    $saleDetail->menu_name = $menu->name;
+    $saleDetail->menu_price = $menu->price;
+    $saleDetail->quantity = $request->quantity;
+    $saleDetail->count = 1;
+    $saleDetail->save();
+
+    $sale->total_price = $sale->total_price + ($request->quantity * $menu->price);
+    $sale->save();
+
+    return [
+        'html' => $this->getSaleDetails($sale_id),
+        'tableStatusChanged' => $tableStatusChanged,
+        'tableId' => $table_id
+    ];
+}
     public function getSaleDetailsByTable($table_id){
         $sale = Sale::where('table_id', $table_id)->where('sale_status','unpaid')->first();
         $html = '';
@@ -111,62 +117,72 @@ class CashierController extends Controller
     }
 
     private function getSaleDetails($sale_id){
-        $html = '<p>Sale ID: '.$sale_id.'</p>';
-        $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
-        $html .= '<div class="table-responsive-md" tabindex ="-1" style="overflow-y:scroll; min-height: 400px; border: 1px solid #343A40">
-        <table class="table table-stripped table-dark">
-        <thead>
-            <tr>
-                <th scope="col">Menu</th>
-                <th scope="col">Quantity</th>
-                <th scope="col">Price</th>
-                <th scope="col">Total</th>
-                <th scope="col">Updated Time</th>
-                <th scope="col">Status</th>
-            </tr>
-        </thead>
-        <tbody>';
+    $html = '<p>Sale ID: '.$sale_id.'</p>';
+    $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
+    $html .= '<div class="table-responsive-md" tabindex ="-1" style="overflow-y:scroll; min-height: 400px; border: 1px solid #343A40">
+    <table class="table table-stripped table-dark">
+    <thead>
+        <tr>
+            <th scope="col">Menu</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Price</th>
+            <th scope="col">Total</th>
+            <th scope="col">Updated Time</th>
+            <th scope="col">Status</th>
+        </tr>
+    </thead>
+    <tbody>';
+    
+    $showBtnPayment = true;
+    $hasAdvancePayment = false; // Flag to check if there's already an advance payment
+    $hasRegularMenuItems = false; // Flag to check if there are regular menu items
+    
+    foreach($saleDetails as $saleDetail){
+        // Check if this is an advance payment item
+        if (strpos($saleDetail->menu_name, 'Advance Payment') !== false) {
+            $hasAdvancePayment = true;
+        } else {
+            $hasRegularMenuItems = true;
+        }
         
-        $showBtnPayment = true;
-        foreach($saleDetails as $saleDetail){
-            $updatedDateTime = $saleDetail->updated_at ? $saleDetail->updated_at->format('d/m/Y H:i:s') : '';
-            $html .= '
-            <tr>
-                <td>'.$saleDetail->menu_name.'</td>
-                <td><input type="number" tabindex ="-1" class="change-quantity" data-id="'.$saleDetail->id.'" 
-                           style="width:50px;" value="'.$saleDetail->quantity.'"'.
-                           ($saleDetail->status == "confirm" ? ' disabled' : '').'></td>
-                <td>'.$saleDetail->menu_price.'</td>
-                <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>
-                <td>'.$updatedDateTime.'</td>';
-                if($saleDetail->status == "noConfirm"){
-                    $showBtnPayment = false;
-                    $html .= '<td><a data-id="'.$saleDetail->id.'" class="btn btn-danger btn-delete-saledetail"><i class="far fa-trash-alt"></a></td>';
-                }else{
-                    $html .= '<td><i class="fas fa-check-circle"></i></td>';
-                }
-            $html .= '</tr>';
-        }
-        $html .='</tbody></table></div>';
-    
-        $sale = Sale::find($sale_id);
-        $html .= '<hr>';
-        $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
-    
-        if($showBtnPayment){
-            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
-            $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
-            
-            // Change the "Advance Payment" button to use a different class
-            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-primary btn-block btn-advance-payment">Advance Payment for functions</button>';
-            
-            // Add the new "Advance Payment for Wedding" button
-            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-info btn-block btn-wedding-payment">Advance Payment for Wedding</button>';
-        }else{
-            $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
-        }
-        return $html;
+        $updatedDateTime = $saleDetail->updated_at ? $saleDetail->updated_at->format('d/m/Y H:i:s') : '';
+        $html .= '
+        <tr>
+            <td>'.$saleDetail->menu_name.'</td>
+            <td><input type="number" tabindex ="-1" class="change-quantity" data-id="'.$saleDetail->id.'" 
+                       style="width:50px;" value="'.$saleDetail->quantity.'"'.
+                       ($saleDetail->status == "confirm" ? ' disabled' : '').'></td>
+            <td>'.$saleDetail->menu_price.'</td>
+            <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>
+            <td>'.$updatedDateTime.'</td>';
+            if($saleDetail->status == "noConfirm"){
+                $showBtnPayment = false;
+                $html .= '<td><a data-id="'.$saleDetail->id.'" class="btn btn-danger btn-delete-saledetail"><i class="far fa-trash-alt"></a></td>';
+            }else{
+                $html .= '<td><i class="fas fa-check-circle"></i></td>';
+            }
+        $html .= '</tr>';
     }
+    $html .='</tbody></table></div>';
+
+    $sale = Sale::find($sale_id);
+    $html .= '<hr>';
+    $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
+
+    if($showBtnPayment){
+        $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
+        $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
+        
+        // Only show advance payment button if there are no regular menu items AND no existing advance payment
+        if (!$hasRegularMenuItems && !$hasAdvancePayment) {
+            $html .= '<a href="'.url('/cashier/advance-payment/'.$sale_id).'" class="btn btn-primary btn-block">Advance Payment</a>';
+        }
+    }else{
+        $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
+    }
+    return $html;
+}
+
     public function increaseQuantity(Request $request){
         $saleDetail_id = $request->saleDetail_id;
         $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
@@ -343,5 +359,164 @@ public function showAdvanceWeddingRecipt($saleID){
     $sale = Sale::find($saleID);
     $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
     return view('cashier.showAdvanceWeddingRecipt')->with('sale',$sale)->with('saleDetails', $saleDetails);
+}
+
+/**
+ * Show the advance payment selection page (Wedding or Function)
+ * 
+ * @param int $saleID The sale ID
+ * @return \Illuminate\Http\Response
+ */
+public function showAdvancePaymentSelection($saleID)
+{
+    $sale = Sale::find($saleID);
+    
+    if (!$sale) {
+        return redirect()->back()->with('error', 'Sale not found.');
+    }
+    
+    return view('cashier.advancePaymentSelection', compact('sale'));
+}
+
+/**
+ * Show the advance payment form
+ * 
+ * @param int $saleID The sale ID
+ * @param string $type The payment type (wedding or function)
+ * @return \Illuminate\Http\Response
+ */
+public function showAdvancePaymentForm($saleID, $type)
+{
+    $sale = Sale::find($saleID);
+    
+    if (!$sale) {
+        return redirect()->back()->with('error', 'Sale not found.');
+    }
+    
+    if (!in_array($type, ['wedding', 'function'])) {
+        return redirect()->back()->with('error', 'Invalid payment type.');
+    }
+    
+    return view('cashier.advancePaymentForm', compact('sale', 'type'));
+}
+
+/**
+ * Process the advance payment form submission
+ * 
+ * @param  \Illuminate\Http\Request  $request
+ * @return \Illuminate\Http\Response
+ */
+public function submitAdvancePayment(Request $request)
+{
+    // Validate the request
+    $request->validate([
+        'sale_id' => 'required|exists:sales,id',
+        'amount' => 'required|numeric|min:1',
+        'payment_type' => 'required|in:function,wedding',
+        'description' => 'nullable|string|max:255',
+    ]);
+
+    // Get the sale
+    $sale = Sale::find($request->sale_id);
+    
+    // Create a new menu item for the advance payment if not exists
+    $menuName = 'Advance Payment - ' . ($request->payment_type == 'wedding' ? 'Wedding' : 'Function');
+    if (!empty($request->description)) {
+        $menuName .= ' - ' . $request->description;
+    }
+    
+    $menu = Menu::firstOrCreate(
+        ['name' => $menuName],
+        [
+            'price' => 0, // Price will be set per transaction
+            'description' => 'System generated advance payment',
+            'category_id' => 185, // Using category ID 185 as requested
+            'image' => 'noimage.png'
+        ]
+    );
+    
+    // Delete any existing sale details for this sale (in case user is updating)
+    SaleDetail::where('sale_id', $sale->id)->delete();
+    
+    // Create a new sale detail
+    $saleDetail = new SaleDetail();
+    $saleDetail->sale_id = $sale->id;
+    $saleDetail->menu_id = $menu->id;
+    $saleDetail->menu_name = $menuName;
+    $saleDetail->menu_price = $request->amount;
+    $saleDetail->quantity = 1;
+    $saleDetail->count = 1;
+    $saleDetail->status = 'confirm';
+    $saleDetail->save();
+    
+    // Update the sale
+    $sale->total_price = $request->amount;
+    $sale->total_recieved = 0; // No service charge for advance payments
+    $sale->change = $request->amount; // Total amount for the receipt
+    $sale->payment_type = $request->payment_type;
+    $sale->sale_status = "paid"; // Mark the sale as paid
+    $sale->save();
+    
+    // Set the table back to available
+    $table = Table::find($sale->table_id);
+    if ($table) {
+        $table->status = "available";
+        $table->save();
+    }
+    
+    // Redirect to the appropriate receipt page based on payment type
+    if ($request->payment_type == 'wedding') {
+        return redirect()->to('/cashier/showAdvanceWeddingRecipt/' . $sale->id);
+    } else {
+        return redirect()->to('/cashier/showAdvanceRecipt/' . $sale->id);
+    }
+}
+
+/**
+ * Set up a new sale for advance payment
+ *
+ * @param int $table_id The table ID
+ * @return \Illuminate\Http\Response
+ */
+/**
+ * Set up a new sale for advance payment
+ *
+ * @param int $table_id The table ID
+ * @return \Illuminate\Http\Response
+ */
+public function setupAdvancePayment($table_id)
+{
+    $table = Table::find($table_id);
+    
+    if (!$table) {
+        return redirect()->back()->with('error', 'Table not found.');
+    }
+    
+    // Check if there's already a sale for this table
+    $existingSale = Sale::where('table_id', $table_id)
+        ->where('sale_status', 'unpaid')
+        ->first();
+    
+    if ($existingSale) {
+        // If a sale exists, redirect to the advance payment selection
+        return redirect('/cashier/advance-payment/' . $existingSale->id);
+    }
+    
+    // Create a new sale
+    $user = Auth::user();
+    $sale = new Sale();
+    $sale->table_id = $table_id;
+    $sale->table_name = $table->name;
+    $sale->user_id = $user->id;
+    $sale->user_name = $user->name;
+    $sale->total_price = 0;
+    $sale->save();
+    
+    // Update table status
+    $table->status = "unavailable";
+    $table->save();
+    
+    // Redirect to the advance payment selection
+    return redirect('/cashier/advance-payment/' . $sale->id);
 }
 }

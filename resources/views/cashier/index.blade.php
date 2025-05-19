@@ -175,41 +175,63 @@ $(document).ready(function(){
   var SALE_ID = "";
 
   // Show sale details when a table is selected
-  $("#table-detail").on("click", ".btn-table", function(){
+// Show sale details when a table is selected
+$("#table-detail").on("click", ".btn-table", function(){
     SELECTED_TABLE_ID = $(this).data("id");
     SELECTED_TABLE_NAME = $(this).data("name");
     $("#selected-table").html('<br><h3>Table: ' + SELECTED_TABLE_NAME + '</h3><hr>');
     $.get("{{ url('/cashier/getSaleDetailsByTable') }}/" + SELECTED_TABLE_ID, function(data){
-      $("#order-detail").html(data);
+        $("#order-detail").html(data);
+        
+        // If no sale exists for this table, we need to create a new sale first
+if(data.includes("Not Found Any Sale Details for the Selected Table")) {
+    // Create a new table interface for tables without existing orders
+    var html = 'Not Found Any Sale Details for the Selected Table';
+    html += '<hr><div class="text-center mt-4">';
+    html += '<p>Click Advance Payment for Advance payments.</p>';
+    html += '<a href="{{ url('/cashier/setup-advance-payment/') }}/' + SELECTED_TABLE_ID + '" class="btn btn-primary btn-block mt-3">Advance Payment</a>';
+    html += '</div>';
+    $("#order-detail").html(html);
+}
     });
-  });
+});
 
   $("#list-menu").on("click", ".btn-menu", function(){
     if (SELECTED_TABLE_ID == "") {
-      alert("You need to select a table for the customer first");
+        alert("You need to select a table for the customer first");
     } else {
-      var menu_id = $(this).data("id");
-      $.ajaxSetup({
-        headers: {
-          'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-      });
-      $.ajax({
-        type: "POST",
-        data: {
-          "_token": $('meta[name="csrf-token"]').attr('content'),
-          "menu_id": menu_id,
-          "table_id": SELECTED_TABLE_ID,
-          "table_name": SELECTED_TABLE_NAME,
-          "quantity": 1
-        },
-        url: "{{ url('/cashier/orderFood') }}",
-        success: function(data){
-          $("#order-detail").html(data);
-        }
-      });
+        var menu_id = $(this).data("id");
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+        $.ajax({
+            type: "POST",
+            data: {
+                "_token": $('meta[name="csrf-token"]').attr('content'),
+                "menu_id": menu_id,
+                "table_id": SELECTED_TABLE_ID,
+                "table_name": SELECTED_TABLE_NAME,
+                "quantity": 1
+            },
+            url: "{{ url('/cashier/orderFood') }}",
+            success: function(response){
+                // Update the order details
+                $("#order-detail").html(response.html);
+                
+                // If table status changed, update the badge color
+                if (response.tableStatusChanged) {
+                    var tableButton = $('.btn-table[data-id="' + response.tableId + '"]');
+                    tableButton.find('.badge').removeClass('badge-success').addClass('badge-danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error(error);
+            }
+        });
     }
-  });
+});
 
   $("#order-detail").on('click', ".btn-confirm-order", function(){
     var SaleID = $(this).data("id");

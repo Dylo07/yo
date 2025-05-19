@@ -7,7 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class Menu extends Model
 {
-    use HasFactory;  
+    use HasFactory;
+    
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'name',
+        'price',
+        'description',
+        'category_id',
+        'image',
+        'stock'
+    ];
+    
     public function category(){
         return $this->belongsTo(Category::class);
     }

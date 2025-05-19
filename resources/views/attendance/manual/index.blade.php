@@ -59,6 +59,9 @@
                         <option value="restaurant">Restaurant</option>
                         <option value="maintenance">Maintenance</option>
                         <option value="garden">Garden</option>
+                        <option value="housekeeping">Housekeeping</option>
+                        <option value="pool">Pool</option>
+                        <option value="laundry">Laundry</option>
                     </select>
                 </div>
             </div>
@@ -78,7 +81,7 @@
                     <tbody>
                         @php
                             // Define the category order
-                            $displayOrder = ['front_office', 'kitchen', 'restaurant', 'maintenance', 'garden', null];
+                            $displayOrder = ['front_office', 'kitchen', 'restaurant', 'maintenance', 'garden','laundry','pool','housekeeping', null];
                         @endphp
                         
                         @foreach($displayOrder as $category)

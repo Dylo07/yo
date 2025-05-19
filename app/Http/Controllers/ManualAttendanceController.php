@@ -33,6 +33,9 @@ class ManualAttendanceController extends Controller
             'restaurant',
             'maintenance',
             'garden',
+            'housekeeping',
+            'laundry',
+            'pool',
             null, // Uncategorized staff will be at the end
         ];
         
@@ -74,6 +77,10 @@ class ManualAttendanceController extends Controller
             'restaurant' => 'Restaurant',
             'maintenance' => 'Maintenance',
             'garden' => 'Garden',
+            'housekeeping' => 'Housekeeping',
+            'garden' => 'Garden',
+            'pool' => 'Pool',
+            'laundry' => 'Laundry',
             null => 'Not Assigned'
         ];
     
@@ -323,7 +330,11 @@ class ManualAttendanceController extends Controller
             'garden' => 'Garden',
             'kitchen' => 'Kitchen',
             'maintenance' => 'Maintenance',
-            'restaurant' => 'Restaurant'
+            'restaurant' => 'Restaurant',
+            'housekeeping' => 'Housekeeping',
+            'garden' => 'Garden',
+            'pool' => 'Pool',
+            'laundry' => 'Laundry',
         ];
         
         return view('attendance.manual.manage-categories', compact('staff', 'categories'));
@@ -335,7 +346,7 @@ class ManualAttendanceController extends Controller
         $request->validate([
             'person_id' => 'required|exists:persons,id',
             'staff_code' => 'required|string|max:20',
-            'staff_category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant',
+            'staff_category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant,housekeeping,laundry,pool',
         ]);
 
         // Only admin can add staff members
@@ -388,7 +399,7 @@ class ManualAttendanceController extends Controller
     {
         $request->validate([
             'person_id' => 'required|exists:persons,id',
-            'category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant',
+            'category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant,housekeeping,laundry,pool',
         ]);
 
         // Only admin can update staff categories
@@ -571,7 +582,11 @@ class ManualAttendanceController extends Controller
             'garden' => 'Garden',
             'kitchen' => 'Kitchen',
             'maintenance' => 'Maintenance',
-            'restaurant' => 'Restaurant'
+            'restaurant' => 'Restaurant',
+            'housekeeping' => 'Housekeeping',
+            'garden' => 'Garden',
+            'pool' => 'Pool',
+            'laundry' => 'Laundry'
         ];
 
         return view('attendance.manual.report', compact(

@@ -58,6 +58,9 @@
                         <option value="kitchen">Kitchen</option>
                         <option value="maintenance">Maintenance</option>
                         <option value="restaurant">Restaurant</option>
+                        <option value="housekeeping">Housekeeping</option>
+                        <option value="pool">Pool</option>
+                        <option value="laundry">Laundry</option>
                     </select>
                 </div>
                 

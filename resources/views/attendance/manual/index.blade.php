@@ -7,11 +7,14 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">Staff Manual Attendance</h3>
                 <div>
-                @if(Auth::user()->checkAdmin())
-    <a href="{{ route('attendance.manual.add-staff-form') }}" class="btn btn-primary mr-2">
-        <i class="fas fa-user-plus"></i> Add Staff Member
-    </a>
-@endif
+                    @if(Auth::user()->checkAdmin())
+                        <a href="{{ route('attendance.manual.add-staff-form') }}" class="btn btn-primary mr-2">
+                            <i class="fas fa-user-plus"></i> Add Staff Member
+                        </a>
+                        <a href="{{ route('attendance.manual.manage-categories') }}" class="btn btn-success mr-2">
+                            <i class="fas fa-tags"></i> Manage Categories
+                        </a>
+                    @endif
                     <a href="{{ route('attendance.manual.report') }}" class="btn btn-info">View Report</a>
                 </div>
             </div>
@@ -20,25 +23,24 @@
         <div class="card-body">
             <div id="alert-container"></div>
 
-             <!-- Add the session alerts here -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
+            <!-- Add the session alerts here -->
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show">
+                    {{ session('success') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            {{ session('error') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-    
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show">
+                    {{ session('error') }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            @endif
 
             @if(Auth::user()->checkAdmin())
                 <div class="alert alert-info mb-3">
@@ -46,126 +48,118 @@
                 </div>
             @endif
 
+            <!-- Category Filter -->
+            <div class="mb-3">
+                <div class="form-group">
+                    <label for="category-filter">Filter by Category:</label>
+                    <select id="category-filter" class="form-control">
+                        <option value="all">All Categories</option>
+                        <option value="front_office">Front Office</option>
+                        <option value="kitchen">Kitchen</option>
+                        <option value="restaurant">Restaurant</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="garden">Garden</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead>
                         <tr>
                             <th>Person ID</th>
                             <th>Staff Name</th>
+                            <th>Category</th>
                             <th>Attendance Status</th>
                             <th>Remarks</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($staff as $member)
-                            <tr id="staff-row-{{ $member->id }}">
-                                <td>{{ $member->id }}</td>
-                                <td>
-                                    {{ $member->name }}
-                                    @if(Auth::user()->checkAdmin())
-                                        <a href="#" onclick="openAttendanceHistory({{ $member->id }}, '{{ $member->name }}')" class="text-secondary ml-2" title="View Attendance History">
-                                            <i class="fas fa-history"></i>
-                                        </a>
-                                    @endif
-                                </td>
-                                <td id="status-cell-{{ $member->id }}">
-                                    @if(isset($attendances[$member->id]))
-                                        <span class="badge badge-{{ $attendances[$member->id]->status == 'present' ? 'success' : ($attendances[$member->id]->status == 'half' ? 'warning' : 'danger') }}">
-                                            {{ ucfirst($attendances[$member->id]->status) }}
-                                        </span>
-                                    @else
-                                        <span class="badge badge-secondary">Not Marked</span>
-                                    @endif
-                                </td>
-                                <td id="remarks-cell-{{ $member->id }}">
-                                    {{ isset($attendances[$member->id]) ? $attendances[$member->id]->remarks : '-' }}
-                                </td>
-                                <td>
-                                    <div class="input-group">
-                                        @if(Auth::user()->checkAdmin())
-                                            <div class="input-group-prepend">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                                        onclick="openAttendanceCalendar({{ $member->id }}, '{{ $member->name }}')" 
-                                                        title="Mark attendance for previous dates">
-                                                    <i class="fas fa-calendar-alt"></i>
-                                                </button>
+                        @php
+                            // Define the category order
+                            $displayOrder = ['front_office', 'kitchen', 'restaurant', 'maintenance', 'garden', null];
+                        @endphp
+                        
+                        @foreach($displayOrder as $category)
+                            @if(isset($staffByCategory[$category]) && $staffByCategory[$category]->count() > 0)
+                                <!-- Category Header -->
+                                <tr class="category-header bg-light">
+                                    <td colspan="6" class="font-weight-bold">
+                                        {{ $categoryNames[$category] ?? 'Not Assigned' }} ({{ $staffByCategory[$category]->count() }})
+                                    </td>
+                                </tr>
+                                
+                                <!-- Staff in this category -->
+                                @foreach($staffByCategory[$category] as $member)
+                                    <tr id="staff-row-{{ $member->id }}" data-category="{{ $member->staffCategory ? $member->staffCategory->category : '' }}">
+                                        <td>{{ $member->id }}</td>
+                                        <td>
+                                            {{ $member->name }}
+                                            @if(Auth::user()->checkAdmin())
+                                                <a href="#" onclick="openAttendanceHistory({{ $member->id }}, '{{ $member->name }}')" class="text-secondary ml-2" title="View Attendance History">
+                                                    <i class="fas fa-history"></i>
+                                                </a>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($member->staffCategory)
+                                                <span class="badge badge-info">
+                                                    {{ ucfirst(str_replace('_', ' ', $member->staffCategory->category)) }}
+                                                </span>
+                                            @else
+                                                <span class="badge badge-secondary">Not Assigned</span>
+                                            @endif
+                                        </td>
+                                        <td id="status-cell-{{ $member->id }}">
+                                            @if(isset($attendances[$member->id]))
+                                                <span class="badge badge-{{ $attendances[$member->id]->status == 'present' ? 'success' : ($attendances[$member->id]->status == 'half' ? 'warning' : 'danger') }}">
+                                                    {{ ucfirst($attendances[$member->id]->status) }}
+                                                </span>
+                                            @else
+                                                <span class="badge badge-secondary">Not Marked</span>
+                                            @endif
+                                        </td>
+                                        <td id="remarks-cell-{{ $member->id }}">
+                                            {{ isset($attendances[$member->id]) ? $attendances[$member->id]->remarks : '-' }}
+                                        </td>
+                                        <td>
+                                            <div class="input-group">
+                                                @if(Auth::user()->checkAdmin())
+                                                    <div class="input-group-prepend">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                                onclick="openAttendanceCalendar({{ $member->id }}, '{{ $member->name }}')" 
+                                                                title="Mark attendance for previous dates">
+                                                            <i class="fas fa-calendar-alt"></i>
+                                                        </button>
+                                                    </div>
+                                                    <input type="hidden" 
+                                                        id="date-{{ $member->id }}" 
+                                                        value="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
+                                                @else
+                                                    <input type="hidden" 
+                                                        id="date-{{ $member->id }}" 
+                                                        value="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
+                                                @endif
+                                                <input type="text" class="form-control form-control-sm remarks-input" 
+                                                    id="remarks-{{ $member->id }}" placeholder="Remarks">
+                                                <div class="input-group-append">
+                                                    <button type="button" onclick="markAttendance({{ $member->id }}, 'present')" 
+                                                        class="btn btn-sm btn-success">Present</button>
+                                                    <button type="button" onclick="markAttendance({{ $member->id }}, 'half')" 
+                                                        class="btn btn-sm btn-warning">Half Day</button>
+                                                    <button type="button" onclick="markAttendance({{ $member->id }}, 'absent')" 
+                                                        class="btn btn-sm btn-danger">Absent</button>
+                                                </div>
                                             </div>
-                                            <input type="hidden" 
-                                                id="date-{{ $member->id }}" 
-                                                value="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
-                                        @else
-                                            <input type="hidden" 
-                                                id="date-{{ $member->id }}" 
-                                                value="{{ Carbon\Carbon::now()->format('Y-m-d') }}">
-                                        @endif
-                                        <input type="text" class="form-control form-control-sm remarks-input" 
-                                            id="remarks-{{ $member->id }}" placeholder="Remarks">
-                                        <div class="input-group-append">
-                                            <button onclick="markAttendance({{ $member->id }}, 'present')" 
-                                                class="btn btn-sm btn-success">Present</button>
-                                            <button onclick="markAttendance({{ $member->id }}, 'half')" 
-                                                class="btn btn-sm btn-warning">Half Day</button>
-                                            <button onclick="markAttendance({{ $member->id }}, 'absent')" 
-                                                class="btn btn-sm btn-danger">Absent</button>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Replace the existing Add Staff Member Modal with this simplified version -->
-<div class="modal fade" id="addStaffModal" tabindex="-1" role="dialog" aria-labelledby="addStaffModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addStaffModalLabel">Add Staff Member</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="{{ route('attendance.manual.add-staff') }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="person_id">Person ID:</label>
-                        <select name="person_id" id="person_id" class="form-control" required>
-                            <option value="">-- Select Person --</option>
-                            @php
-                                $availablePersons = App\Models\Person::whereDoesntHave('staffCode')
-                                    ->orWhereHas('staffCode', function($query) {
-                                        $query->where('is_active', 0);
-                                    })
-                                    ->where('type', 'individual')
-                                    ->orderBy('name')
-                                    ->get();
-                            @endphp
-                            @foreach($availablePersons as $person)
-                                <option value="{{ $person->id }}">{{ $person->id }} - {{ $person->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="staff_code">Staff Code:</label>
-                        <input type="text" class="form-control" id="staff_code" name="staff_code" 
-                               placeholder="e.g. EMP001" required>
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" checked>
-                        <label class="form-check-label" for="is_active">Active</label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Staff Member</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
@@ -241,12 +235,28 @@
     </div>
 </div>
 
+<!-- Add CSRF token meta tag -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 @push('styles')
 <style>
     .btn-sm { padding: 0.25rem 0.5rem; }
     .badge { font-size: 90%; }
     .form-control-sm { height: calc(1.5em + 0.5rem + 2px); }
     .alert { margin-bottom: 1rem; }
+    
+    /* Category header styling */
+    .category-header {
+        background-color: #f8f9fa;
+    }
+    
+    .category-header td {
+        font-weight: bold;
+        color: #495057;
+        background-color: #e9ecef;
+        border-top: 2px solid #dee2e6;
+        padding: 0.5rem 0.75rem;
+    }
     
     /* Improved Attendance Calendar Styles */
     .attendance-calendar {
@@ -310,6 +320,7 @@
 
 @push('scripts')
 <script>
+// Function to show alert messages
 function showAlert(message, type = 'success') {
     const alertContainer = document.getElementById('alert-container');
     const alert = `
@@ -325,18 +336,28 @@ function showAlert(message, type = 'success') {
     }, 3000);
 }
 
+// Function to mark attendance
 async function markAttendance(personId, status) {
-    const dateInput = document.getElementById(`date-${personId}`);
-    const remarksInput = document.getElementById(`remarks-${personId}`);
-    const statusCell = document.getElementById(`status-cell-${personId}`);
-    const remarksCell = document.getElementById(`remarks-cell-${personId}`);
-
     try {
+        const dateInput = document.getElementById(`date-${personId}`);
+        const remarksInput = document.getElementById(`remarks-${personId}`);
+        const statusCell = document.getElementById(`status-cell-${personId}`);
+        const remarksCell = document.getElementById(`remarks-cell-${personId}`);
+
+        // Show loading state
+        const clickedButton = event.target;
+        const originalText = clickedButton.innerText;
+        clickedButton.innerText = 'Loading...';
+        clickedButton.disabled = true;
+
+        // Get CSRF token
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
         const response = await fetch('{{ route("attendance.manual.mark") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': token
             },
             body: JSON.stringify({
                 person_id: personId,
@@ -345,6 +366,10 @@ async function markAttendance(personId, status) {
                 attendance_date: dateInput.value
             })
         });
+
+        // Reset button state
+        clickedButton.innerText = originalText;
+        clickedButton.disabled = false;
 
         const data = await response.json();
 
@@ -364,6 +389,12 @@ async function markAttendance(personId, status) {
     } catch (error) {
         console.error('Error:', error);
         showAlert('An error occurred while marking attendance', 'danger');
+        
+        // Make sure button is reset if there's an error
+        if (event && event.target) {
+            event.target.innerText = event.target.dataset.originalText || 'Present';
+            event.target.disabled = false;
+        }
     }
 }
 
@@ -379,141 +410,53 @@ function openAttendanceCalendar(personId, personName) {
     $('#attendanceCalendarModal').modal('show');
 }
 
-// Search for persons in the database
-async function searchPersons() {
-    const searchQuery = document.getElementById('person-search').value;
-    const searchResults = document.getElementById('search-results');
-    
-    if (!searchQuery.trim()) {
-        searchResults.innerHTML = `<div class="alert alert-info">Please enter a search term</div>`;
-        return;
-    }
-    
-    searchResults.innerHTML = `
-        <div class="text-center py-3">
-            <div class="spinner-border text-primary" role="status">
-                <span class="sr-only">Loading...</span>
-            </div>
-        </div>
-    `;
-    
-    try {
-        const response = await fetch('{{ route("attendance.manual.search-persons") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                query: searchQuery
-            })
+// Filter staff by category
+function filterStaffByCategory(category) {
+    if (category === 'all') {
+        // Show all categories and their headers
+        document.querySelectorAll('tr.category-header').forEach(header => {
+            header.style.display = '';
+        });
+        document.querySelectorAll('tr[data-category]').forEach(row => {
+            row.style.display = '';
+        });
+    } else {
+        // Hide all category headers first
+        document.querySelectorAll('tr.category-header').forEach(header => {
+            header.style.display = 'none';
         });
         
-        const data = await response.json();
-        
-        if (data.success) {
-            if (data.persons.length === 0) {
-                searchResults.innerHTML = `<div class="alert alert-warning">No persons found matching "${searchQuery}"</div>`;
-                return;
+        // Show only the selected category's header
+        const headers = document.querySelectorAll('tr.category-header');
+        for (let i = 0; i < headers.length; i++) {
+            const headerText = headers[i].textContent.trim().toLowerCase();
+            if (headerText.includes(category.replace('_', ' '))) {
+                headers[i].style.display = '';
             }
-            
-            let resultsHTML = `<div class="list-group">`;
-            
-            data.persons.forEach(person => {
-                resultsHTML += `
-                    <div class="person-result" onclick="selectPerson(${person.id}, '${person.name}')">
-                        <div class="d-flex justify-content-between">
-                            <strong>${person.name}</strong>
-                            <span class="badge badge-secondary">ID: ${person.id}</span>
-                        </div>
-                        <div class="small text-muted">${person.type || ''} ${person.phone || ''}</div>
-                    </div>
-                `;
-            });
-            
-            resultsHTML += `</div>`;
-            searchResults.innerHTML = resultsHTML;
-        } else {
-            searchResults.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
         }
-    } catch (error) {
-        console.error('Error:', error);
-        searchResults.innerHTML = `<div class="alert alert-danger">An error occurred while searching</div>`;
-    }
-}
-
-// Select a person from search results
-function selectPerson(personId, personName) {
-    // Clear any previous selection
-    const personResults = document.querySelectorAll('.person-result');
-    personResults.forEach(result => {
-        result.classList.remove('selected');
-    });
-    
-    // Highlight the selected person
-    const selectedPerson = document.querySelector(`.person-result[onclick*="${personId}"]`);
-    if (selectedPerson) {
-        selectedPerson.classList.add('selected');
-    }
-    
-    // Fill in the person ID
-    document.getElementById('person-id').value = personId;
-    
-    // Generate a default staff code if empty
-    const staffCodeInput = document.getElementById('staff-code');
-    if (!staffCodeInput.value) {
-        staffCodeInput.value = `EMP${String(personId).padStart(3, '0')}`;
-    }
-}
-
-// Add a new staff member
-async function addStaffMember() {
-    const personId = document.getElementById('person-id').value;
-    const staffCode = document.getElementById('staff-code').value;
-    const isActive = document.getElementById('is-active').checked ? 1 : 0;
-    
-    if (!personId || !staffCode) {
-        showAlert('Please fill in all required fields', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await fetch('{{ route("attendance.manual.add-staff") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                person_id: personId,
-                staff_code: staffCode,
-                is_active: isActive
-            })
+        
+        // Show/hide staff rows based on category
+        document.querySelectorAll('tr[data-category]').forEach(row => {
+            if (row.getAttribute('data-category') === category) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
         });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showAlert(data.message, 'success');
-            
-            // Close the modal
-            $('#addStaffModal').modal('hide');
-            
-            // Reload the page to show the new staff member
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message, 'danger');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert('An error occurred while adding staff member', 'danger');
     }
 }
 
-// Load attendance calendar for the selected month
-// Improved functions for attendance calendar
+// Open attendance history modal
+function openAttendanceHistory(personId, personName) {
+    document.getElementById('history-person-id').value = personId;
+    document.getElementById('history-staff-name').textContent = personName;
+    
+    // Load the attendance history
+    loadAttendanceHistory();
+    
+    // Show the modal
+    $('#attendanceHistoryModal').modal('show');
+}
 
 // Load attendance calendar for the selected month
 async function loadAttendanceCalendar() {
@@ -660,11 +603,13 @@ async function toggleAttendance(date) {
     console.log(`Toggling attendance for person ${personId} on date ${date}`); // Debug log
     
     try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         const response = await fetch('{{ route("attendance.manual.toggle") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': token
             },
             body: JSON.stringify({
                 person_id: personId,
@@ -706,18 +651,6 @@ function formatDateYMD(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Open attendance history modal
-function openAttendanceHistory(personId, personName) {
-    document.getElementById('history-person-id').value = personId;
-    document.getElementById('history-staff-name').textContent = personName;
-    
-    // Load the attendance history
-    loadAttendanceHistory();
-    
-    // Show the modal
-    $('#attendanceHistoryModal').modal('show');
-}
-
 // Load attendance history for the selected month
 async function loadAttendanceHistory() {
     const personId = document.getElementById('history-person-id').value;
@@ -733,11 +666,13 @@ async function loadAttendanceHistory() {
     `;
     
     try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         const response = await fetch(`{{ url('manual-attendance/staff') }}/${personId}/history?month=${month}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': token
             }
         });
         
@@ -838,8 +773,10 @@ function renderAttendanceHistory(datesData) {
     historyContainer.innerHTML = tableHTML;
 }
 
-// Add event listeners for month selection
+// Add event listeners when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded, initializing attendance functions');
+    
     // Calendar month change
     const attendanceMonth = document.getElementById('attendance-month');
     if (attendanceMonth) {
@@ -852,25 +789,20 @@ document.addEventListener('DOMContentLoaded', function() {
         historyMonth.addEventListener('change', loadAttendanceHistory);
     }
     
-    // Person search on Enter key
-    const personSearch = document.getElementById('person-search');
-    if (personSearch) {
-        personSearch.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchPersons();
-            }
+    // Category filter
+    const categoryFilter = document.getElementById('category-filter');
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function() {
+            filterStaffByCategory(this.value);
         });
     }
     
-    // Reset the add staff form when the modal is closed
-    $('#addStaffModal').on('hidden.bs.modal', function() {
-        document.getElementById('person-search').value = '';
-        document.getElementById('person-id').value = '';
-        document.getElementById('staff-code').value = '';
-        document.getElementById('is-active').checked = true;
-        document.getElementById('search-results').innerHTML = '';
+    // Save original button text for all attendance buttons
+    document.querySelectorAll('button[onclick^="markAttendance"]').forEach(button => {
+        button.dataset.originalText = button.innerText;
     });
+    
+    console.log('Attendance functionality initialized successfully');
 });
 </script>
 @endpush

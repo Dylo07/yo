@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ManualAttendance;
 use App\Models\Person;
+use App\Models\StaffCode;
+use App\Models\StaffCategory; // New model for staff categories
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -12,19 +14,49 @@ use Illuminate\Support\Facades\DB;
 
 class ManualAttendanceController extends Controller
 {
-    public function index()
+   public function index()
     {
         // Get staff members who have staff codes using relationship
-        $staff = Person::whereHas('staffCode', function($query) {
+        $staffQuery = Person::whereHas('staffCode', function($query) {
                 $query->where('is_active', 1);
             })
             ->where('type', 'individual')
-            ->orderBy('name')
-            ->get();
-    
+            ->with('staffCategory'); // Eager load staff categories
+        
+        // Get all staff members
+        $allStaff = $staffQuery->get();
+        
+        // Define the order of categories
+        $categoryOrder = [
+            'front_office',  // Front Office first
+            'kitchen',
+            'restaurant',
+            'maintenance',
+            'garden',
+            null, // Uncategorized staff will be at the end
+        ];
+        
+        // Group staff by category
+        $staffByCategory = [];
+        foreach ($categoryOrder as $category) {
+            $staffByCategory[$category] = $allStaff->filter(function($staff) use ($category) {
+                if ($category === null) {
+                    // For null category, get staff with no category
+                    return $staff->staffCategory === null;
+                }
+                return $staff->staffCategory && $staff->staffCategory->category === $category;
+            })->sortBy('name')->values();
+        }
+        
+        // Combine all staff in ordered categories
+        $staff = collect();
+        foreach ($staffByCategory as $categoryStaff) {
+            $staff = $staff->concat($categoryStaff);
+        }
+        
         $today = Carbon::now()->format('Y-m-d');
         
-        // FIXED: Use attendance_date instead of created_at for accurate date retrieval
+        // Use attendance_date instead of created_at for accurate date retrieval
         $attendances = ManualAttendance::whereDate('attendance_date', $today)
                 ->with('person')
                 ->get()
@@ -32,12 +64,21 @@ class ManualAttendanceController extends Controller
     
         // Add debug logging
         \Log::info('Staff count: ' . $staff->count());
-        \Log::info('Staff members:', $staff->pluck('name')->toArray());
+        \Log::info('Staff by category count: ', collect($staffByCategory)->map->count()->toArray());
         \Log::info('Today\'s attendance count: ' . $attendances->count());
     
-        return view('attendance.manual.index', compact('staff', 'attendances'));
+        // Define category names for display
+        $categoryNames = [
+            'front_office' => 'Front Office',
+            'kitchen' => 'Kitchen',
+            'restaurant' => 'Restaurant',
+            'maintenance' => 'Maintenance',
+            'garden' => 'Garden',
+            null => 'Not Assigned'
+        ];
+    
+        return view('attendance.manual.index', compact('staff', 'attendances', 'categoryNames', 'staffByCategory'));
     }
-
     public function markAttendance(Request $request)
     {
         $request->validate([
@@ -265,11 +306,36 @@ class ManualAttendanceController extends Controller
         return view('attendance.manual.add-staff', compact('availablePersons'));
     }
 
+    public function showManageCategories()
+    {
+        // Get all active staff members
+        $staff = Person::whereHas('staffCode', function($query) {
+                $query->where('is_active', 1);
+            })
+            ->where('type', 'individual')
+            ->orderBy('name')
+            ->with('staffCategory') // Eager load staff categories
+            ->get();
+
+        // Available categories
+        $categories = [
+            'front_office' => 'Front Office',
+            'garden' => 'Garden',
+            'kitchen' => 'Kitchen',
+            'maintenance' => 'Maintenance',
+            'restaurant' => 'Restaurant'
+        ];
+        
+        return view('attendance.manual.manage-categories', compact('staff', 'categories'));
+    }
+
+
     public function addStaffMember(Request $request)
     {
         $request->validate([
             'person_id' => 'required|exists:persons,id',
             'staff_code' => 'required|string|max:20',
+            'staff_category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant',
         ]);
 
         // Only admin can add staff members
@@ -277,27 +343,151 @@ class ManualAttendanceController extends Controller
             return redirect()->back()->with('error', 'Only administrators can add staff members');
         }
 
-        // Check if person is already a staff member
-        $existingStaff = \App\Models\StaffCode::where('person_id', $request->person_id)->first();
+        // Start a transaction to ensure both staff code and category are saved
+        DB::beginTransaction();
         
-        if ($existingStaff) {
-            // Update existing staff code
-            $existingStaff->staff_code = $request->staff_code;
-            $existingStaff->is_active = $request->has('is_active') ? 1 : 0;
-            $existingStaff->save();
+        try {
+            // Check if person is already a staff member
+            $existingStaff = StaffCode::where('person_id', $request->person_id)->first();
             
-            return redirect()->route('attendance.manual.index')->with('success', 'Staff member updated successfully');
+            if ($existingStaff) {
+                // Update existing staff code
+                $existingStaff->staff_code = $request->staff_code;
+                $existingStaff->is_active = $request->has('is_active') ? 1 : 0;
+                $existingStaff->save();
+                
+                // Update or create staff category
+                StaffCategory::updateOrCreate(
+                    ['person_id' => $request->person_id],
+                    ['category' => $request->staff_category]
+                );
+            } else {
+                // Create new staff code
+                $staffCode = new StaffCode();
+                $staffCode->person_id = $request->person_id;
+                $staffCode->staff_code = $request->staff_code;
+                $staffCode->is_active = $request->has('is_active') ? 1 : 0;
+                $staffCode->save();
+                
+                // Create new staff category
+                $staffCategory = new StaffCategory();
+                $staffCategory->person_id = $request->person_id;
+                $staffCategory->category = $request->staff_category;
+                $staffCategory->save();
+            }
+            
+            DB::commit();
+            return redirect()->route('attendance.manual.index')->with('success', 'Staff member added successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error adding staff member: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error adding staff member: ' . $e->getMessage())->withInput();
         }
-        
-        // Create new staff code
-        $staffCode = new \App\Models\StaffCode();
-        $staffCode->person_id = $request->person_id;
-        $staffCode->staff_code = $request->staff_code;
-        $staffCode->is_active = $request->has('is_active') ? 1 : 0;
-        $staffCode->save();
-        
-        return redirect()->route('attendance.manual.index')->with('success', 'Staff member added successfully');
     }
+    public function updateStaffCategory(Request $request)
+    {
+        $request->validate([
+            'person_id' => 'required|exists:persons,id',
+            'category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant',
+        ]);
+
+        // Only admin can update staff categories
+        if (!Auth::user()->checkAdmin()) {
+            return redirect()->back()->with('error', 'Only administrators can update staff categories');
+        }
+
+        try {
+            // Update or create staff category
+            StaffCategory::updateOrCreate(
+                ['person_id' => $request->person_id],
+                ['category' => $request->category]
+            );
+
+            return redirect()->back()->with('success', 'Staff category updated successfully');
+        } catch (\Exception $e) {
+            \Log::error('Error updating staff category: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error updating staff category: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkUpdateCategories(Request $request)
+{
+    // Basic validation
+    $request->validate([
+        'categories' => 'required|array'
+    ]);
+
+    // Only admin can update categories
+    if (!Auth::user()->checkAdmin()) {
+        return redirect()->back()->with('error', 'Only administrators can update staff categories');
+    }
+
+    $successCount = 0;
+    $errors = [];
+
+    // Process each category update individually (no transaction)
+    foreach ($request->categories as $personId => $category) {
+        // Skip if no category selected
+        if (empty($category)) {
+            continue;
+        }
+
+        try {
+            // Check if the person exists
+            $person = Person::find($personId);
+            if (!$person) {
+                $errors[] = "Person ID $personId not found";
+                continue;
+            }
+
+            // Direct database insert/update using query builder
+            // This bypasses Eloquent models which could be causing issues
+            $exists = DB::table('staff_categories')
+                ->where('person_id', $personId)
+                ->exists();
+
+            if ($exists) {
+                // Update existing record
+                DB::table('staff_categories')
+                    ->where('person_id', $personId)
+                    ->update([
+                        'category' => $category,
+                        'updated_at' => now()
+                    ]);
+            } else {
+                // Insert new record
+                DB::table('staff_categories')
+                    ->insert([
+                        'person_id' => $personId,
+                        'category' => $category,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+            }
+
+            $successCount++;
+        } catch (\Exception $e) {
+            \Log::error("Error updating category for person $personId: " . $e->getMessage());
+            $errors[] = "Could not update category for " . ($person->name ?? "person #$personId") . ": " . $e->getMessage();
+        }
+    }
+
+    // Prepare response message
+    $message = "Updated $successCount staff categories successfully.";
+    
+    if (count($errors) > 0) {
+        $message .= " However, there were " . count($errors) . " errors: " . implode("; ", $errors);
+        return redirect()->back()->with('warning', $message);
+    }
+
+    return redirect()->back()->with('success', $message);
+}
+
+    /**
+     * Bulk update staff categories
+     */
+
+    
     
     public function report(Request $request)
     {
@@ -336,13 +526,19 @@ class ManualAttendanceController extends Controller
         ->when($request->staff_member, function($query) use ($request) {
             return $query->where('person_id', $request->staff_member);
         })
+        ->when($request->staff_category, function($query) use ($request) {
+            return $query->whereHas('person.staffCategory', function($q) use ($request) {
+                $q->where('category', $request->staff_category);
+            });
+        })
         ->get();
 
         // Debug log for report data
         \Log::info('Attendance records found', [
             'total_records' => $attendances->count(),
             'date_range_days' => count($dates),
-            'staff_member_filter' => $request->staff_member
+            'staff_member_filter' => $request->staff_member,
+            'staff_category_filter' => $request->staff_category
         ]);
 
         // Create attendance map with proper initialization
@@ -369,13 +565,25 @@ class ManualAttendanceController extends Controller
             'total_absent' => $attendances->where('status', 'absent')->count()
         ];
 
+        // Get list of categories for filter dropdown
+        $categories = [
+            'front_office' => 'Front Office',
+            'garden' => 'Garden',
+            'kitchen' => 'Kitchen',
+            'maintenance' => 'Maintenance',
+            'restaurant' => 'Restaurant'
+        ];
+
         return view('attendance.manual.report', compact(
             'staff',
             'dates',
             'attendanceMap',
             'startDate',
             'endDate',
-            'summary'
+            'summary',
+            'categories'
         ));
     }
+
+    
 }

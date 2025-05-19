@@ -303,6 +303,18 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/manual-attendance/add-staff', [ManualAttendanceController::class, 'addStaffMember'])->name('attendance.manual.add-staff');
     Route::get('/manual-attendance/add-staff', [ManualAttendanceController::class, 'showAddStaffForm'])->name('attendance.manual.add-staff-form');
 
+Route::get('/manual-attendance/manage-categories', [ManualAttendanceController::class, 'showManageCategories'])
+        ->name('attendance.manual.manage-categories');
+    
+    // Route for updating a single staff category
+    Route::post('/manual-attendance/update-category', [ManualAttendanceController::class, 'updateStaffCategory'])
+        ->name('attendance.manual.update-category');
+    
+    // Route for bulk updating staff categories
+    Route::post('/manual-attendance/bulk-update-categories', [ManualAttendanceController::class, 'bulkUpdateCategories'])
+        ->name('attendance.manual.bulk-update-categories');
+        
+
 });
 
 

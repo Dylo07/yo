@@ -49,6 +49,18 @@
                            placeholder="e.g. EMP001" required>
                 </div>
                 
+                <div class="form-group">
+                    <label for="staff_category">Staff Category:</label>
+                    <select name="staff_category" id="staff_category" class="form-control" required>
+                        <option value="">-- Select Category --</option>
+                        <option value="front_office">Front Office</option>
+                        <option value="garden">Garden</option>
+                        <option value="kitchen">Kitchen</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="restaurant">Restaurant</option>
+                    </select>
+                </div>
+                
                 <div class="form-check mb-3">
                     <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" checked>
                     <label class="form-check-label" for="is_active">Active</label>

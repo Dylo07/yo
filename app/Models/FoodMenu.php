@@ -30,6 +30,8 @@ class FoodMenu extends Model
         'evening_snack_time',
         'dinner',
         'dinner_time',
+        'bites',           // New field
+        'bites_time',      // New field
         'created_by'
     ];
 
@@ -46,6 +48,7 @@ class FoodMenu extends Model
         'lunch_time' => 'datetime',
         'evening_snack_time' => 'datetime',
         'dinner_time' => 'datetime',
+        'bites_time' => 'datetime',  // New field
     ];
 
     /**

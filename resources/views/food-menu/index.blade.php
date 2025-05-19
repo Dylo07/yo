@@ -182,6 +182,23 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Bites Menu Section (NEW) -->
+        <div class="row mb-4">
+            <div class="col-md-9">
+                <label for="bites" class="form-label">Bites Menu</label>
+                <textarea name="bites" id="bites" class="form-control" rows="3">{{ $menu->bites ?? '' }}</textarea>
+            </div>
+            <div class="col-md-3">
+                <label for="bites_time" class="form-label">Bites Time</label>
+                <div class="input-group">
+                    <input type="time" name="bites_time" id="bites_time" class="form-control" 
+                        value="{{ $menu && $menu->bites_time ? $menu->bites_time->format('H:i') : '' }}">
+                    <span class="input-group-text">
+                        <i class="fas fa-clock"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
                                 
                                 <div class="d-flex">
                                     <button type="submit" class="btn btn-success">Save Menu</button>

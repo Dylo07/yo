@@ -232,6 +232,39 @@
                     </div>
                 </div>
                 @endif
+
+                @if($booking->menu->bites)
+<div class="mb-2">
+    <div class="font-semibold text-pink-700 flex items-center">
+        <i class="fas fa-cheese mr-2"></i> Bites
+        @if($booking->menu->bites_time)
+            <span class="ml-2 text-sm text-gray-600">
+                {{ \Carbon\Carbon::parse($booking->menu->bites_time)->format('g:i A') }}
+            </span>
+        @endif
+    </div>
+    <div class="text-sm text-gray-800 ml-6 mt-1">
+        @php
+            $bitesItems = preg_split('/\r\n|\r|\n/', $booking->menu->bites);
+        @endphp
+        
+        @if(count($bitesItems) > 1)
+            <ul class="list-disc pl-4">
+                @foreach($bitesItems as $item)
+                    @if(trim($item) !== '')
+                        <li>{{ trim($item) }}</li>
+                    @endif
+                @endforeach
+            </ul>
+        @else
+            {{ $booking->menu->bites }}
+        @endif
+    </div>
+</div>
+@endif
+
+
+
             </div>
         </div>
         @elseif(!empty($booking->special_requests))

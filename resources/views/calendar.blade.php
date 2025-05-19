@@ -333,7 +333,11 @@
                     <div id="modalBody">
                         <!-- Basic booking details will be injected here -->
                     </div>
+                    <button type="button" id="viewFoodMenu" class="btn btn-success">
+    <i class="fas fa-utensils me-1"></i> View Food Menu
+</button>
                 </div>
+                
                 <div class="payment-history">
                     <h6 class="border-bottom pb-2 mb-3">Payment History</h6>
                     <div id="paymentHistoryBody">
@@ -824,7 +828,12 @@ document.getElementById("printConfirmation").onclick = function() {
     // Open in new window
     window.open(`/bookings/${bookingId}/print`, '_blank');
 };
-
+ // Add this code for the food menu button
+    document.getElementById("viewFoodMenu").onclick = function() {
+        const bookingId = info.event.id;
+        const bookingDate = new Date(info.event.start).toISOString().split('T')[0];
+        window.open(`/food-menu?date=${bookingDate}&booking_id=${bookingId}`, '_blank');
+    };
 
 
     // Set the title and body of the modal with event details

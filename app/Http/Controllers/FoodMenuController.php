@@ -86,11 +86,13 @@ class FoodMenuController extends Controller
                 'evening_snack' => 'nullable|string',
                 'evening_snack_time' => 'nullable|string',
                 'dinner' => 'nullable|string',
-                'dinner_time' => 'nullable|string'
+                'dinner_time' => 'nullable|string',
+                'bites' => 'nullable|string',
+            'bites_time' => 'nullable|string'
             ]);
             
             // Format times if provided
-            $times = ['bed_tea_time', 'breakfast_time', 'morning_snack_time', 'lunch_time', 'evening_snack_time', 'dinner_time'];
+            $times = ['bed_tea_time', 'breakfast_time', 'morning_snack_time', 'lunch_time', 'evening_snack_time', 'dinner_time',  'bites_time'];
             foreach ($times as $timeField) {
                 if (!empty($validated[$timeField])) {
                     // Combine the date with the time
@@ -119,6 +121,8 @@ class FoodMenuController extends Controller
                     'evening_snack_time' => $validated['evening_snack_time'],
                     'dinner' => $validated['dinner'] ?? null,
                     'dinner_time' => $validated['dinner_time'],
+                    'bites' => $validated['bites'] ?? null,
+                'bites_time' => $validated['bites_time'],
                     'created_by' => auth()->id()
                 ]
             );

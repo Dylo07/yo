@@ -159,10 +159,10 @@
         <div class="d-flex align-items-center">
             <h5 class="mb-0 me-3">Inventory Changes</h5>
             <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
-                <input type="date" 
-                       name="inventory_date" 
-                       class="form-control form-control-sm me-2 dark-input" 
-                       value="{{ request('inventory_date', date('Y-m-d')) }}">
+                <input type="date"
+                        name="inventory_date"
+                        class="form-control form-control-sm me-2 dark-input"
+                        value="{{ request('inventory_date', date('Y-m-d')) }}">
                 <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
                 <!-- Preserve other request parameters -->
                 @if(request('date'))
@@ -189,6 +189,7 @@
                         <th>Item</th>
                         <th>Category</th>
                         <th>Action</th>
+                        <th>Location</th>
                         <th>Quantity</th>
                         <th>Current Stock</th>
                         <th>Updated By</th>
@@ -203,27 +204,90 @@
                         <td>{{ ($change->item && $change->item->group) ? $change->item->group->name : 'Unknown Category' }}</td>
                         <td>
                             @if($change->action == 'add')
-                                <span class="badge bg-success">Added</span>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-plus"></i> Added
+                                </span>
                             @else
-                                <span class="badge bg-danger">Removed</span>
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-minus"></i> Removed
+                                </span>
                             @endif
                         </td>
+                        <td>
+                            @switch($change->action)
+                                @case('add')
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-warehouse"></i> Stock Addition
+                                    </span>
+                                    @break
+                                @case('remove_main_kitchen')
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-utensils"></i> Main Kitchen
+                                    </span>
+                                    @break
+                                @case('remove_banquet_hall_kitchen')
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-birthday-cake"></i> Banquet Hall Kitchen
+                                    </span>
+                                    @break
+                                @case('remove_banquet_hall')
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-glass-cheers"></i> Banquet Hall
+                                    </span>
+                                    @break
+                                @case('remove_restaurant')
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-concierge-bell"></i> Restaurant
+                                    </span>
+                                    @break
+                                @case('remove_rooms')
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-bed"></i> Rooms
+                                    </span>
+                                    @break
+                                @case('remove_garden')
+                                    <span class="badge bg-dark">
+                                        <i class="fas fa-tree"></i> Garden
+                                    </span>
+                                    @break
+                                @case('remove_other')
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-question"></i> Other
+                                    </span>
+                                    @break
+                                @default
+                                    <span class="badge bg-light text-dark">
+                                        {{ ucfirst(str_replace(['remove_', '_'], ['', ' '], $change->action)) }}
+                                    </span>
+                            @endswitch
+                        </td>
                         <td class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
-                            <strong>{{ $change->quantity }}</strong>
+                            <strong>
+                                @if($change->action == 'add')
+                                    +{{ $change->quantity }}
+                                @else
+                                    -{{ $change->quantity }}
+                                @endif
+                            </strong>
                         </td>
                         <td class="fw-bold">
                             @if(isset($currentStockLevels[$change->item_id]))
-                                {{ $currentStockLevels[$change->item_id] }}
+                                <span class="badge bg-light text-dark">
+                                    {{ $currentStockLevels[$change->item_id] }}
+                                </span>
                             @else
-                                N/A
+                                <span class="text-muted">N/A</span>
                             @endif
                         </td>
                         <td>{{ $change->user ? $change->user->name : 'Unknown User' }}</td>
-                        <td>{{ $change->description }}</td>
+                        <td>
+                            <small class="text-muted">{{ $change->description }}</small>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
+                        <td colspan="9" class="text-center text-muted py-4">
+                            <i class="fas fa-box-open fa-2x mb-3 d-block"></i>
                             No inventory changes found for {{ \Carbon\Carbon::parse($inventoryDate)->format('M d, Y') }}
                         </td>
                     </tr>
@@ -231,9 +295,78 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Summary Section -->
+        @if($inventoryChanges->count() > 0)
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div class="alert alert-light border">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Total Changes:</strong> {{ $inventoryChanges->count() }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Items Added:</strong> 
+                            <span class="text-success">
+                                {{ $inventoryChanges->where('action', 'add')->sum('quantity') }}
+                            </span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Items Removed:</strong> 
+                            <span class="text-danger">
+                                {{ $inventoryChanges->whereIn('action', [
+                                    'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall',
+                                    'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
+                                ])->sum('quantity') }}
+                            </span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Locations Used:</strong> 
+                            {{ $inventoryChanges->whereIn('action', [
+                                'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall',
+                                'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
+                            ])->pluck('action')->unique()->count() }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 
+<style>
+.dark-input {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: white;
+}
+
+.dark-input:focus {
+    background-color: #2d3748;
+    border-color: #63b3ed;
+    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(99, 179, 237, 0.25);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.375em 0.75em;
+}
+
+.badge i {
+    margin-right: 0.25rem;
+}
+
+.alert-light {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+</style>
 
     <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">

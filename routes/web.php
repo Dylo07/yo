@@ -188,14 +188,35 @@ Route::post('/booking-payments/{payment}/toggle-verification',
     ->middleware('auth')
     ->name('booking-payments.toggle-verification');
 
-// routes for inventory
-Route::get('/stock', [InventoryController::class, 'index'])->name('stock.index');
-Route::post('/stock', [InventoryController::class, 'store'])->name('stock.store');
-Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('categories.store');
-Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.store');
-Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
-Route::post('/stock/update', [InventoryController::class, 'updateTodayStock'])->name('stock.update');
-Route::get('/stock/test-propagation', [InventoryController::class, 'checkStockPropagation'])->name('stock.test-propagation');
+// Add these routes to your existing web.php file
+
+// Add these routes to your existing routes/web.php file
+// Replace the existing stock management routes with these updated ones
+
+// Stock Management Routes (Updated for Category-specific tracking)
+Route::middleware(['auth'])->group(function () {
+    // Main stock management routes
+    Route::get('/stock', [InventoryController::class, 'index'])->name('stock.index');
+    Route::post('/stock', [InventoryController::class, 'store'])->name('stock.store');
+    Route::post('/stock/update', [InventoryController::class, 'updateTodayStock'])->name('stock.update');
+    
+    // Category and item management
+    Route::post('/categories', [InventoryController::class, 'storeCategory'])->name('categories.store');
+    Route::post('/items', [InventoryController::class, 'storeItem'])->name('items.store');
+    Route::get('/categories-products', [InventoryController::class, 'categoriesProducts'])->name('categories-products.index');
+    
+    // Stock viewing and testing
+    Route::get('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly');
+    Route::post('/stock/monthly', [InventoryController::class, 'viewMonthlyStock'])->name('stock.monthly.post');
+    Route::get('/stock/test-propagation', [InventoryController::class, 'checkStockPropagation'])->name('stock.test-propagation');
+    
+    // Usage reports and exports (New)
+    Route::get('/stock/usage-report', [InventoryController::class, 'getUsageReport'])->name('stock.usage-report');
+    Route::get('/stock/export-usage', [InventoryController::class, 'exportUsageReport'])->name('stock.export-usage');
+    
+    // Live data updates (New)
+    Route::get('/stock/live-data', [InventoryController::class, 'getLiveStockData'])->name('stock.live-data');
+});
 
 // routes for inventory for physical Items
 // Inventory Dashboard

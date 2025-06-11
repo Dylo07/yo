@@ -61,6 +61,7 @@
                             ['url' => '/lenders', 'title' => 'Creditors', 'icon' => 'credit'],
                             ['url' => '/report/daily-summary', 'title' => 'Daily Summary', 'icon' => 'dail'],
                             ['url' => '/kitchen', 'title' => 'Kitchen', 'icon' => 'kitchen'],
+                            ['url' => '/leave-requests', 'title' => 'Staff Leave Request', 'icon' => 'leave'],
                         
                             ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))

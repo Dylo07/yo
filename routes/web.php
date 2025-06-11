@@ -29,6 +29,7 @@ use App\Http\Controllers\SalesSummaryController;
 use App\Http\Controllers\KitchenOrderController;
 use App\Http\Controllers\LenderController;
 use App\Http\Controllers\RoomAvailabilityVisualizerController;
+use App\Http\Controllers\LeaveRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -338,8 +339,29 @@ Route::get('/manual-attendance/manage-categories', [ManualAttendanceController::
 
 });
 
-
-
+// Leave Request Routes - Add this complete section to your web.php file
+Route::middleware(['auth'])->group(function () {
+    // Custom routes that need to be defined BEFORE resource routes to avoid conflicts
+    
+    // Status update route (for approve/reject functionality)
+    Route::post('/leave-requests/update-status/{leaveRequest}', [LeaveRequestController::class, 'updateStatus'])
+        ->name('leave-requests.status');
+    
+    // Print route (for printing leave request details)
+    Route::get('/leave-requests/{leaveRequest}/print', [LeaveRequestController::class, 'print'])
+        ->name('leave-requests.print');
+    
+    // Calendar view route
+    Route::get('/leave-requests-calendar', [LeaveRequestController::class, 'calendar'])
+        ->name('leave-requests.calendar');
+    
+    // Calendar data API route (for AJAX calendar data)
+    Route::get('/leave-requests/calendar-data', [LeaveRequestController::class, 'getCalendarData'])
+        ->name('leave-requests.calendar-data');
+    
+    // Main leave request resource routes (MUST come AFTER the custom routes above)
+    Route::resource('leave-requests', LeaveRequestController::class);
+});
 
 // Kitchen Display System Routes
 Route::middleware(['auth'])->prefix('kitchen')->group(function () {

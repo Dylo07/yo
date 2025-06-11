@@ -43,4 +43,8 @@ class Person extends Model
     {
         return $this->hasMany(ManualAttendance::class);
     }
+    public function leaveRequests()
+{
+    return $this->hasMany(LeaveRequest::class, 'person_id');
+}
 }

@@ -15,6 +15,10 @@ class LeaveRequest extends Model
         'requested_by',
         'start_date',
         'end_date',
+        'start_datetime',
+        'end_datetime',
+        'hours',
+        'is_datetime_based',
         'reason',
         'leave_type',
         'status',
@@ -26,7 +30,11 @@ class LeaveRequest extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'approved_at' => 'datetime'
+        'start_datetime' => 'datetime',
+        'end_datetime' => 'datetime',
+        'approved_at' => 'datetime',
+        'is_datetime_based' => 'boolean',
+        'hours' => 'decimal:2'
     ];
 
     /**
@@ -58,7 +66,55 @@ class LeaveRequest extends Model
      */
     public function getDaysAttribute()
     {
+        if ($this->is_datetime_based && $this->hours) {
+            // Convert hours to days (assuming 8-hour workday)
+            return round($this->hours / 8, 2);
+        }
+        
+        // Fallback to old calculation
         return $this->start_date->diffInDays($this->end_date) + 1;
+    }
+
+     public function getFormattedDurationAttribute()
+    {
+        if ($this->is_datetime_based && $this->hours) {
+            if ($this->hours < 8) {
+                return $this->hours . ' hours';
+            } else {
+                $days = floor($this->hours / 8);
+                $remainingHours = $this->hours % 8;
+                
+                if ($remainingHours > 0) {
+                    return $days . ' day(s) ' . $remainingHours . ' hours';
+                } else {
+                    return $days . ' day(s)';
+                }
+            }
+        }
+        
+        return $this->days . ' day(s)';
+    }
+
+    /**
+     * Get start time formatted
+     */
+    public function getFormattedStartTimeAttribute()
+    {
+        if ($this->is_datetime_based && $this->start_datetime) {
+            return $this->start_datetime->format('g:i A');
+        }
+        return null;
+    }
+
+    /**
+     * Get end time formatted
+     */
+    public function getFormattedEndTimeAttribute()
+    {
+        if ($this->is_datetime_based && $this->end_datetime) {
+            return $this->end_datetime->format('g:i A');
+        }
+        return null;
     }
 
     /**

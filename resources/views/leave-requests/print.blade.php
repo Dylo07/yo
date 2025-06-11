@@ -15,7 +15,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            max-width: 400px; /* Same narrow width as transaction receipt */
+            max-width: 400px;
             margin: 0 auto;
         }
         
@@ -65,7 +65,7 @@
 
         .leave-details th {
             text-align: left;
-            width: 100px; /* Same width as transaction receipt */
+            width: 100px;
             font-weight: normal;
         }
 
@@ -97,6 +97,16 @@
             color: white;
         }
 
+        .duration-badge {
+            background-color: #6f42c1;
+            color: white;
+        }
+
+        .time-badge {
+            background-color: #28a745;
+            color: white;
+        }
+
         .reason-section {
             margin: 20px 0;
             padding: 10px;
@@ -125,7 +135,20 @@
             color: #856404;
         }
 
-        /* Signature styles - same as transaction receipt */
+        .time-period-section {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #e7f3ff;
+            border-left: 3px solid #007bff;
+            font-size: 12px;
+        }
+
+        .time-period-section h4 {
+            margin: 0 0 5px 0;
+            font-size: 12px;
+            color: #0056b3;
+        }
+
         .signature-row {
             display: flex;
             justify-content: space-between;
@@ -159,10 +182,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 16px; /* Same as transaction receipt */
+            font-size: 16px;
             color: rgba(0, 0, 0, 0.1);
             text-transform: uppercase;
-            letter-spacing: 2px; /* Same as transaction receipt */
+            letter-spacing: 2px;
             width: 100%;
             text-align: center;
             z-index: -1;
@@ -174,7 +197,7 @@
         }
 
         .btn {
-            padding: 8px 16px; /* Same as transaction receipt */
+            padding: 8px 16px;
             margin: 0 5px;
             cursor: pointer;
             border: none;
@@ -192,6 +215,28 @@
         .btn-back {
             background-color: #6c757d;
             color: white;
+        }
+
+        .time-visual {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f1f3f4;
+            border-radius: 5px;
+        }
+
+        .time-point {
+            text-align: center;
+            flex: 1;
+        }
+
+        .time-arrow {
+            flex: 0.5;
+            text-align: center;
+            font-size: 18px;
+            color: #666;
         }
     </style>
 </head>
@@ -220,16 +265,49 @@
                 </td>
             </tr>
             <tr>
-                <th>Start Date</th>
-                <td>{{ $leaveRequest->start_date->format('M j, Y') }}</td>
+                <th>Duration Type</th>
+                <td>
+                    @if($leaveRequest->is_datetime_based)
+                        <span class="duration-badge">Specific Time</span>
+                    @else
+                        <span class="duration-badge">Full Day(s)</span>
+                    @endif
+                </td>
             </tr>
-            <tr>
-                <th>End Date</th>
-                <td>{{ $leaveRequest->end_date->format('M j, Y') }}</td>
-            </tr>
+            @if($leaveRequest->is_datetime_based)
+                <tr>
+                    <th>Start Time</th>
+                    <td>{{ $leaveRequest->start_datetime->format('M j, Y') }}<br>
+                        <span class="time-badge">{{ $leaveRequest->start_datetime->format('g:i A') }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>End Time</th>
+                    <td>{{ $leaveRequest->end_datetime->format('M j, Y') }}<br>
+                        <span class="time-badge">{{ $leaveRequest->end_datetime->format('g:i A') }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Total Hours</th>
+                    <td>{{ $leaveRequest->hours }} hours
+                        @if($leaveRequest->hours < 8)
+                            <br><small>(Half Day)</small>
+                        @endif
+                    </td>
+                </tr>
+            @else
+                <tr>
+                    <th>Start Date</th>
+                    <td>{{ $leaveRequest->start_date->format('M j, Y') }}</td>
+                </tr>
+                <tr>
+                    <th>End Date</th>
+                    <td>{{ $leaveRequest->end_date->format('M j, Y') }}</td>
+                </tr>
+            @endif
             <tr>
                 <th>Duration</th>
-                <td>{{ $leaveRequest->days }} day(s)</td>
+                <td>{{ $leaveRequest->formatted_duration }}</td>
             </tr>
             <tr>
                 <th>Status</th>
@@ -254,6 +332,28 @@
             </tr>
             @endif
         </table>
+
+        @if($leaveRequest->is_datetime_based)
+        <div class="time-period-section">
+            <h4>Time Period Visual</h4>
+            <div class="time-visual">
+                <div class="time-point">
+                    <div><strong>START</strong></div>
+                    <div>{{ $leaveRequest->start_datetime->format('M j') }}</div>
+                    <div>{{ $leaveRequest->start_datetime->format('g:i A') }}</div>
+                </div>
+                <div class="time-arrow">→</div>
+                <div class="time-point">
+                    <div><strong>END</strong></div>
+                    <div>{{ $leaveRequest->end_datetime->format('M j') }}</div>
+                    <div>{{ $leaveRequest->end_datetime->format('g:i A') }}</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+                <strong>Total: {{ $leaveRequest->formatted_duration }}</strong>
+            </div>
+        </div>
+        @endif
 
         @if($leaveRequest->reason)
         <div class="reason-section">

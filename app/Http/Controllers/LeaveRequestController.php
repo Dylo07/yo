@@ -69,62 +69,119 @@ class LeaveRequestController extends Controller
      * Store a newly created leave request
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'person_id' => [
-                'required',
-                'integer',
-                function ($attribute, $value, $fail) {
-                    // Check if person exists and has active staff code using same logic as attendance
-                    $exists = Person::whereHas('staffCode', function($query) {
-                            $query->where('is_active', 1);
-                        })
-                        ->where('type', 'individual')
-                        ->where('id', $value)
-                        ->exists();
-                    
-                    if (!$exists) {
-                        $fail('The selected staff member is invalid or inactive.');
-                    }
+{
+    // Base validation rules
+    $rules = [
+        'person_id' => [
+            'required',
+            'integer',
+            function ($attribute, $value, $fail) {
+                $exists = Person::whereHas('staffCode', function($query) {
+                        $query->where('is_active', 1);
+                    })
+                    ->where('type', 'individual')
+                    ->where('id', $value)
+                    ->exists();
+                
+                if (!$exists) {
+                    $fail('The selected staff member is invalid or inactive.');
                 }
-            ],
-            'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:1000',
-            'leave_type' => 'required|in:sick,annual,emergency,personal,maternity,other'
-        ]);
+            }
+        ],
+        'reason' => 'required|string|max:1000',
+        'leave_type' => 'required|in:sick,annual,emergency,personal,maternity,other',
+        'duration_type' => 'required|in:full_day,specific_time'
+    ];
 
-        // Check for overlapping leave requests for the same person
-        $overlapping = LeaveRequest::where('person_id', $request->person_id)
-            ->where('status', 'approved')
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
-                      ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
-                      ->orWhere(function ($q) use ($request) {
-                          $q->where('start_date', '<=', $request->start_date)
-                            ->where('end_date', '>=', $request->end_date);
-                      });
-            })
-            ->exists();
-
-        if ($overlapping) {
-            return back()->withErrors(['error' => 'This staff member already has approved leave during the selected dates.'])
-                        ->withInput();
-        }
-
-        LeaveRequest::create([
-            'person_id' => $request->person_id,
-            'requested_by' => Auth::id(),
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'reason' => $request->reason,
-            'leave_type' => $request->leave_type,
-            'status' => 'pending'
-        ]);
-
-        return redirect()->route('leave-requests.index')
-                        ->with('success', 'Leave request submitted successfully!');
+    // Conditional validation based on duration type
+    if ($request->duration_type === 'full_day') {
+        $rules['start_date'] = 'required|date|after_or_equal:today';
+        $rules['end_date'] = 'required|date|after_or_equal:start_date';
+    } else {
+        $rules['start_date_time'] = 'required|date|after_or_equal:today';
+        $rules['start_time'] = 'required';
+        $rules['end_date_time'] = 'required|date|after_or_equal:start_date_time';
+        $rules['end_time'] = 'required';
     }
+
+    $request->validate($rules);
+
+    // Prepare data for storage
+    $data = [
+        'person_id' => $request->person_id,
+        'requested_by' => Auth::id(),
+        'reason' => $request->reason,
+        'leave_type' => $request->leave_type,
+        'status' => 'pending'
+    ];
+
+    if ($request->duration_type === 'full_day') {
+        $data['start_date'] = $request->start_date;
+        $data['end_date'] = $request->end_date;
+        $data['is_datetime_based'] = false;
+    } else {
+        // Create datetime objects
+        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $request->start_date_time . ' ' . $request->start_time);
+        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $request->end_date_time . ' ' . $request->end_time);
+        
+        // Calculate hours
+        $hours = $endDateTime->diffInMinutes($startDateTime) / 60;
+        
+        $data['start_datetime'] = $startDateTime;
+        $data['end_datetime'] = $endDateTime;
+        $data['start_date'] = $startDateTime->toDateString();
+        $data['end_date'] = $endDateTime->toDateString();
+        $data['hours'] = $hours;
+        $data['is_datetime_based'] = true;
+    }
+
+    // Check for overlapping leave requests
+    $this->checkOverlappingLeave($request->person_id, $data);
+
+    LeaveRequest::create($data);
+
+    return redirect()->route('leave-requests.index')
+                    ->with('success', 'Leave request submitted successfully!');
+}
+private function checkOverlappingLeave($personId, $data)
+{
+    $query = LeaveRequest::where('person_id', $personId)
+        ->where('status', 'approved');
+
+    if ($data['is_datetime_based']) {
+        $query->where(function ($q) use ($data) {
+            $q->where(function ($subQ) use ($data) {
+                // Check datetime overlap
+                $subQ->where('is_datetime_based', true)
+                     ->where(function ($timeQ) use ($data) {
+                         $timeQ->whereBetween('start_datetime', [$data['start_datetime'], $data['end_datetime']])
+                               ->orWhereBetween('end_datetime', [$data['start_datetime'], $data['end_datetime']])
+                               ->orWhere(function ($overlapQ) use ($data) {
+                                   $overlapQ->where('start_datetime', '<=', $data['start_datetime'])
+                                            ->where('end_datetime', '>=', $data['end_datetime']);
+                               });
+                     });
+            })->orWhere(function ($subQ) use ($data) {
+                // Check full day overlap with datetime
+                $subQ->where('is_datetime_based', false)
+                     ->whereBetween('start_date', [$data['start_date'], $data['end_date']]);
+            });
+        });
+    } else {
+        $query->where(function ($q) use ($data) {
+            $q->whereBetween('start_date', [$data['start_date'], $data['end_date']])
+              ->orWhereBetween('end_date', [$data['start_date'], $data['end_date']])
+              ->orWhere(function ($subQ) use ($data) {
+                  $subQ->where('start_date', '<=', $data['start_date'])
+                       ->where('end_date', '>=', $data['end_date']);
+              });
+        });
+    }
+
+    if ($query->exists()) {
+        throw new \Exception('This staff member already has approved leave during the selected time period.');
+    }
+}
 
     /**
      * Display the specified leave request

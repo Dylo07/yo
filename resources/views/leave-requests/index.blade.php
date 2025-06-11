@@ -81,9 +81,8 @@
                             <th>ID</th>
                             <th>Staff Member</th>
                             <th>Leave Type</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Days</th>
+                            <th>Period</th>
+                            <th>Duration</th>
                             <th>Status</th>
                             <th>Requested By</th>
                             <th>Requested Date</th>
@@ -108,9 +107,34 @@
                                 <td>
                                     <span class="badge badge-info">{{ $request->formatted_leave_type }}</span>
                                 </td>
-                                <td>{{ $request->start_date->format('M d, Y') }}</td>
-                                <td>{{ $request->end_date->format('M d, Y') }}</td>
-                                <td>{{ $request->days }} day(s)</td>
+                                <td>
+                                    @if($request->is_datetime_based)
+                                        <strong>{{ $request->start_datetime->format('M d, Y') }}</strong>
+                                        @if($request->start_datetime->format('Y-m-d') != $request->end_datetime->format('Y-m-d'))
+                                            <br>to <strong>{{ $request->end_datetime->format('M d, Y') }}</strong>
+                                        @endif
+                                        <br>
+                                        <small class="text-primary">
+                                            <i class="fas fa-clock"></i>
+                                            {{ $request->start_datetime->format('g:i A') }} - {{ $request->end_datetime->format('g:i A') }}
+                                        </small>
+                                    @else
+                                        <strong>{{ $request->start_date->format('M d, Y') }}</strong>
+                                        @if($request->start_date->format('Y-m-d') != $request->end_date->format('Y-m-d'))
+                                            <br>to <strong>{{ $request->end_date->format('M d, Y') }}</strong>
+                                        @endif
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-day"></i> Full Day(s)
+                                        </small>
+                                    @endif
+                                </td>
+                                <td>
+                                    <strong>{{ $request->formatted_duration }}</strong>
+                                    @if($request->is_datetime_based && $request->hours < 8)
+                                        <br><small class="text-info">Half Day</small>
+                                    @endif
+                                </td>
                                 <td id="status-{{ $request->id }}">
                                     <span class="badge badge-{{ $request->status_badge_class }}">
                                         {{ ucfirst($request->status) }}
@@ -169,7 +193,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center">No leave requests found.</td>
+                                <td colspan="9" class="text-center">No leave requests found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -234,6 +258,12 @@
     .alert {
         margin-bottom: 1rem;
     }
+    .table td {
+        font-size: 0.9rem;
+    }
+    .badge {
+        font-size: 0.75rem;
+    }
 </style>
 @endpush
 
@@ -260,17 +290,13 @@ document.getElementById('statusForm').addEventListener('submit', async function(
     const status = document.getElementById('requestStatus').value;
     const remarks = document.getElementById('admin_remarks').value;
     
-    console.log('Submitting status update:', { requestId, status, remarks }); // Debug log
-    
     const confirmButton = document.getElementById('confirmButton');
     const originalText = confirmButton.textContent;
     confirmButton.textContent = 'Processing...';
     confirmButton.disabled = true;
     
     try {
-        // Use the new route pattern
         const url = `/leave-requests/update-status/${requestId}`;
-        console.log('Request URL:', url); // Debug log
         
         const response = await fetch(url, {
             method: 'POST',
@@ -286,19 +312,13 @@ document.getElementById('statusForm').addEventListener('submit', async function(
             })
         });
         
-        console.log('Response status:', response.status); // Debug log
-        console.log('Response headers:', response.headers.get('content-type')); // Debug log
-        
-        // Check if response is JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const responseText = await response.text();
-            console.error('Non-JSON response:', responseText);
             throw new Error('Server error: Expected JSON response but got ' + contentType);
         }
         
         const data = await response.json();
-        console.log('Response data:', data); // Debug log
         
         if (response.status === 403) {
             showAlert(data.error || 'Unauthorized', 'danger');
@@ -306,19 +326,14 @@ document.getElementById('statusForm').addEventListener('submit', async function(
         }
         
         if (data.success) {
-            // Update the status badge in the table
             const statusCell = document.getElementById(`status-${requestId}`);
             if (statusCell) {
                 statusCell.innerHTML = data.status_badge;
             }
             
-            // Show success message
             showAlert(data.message, 'success');
-            
-            // Close modal
             $('#statusModal').modal('hide');
             
-            // Reload page to update action buttons
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
@@ -352,7 +367,6 @@ function showAlert(message, type = 'success') {
     }, 5000);
 }
 
-// Clear form when modal is hidden
 $('#statusModal').on('hidden.bs.modal', function () {
     document.getElementById('admin_remarks').value = '';
 });

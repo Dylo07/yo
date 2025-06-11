@@ -156,6 +156,10 @@
                 <td>{{ $cost->person->name }}</td>
             </tr>
             <tr>
+                <th>Description</th>
+                <td>{{ $cost->description ?? '-' }}</td>
+            </tr>
+            <tr>
                 <th>Amount</th>
                 <td>Rs. {{ number_format($cost->amount, 2) }}</td>
             </tr>

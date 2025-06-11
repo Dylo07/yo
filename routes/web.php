@@ -363,6 +363,29 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('leave-requests', LeaveRequestController::class);
 });
 
+// Gate Pass Routes
+Route::middleware(['auth'])->group(function () {
+    // Dashboard route
+    Route::get('/gate-passes/dashboard', [App\Http\Controllers\GatePassController::class, 'dashboard'])
+        ->name('gate-passes.dashboard');
+    
+    // Status update route (for approve/reject functionality)
+    Route::post('/gate-passes/update-status/{gatePass}', [App\Http\Controllers\GatePassController::class, 'updateStatus'])
+        ->name('gate-passes.update-status');
+    
+    // Mark return route
+    Route::post('/gate-passes/{gatePass}/mark-return', [App\Http\Controllers\GatePassController::class, 'markReturn'])
+        ->name('gate-passes.mark-return');
+    
+    // Print route
+    Route::get('/gate-passes/{gatePass}/print', [App\Http\Controllers\GatePassController::class, 'print'])
+        ->name('gate-passes.print');
+    
+    // Main gate pass resource routes
+    Route::resource('gate-passes', App\Http\Controllers\GatePassController::class);
+});
+
+
 // Kitchen Display System Routes
 Route::middleware(['auth'])->prefix('kitchen')->group(function () {
     // Main kitchen display

@@ -62,6 +62,7 @@
                             ['url' => '/report/daily-summary', 'title' => 'Daily Summary', 'icon' => 'dail'],
                             ['url' => '/kitchen', 'title' => 'Kitchen', 'icon' => 'kitchen'],
                             ['url' => '/leave-requests', 'title' => 'Staff Leave Request', 'icon' => 'leave'],
+                            ['url' => '/gate-passes', 'title' => 'Gate Passes', 'icon' => 'gate'],
                         
                             ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))

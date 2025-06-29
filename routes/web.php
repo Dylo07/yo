@@ -410,6 +410,26 @@ Route::middleware(['auth'])->prefix('kitchen')->group(function () {
     Route::get('/analytics', [KitchenOrderController::class, 'getAnalyticsData']);
 });
 
+
+// Add these routes to your existing web.php file
+
+// Kitchen Comparison Routes - Add this section to your web.php file
+Route::middleware(['auth'])->group(function () {
+    // Main kitchen comparison page
+    Route::get('/kitchen/comparison', [App\Http\Controllers\KitchenComparisonController::class, 'index'])
+        ->name('kitchen.comparison');
+    
+    // AJAX endpoint for getting comparison data
+    Route::get('/kitchen/comparison/data', [App\Http\Controllers\KitchenComparisonController::class, 'getComparisonData'])
+        ->name('kitchen.comparison.data');
+    
+    // Export comparison report
+    Route::get('/kitchen/comparison/export', [App\Http\Controllers\KitchenComparisonController::class, 'exportComparison'])
+        ->name('kitchen.comparison.export');
+});
+
+
+
 // Package Management Routes
 Route::middleware(['auth'])->group(function () {
    Route::resource('package-categories', PackageCategoryController::class);

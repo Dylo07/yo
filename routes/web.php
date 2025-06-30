@@ -30,6 +30,8 @@ use App\Http\Controllers\KitchenOrderController;
 use App\Http\Controllers\LenderController;
 use App\Http\Controllers\RoomAvailabilityVisualizerController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\UltraSimpleKitchenController;
+use App\Http\Controllers\SimpleRecipeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -459,6 +461,71 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('lenders', LenderController::class);
     Route::get('/lenders/{id}/mark-paid', [App\Http\Controllers\LenderController::class, 'markAsPaid'])
     ->name('lenders.mark-paid');
+});
+
+
+// Add these routes to your web.php file
+
+// Add these routes to your routes/web.php file
+// Ultra Simple Kitchen Inventory Routes
+
+Route::middleware(['auth'])->group(function () {
+    // Main kitchen inventory page
+    Route::get('/kitchen/inventory', [UltraSimpleKitchenController::class, 'index'])->name('kitchen.index');
+    
+    // Add item to kitchen
+    Route::post('/kitchen/add', [UltraSimpleKitchenController::class, 'addToKitchen'])->name('kitchen.add');
+    
+    // Update stock
+    Route::post('/kitchen/stock/update', [UltraSimpleKitchenController::class, 'updateStock'])->name('kitchen.stock.update');
+    
+    // Update item details
+    Route::post('/kitchen/item/update', [UltraSimpleKitchenController::class, 'updateItem'])->name('kitchen.item.update');
+    
+    // Remove from kitchen
+    Route::post('/kitchen/remove', [UltraSimpleKitchenController::class, 'removeFromKitchen'])->name('kitchen.remove');
+    
+    // Get stock logs (optional API endpoint)
+    Route::get('/kitchen/logs/{itemId}', [UltraSimpleKitchenController::class, 'getStockLogs'])->name('kitchen.logs');
+});
+
+Route::middleware(['auth'])->prefix('recipes')->name('recipes.')->group(function () {
+    // Main recipe management page
+    Route::get('/', [SimpleRecipeController::class, 'index'])->name('index');
+    
+    // Save recipe
+    Route::post('/save', [SimpleRecipeController::class, 'saveRecipe'])->name('save');
+    
+    // Get recipe for specific menu (AJAX)
+    Route::get('/get/{menuId}', [SimpleRecipeController::class, 'getRecipe'])->name('get');
+    
+    // Check menu availability
+    Route::get('/check/{menuId}', [SimpleRecipeController::class, 'checkMenuAvailability'])->name('check');
+    
+    // Daily consumption report
+    Route::get('/consumption', [SimpleRecipeController::class, 'getDailyConsumption'])->name('consumption');
+});
+
+// Kitchen Consumption Route (should be placed BEFORE other recipe routes)
+Route::middleware(['auth'])->group(function () {
+    // Daily consumption report - SPECIFIC route first
+    Route::get('/recipes/consumption', [SimpleRecipeController::class, 'getDailyConsumption'])
+        ->name('recipes.consumption');
+    
+    // Then the general recipe routes
+    Route::prefix('recipes')->name('recipes.')->group(function () {
+        // Main recipe management page
+        Route::get('/', [SimpleRecipeController::class, 'index'])->name('index');
+        
+        // Save recipe
+        Route::post('/save', [SimpleRecipeController::class, 'saveRecipe'])->name('save');
+        
+        // Get recipe for specific menu (AJAX)
+        Route::get('/get/{menuId}', [SimpleRecipeController::class, 'getRecipe'])->name('get');
+        
+        // Check menu availability
+        Route::get('/check/{menuId}', [SimpleRecipeController::class, 'checkMenuAvailability'])->name('check');
+    });
 });
 
 Route::middleware(['auth'])->group(function () {

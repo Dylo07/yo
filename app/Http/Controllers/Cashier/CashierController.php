@@ -267,53 +267,57 @@ class CashierController extends Controller
         }
         return $html;
     }
-public function savePayment(Request $request){
-    $saleID = $request->saleID;
-    $recievedAmount = $request->recievedAmount;
-    $paymentType = $request->PaymentType;
-    
-    // Begin transaction for data consistency
-    DB::beginTransaction();
-    
-    try {
-        $sale = Sale::find($saleID);
-        $sale->total_recieved = $recievedAmount;
-        $sale->change = $recievedAmount + $sale->total_price;
-        $sale->payment_type = $paymentType;
-        $sale->sale_status = "paid";
-        $sale->save();
+    public function savePayment(Request $request){
+        $saleID = $request->saleID;
+        $recievedAmount = $request->recievedAmount;
+        $paymentType = $request->PaymentType;
         
-        $table = Table::find($sale->table_id);
-        $table->status = "available";
-        $table->save();
+        // Begin transaction for data consistency
+        DB::beginTransaction();
         
-        // Only reduce stock if it hasn't been reduced yet
-        if (!$this->hasStockBeenReduced($saleID)) {
-            $saleDetail = SaleDetail::where('sale_id', $saleID)->get();
+        try {
+            $sale = Sale::find($saleID);
+            $sale->total_recieved = $recievedAmount;
+            $sale->change = $recievedAmount + $sale->total_price;
+            $sale->payment_type = $paymentType;
+            $sale->sale_status = "paid";
+            $sale->save();
             
-            foreach ($saleDetail as $value) {
-                $user = Auth::user();
-                $stock = new InStock();
-                $stock->menu_id = $value->menu_id;
-                $stock->stock = -intval($value->quantity);
-                $stock->user_id = $user->id;
-                $stock->sale_id = $saleID; // Track which sale this stock reduction belongs to
-                $stock->save();
-    
-                $menu = Menu::find($value->menu_id);
-                $menu->stock = intval($menu->stock) - ($value->quantity);
-                $menu->save();     
-            }
-        }
+            $table = Table::find($sale->table_id);
+            $table->status = "available";
+            $table->save();
+            
+            // Only reduce stock if it hasn't been reduced yet
+            if (!$this->hasStockBeenReduced($saleID)) {
+                $saleDetail = SaleDetail::where('sale_id', $saleID)->get();
+                
+                foreach ($saleDetail as $value) {
+                    $user = Auth::user();
+                    $stock = new InStock();
+                    $stock->menu_id = $value->menu_id;
+                    $stock->stock = -intval($value->quantity);
+                    $stock->user_id = $user->id;
+                    $stock->sale_id = $saleID;
+                    $stock->save();
         
-        DB::commit();
-        return url('/cashier/showRecipt')."/".$saleID;
-    } catch (\Exception $e) {
-        DB::rollback();
-        \Log::error('Error in savePayment: ' . $e->getMessage());
-        return response()->json(['error' => 'An error occurred while processing payment.'], 500);
+                    $menu = Menu::find($value->menu_id);
+                    $menu->stock = intval($menu->stock) - ($value->quantity);
+                    $menu->save();     
+                }
+                
+                // FIXED: Automatically deduct kitchen ingredients for ALL recipe items
+                $this->processKitchenStockDeduction($saleID);
+            }
+            
+            DB::commit();
+            return url('/cashier/showRecipt')."/".$saleID;
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Error in savePayment: ' . $e->getMessage());
+            return response()->json(['error' => 'An error occurred while processing payment.'], 500);
+        }
     }
-}
+
 
     public function showRecipt($saleID){
         $sale = Sale::find($saleID);
@@ -519,4 +523,127 @@ public function setupAdvancePayment($table_id)
     // Redirect to the advance payment selection
     return redirect('/cashier/advance-payment/' . $sale->id);
 }
+
+
+ private function processKitchenStockDeduction($saleID)
+    {
+        try {
+            \Log::info("Starting kitchen stock deduction for sale #{$saleID}");
+            
+            // Get sale details
+            $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
+            
+            \Log::info("Found " . $saleDetails->count() . " sale items to process");
+
+            foreach ($saleDetails as $saleDetail) {
+                \Log::info("Processing menu item: {$saleDetail->menu_name} (ID: {$saleDetail->menu_id}) x{$saleDetail->quantity}");
+                
+                // Get ALL recipes for this menu item - FIXED: Ensure we get all ingredients
+                $recipes = DB::table('menu_item_recipes')
+                    ->join('items', 'menu_item_recipes.item_id', '=', 'items.id')
+                    ->where('menu_item_recipes.menu_id', $saleDetail->menu_id)
+                    ->where('items.is_kitchen_item', true)
+                    ->where('items.kitchen_is_active', true)
+                    ->select(
+                        'menu_item_recipes.*',
+                        'items.name as item_name',
+                        'items.kitchen_current_stock',
+                        'items.kitchen_unit',
+                        'items.kitchen_cost_per_unit'
+                    )
+                    ->get();
+
+                \Log::info("Found " . $recipes->count() . " recipe ingredients for {$saleDetail->menu_name}");
+
+                if ($recipes->isEmpty()) {
+                    \Log::warning("No recipe found for menu item: {$saleDetail->menu_name} (ID: {$saleDetail->menu_id})");
+                    continue;
+                }
+
+                // Process EACH ingredient in the recipe
+                foreach ($recipes as $recipe) {
+                    $totalRequired = $recipe->required_quantity * $saleDetail->quantity;
+                    
+                    \Log::info("Processing ingredient: {$recipe->item_name}", [
+                        'required_per_item' => $recipe->required_quantity,
+                        'sale_quantity' => $saleDetail->quantity,
+                        'total_required' => $totalRequired,
+                        'current_stock' => $recipe->kitchen_current_stock
+                    ]);
+                    
+                    // Check if we have enough stock
+                    if ($recipe->kitchen_current_stock >= $totalRequired) {
+                        // Deduct from kitchen stock
+                        $oldStock = $recipe->kitchen_current_stock;
+                        $newStock = $oldStock - $totalRequired;
+
+                        // Update kitchen stock
+                        $updateResult = DB::table('items')
+                            ->where('id', $recipe->item_id)
+                            ->update([
+                                'kitchen_current_stock' => $newStock,
+                                'updated_at' => now()
+                            ]);
+
+                        if ($updateResult) {
+                            // Log the consumption in kitchen_stock_logs
+                            DB::table('kitchen_stock_logs')->insert([
+                                'item_id' => $recipe->item_id,
+                                'action' => 'menu_consumption',
+                                'quantity_before' => $oldStock,
+                                'quantity_change' => -$totalRequired,
+                                'quantity_after' => $newStock,
+                                'description' => "Auto: {$saleDetail->menu_name} x{$saleDetail->quantity} (Sale #{$saleID})",
+                                'user_id' => Auth::id(),
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+
+                            \Log::info("Successfully deducted kitchen stock", [
+                                'ingredient' => $recipe->item_name,
+                                'old_stock' => $oldStock,
+                                'deducted' => $totalRequired,
+                                'new_stock' => $newStock,
+                                'unit' => $recipe->kitchen_unit
+                            ]);
+                        } else {
+                            \Log::error("Failed to update kitchen stock for item ID: {$recipe->item_id}");
+                        }
+                    } else {
+                        // Log insufficient stock warning but don't stop the sale
+                        \Log::warning("Insufficient kitchen stock for auto-deduction", [
+                            'sale_id' => $saleID,
+                            'menu_item' => $saleDetail->menu_name,
+                            'ingredient' => $recipe->item_name,
+                            'required' => $totalRequired,
+                            'available' => $recipe->kitchen_current_stock,
+                            'unit' => $recipe->kitchen_unit
+                        ]);
+                        
+                        // Still log the attempted consumption for tracking
+                        DB::table('kitchen_stock_logs')->insert([
+                            'item_id' => $recipe->item_id,
+                            'action' => 'insufficient_stock',
+                            'quantity_before' => $recipe->kitchen_current_stock,
+                            'quantity_change' => 0,
+                            'quantity_after' => $recipe->kitchen_current_stock,
+                            'description' => "INSUFFICIENT STOCK: {$saleDetail->menu_name} x{$saleDetail->quantity} (Sale #{$saleID}) - Required: {$totalRequired}, Available: {$recipe->kitchen_current_stock}",
+                            'user_id' => Auth::id(),
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
+                }
+            }
+
+            \Log::info("Completed kitchen stock deduction for sale #{$saleID}");
+
+        } catch (\Exception $e) {
+            \Log::error("Error processing kitchen stock deduction: " . $e->getMessage(), [
+                'sale_id' => $saleID,
+                'error' => $e->getTraceAsString()
+            ]);
+            // Don't throw the error as this shouldn't stop the sale process
+        }
+    }
 }

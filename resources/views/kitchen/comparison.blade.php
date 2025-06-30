@@ -454,7 +454,145 @@
         </div>
     </div>
 </div>
+<!-- Add this widget to your comparison.blade.php file -->
 
+<div class="card mt-4">
+    <div class="card-header bg-warning text-dark">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-pie me-2"></i>
+                Daily Kitchen Consumption
+            </h5>
+            <div>
+                <input type="date" id="consumptionDate" class="form-control form-control-sm" 
+                       value="{{ now()->toDateString() }}" onchange="loadConsumption()">
+                <a href="{{ route('recipes.index') }}" class="btn btn-sm btn-outline-dark ms-2">
+                    <i class="fas fa-cog me-1"></i> Manage Recipes
+                </a>
+                <a href="{{ route('kitchen.index') }}" class="btn btn-sm btn-outline-dark ms-2">
+    <i class="fas fa-utensils me-1"></i> Manage inventory
+</a>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="consumptionData">
+            <div class="text-center p-4">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-2 mb-0">Loading consumption data...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load consumption data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadConsumption();
+});
+
+function loadConsumption() {
+    const date = document.getElementById('consumptionDate').value;
+    const consumptionData = document.getElementById('consumptionData');
+    
+    // Show loading
+    consumptionData.innerHTML = `
+        <div class="text-center p-4">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2 mb-0">Loading consumption data...</p>
+        </div>
+    `;
+    
+    fetch(`/recipes/consumption?date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.consumption && data.consumption.length > 0) {
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Total Daily Cost</h6>
+                                <h4 class="mb-0 text-danger">Rs ${parseFloat(data.total_cost).toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Items Consumed</h6>
+                                <h4 class="mb-0 text-info">${data.consumption.length}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ingredient</th>
+                                    <th>Category</th>
+                                    <th>Consumed</th>
+                                    <th>Cost/Unit</th>
+                                    <th>Total Cost</th>
+                                    <th>Usage %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.consumption.forEach(item => {
+                    const totalCost = parseFloat(item.total_cost);
+                    const usagePercentage = data.total_cost > 0 ? ((totalCost / data.total_cost) * 100).toFixed(1) : 0;
+                    
+                    html += `
+                        <tr>
+                            <td><strong>${item.item_name}</strong></td>
+                            <td><span class="badge bg-secondary">${item.category_name || 'Uncategorized'}</span></td>
+                            <td>${parseFloat(item.total_consumed).toFixed(2)} ${item.kitchen_unit}</td>
+                            <td>Rs ${parseFloat(item.kitchen_cost_per_unit).toFixed(2)}</td>
+                            <td><strong>Rs ${totalCost.toFixed(2)}</strong></td>
+                            <td>
+                                <div class="progress" style="height: 15px;">
+                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                         style="width: ${usagePercentage}%" 
+                                         aria-valuenow="${usagePercentage}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        ${usagePercentage}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                consumptionData.innerHTML = html;
+            } else {
+                consumptionData.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="fas fa-utensils text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-3 mb-2 text-muted">No kitchen consumption recorded for ${date}</p>
+                        <small class="text-muted">Consumption is tracked automatically when sales are completed and recipes are defined.</small>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading consumption data:', error);
+            consumptionData.innerHTML = `
+                <div class="text-center p-4">
+                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0 text-danger">Error loading consumption data</p>
+                </div>
+            `;
+        });
+}
+</script>
 <style>
 .category-section {
     border-radius: 0.375rem;

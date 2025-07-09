@@ -65,7 +65,7 @@
     
     // Calculate present and absent days
     $presentDays = $attendance['present'] + ($attendance['half'] * 0.5);
-    $absentDays = $attendance['absent'];
+    $totalDaysOff = $attendance['absent'] + ($attendance['half'] * 0.5);
     
     // Only show days if they've been marked
     $showAttendance = $totalMarkedDays > 0;

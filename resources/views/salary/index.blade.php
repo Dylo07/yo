@@ -115,6 +115,62 @@
 </tr>
 @endforeach
                     </tbody>
+                    <tfoot class="bg-dark text-white">
+                        @php
+                            $totalBasicSalary = 0;
+                            $totalSalaryAdvance = 0;
+                            $totalPresentDays = 0;
+                            $totalAbsentDays = 0;
+                            $totalFinalSalary = 0;
+                            
+                            foreach($staff as $employee) {
+                                $attendance = $attendanceData[$employee->id] ?? ['present' => 0, 'half' => 0, 'absent' => 0];
+                                $salaryAdvance = $salaryAdvances->where('person.id', $employee->id)->sum('amount');
+                                $lastDayOfMonth = \Carbon\Carbon::create($year, $month)->endOfMonth()->day;
+                                $totalMarkedDays = $attendance['present'] + $attendance['half'] + $attendance['absent'];
+                                
+                                $presentDays = $attendance['present'] + ($attendance['half'] * 0.5);
+                                $displayAbsentDays = $attendance['absent'] + ($attendance['half'] * 0.5);
+                                $showAttendance = $totalMarkedDays > 0;
+                                
+                                $finalSalary = 0;
+                                if ($employee->basic_salary > 0) {
+                                    if ($totalMarkedDays < $lastDayOfMonth) {
+                                        $finalSalary = ($presentDays * $employee->basic_salary / 30) - $salaryAdvance;
+                                    } else {
+                                        $totalDaysOff = $attendance['absent'] + ($attendance['half'] * 0.5);
+                                        
+                                        if ($totalDaysOff == 5) {
+                                            $finalSalary = $employee->basic_salary - $salaryAdvance;
+                                        } elseif ($totalDaysOff < 5) {
+                                            $additionalDays = 5 - $totalDaysOff;
+                                            $dailyRate = $employee->basic_salary / 30;
+                                            $finalSalary = $employee->basic_salary - $salaryAdvance + ($additionalDays * $dailyRate);
+                                        } else {
+                                            $excessDays = $totalDaysOff - 5;
+                                            $dailyRate = $employee->basic_salary / 25;
+                                            $finalSalary = $employee->basic_salary - $salaryAdvance - ($excessDays * $dailyRate);
+                                        }
+                                    }
+                                }
+                                
+                                $totalBasicSalary += $employee->basic_salary ?? 0;
+                                $totalSalaryAdvance += $salaryAdvance;
+                                $totalPresentDays += $showAttendance ? $presentDays : 0;
+                                $totalAbsentDays += $showAttendance ? $displayAbsentDays : 0;
+                                $totalFinalSalary += $finalSalary;
+                            }
+                        @endphp
+                        <tr>
+                            <th><strong>Total</strong></th>
+                            <th class="text-end"><strong>Rs. {{ number_format($totalBasicSalary, 2) }}</strong></th>
+                            <th class="text-end"><strong>Rs. {{ number_format($totalSalaryAdvance, 2) }}</strong></th>
+                            <th class="text-center"><strong>{{ number_format($totalPresentDays, 1) }}</strong></th>
+                            <th class="text-center"><strong>{{ number_format($totalAbsentDays, 1) }}</strong></th>
+                            <th class="text-end"><strong>Rs. {{ number_format($totalFinalSalary, 2) }}</strong></th>
+                            <th class="text-center"><strong>-</strong></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
 

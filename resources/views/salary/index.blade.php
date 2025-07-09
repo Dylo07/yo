@@ -65,7 +65,9 @@
     
     // Calculate present and absent days
     $presentDays = $attendance['present'] + ($attendance['half'] * 0.5);
-    $totalDaysOff = $attendance['absent'] + ($attendance['half'] * 0.5);
+    
+    // For display purposes only - shows total days off including half days
+    $displayAbsentDays = $attendance['absent'] + ($attendance['half'] * 0.5);
     
     // Only show days if they've been marked
     $showAttendance = $totalMarkedDays > 0;
@@ -76,7 +78,7 @@
             // Calculate based on marked present days only
             $finalSalary = ($presentDays * $employee->basic_salary / 30) - $salaryAdvance;
         } else {
-            $totalDaysOff = $absentDays + ($attendance['half'] * 0.5);
+            $totalDaysOff = $attendance['absent'] + ($attendance['half'] * 0.5);
             
             if ($totalDaysOff == 5) {
                 $finalSalary = $employee->basic_salary - $salaryAdvance;
@@ -97,7 +99,7 @@
     <td class="text-end">Rs. {{ number_format($employee->basic_salary ?? 0, 2) }}</td>
     <td class="text-end">Rs. {{ number_format($salaryAdvance, 2) }}</td>
     <td class="text-center">{{ $showAttendance ? $presentDays : '-' }}</td>
-    <td class="text-center">{{ $showAttendance ? $absentDays : '-' }}</td>
+    <td class="text-center">{{ $showAttendance ? $displayAbsentDays : '-' }}</td>
     <td class="text-end">Rs. {{ number_format($finalSalary, 2) }}</td>
     <td class="text-center">
     @if($employee->basic_salary > 0)

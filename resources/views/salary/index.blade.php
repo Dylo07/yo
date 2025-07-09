@@ -42,6 +42,7 @@
                 <table class="table table-bordered">
                     <thead class="bg-dark text-white">
                         <tr>
+                            <th>#</th>
                             <th>Employee</th>
                             <th>Basic Salary</th>
                             <th>Salary Advance</th>
@@ -52,7 +53,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    @foreach($staff as $employee)
+                    @foreach($staff as $index => $employee)
                     @php
     $attendance = $attendanceData[$employee->id] ?? ['present' => 0, 'half' => 0, 'absent' => 0];
     $salaryAdvance = $salaryAdvances->where('person.id', $employee->id)->sum('amount');
@@ -95,6 +96,7 @@
     }
 @endphp
 <tr>
+    <td class="text-center">{{ $index + 1 }}</td>
     <td>{{ $employee->name }}</td>
     <td class="text-end">Rs. {{ number_format($employee->basic_salary ?? 0, 2) }}</td>
     <td class="text-end">Rs. {{ number_format($salaryAdvance, 2) }}</td>
@@ -162,7 +164,8 @@
                             }
                         @endphp
                         <tr>
-                            <th><strong>Total</strong></th>
+                            <th class="text-center"><strong>Total</strong></th>
+                            <th><strong>-</strong></th>
                             <th class="text-end"><strong>Rs. {{ number_format($totalBasicSalary, 2) }}</strong></th>
                             <th class="text-end"><strong>Rs. {{ number_format($totalSalaryAdvance, 2) }}</strong></th>
                             <th class="text-center"><strong>{{ number_format($totalPresentDays, 1) }}</strong></th>

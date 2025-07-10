@@ -317,6 +317,10 @@ function getLeaveTypeColor($leaveType) {
         </div>
     </div>
 
+
+
+
+
     <!-- Quick Summary Widget -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -343,28 +347,52 @@ function getLeaveTypeColor($leaveType) {
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="leave-summary-widget">
-                <h5 class="mb-3"><i class="fas fa-calendar-week me-2"></i>Upcoming Leaves</h5>
-                @if(isset($upcomingLeaves) && $upcomingLeaves->count() > 0)
-                    @foreach($upcomingLeaves as $leave)
-                        <div class="timeline-item">
-                            <small class="text-muted">{{ $leave->start_date->format('M d, Y') }}</small>
-                            <div class="fw-bold">{{ $leave->person->name }} - {{ $leave->formatted_leave_type }} 
-                                ({{ $leave->formatted_duration }})
-                            </div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="text-muted text-center py-3">
-                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
-                        <div>No upcoming leaves</div>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
 
+   <!-- Simple Clean Version (Recommended) -->
+<div class="col-md-6">
+    <div class="leave-summary-widget">
+        <h5 class="mb-3"><i class="fas fa-calendar-week me-2"></i>Upcoming Leaves</h5>
+        @if(isset($upcomingLeaves) && $upcomingLeaves->count() > 0)
+            @foreach($upcomingLeaves as $leave)
+                <div class="timeline-item">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">
+                            @if($leave->start_date->format('Y-m-d') == $leave->end_date->format('Y-m-d'))
+                                {{ $leave->start_date->format('M d, Y') }}
+                            @else
+                                {{ $leave->start_date->format('M d') }} - {{ $leave->end_date->format('M d, Y') }}
+                            @endif
+                        </small>
+                        <span class="badge bg-{{ getLeaveTypeColor($leave->leave_type) }}">
+                            {{ $leave->formatted_duration }}
+                        </span>
+                    </div>
+                    <div class="fw-bold">
+                        {{ $leave->person->name }} - {{ $leave->formatted_leave_type }}
+                    </div>
+                    @if($leave->is_datetime_based ?? false)
+                        <div class="text-muted small">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ $leave->start_datetime->format('g:i A') }} - {{ $leave->end_datetime->format('g:i A') }}
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        @else
+            <div class="text-muted text-center py-3">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <div>No upcoming leaves</div>
+            </div>
+        @endif
+    </div>
+</div>
+
+
+
+
+
+
+    
     <!-- Filter Section -->
     <div class="filter-section">
         <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filter & Search</h5>

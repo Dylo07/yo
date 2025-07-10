@@ -819,7 +819,9 @@ async function loadStaffMembers() {
     }
 }
 
-// Load leave data from server
+
+
+// Updated: Load leave data from server with proper date handling
 async function loadLeaveData() {
     try {
         showLoadingSpinner(true);
@@ -838,7 +840,14 @@ async function loadLeaveData() {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        leaveData = await response.json();
+        const rawData = await response.json();
+        
+        // Fix the date issue by adjusting end dates
+        leaveData = rawData.map(leave => ({
+            ...leave,
+            end: leave.end // Keep original end date, don't add a day
+        }));
+        
         console.log('Loaded leave data:', leaveData);
         
         generateCalendar();
@@ -866,6 +875,7 @@ async function loadLeaveData() {
         showLoadingSpinner(false);
     }
 }
+
 
 // Generate calendar grid
 function generateCalendar() {
@@ -1027,21 +1037,22 @@ function isWeekend(date) {
     return day === 0 || day === 6; // Sunday = 0, Saturday = 6
 }
 
-// Get leaves for specific date
+// Updated: Get leaves for specific date with corrected end date logic
 function getLeavesForDate(date) {
     return leaveData.filter(leave => {
-        const leaveStart = new Date(leave.start);
-        const leaveEnd = new Date(leave.end);
-        leaveEnd.setDate(leaveEnd.getDate() - 1); // Adjust for exclusive end date
+        const leaveStart = new Date(leave.start + 'T00:00:00');
+        const leaveEnd = new Date(leave.end + 'T00:00:00');
         
-        const dateStr = formatDate(date);
-        const startStr = formatDate(leaveStart);
-        const endStr = formatDate(leaveEnd);
+        // Create date objects for comparison (all at midnight)
+        const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const startDate = new Date(leaveStart.getFullYear(), leaveStart.getMonth(), leaveStart.getDate());
+        const endDate = new Date(leaveEnd.getFullYear(), leaveEnd.getMonth(), leaveEnd.getDate());
         
-        return dateStr >= startStr && dateStr <= endStr;
+        // Check if the date falls within the leave period
+        // Start date is inclusive, end date is exclusive (don't include the day after)
+        return checkDate >= startDate && checkDate < endDate;
     });
 }
-
 // Check if date is today
 function isToday(date) {
     const today = new Date();

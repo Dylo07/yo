@@ -599,6 +599,404 @@ class ManualAttendanceController extends Controller
             'categories'
         ));
     }
+/**
+ * Display staff personal information page
+ */
+public function staffInformation(Request $request)
+{
+    // Get all active staff members with their personal information
+    $staff = Person::whereHas('staffCode', function($query) {
+        $query->where('is_active', 1);
+    })
+    ->where('type', 'individual')
+    ->with(['staffCategory', 'staffCode'])
+    ->orderBy('name')
+    ->get();
+    
+    // Categories for filtering
+    $categories = [
+        'front_office' => 'Front Office',
+        'garden' => 'Garden',
+        'kitchen' => 'Kitchen',
+        'maintenance' => 'Maintenance',
+        'restaurant' => 'Restaurant',
+        'housekeeping' => 'Housekeeping',
+        'laundry' => 'Laundry',
+        'pool' => 'Pool'
+    ];
+    
+    // Apply category filter if provided
+    if ($request->category && $request->category !== 'all') {
+        $staff = $staff->filter(function($person) use ($request) {
+            return $person->staffCategory && $person->staffCategory->category === $request->category;
+        });
+    }
+    
+    // Apply search filter if provided
+    if ($request->search) {
+        $searchTerm = strtolower($request->search);
+        $staff = $staff->filter(function($person) use ($searchTerm) {
+            return str_contains(strtolower($person->name), $searchTerm) ||
+                   str_contains(strtolower($person->full_name ?? ''), $searchTerm) ||
+                   str_contains(strtolower($person->id_card_number ?? ''), $searchTerm) ||
+                   str_contains(strtolower($person->phone_number ?? ''), $searchTerm);
+        });
+    }
+    
+    return view('attendance.manual.staff-information', compact('staff', 'categories'));
+}
 
+/**
+ * Display individual staff profile with personal details
+ */
+public function staffPersonalProfile($personId)
+{
+    $person = Person::with(['staffCategory', 'staffCode'])->findOrFail($personId);
+    
+    // Calculate age if date of birth is available
+    $age = null;
+    if ($person->date_of_birth) {
+        $age = Carbon::parse($person->date_of_birth)->age;
+    }
+    
+    // Calculate years of service if hire date is available
+    $yearsOfService = null;
+    if ($person->hire_date) {
+        $yearsOfService = Carbon::parse($person->hire_date)->diffInYears(Carbon::now());
+    }
+    
+    // Get recent attendance summary (last 30 days)
+    $recentAttendance = ManualAttendance::where('person_id', $personId)
+        ->where('attendance_date', '>=', Carbon::now()->subDays(30))
+        ->get();
+    
+    $attendanceSummary = [
+        'total_days' => $recentAttendance->count(),
+        'present_days' => $recentAttendance->where('status', 'present')->count(),
+        'half_days' => $recentAttendance->where('status', 'half')->count(),
+        'absent_days' => $recentAttendance->where('status', 'absent')->count(),
+    ];
+    
+    if ($attendanceSummary['total_days'] > 0) {
+        $attendanceSummary['attendance_rate'] = round(
+            (($attendanceSummary['present_days'] + ($attendanceSummary['half_days'] * 0.5)) / $attendanceSummary['total_days']) * 100, 
+            2
+        );
+    } else {
+        $attendanceSummary['attendance_rate'] = 0;
+    }
+    
+    return view('attendance.manual.staff-personal-profile', compact(
+        'person', 
+        'age', 
+        'yearsOfService', 
+        'attendanceSummary'
+    ));
+}
+
+/**
+ * Show form to edit staff personal information
+ */
+public function editStaffPersonalInfo($personId)
+{
+    // Only admin can edit staff information
+    if (!Auth::user()->checkAdmin()) {
+        return redirect()->back()->with('error', 'Only administrators can edit staff information');
+    }
+    
+    $person = Person::with(['staffCategory', 'staffCode'])->findOrFail($personId);
+    
+    $categories = [
+        'front_office' => 'Front Office',
+        'garden' => 'Garden',
+        'kitchen' => 'Kitchen',
+        'maintenance' => 'Maintenance',
+        'restaurant' => 'Restaurant',
+        'housekeeping' => 'Housekeeping',
+        'laundry' => 'Laundry',
+        'pool' => 'Pool'
+    ];
+    
+    return view('attendance.manual.edit-staff-personal-info', compact('person', 'categories'));
+}
+
+/**
+ * Update staff personal information
+ */
+public function updateStaffPersonalInfo(Request $request, $personId)
+{
+    // Only admin can update staff information
+    if (!Auth::user()->checkAdmin()) {
+        return redirect()->back()->with('error', 'Only administrators can update staff information');
+    }
+    
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'full_name' => 'nullable|string|max:255',
+        'id_card_number' => 'nullable|string|max:50',
+        'address' => 'nullable|string|max:500',
+        'phone_number' => 'nullable|string|max:20',
+        'emergency_contact' => 'nullable|string|max:255',
+        'emergency_phone' => 'nullable|string|max:20',
+        'date_of_birth' => 'nullable|date',
+        'gender' => 'nullable|in:male,female,other',
+        'position' => 'nullable|string|max:255',
+        'hire_date' => 'nullable|date',
+        'basic_salary' => 'nullable|numeric|min:0',
+        'blood_group' => 'nullable|string|max:10',
+        'email' => 'nullable|email|max:255',
+        'notes' => 'nullable|string|max:1000',
+        'staff_category' => 'nullable|string|in:front_office,garden,kitchen,maintenance,restaurant,housekeeping,laundry,pool',
+        'staff_code' => 'nullable|string|max:20'
+    ]);
+    
+    DB::beginTransaction();
+    
+    try {
+        $person = Person::findOrFail($personId);
+        
+        // Update person information
+        $person->update([
+            'name' => $request->name,
+            'full_name' => $request->full_name,
+            'id_card_number' => $request->id_card_number,
+            'address' => $request->address,
+            'phone_number' => $request->phone_number,
+            'emergency_contact' => $request->emergency_contact,
+            'emergency_phone' => $request->emergency_phone,
+            'date_of_birth' => $request->date_of_birth,
+            'gender' => $request->gender,
+            'position' => $request->position,
+            'hire_date' => $request->hire_date,
+            'basic_salary' => $request->basic_salary,
+            'blood_group' => $request->blood_group,
+            'email' => $request->email,
+            'notes' => $request->notes,
+        ]);
+        
+        // Update staff category if provided
+        if ($request->staff_category) {
+            StaffCategory::updateOrCreate(
+                ['person_id' => $personId],
+                ['category' => $request->staff_category]
+            );
+        }
+        
+        // Update staff code if provided
+        if ($request->staff_code) {
+            StaffCode::updateOrCreate(
+                ['person_id' => $personId],
+                ['staff_code' => $request->staff_code, 'is_active' => 1]
+            );
+        }
+        
+        DB::commit();
+        
+        return redirect()->route('staff.personal.profile', $personId)
+            ->with('success', 'Staff information updated successfully');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Error updating staff information: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Error updating staff information: ' . $e->getMessage())
+            ->withInput();
+    }
+}
+
+/**
+ * Show form to create new staff member with personal info
+ */
+public function createStaffPersonalInfo()
+{
+    // Only admin can create staff
+    if (!Auth::user()->checkAdmin()) {
+        return redirect()->back()->with('error', 'Only administrators can create staff members');
+    }
+    
+    $categories = [
+        'front_office' => 'Front Office',
+        'garden' => 'Garden',
+        'kitchen' => 'Kitchen',
+        'maintenance' => 'Maintenance',
+        'restaurant' => 'Restaurant',
+        'housekeeping' => 'Housekeeping',
+        'laundry' => 'Laundry',
+        'pool' => 'Pool'
+    ];
+    
+    return view('attendance.manual.create-staff-personal-info', compact('categories'));
+}
+
+/**
+ * Store new staff member with personal information
+ */
+public function storeStaffPersonalInfo(Request $request)
+{
+    // Only admin can create staff
+    if (!Auth::user()->checkAdmin()) {
+        return redirect()->back()->with('error', 'Only administrators can create staff members');
+    }
+    
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'full_name' => 'nullable|string|max:255',
+        'id_card_number' => 'nullable|string|max:50|unique:persons,id_card_number',
+        'address' => 'nullable|string|max:500',
+        'phone_number' => 'nullable|string|max:20',
+        'emergency_contact' => 'nullable|string|max:255',
+        'emergency_phone' => 'nullable|string|max:20',
+        'date_of_birth' => 'nullable|date',
+        'gender' => 'nullable|in:male,female,other',
+        'position' => 'nullable|string|max:255',
+        'hire_date' => 'nullable|date',
+        'basic_salary' => 'nullable|numeric|min:0',
+        'blood_group' => 'nullable|string|max:10',
+        'email' => 'nullable|email|max:255|unique:persons,email',
+        'notes' => 'nullable|string|max:1000',
+        'staff_category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant,housekeeping,laundry,pool',
+        'staff_code' => 'required|string|max:20|unique:staff_codes,staff_code'
+    ]);
+    
+    DB::beginTransaction();
+    
+    try {
+        // Create person
+        $person = Person::create([
+            'name' => $request->name,
+            'full_name' => $request->full_name,
+            'id_card_number' => $request->id_card_number,
+            'address' => $request->address,
+            'phone_number' => $request->phone_number,
+            'emergency_contact' => $request->emergency_contact,
+            'emergency_phone' => $request->emergency_phone,
+            'date_of_birth' => $request->date_of_birth,
+            'gender' => $request->gender,
+            'position' => $request->position,
+            'hire_date' => $request->hire_date,
+            'basic_salary' => $request->basic_salary,
+            'blood_group' => $request->blood_group,
+            'email' => $request->email,
+            'notes' => $request->notes,
+            'type' => 'individual'
+        ]);
+        
+        // Create staff category
+        StaffCategory::create([
+            'person_id' => $person->id,
+            'category' => $request->staff_category
+        ]);
+        
+        // Create staff code
+        StaffCode::create([
+            'person_id' => $person->id,
+            'staff_code' => $request->staff_code,
+            'is_active' => 1
+        ]);
+        
+        DB::commit();
+        
+        return redirect()->route('staff.information')
+            ->with('success', 'Staff member created successfully');
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Error creating staff member: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Error creating staff member: ' . $e->getMessage())
+            ->withInput();
+    }
+}
+
+/**
+ * Export staff information to CSV
+ */
+public function exportStaffInformation(Request $request)
+{
+    $staff = Person::whereHas('staffCode', function($query) {
+        $query->where('is_active', 1);
+    })
+    ->where('type', 'individual')
+    ->with(['staffCategory', 'staffCode'])
+    ->orderBy('name')
+    ->get();
+    
+    $filename = 'staff_information_' . Carbon::now()->format('Y-m-d') . '.csv';
+    
+    $headers = [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    ];
+    
+    $callback = function() use ($staff) {
+        $file = fopen('php://output', 'w');
+        
+        // CSV headers
+        fputcsv($file, [
+            'Person ID',
+            'Name',
+            'Full Name',
+            'ID Card Number',
+            'Staff Code',
+            'Category',
+            'Position',
+            'Phone Number',
+            'Email',
+            'Address',
+            'Date of Birth',
+            'Age',
+            'Gender',
+            'Blood Group',
+            'Hire Date',
+            'Years of Service',
+            'Basic Salary',
+            'Emergency Contact',
+            'Emergency Phone',
+            'Notes'
+        ]);
+        
+        foreach ($staff as $person) {
+            $age = $person->date_of_birth ? Carbon::parse($person->date_of_birth)->age : 'N/A';
+            $yearsOfService = $person->hire_date ? Carbon::parse($person->hire_date)->diffInYears(Carbon::now()) : 'N/A';
+            
+            fputcsv($file, [
+                $person->id,
+                $person->name,
+                $person->full_name ?? 'N/A',
+                $person->id_card_number ?? 'N/A',
+                $person->staffCode ? $person->staffCode->staff_code : 'N/A',
+                $person->staffCategory ? ucfirst(str_replace('_', ' ', $person->staffCategory->category)) : 'Not Assigned',
+                $person->position ?? 'N/A',
+                $person->phone_number ?? 'N/A',
+                $person->email ?? 'N/A',
+                $person->address ?? 'N/A',
+                $person->date_of_birth ? Carbon::parse($person->date_of_birth)->format('Y-m-d') : 'N/A',
+                $age,
+                $person->gender ? ucfirst($person->gender) : 'N/A',
+                $person->blood_group ?? 'N/A',
+                $person->hire_date ? Carbon::parse($person->hire_date)->format('Y-m-d') : 'N/A',
+                $yearsOfService,
+                $person->basic_salary ? 'Rs. ' . number_format($person->basic_salary, 2) : 'N/A',
+                $person->emergency_contact ?? 'N/A',
+                $person->emergency_phone ?? 'N/A',
+                $person->notes ?? 'N/A'
+            ]);
+        }
+        
+        fclose($file);
+    };
+    
+    return response()->stream($callback, 200, $headers);
+}
+
+/**
+ * Print ID card for staff member
+ */
+public function printIdCard($personId)
+{
+    $person = Person::with(['staffCategory', 'staffCode'])->findOrFail($personId);
+    
+    return view('attendance.manual.print-id-card', compact('person'));
+}
     
 }

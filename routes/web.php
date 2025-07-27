@@ -313,8 +313,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 
 // Then update the routes to include the full namespace:
-// Manual Attendance Routes
-// Manual Attendance Routes
+// Manual Attendance Routes (EXISTING - find this section)
 Route::middleware(['auth'])->group(function () {
     Route::get('/manual-attendance', [ManualAttendanceController::class, 'index'])->name('attendance.manual.index');
     Route::post('/manual-attendance/mark', [ManualAttendanceController::class, 'markAttendance'])->name('attendance.manual.mark');
@@ -322,23 +321,43 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/manual-attendance/staff/{personId}/history', [ManualAttendanceController::class, 'getStaffAttendanceHistory'])->name('attendance.manual.staff.history');
     Route::get('/manual-attendance/report', [ManualAttendanceController::class, 'report'])->name('attendance.manual.report');
     
-    // Add these two routes for the staff member functionality
+    // Add these two routes for the staff member functionality (EXISTING)
     Route::post('/manual-attendance/search-persons', [ManualAttendanceController::class, 'searchPersons'])->name('attendance.manual.search-persons');
     Route::post('/manual-attendance/add-staff', [ManualAttendanceController::class, 'addStaffMember'])->name('attendance.manual.add-staff');
     Route::get('/manual-attendance/add-staff', [ManualAttendanceController::class, 'showAddStaffForm'])->name('attendance.manual.add-staff-form');
 
-Route::get('/manual-attendance/manage-categories', [ManualAttendanceController::class, 'showManageCategories'])
-        ->name('attendance.manual.manage-categories');
+    Route::get('/manual-attendance/manage-categories', [ManualAttendanceController::class, 'showManageCategories'])
+            ->name('attendance.manual.manage-categories');
     
-    // Route for updating a single staff category
+    // Route for updating a single staff category (EXISTING)
     Route::post('/manual-attendance/update-category', [ManualAttendanceController::class, 'updateStaffCategory'])
-        ->name('attendance.manual.update-category');
+            ->name('attendance.manual.update-category');
     
-    // Route for bulk updating staff categories
+    // Route for bulk updating staff categories (EXISTING)
     Route::post('/manual-attendance/bulk-update-categories', [ManualAttendanceController::class, 'bulkUpdateCategories'])
-        ->name('attendance.manual.bulk-update-categories');
-        
+            ->name('attendance.manual.bulk-update-categories');
 
+    // ===== ADD THESE NEW ROUTES FOR STAFF PERSONAL INFORMATION =====
+    
+    // Staff Personal Information Routes (NEW - ADD THESE)
+    Route::get('/staff-information', [ManualAttendanceController::class, 'staffInformation'])->name('staff.information');
+    
+    // Individual staff profile with personal details
+    Route::get('/staff-information/{personId}', [ManualAttendanceController::class, 'staffPersonalProfile'])->name('staff.personal.profile');
+    
+    // Edit staff personal information (Admin only)
+    Route::get('/staff-information/{personId}/edit', [ManualAttendanceController::class, 'editStaffPersonalInfo'])->name('staff.personal.edit');
+    Route::put('/staff-information/{personId}/update', [ManualAttendanceController::class, 'updateStaffPersonalInfo'])->name('staff.personal.update');
+    
+    // Add new staff member with personal info (Admin only)
+    Route::get('/staff-information/create', [ManualAttendanceController::class, 'createStaffPersonalInfo'])->name('staff.personal.create');
+    Route::post('/staff-information/store', [ManualAttendanceController::class, 'storeStaffPersonalInfo'])->name('staff.personal.store');
+    
+    // Export staff information
+    Route::get('/staff-information/export', [ManualAttendanceController::class, 'exportStaffInformation'])->name('staff.information.export');
+    
+    // Print staff ID card
+    Route::get('/staff-information/{personId}/print-id-card', [ManualAttendanceController::class, 'printIdCard'])->name('staff.print.id.card');
 });
 
 // Leave Request Routes - Add this complete section to your web.php file

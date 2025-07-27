@@ -70,8 +70,6 @@
         </div>
     </div>
 
-    
-
     <!-- Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-2">
@@ -266,212 +264,29 @@
         </div>
     </div>
 
-    <!-- Detailed Comparison Analysis -->
-    @if(!empty($comparisonData['matches']) || !empty($comparisonData['sales_only']) || !empty($comparisonData['kitchen_only']))
-    <div class="card mb-4">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0">
-                <i class="fas fa-analytics me-2"></i>
-                Detailed Comparison Analysis
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Tabs for different views -->
-            <ul class="nav nav-tabs mb-3" id="comparisonTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="matches-tab" data-bs-toggle="tab" data-bs-target="#matches" type="button" role="tab">
-                        Matching Categories ({{ count($comparisonData['matches']) }})
-                    </button>
-                </li>
-                @if(!empty($comparisonData['sales_only']))
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="sales-only-tab" data-bs-toggle="tab" data-bs-target="#sales-only" type="button" role="tab">
-                        Sales Only ({{ count($comparisonData['sales_only']) }})
-                    </button>
-                </li>
-                @endif
-                @if(!empty($comparisonData['kitchen_only']))
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="kitchen-only-tab" data-bs-toggle="tab" data-bs-target="#kitchen-only" type="button" role="tab">
-                        Kitchen Only ({{ count($comparisonData['kitchen_only']) }})
-                    </button>
-                </li>
-                @endif
-            </ul>
+    
+             
 
-            <div class="tab-content" id="comparisonTabContent">
-                <!-- Matching Categories -->
-                <div class="tab-pane fade show active" id="matches" role="tabpanel">
-                    @if(!empty($comparisonData['matches']))
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Category</th>
-                                        <th>Sales Total</th>
-                                        <th>Kitchen Total</th>
-                                        <th>Difference</th>
-                                        <th>Status</th>
-                                        <th>Efficiency</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($comparisonData['matches'] as $match)
-                                        @php
-                                            $efficiency = $match['sales_total'] > 0 ? round(($match['kitchen_total'] / $match['sales_total']) * 100, 1) : 0;
-                                        @endphp
-                                        <tr>
-                                            <td class="fw-bold">{{ $match['category_name'] }}</td>
-                                            <td>
-                                                <span class="badge bg-primary">{{ $match['sales_total'] }}</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-success">{{ $match['kitchen_total'] }}</span>
-                                            </td>
-                                            <td>
-                                                @if($match['difference'] > 0)
-                                                    <span class="badge bg-warning text-dark">+{{ $match['difference'] }}</span>
-                                                @elseif($match['difference'] < 0)
-                                                    <span class="badge bg-danger">{{ $match['difference'] }}</span>
-                                                @else
-                                                    <span class="badge bg-success">0</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($match['difference'] > 0)
-                                                    <i class="fas fa-arrow-up text-warning"></i> Over-issued
-                                                @elseif($match['difference'] < 0)
-                                                    <i class="fas fa-arrow-down text-danger"></i> Under-issued
-                                                @else
-                                                    <i class="fas fa-check text-success"></i> Balanced
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <span class="badge 
-                                                    @if($efficiency > 120) bg-warning
-                                                    @elseif($efficiency < 80) bg-danger  
-                                                    @else bg-success
-                                                    @endif">
-                                                    {{ $efficiency }}%
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            No matching categories found between sales and kitchen issues.
-                        </div>
-                    @endif
-                </div>
-
-                <!-- Sales Only -->
-                @if(!empty($comparisonData['sales_only']))
-                <div class="tab-pane fade" id="sales-only" role="tabpanel">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        These categories have sales but no corresponding kitchen issues.
-                    </div>
-                    @foreach($comparisonData['sales_only'] as $category)
-                        <div class="card mb-2">
-                            <div class="card-header bg-warning text-dark">
-                                <strong>{{ $category['name'] }}</strong> - {{ $category['total'] }} items sold
-                            </div>
-                            <div class="card-body">
-                                @foreach($category['items'] as $item)
-                                    <span class="badge bg-secondary me-1 mb-1">{{ $item['name'] }} ({{ $item['quantity'] }})</span>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                @endif
-
-                <!-- Kitchen Only -->
-                @if(!empty($comparisonData['kitchen_only']))
-                <div class="tab-pane fade" id="kitchen-only" role="tabpanel">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        These categories have kitchen issues but no corresponding sales.
-                    </div>
-                    @foreach($comparisonData['kitchen_only'] as $category)
-                        <div class="card mb-2">
-                            <div class="card-header bg-info text-white">
-                                <strong>{{ $category['name'] }}</strong> - {{ $category['total_quantity'] }} units issued
-                            </div>
-                            <div class="card-body">
-                                @foreach($category['items'] as $item)
-                                    <span class="badge bg-secondary me-1 mb-1">{{ $item['name'] }} ({{ $item['quantity'] }})</span>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                @endif
-            </div>
-        </div>
-    </div>
-    @endif
-
-    <!-- Quick Actions -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="fas fa-tools me-2"></i>
-                Quick Actions
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
-                    <a href="{{ route('stock.index') }}" class="btn btn-outline-primary w-100 mb-2">
-                        <i class="fas fa-warehouse me-2"></i>
-                        Manage Inventory
-                    </a>
-                </div>
-                <div class="col-md-3">
-                    <a href="{{ route('cashier') }}" class="btn btn-outline-success w-100 mb-2">
-                        <i class="fas fa-cash-register me-2"></i>
-                        Cashier System
-                    </a>
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-outline-info w-100 mb-2" onclick="refreshData()">
-                        <i class="fas fa-sync-alt me-2"></i>
-                        Refresh Data
-                    </button>
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-outline-warning w-100 mb-2" onclick="setDateRange('week')">
-                        <i class="fas fa-calendar-week me-2"></i>
-                        This Week
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Add this widget to your comparison.blade.php file -->
-
+ 
+<!-- UPDATED Daily Kitchen Consumption Section -->
 <div class="card mt-4">
     <div class="card-header bg-warning text-dark">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
                 <i class="fas fa-chart-pie me-2"></i>
                 Daily Kitchen Consumption
+                @if($startDate !== $endDate)
+                    <small class="ms-2">({{ $startDate }} to {{ $endDate }})</small>
+                @else
+                    <small class="ms-2">({{ $startDate }})</small>
+                @endif
             </h5>
             <div>
-                <input type="date" id="consumptionDate" class="form-control form-control-sm" 
-                       value="{{ now()->toDateString() }}" onchange="loadConsumption()">
                 <a href="{{ route('recipes.index') }}" class="btn btn-sm btn-outline-dark ms-2">
                     <i class="fas fa-cog me-1"></i> Manage Recipes
                 </a>
                 <a href="{{ route('kitchen.index') }}" class="btn btn-sm btn-outline-dark ms-2">
-    <i class="fas fa-utensils me-1"></i> Manage inventory
-</a>
+                    <i class="fas fa-utensils me-1"></i> Manage Inventory
                 </a>
             </div>
         </div>
@@ -486,113 +301,6 @@
     </div>
 </div>
 
-<script>
-// Load consumption data when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadConsumption();
-});
-
-function loadConsumption() {
-    const date = document.getElementById('consumptionDate').value;
-    const consumptionData = document.getElementById('consumptionData');
-    
-    // Show loading
-    consumptionData.innerHTML = `
-        <div class="text-center p-4">
-            <div class="spinner-border" role="status"></div>
-            <p class="mt-2 mb-0">Loading consumption data...</p>
-        </div>
-    `;
-    
-    fetch(`/recipes/consumption?date=${date}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.consumption && data.consumption.length > 0) {
-                let html = `
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="text-center p-3 bg-light rounded">
-                                <h6 class="text-muted">Total Daily Cost</h6>
-                                <h4 class="mb-0 text-danger">Rs ${parseFloat(data.total_cost).toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="text-center p-3 bg-light rounded">
-                                <h6 class="text-muted">Items Consumed</h6>
-                                <h4 class="mb-0 text-info">${data.consumption.length}</h4>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ingredient</th>
-                                    <th>Category</th>
-                                    <th>Consumed</th>
-                                    <th>Cost/Unit</th>
-                                    <th>Total Cost</th>
-                                    <th>Usage %</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-                
-                data.consumption.forEach(item => {
-                    const totalCost = parseFloat(item.total_cost);
-                    const usagePercentage = data.total_cost > 0 ? ((totalCost / data.total_cost) * 100).toFixed(1) : 0;
-                    
-                    html += `
-                        <tr>
-                            <td><strong>${item.item_name}</strong></td>
-                            <td><span class="badge bg-secondary">${item.category_name || 'Uncategorized'}</span></td>
-                            <td>${parseFloat(item.total_consumed).toFixed(2)} ${item.kitchen_unit}</td>
-                            <td>Rs ${parseFloat(item.kitchen_cost_per_unit).toFixed(2)}</td>
-                            <td><strong>Rs ${totalCost.toFixed(2)}</strong></td>
-                            <td>
-                                <div class="progress" style="height: 15px;">
-                                    <div class="progress-bar bg-warning" role="progressbar" 
-                                         style="width: ${usagePercentage}%" 
-                                         aria-valuenow="${usagePercentage}" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
-                                        ${usagePercentage}%
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                html += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                
-                consumptionData.innerHTML = html;
-            } else {
-                consumptionData.innerHTML = `
-                    <div class="text-center p-4">
-                        <i class="fas fa-utensils text-muted" style="font-size: 3rem;"></i>
-                        <p class="mt-3 mb-2 text-muted">No kitchen consumption recorded for ${date}</p>
-                        <small class="text-muted">Consumption is tracked automatically when sales are completed and recipes are defined.</small>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading consumption data:', error);
-            consumptionData.innerHTML = `
-                <div class="text-center p-4">
-                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
-                    <p class="mt-2 mb-0 text-danger">Error loading consumption data</p>
-                </div>
-            `;
-        });
-}
-</script>
 <style>
 .category-section {
     border-radius: 0.375rem;
@@ -669,8 +377,166 @@ input[type="date"] {
     }
 }
 </style>
-
 <script>
+// UPDATED JavaScript to use date range for kitchen consumption
+document.addEventListener('DOMContentLoaded', function() {
+    loadConsumption();
+});
+
+function loadConsumption() {
+    // Get start and end dates from the main filter
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const consumptionData = document.getElementById('consumptionData');
+    
+    // Show loading
+    consumptionData.innerHTML = `
+        <div class="text-center p-4">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-2 mb-0">Loading consumption data...</p>
+        </div>
+    `;
+    
+    // Use date range instead of single date
+    fetch(`/recipes/consumption?start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.consumption && data.consumption.length > 0) {
+                let html = `
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Total Cost</h6>
+                                <h4 class="mb-0 text-danger">Rs ${parseFloat(data.total_cost).toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Items Consumed</h6>
+                                <h4 class="mb-0 text-info">${data.consumption.length}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Date Range</h6>
+                                <h6 class="mb-0 text-primary">
+                                    ${startDate === endDate ? 
+                                        new Date(startDate).toLocaleDateString() : 
+                                        new Date(startDate).toLocaleDateString() + ' - ' + new Date(endDate).toLocaleDateString()
+                                    }
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ingredient</th>
+                                    <th>Category</th>
+                                    <th>Total Consumed</th>
+                                    <th>Cost/Unit</th>
+                                    <th>Total Cost</th>
+                                    <th>Usage %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                data.consumption.forEach(item => {
+                    const totalCost = parseFloat(item.total_cost);
+                    const usagePercentage = data.total_cost > 0 ? ((totalCost / data.total_cost) * 100).toFixed(1) : 0;
+                    
+                    html += `
+                        <tr>
+                            <td><strong>${item.item_name}</strong></td>
+                            <td><span class="badge bg-secondary">${item.category_name || 'Uncategorized'}</span></td>
+                            <td>${parseFloat(item.total_consumed).toFixed(2)} ${item.kitchen_unit}</td>
+                            <td>Rs ${parseFloat(item.kitchen_cost_per_unit || 0).toFixed(2)}</td>
+                            <td><strong>Rs ${totalCost.toFixed(2)}</strong></td>
+                            <td>
+                                <div class="progress" style="height: 15px;">
+                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                         style="width: ${usagePercentage}%" 
+                                         aria-valuenow="${usagePercentage}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        ${usagePercentage}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                consumptionData.innerHTML = html;
+            } else {
+                const dateText = startDate === endDate ? 
+                    new Date(startDate).toLocaleDateString() : 
+                    `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                    
+                consumptionData.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="fas fa-utensils text-muted" style="font-size: 3rem;"></i>
+                        <p class="mt-3 mb-2 text-muted">No kitchen consumption recorded for ${dateText}</p>
+                        <small class="text-muted">Consumption is tracked automatically when sales are completed and recipes are defined.</small>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading consumption data:', error);
+            consumptionData.innerHTML = `
+                <div class="text-center p-4">
+                    <i class="fas fa-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0 text-danger">Error loading consumption data</p>
+                    <div class="alert alert-warning mt-2">
+                        <small>Make sure the consumption route is properly configured and the database tables exist.</small>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+// Add event listeners to reload consumption data when date filters change
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for form submission (date filter changes)
+    const dateForm = document.querySelector('form[action*="kitchen.comparison"]');
+    if (dateForm) {
+        dateForm.addEventListener('submit', function() {
+            // Delay loading to allow page data to update
+            setTimeout(function() {
+                loadConsumption();
+            }, 1000);
+        });
+    }
+    
+    // Listen for date input changes
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', function() {
+            // Small delay to ensure date is set
+            setTimeout(loadConsumption, 500);
+        });
+        
+        endDateInput.addEventListener('change', function() {
+            setTimeout(loadConsumption, 500);
+        });
+    }
+    
+    // Initial load
+    loadConsumption();
+});
+
 // Add debugging for sales data
 console.log('Page loaded with data:', {
     startDate: '{{ $startDate }}',
@@ -786,8 +652,6 @@ function refreshData() {
         }
     });
 }
-
-// Add smooth scroll
 
 // Add smooth scrolling for internal links
 $('a[href^="#"]').on('click', function(event) {

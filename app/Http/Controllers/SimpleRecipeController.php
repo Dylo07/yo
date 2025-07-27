@@ -179,34 +179,38 @@ class SimpleRecipeController extends Controller
     }
 
     /**
-     * Get daily consumption report
+     * Get daily consumption report - SUPPORTS DATE RANGE
      */
-   public function getDailyConsumption(Request $request)
+    public function getDailyConsumption(Request $request)
     {
         try {
-            $date = $request->input('date', now()->toDateString());
-            $startDate = \Carbon\Carbon::parse($date)->startOfDay();
-            $endDate = \Carbon\Carbon::parse($date)->endOfDay();
+            // Support both single date and date range
+            $startDate = $request->input('start_date', $request->input('date', now()->toDateString()));
+            $endDate = $request->input('end_date', $startDate);
+            
+            $startDateTime = \Carbon\Carbon::parse($startDate)->startOfDay();
+            $endDateTime = \Carbon\Carbon::parse($endDate)->endOfDay();
 
-            \Log::info('Getting daily consumption for date: ' . $date);
+            \Log::info('Getting kitchen consumption for date range: ' . $startDate . ' to ' . $endDate);
 
             // Check if kitchen_stock_logs table exists
             if (!DB::getSchemaBuilder()->hasTable('kitchen_stock_logs')) {
                 \Log::warning('kitchen_stock_logs table does not exist');
                 return response()->json([
-                    'date' => $date,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                     'consumption' => [],
                     'total_cost' => 0,
                     'error' => 'Kitchen stock logs table not found'
                 ]);
             }
 
-            // Get kitchen consumption for the day with better error handling
+            // Get kitchen consumption for the date range with better error handling
             $consumption = DB::table('kitchen_stock_logs')
                 ->join('items', 'kitchen_stock_logs.item_id', '=', 'items.id')
                 ->leftJoin('product_groups', 'items.group_id', '=', 'product_groups.id')
                 ->where('kitchen_stock_logs.action', 'menu_consumption')
-                ->whereBetween('kitchen_stock_logs.created_at', [$startDate, $endDate])
+                ->whereBetween('kitchen_stock_logs.created_at', [$startDateTime, $endDateTime])
                 ->select(
                     'items.name as item_name',
                     'product_groups.name as category_name',
@@ -221,24 +225,30 @@ class SimpleRecipeController extends Controller
 
             \Log::info('Consumption query result count: ' . $consumption->count());
 
-            // If no consumption found, try to get some test data or show helpful info
+            // If no consumption found, try to get some debug info
             if ($consumption->isEmpty()) {
                 // Check if there are any kitchen_stock_logs at all
                 $totalLogs = DB::table('kitchen_stock_logs')->count();
                 $consumptionLogs = DB::table('kitchen_stock_logs')
                     ->where('action', 'menu_consumption')
                     ->count();
+                $dateRangeLogs = DB::table('kitchen_stock_logs')
+                    ->where('action', 'menu_consumption')
+                    ->whereBetween('created_at', [$startDateTime, $endDateTime])
+                    ->count();
 
-                \Log::info("Total kitchen logs: $totalLogs, Consumption logs: $consumptionLogs");
+                \Log::info("Total kitchen logs: $totalLogs, Consumption logs: $consumptionLogs, Date range logs: $dateRangeLogs");
 
                 return response()->json([
-                    'date' => $date,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                     'consumption' => [],
                     'total_cost' => 0,
                     'debug_info' => [
                         'total_kitchen_logs' => $totalLogs,
                         'consumption_logs' => $consumptionLogs,
-                        'date_range' => [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')]
+                        'date_range_logs' => $dateRangeLogs,
+                        'date_range' => [$startDateTime->format('Y-m-d H:i:s'), $endDateTime->format('Y-m-d H:i:s')]
                     ]
                 ]);
             }
@@ -246,19 +256,23 @@ class SimpleRecipeController extends Controller
             $totalCost = $consumption->sum('total_cost');
 
             return response()->json([
-                'date' => $date,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
                 'consumption' => $consumption,
-                'total_cost' => $totalCost
+                'total_cost' => $totalCost,
+                'date_range_days' => $startDateTime->diffInDays($endDateTime) + 1
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Error in getDailyConsumption: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'date' => $request->input('date', 'not provided')
+                'start_date' => $request->input('start_date', 'not provided'),
+                'end_date' => $request->input('end_date', 'not provided')
             ]);
 
             return response()->json([
-                'date' => $request->input('date', now()->toDateString()),
+                'start_date' => $request->input('start_date', now()->toDateString()),
+                'end_date' => $request->input('end_date', now()->toDateString()),
                 'consumption' => [],
                 'total_cost' => 0,
                 'error' => 'Database error: ' . $e->getMessage(),
@@ -266,7 +280,6 @@ class SimpleRecipeController extends Controller
             ], 500);
         }
     }
-
 
     /**
      * Check if menu can be prepared with current stock
@@ -293,7 +306,7 @@ class SimpleRecipeController extends Controller
                 $canPrepare = false;
                 $missingItems[] = [
                     'item' => $recipe->item_name,
-                    'required' => $recipe->required_quaSimpleRecipeControllerntity,
+                    'required' => $recipe->required_quantity, // FIXED: removed typo
                     'available' => $recipe->kitchen_current_stock,
                     'unit' => $recipe->kitchen_unit
                 ];

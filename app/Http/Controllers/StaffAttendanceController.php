@@ -22,10 +22,6 @@ class StaffAttendanceController extends Controller
         }
     }
 
-
-
-
-
     public function index(Request $request)
     {
         try {
@@ -35,14 +31,48 @@ class StaffAttendanceController extends Controller
                 ? Carbon::createFromFormat('Y-m', $request->month)
                 : Carbon::now();
             
-            $attendances = Attendance::whereMonth('date', $selectedDate->month)
+            // Get attendance records and group them properly
+            $attendanceRecords = Attendance::whereMonth('date', $selectedDate->month)
                 ->whereYear('date', $selectedDate->year)
-                ->get()
-                ->groupBy(function($item) {
-                    return $item->staff_id . '-' . Carbon::parse($item->date)->format('d');
-                });
+                ->get();
+            
+            // Process attendance data to separate IN/OUT times properly
+            $attendances = collect();
+            
+            foreach($attendanceRecords as $record) {
+                $dayKey = $record->staff_id . '-' . Carbon::parse($record->date)->format('d');
+                
+                // Parse the raw punch times - handle both space and other separators
+                $rawData = trim($record->raw_data);
+                $punchTimes = [];
+                
+                if (!empty($rawData) && strtolower($rawData) !== 'absent') {
+                    // Split by spaces, commas, or other common separators
+                    $punchTimes = preg_split('/[\s,;]+/', $rawData);
+                    $punchTimes = array_filter($punchTimes, function($time) {
+                        $time = trim($time);
+                        // Validate time format HH:MM
+                        return preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $time);
+                    });
+                    $punchTimes = array_values($punchTimes); // Re-index array
+                }
+                
+                // Create structured data for each day
+                $dayData = [
+                    'staff_id' => $record->staff_id,
+                    'date' => $record->date,
+                    'day' => Carbon::parse($record->date)->format('d'),
+                    'in_time' => isset($punchTimes[0]) ? trim($punchTimes[0]) : null,
+                    'out_time' => isset($punchTimes[1]) ? trim($punchTimes[1]) : null,
+                    'all_punches' => $punchTimes,
+                    'raw_data' => $record->raw_data,
+                    'status' => $record->status
+                ];
+                
+                $attendances->put($dayKey, collect([$dayData]));
+            }
         
-            Log::info('Loading attendance index', [
+            Log::info('Loading attendance index with proper IN/OUT separation', [
                 'staff_count' => $staff->count(),
                 'attendance_records' => $attendances->count(),
                 'selected_month' => $selectedDate->format('Y-m'),
@@ -68,23 +98,51 @@ class StaffAttendanceController extends Controller
         try {
             $validated = $request->validate([
                 'staff_id' => 'required|exists:staff,id',
-                'check_in' => 'required|date_format:H:i',
-                'date' => 'required|date'
+                'punch_time' => 'required|date_format:H:i',
+                'date' => 'required|date',
+                'punch_type' => 'required|in:in,out'
             ]);
 
-            $attendance = Attendance::updateOrCreate(
+            // Get existing attendance record for the day
+            $attendance = Attendance::firstOrCreate(
                 [
                     'staff_id' => $validated['staff_id'],
                     'date' => $validated['date']
                 ],
                 [
-                    'check_in' => $validated['check_in'],
-                    'status' => $this->calculateStatus($validated['check_in'])
+                    'raw_data' => '',
+                    'status' => 'present'
                 ]
             );
 
-            Log::info('Attendance stored', ['attendance_id' => $attendance->id]);
-            return response()->json(['success' => true, 'attendance' => $attendance]);
+            // Parse existing punch times
+            $existingTimes = array_filter(explode(' ', $attendance->raw_data));
+            
+            // Add new punch time
+            $existingTimes[] = $validated['punch_time'];
+            
+            // Sort times chronologically
+            sort($existingTimes);
+            
+            // Update attendance record
+            $attendance->update([
+                'raw_data' => implode(' ', $existingTimes),
+                'check_in' => $existingTimes[0] ?? null,
+                'check_out' => count($existingTimes) > 1 ? end($existingTimes) : null,
+                'status' => $this->calculateStatus($existingTimes[0] ?? null)
+            ]);
+
+            Log::info('Attendance punch recorded', [
+                'attendance_id' => $attendance->id,
+                'punch_type' => $validated['punch_type'],
+                'total_punches' => count($existingTimes)
+            ]);
+            
+            return response()->json([
+                'success' => true, 
+                'attendance' => $attendance,
+                'punch_count' => count($existingTimes)
+            ]);
         } catch (\Exception $e) {
             Log::error('Error storing attendance', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Error storing attendance'], 500);
@@ -105,8 +163,24 @@ class StaffAttendanceController extends Controller
                 ->first();
 
             if ($attendance) {
-                $attendance->update(['check_out' => $validated['check_out']]);
-                Log::info('Checkout recorded', ['attendance_id' => $attendance->id]);
+                // Parse existing times
+                $existingTimes = array_filter(explode(' ', $attendance->raw_data));
+                
+                // Add checkout time
+                $existingTimes[] = $validated['check_out'];
+                
+                // Sort times chronologically
+                sort($existingTimes);
+                
+                $attendance->update([
+                    'raw_data' => implode(' ', $existingTimes),
+                    'check_out' => $validated['check_out']
+                ]);
+                
+                Log::info('Checkout recorded', [
+                    'attendance_id' => $attendance->id,
+                    'total_punches' => count($existingTimes)
+                ]);
             }
 
             return response()->json(['success' => true, 'attendance' => $attendance]);
@@ -118,6 +192,8 @@ class StaffAttendanceController extends Controller
 
     private function calculateStatus($checkInTime)
     {
+        if (!$checkInTime) return 'absent';
+        
         $startTime = Carbon::createFromTimeString('08:30:00');
         $checkIn = Carbon::createFromTimeString($checkInTime);
         return $checkIn->gt($startTime) ? 'late' : 'present';
@@ -149,17 +225,35 @@ class StaffAttendanceController extends Controller
             foreach($staff as $member) {
                 $staffAttendances = $attendances->get($member->id, collect([]));
                 
+                // Calculate detailed metrics
+                $presentDays = $staffAttendances->where('status', 'present')->count();
+                $lateDays = $staffAttendances->where('status', 'late')->count();
+                $absentDays = $totalDays - ($presentDays + $lateDays);
+                
+                // Calculate total working hours
+                $totalHours = 0;
+                foreach($staffAttendances as $attendance) {
+                    $times = array_filter(explode(' ', $attendance->raw_data));
+                    if(count($times) >= 2) {
+                        $checkIn = Carbon::createFromTimeString($times[0]);
+                        $checkOut = Carbon::createFromTimeString(end($times));
+                        $totalHours += $checkOut->diffInHours($checkIn);
+                    }
+                }
+                
                 $reportData[$member->id] = [
                     'name' => $member->name,
+                    'staff_code' => $member->staff_code,
                     'total_days' => $totalDays,
-                    'present' => $staffAttendances->where('status', 'present')->count(),
-                    'late' => $staffAttendances->where('status', 'late')->count(),
-                    'absent' => $totalDays - ($staffAttendances->where('status', 'present')->count() + 
-                                            $staffAttendances->where('status', 'late')->count())
+                    'present' => $presentDays,
+                    'late' => $lateDays,
+                    'absent' => $absentDays,
+                    'total_hours' => round($totalHours, 1),
+                    'average_hours' => $presentDays + $lateDays > 0 ? round($totalHours / ($presentDays + $lateDays), 1) : 0
                 ];
             }
 
-            Log::info('Report generated', [
+            Log::info('Enhanced report generated', [
                 'date_range' => "$startDate to $endDate",
                 'staff_count' => count($reportData)
             ]);
@@ -181,7 +275,7 @@ class StaffAttendanceController extends Controller
         ini_set('display_errors', 1);
         error_reporting(E_ALL);
 
-        Log::info('Starting import process', [
+        Log::info('Starting enhanced import process', [
             'request_headers' => $request->headers->all(),
             'session_id' => session()->getId()
         ]);
@@ -193,8 +287,9 @@ class StaffAttendanceController extends Controller
                     'required',
                     'file',
                     'mimes:xlsx,xls',
-                    'max:5120' // 5MB max
-                ]
+                    'max:10240' // Increased to 10MB max
+                ],
+                'month' => 'nullable|date_format:Y-m'
             ]);
 
             // Check if file exists and is valid
@@ -224,9 +319,10 @@ class StaffAttendanceController extends Controller
                 throw new \Exception('Failed to move uploaded file');
             }
 
-            // Process the Excel file
+            // Process the Excel file with enhanced import
+            $importMonth = $request->month ?? Carbon::now()->format('Y-m');
             Excel::import(
-                new AttendanceImport($request->month ?? Carbon::now()->format('Y-m')),
+                new AttendanceImport($importMonth),
                 $filePath
             );
 
@@ -235,12 +331,15 @@ class StaffAttendanceController extends Controller
                 unlink($filePath);
             }
 
-            Log::info('Import completed successfully');
+            Log::info('Enhanced import completed successfully', [
+                'month' => $importMonth,
+                'file_processed' => $filename
+            ]);
 
             // Redirect with success message
             return redirect()
-                ->route('staff.attendance.index')
-                ->with('success', 'Attendance data imported successfully');
+                ->route('staff.attendance.index', ['month' => $importMonth])
+                ->with('success', 'Attendance data imported successfully with multiple punch times support');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error', [
@@ -269,5 +368,30 @@ class StaffAttendanceController extends Controller
         }
     }
 
-
+    /**
+     * Get attendance statistics for dashboard
+     */
+    public function getAttendanceStats(Request $request)
+    {
+        try {
+            $date = $request->date ?? Carbon::today()->format('Y-m-d');
+            
+            $todayAttendances = Attendance::whereDate('date', $date)->get();
+            
+            $stats = [
+                'total_staff' => Staff::where('status', 'active')->count(),
+                'present_today' => $todayAttendances->whereIn('status', ['present', 'late'])->count(),
+                'late_today' => $todayAttendances->where('status', 'late')->count(),
+                'absent_today' => Staff::where('status', 'active')->count() - $todayAttendances->count(),
+                'total_punches' => $todayAttendances->sum(function($attendance) {
+                    return count(array_filter(explode(' ', $attendance->raw_data)));
+                })
+            ];
+            
+            return response()->json($stats);
+        } catch (\Exception $e) {
+            Log::error('Error getting attendance stats', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to get stats'], 500);
+        }
+    }
 }

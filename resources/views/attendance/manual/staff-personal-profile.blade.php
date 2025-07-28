@@ -6,25 +6,30 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">
-                            <i class="fas fa-user"></i> {{ $person->name }}
-                        </h4>
-                        <div>
-                            @if(Auth::user()->checkAdmin())
-                                <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-success btn-sm">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <a href="{{ route('staff.print.id.card', $person->id) }}" class="btn btn-info btn-sm" target="_blank">
-                                    <i class="fas fa-print"></i> Print ID Card
-                                </a>
-                            @endif
-                            <a href="{{ route('staff.information') }}" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-arrow-left"></i> Back
-                            </a>
-                        </div>
-                    </div>
-                </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">
+            <i class="fas fa-user"></i> {{ $person->name }}
+        </h4>
+        <div>
+            {{-- UPDATED: Everyone can now edit and print --}}
+            <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-success btn-sm">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{{ route('staff.print.id.card', $person->id) }}" class="btn btn-info btn-sm" target="_blank">
+                <i class="fas fa-print"></i> Print ID Card
+            </a>
+            <form method="POST" action="{{ route('staff.section.logout') }}" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-warning btn-sm" title="Logout from Staff Section">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </form>
+            <a href="{{ route('staff.information') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+</div>
 
                 <div class="card-body">
                     @if(session('success'))
@@ -256,80 +261,87 @@
         
         <div class="col-md-4">
             <!-- Quick Actions Card -->
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-tools"></i> Quick Actions
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('attendance.manual.index') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-calendar-check"></i> Mark Attendance
-                        </a>
-                        @if(Auth::user()->checkAdmin())
-                            <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-outline-success btn-sm">
-                                <i class="fas fa-edit"></i> Edit Information
-                            </a>
-                            <a href="{{ route('staff.print.id.card', $person->id) }}" class="btn btn-outline-info btn-sm" target="_blank">
-                                <i class="fas fa-print"></i> Print ID Card
-                            </a>
-                        @endif
-                        <a href="tel:{{ $person->phone_number }}" class="btn btn-outline-warning btn-sm" {{ !$person->phone_number ? 'disabled' : '' }}>
-                            <i class="fas fa-phone"></i> Call
-                        </a>
-                        <a href="mailto:{{ $person->email }}" class="btn btn-outline-secondary btn-sm" {{ !$person->email ? 'disabled' : '' }}>
-                            <i class="fas fa-envelope"></i> Email
-                        </a>
-                    </div>
-                </div>
-            </div>
+           <div class="card mb-3">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="fas fa-tools"></i> Quick Actions
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            <a href="{{ route('attendance.manual.index') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-calendar-check"></i> Mark Attendance
+            </a>
+            {{-- UPDATED: Everyone can now edit --}}
+            <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-edit"></i> Edit Information
+            </a>
+            <a href="{{ route('staff.print.id.card', $person->id) }}" class="btn btn-outline-info btn-sm" target="_blank">
+                <i class="fas fa-print"></i> Print ID Card
+            </a>
+            <a href="tel:{{ $person->phone_number }}" class="btn btn-outline-warning btn-sm" {{ !$person->phone_number ? 'disabled' : '' }}>
+                <i class="fas fa-phone"></i> Call
+            </a>
+            <a href="mailto:{{ $person->email }}" class="btn btn-outline-secondary btn-sm" {{ !$person->email ? 'disabled' : '' }}>
+                <i class="fas fa-envelope"></i> Email
+            </a>
+            <hr>
+            <form method="POST" action="{{ route('staff.section.logout') }}">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                    <i class="fas fa-sign-out-alt"></i> Logout from Staff Section
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{{-- Update the Profile Completeness card: --}}
 
-            <!-- Information Completeness Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-chart-pie"></i> Profile Completeness
-                    </h6>
-                </div>
-                <div class="card-body">
-                    @php
-                        $fields = [
-                            'full_name', 'id_card_number', 'phone_number', 'email', 'address',
-                            'date_of_birth', 'gender', 'position', 'hire_date', 'emergency_contact'
-                        ];
-                        $completed = 0;
-                        foreach($fields as $field) {
-                            if($person->$field) $completed++;
-                        }
-                        $percentage = round(($completed / count($fields)) * 100);
-                    @endphp
-                    
-                    <div class="progress mb-2" style="height: 20px;">
-                        <div class="progress-bar 
-                            @if($percentage >= 80) bg-success
-                            @elseif($percentage >= 60) bg-warning
-                            @else bg-danger
-                            @endif" 
-                            role="progressbar" 
-                            style="width: {{ $percentage }}%">
-                            {{ $percentage }}%
-                        </div>
-                    </div>
-                    
-                    <small class="text-muted">
-                        {{ $completed }} of {{ count($fields) }} fields completed
-                    </small>
-                    
-                    @if($percentage < 100 && Auth::user()->checkAdmin())
-                        <div class="mt-2">
-                            <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-sm btn-success">
-                                <i class="fas fa-plus"></i> Complete Profile
-                            </a>
-                        </div>
-                    @endif
-                </div>
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="fas fa-chart-pie"></i> Profile Completeness
+        </h6>
+    </div>
+    <div class="card-body">
+        @php
+            $fields = [
+                'full_name', 'id_card_number', 'phone_number', 'email', 'address',
+                'date_of_birth', 'gender', 'position', 'hire_date', 'emergency_contact'
+            ];
+            $completed = 0;
+            foreach($fields as $field) {
+                if($person->$field) $completed++;
+            }
+            $percentage = round(($completed / count($fields)) * 100);
+        @endphp
+        
+        <div class="progress mb-2" style="height: 20px;">
+            <div class="progress-bar 
+                @if($percentage >= 80) bg-success
+                @elseif($percentage >= 60) bg-warning
+                @else bg-danger
+                @endif" 
+                role="progressbar" 
+                style="width: {{ $percentage }}%">
+                {{ $percentage }}%
             </div>
+        </div>
+        
+        <small class="text-muted">
+            {{ $completed }} of {{ count($fields) }} fields completed
+        </small>
+        
+        {{-- UPDATED: Everyone can now complete profile --}}
+        @if($percentage < 100)
+            <div class="mt-2">
+                <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-plus"></i> Complete Profile
+                </a>
+            </div>
+        @endif
+    </div>
+</div>
         </div>
     </div>
 </div>

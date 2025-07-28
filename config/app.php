@@ -215,4 +215,7 @@ return [
     
         ])->toArray(),
 
+
+        'staff_section_password' => env('STAFF_SECTION_PASSWORD', 'hotel2024'),
+
 ];

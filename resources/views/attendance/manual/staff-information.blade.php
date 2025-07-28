@@ -1,3 +1,5 @@
+{{-- Replace your entire staff-information.blade.php file with this corrected version --}}
+
 @extends('layouts.app')
 
 @section('content')
@@ -7,16 +9,22 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">
                     <i class="fas fa-id-card"></i> Staff Personal Information
+                    <small class="text-muted">({{ $staff->count() }} total)</small>
                 </h3>
                 <div>
-                    @if(Auth::user()->checkAdmin())
-                        <a href="{{ route('staff.personal.create') }}" class="btn btn-success mr-2">
-                            <i class="fas fa-plus"></i> Add New Staff
-                        </a>
-                    @endif
+                    {{-- Everyone can now add staff and export --}}
+                    <a href="{{ route('staff.personal.create') }}" class="btn btn-success mr-2">
+                        <i class="fas fa-plus"></i> Add New Staff
+                    </a>
                     <a href="{{ route('staff.information.export') }}" class="btn btn-primary mr-2">
                         <i class="fas fa-download"></i> Export
                     </a>
+                    <form method="POST" action="{{ route('staff.section.logout') }}" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-warning mr-2" title="Logout from Staff Section">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
                     <a href="{{ route('attendance.manual.index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Attendance
                     </a>
@@ -25,6 +33,16 @@
         </div>
 
         <div class="card-body">
+            {{-- Session Status Alert --}}
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle"></i> 
+                <strong>Access Granted:</strong> You are now in the staff information section. 
+                Logged in as <strong>{{ Auth::user()->name }}</strong> at {{ now()->format('M j, Y g:i A') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show">
                     {{ session('success') }}
@@ -174,14 +192,13 @@
                                     <a href="{{ route('staff.personal.profile', $person->id) }}" class="btn btn-primary">
                                         <i class="fas fa-eye"></i> View
                                     </a>
-                                    @if(Auth::user()->checkAdmin())
-                                        <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-success">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        <a href="{{ route('staff.print.id.card', $person->id) }}" class="btn btn-info" target="_blank">
-                                            <i class="fas fa-print"></i> ID Card
-                                        </a>
-                                    @endif
+                                    {{-- Everyone can now edit --}}
+                                    <a href="{{ route('staff.personal.edit', $person->id) }}" class="btn btn-success">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="{{ route('staff.print.id.card', $person->id) }}" class="btn btn-info" target="_blank">
+                                        <i class="fas fa-print"></i> ID Card
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -194,11 +211,10 @@
                     <i class="fas fa-users fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">No staff members found</h5>
                     <p class="text-muted">Start by adding some staff members to view their information here.</p>
-                    @if(Auth::user()->checkAdmin())
-                        <a href="{{ route('staff.personal.create') }}" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add First Staff Member
-                        </a>
-                    @endif
+                    {{-- Everyone can now add staff --}}
+                    <a href="{{ route('staff.personal.create') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add First Staff Member
+                    </a>
                 </div>
             @endif
         </div>

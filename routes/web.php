@@ -336,20 +336,22 @@ Route::middleware(['auth'])->group(function () {
     // Route for bulk updating staff categories (EXISTING)
     Route::post('/manual-attendance/bulk-update-categories', [ManualAttendanceController::class, 'bulkUpdateCategories'])
             ->name('attendance.manual.bulk-update-categories');
+});
 
-    // ===== ADD THESE NEW ROUTES FOR STAFF PERSONAL INFORMATION =====
-    
-    // Staff Personal Information Routes (NEW - ADD THESE)
-    Route::get('/staff-information', [ManualAttendanceController::class, 'staffInformation'])->name('staff.information');
+
+   // UPDATED Staff Personal Information Routes with Password Protection
+Route::middleware(['auth', 'staff.password'])->group(function () {
+    // Staff personal information listing - UPDATED to handle both GET and POST
+    Route::match(['GET', 'POST'], '/staff-information', [ManualAttendanceController::class, 'staffInformation'])->name('staff.information');
     
     // Individual staff profile with personal details
     Route::get('/staff-information/{personId}', [ManualAttendanceController::class, 'staffPersonalProfile'])->name('staff.personal.profile');
     
-    // Edit staff personal information (Admin only)
+    // Edit staff personal information (NOW AVAILABLE TO EVERYONE)
     Route::get('/staff-information/{personId}/edit', [ManualAttendanceController::class, 'editStaffPersonalInfo'])->name('staff.personal.edit');
     Route::put('/staff-information/{personId}/update', [ManualAttendanceController::class, 'updateStaffPersonalInfo'])->name('staff.personal.update');
     
-    // Add new staff member with personal info (Admin only)
+    // Add new staff member with personal info (NOW AVAILABLE TO EVERYONE)
     Route::get('/staff-information/create', [ManualAttendanceController::class, 'createStaffPersonalInfo'])->name('staff.personal.create');
     Route::post('/staff-information/store', [ManualAttendanceController::class, 'storeStaffPersonalInfo'])->name('staff.personal.store');
     
@@ -358,6 +360,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Print staff ID card
     Route::get('/staff-information/{personId}/print-id-card', [ManualAttendanceController::class, 'printIdCard'])->name('staff.print.id.card');
+    
+    // Password session management
+    Route::post('/staff-section/logout', [ManualAttendanceController::class, 'logoutStaffSection'])->name('staff.section.logout');
 });
 
 // Leave Request Routes - Add this complete section to your web.php file

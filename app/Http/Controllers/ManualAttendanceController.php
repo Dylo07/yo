@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 
 class ManualAttendanceController extends Controller
 {
@@ -699,10 +700,10 @@ public function staffPersonalProfile($personId)
  */
 public function editStaffPersonalInfo($personId)
 {
-    // Only admin can edit staff information
-    if (!Auth::user()->checkAdmin()) {
-        return redirect()->back()->with('error', 'Only administrators can edit staff information');
-    }
+    // REMOVED: Only admin can edit staff information
+    // if (!Auth::user()->checkAdmin()) {
+    //     return redirect()->back()->with('error', 'Only administrators can edit staff information');
+    // }
     
     $person = Person::with(['staffCategory', 'staffCode'])->findOrFail($personId);
     
@@ -725,10 +726,10 @@ public function editStaffPersonalInfo($personId)
  */
 public function updateStaffPersonalInfo(Request $request, $personId)
 {
-    // Only admin can update staff information
-    if (!Auth::user()->checkAdmin()) {
-        return redirect()->back()->with('error', 'Only administrators can update staff information');
-    }
+    // REMOVED: Only admin can update staff information
+    // if (!Auth::user()->checkAdmin()) {
+    //     return redirect()->back()->with('error', 'Only administrators can update staff information');
+    // }
     
     $request->validate([
         'name' => 'required|string|max:255',
@@ -793,7 +794,7 @@ public function updateStaffPersonalInfo(Request $request, $personId)
         DB::commit();
         
         return redirect()->route('staff.personal.profile', $personId)
-            ->with('success', 'Staff information updated successfully');
+            ->with('success', 'Staff information updated successfully by ' . Auth::user()->name);
             
     } catch (\Exception $e) {
         DB::rollBack();
@@ -809,10 +810,10 @@ public function updateStaffPersonalInfo(Request $request, $personId)
  */
 public function createStaffPersonalInfo()
 {
-    // Only admin can create staff
-    if (!Auth::user()->checkAdmin()) {
-        return redirect()->back()->with('error', 'Only administrators can create staff members');
-    }
+    // REMOVED: Only admin can create staff
+    // if (!Auth::user()->checkAdmin()) {
+    //     return redirect()->back()->with('error', 'Only administrators can create staff members');
+    // }
     
     $categories = [
         'front_office' => 'Front Office',
@@ -831,12 +832,16 @@ public function createStaffPersonalInfo()
 /**
  * Store new staff member with personal information
  */
+
+/**
+ * Store new staff member with personal information (UPDATED - Remove admin check)
+ */
 public function storeStaffPersonalInfo(Request $request)
 {
-    // Only admin can create staff
-    if (!Auth::user()->checkAdmin()) {
-        return redirect()->back()->with('error', 'Only administrators can create staff members');
-    }
+    // REMOVED: Only admin can create staff
+    // if (!Auth::user()->checkAdmin()) {
+    //     return redirect()->back()->with('error', 'Only administrators can create staff members');
+    // }
     
     $request->validate([
         'name' => 'required|string|max:255',
@@ -897,7 +902,7 @@ public function storeStaffPersonalInfo(Request $request)
         DB::commit();
         
         return redirect()->route('staff.information')
-            ->with('success', 'Staff member created successfully');
+            ->with('success', 'Staff member created successfully by ' . Auth::user()->name);
             
     } catch (\Exception $e) {
         DB::rollBack();
@@ -907,7 +912,6 @@ public function storeStaffPersonalInfo(Request $request)
             ->withInput();
     }
 }
-
 /**
  * Export staff information to CSV
  */
@@ -997,6 +1001,14 @@ public function printIdCard($personId)
     $person = Person::with(['staffCategory', 'staffCode'])->findOrFail($personId);
     
     return view('attendance.manual.print-id-card', compact('person'));
+}
+
+public function logoutStaffSection()
+{
+    Session::forget('staff_section_authenticated');
+    Session::forget('staff_section_auth_time');
+    
+    return redirect()->route('home')->with('success', 'Logged out from staff section successfully');
 }
     
 }

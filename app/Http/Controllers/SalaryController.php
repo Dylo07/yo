@@ -14,14 +14,64 @@ class SalaryController extends Controller
 {
     public function index()
     {
-        // Get staff
+        // SOLUTION 1: Use Eloquent instead of Query Builder (RECOMMENDED)
+        $staff = Person::whereHas('staffCode', function($query) {
+            $query->where('is_active', 1);
+        })->orderBy('name')->get();
+
+        /* 
+        // SOLUTION 2: If you must use Query Builder, use DISTINCT
         $staff = DB::table('persons')
             ->join('staff_codes', 'persons.id', '=', 'staff_codes.person_id')
             ->where('staff_codes.is_active', 1)
             ->select('persons.*')
-            ->groupBy('persons.id', 'persons.name', 'persons.created_at', 'persons.updated_at', 'persons.type', 'persons.basic_salary')
+            ->distinct()
             ->orderBy('persons.name')
             ->get();
+        */
+
+        /* 
+        // SOLUTION 3: Add full_name to GROUP BY if it exists (WORKING SOLUTION)
+        $staff = DB::table('persons')
+            ->join('staff_codes', 'persons.id', '=', 'staff_codes.person_id')
+            ->where('staff_codes.is_active', 1)
+            ->select('persons.*')
+            ->groupBy(
+                'persons.id', 
+                'persons.name', 
+                'persons.full_name',  // ADD THIS LINE
+                'persons.created_at', 
+                'persons.updated_at', 
+                'persons.type', 
+                'persons.basic_salary',
+                'persons.id_card_number',
+                'persons.address',
+                'persons.phone_number',
+                'persons.emergency_contact',
+                'persons.emergency_phone',
+                'persons.date_of_birth',
+                'persons.gender',
+                'persons.position',
+                'persons.hire_date',
+                'persons.blood_group',
+                'persons.email',
+                'persons.notes'
+            )
+            ->orderBy('persons.name')
+            ->get();
+        */
+
+        /* 
+        // SOLUTION 4: Use subquery approach
+        $staffIds = DB::table('staff_codes')
+            ->where('is_active', 1)
+            ->pluck('person_id');
+            
+        $staff = DB::table('persons')
+            ->whereIn('id', $staffIds)
+            ->orderBy('name')
+            ->get();
+        */
 
         $month = request('month', Carbon::now()->format('m'));
         $year = request('year', Carbon::now()->format('Y'));
@@ -197,95 +247,95 @@ class SalaryController extends Controller
     }
 
     public function generatePayslip(Request $request)
-{
-    $person = Person::findOrFail($request->person_id);
-    $month = request('month', Carbon::now()->format('m'));
-    $year = request('year', Carbon::now()->format('Y'));
+    {
+        $person = Person::findOrFail($request->person_id);
+        $month = request('month', Carbon::now()->format('m'));
+        $year = request('year', Carbon::now()->format('Y'));
 
-    // Get attendance data
-    $attendance = ManualAttendance::where('person_id', $person->id)
-        ->whereMonth('attendance_date', $month)
-        ->whereYear('attendance_date', $year)
-        ->get();
+        // Get attendance data
+        $attendance = ManualAttendance::where('person_id', $person->id)
+            ->whereMonth('attendance_date', $month)
+            ->whereYear('attendance_date', $year)
+            ->get();
 
-    // Calculate salary advance period
-    $periodStart = Carbon::create($year, $month, 10, 0, 0, 0);
-    $periodEnd = Carbon::create($year, $month)->addMonth()->setDay(10)->setTime(23, 59, 59);
+        // Calculate salary advance period
+        $periodStart = Carbon::create($year, $month, 10, 0, 0, 0);
+        $periodEnd = Carbon::create($year, $month)->addMonth()->setDay(10)->setTime(23, 59, 59);
 
-    // Get salary advance
-    $salaryAdvance = Cost::where('group_id', 1)
-        ->where('person_id', $person->id)
-        ->whereBetween('created_at', [$periodStart, $periodEnd])
-        ->sum('amount') ?? 0;
+        // Get salary advance
+        $salaryAdvance = Cost::where('group_id', 1)
+            ->where('person_id', $person->id)
+            ->whereBetween('created_at', [$periodStart, $periodEnd])
+            ->sum('amount') ?? 0;
 
-    $presentDays = $attendance->where('status', 'present')->count();
-    $halfDays = $attendance->where('status', 'half')->count();
-    $absentDays = $attendance->where('status', 'absent')->count();
-    $presentDays += $halfDays * 0.5;
-    $totalDaysOff = $absentDays + ($halfDays * 0.5);
+        $presentDays = $attendance->where('status', 'present')->count();
+        $halfDays = $attendance->where('status', 'half')->count();
+        $absentDays = $attendance->where('status', 'absent')->count();
+        $presentDays += $halfDays * 0.5;
+        $totalDaysOff = $absentDays + ($halfDays * 0.5);
 
-    $lastDayOfMonth = Carbon::create($year, $month)->endOfMonth()->day;
-    $markedDays = $attendance->count();
+        $lastDayOfMonth = Carbon::create($year, $month)->endOfMonth()->day;
+        $markedDays = $attendance->count();
 
-    // Calculate final salary based on conditions
-    if ($markedDays < $lastDayOfMonth) {
-        $finalSalary = ($presentDays * $person->basic_salary / 30) - $salaryAdvance;
-        $remarks = "Partial month calculation: $presentDays days present";
-    } else {
-        if ($totalDaysOff == 5) {
-            $finalSalary = $person->basic_salary - $salaryAdvance;
-        } elseif ($totalDaysOff < 5) {
-            $additionalDays = 5 - $totalDaysOff;
-            $dailyRate = $person->basic_salary / 30;
-            $finalSalary = $person->basic_salary - $salaryAdvance + ($additionalDays * $dailyRate);
+        // Calculate final salary based on conditions
+        if ($markedDays < $lastDayOfMonth) {
+            $finalSalary = ($presentDays * $person->basic_salary / 30) - $salaryAdvance;
+            $remarks = "Partial month calculation: $presentDays days present";
         } else {
-            $excessDays = $totalDaysOff - 5;
-            $dailyRate = $person->basic_salary / 25;
-            $finalSalary = $person->basic_salary - $salaryAdvance - ($excessDays * $dailyRate);
+            if ($totalDaysOff == 5) {
+                $finalSalary = $person->basic_salary - $salaryAdvance;
+            } elseif ($totalDaysOff < 5) {
+                $additionalDays = 5 - $totalDaysOff;
+                $dailyRate = $person->basic_salary / 30;
+                $finalSalary = $person->basic_salary - $salaryAdvance + ($additionalDays * $dailyRate);
+            } else {
+                $excessDays = $totalDaysOff - 5;
+                $dailyRate = $person->basic_salary / 25;
+                $finalSalary = $person->basic_salary - $salaryAdvance - ($excessDays * $dailyRate);
+            }
+            $remarks = "Full month calculation with $totalDaysOff days off";
         }
-        $remarks = "Full month calculation with $totalDaysOff days off";
+
+        // Create a temporary salary object (not saved to database)
+        $salary = new Salary([
+            'person_id' => $person->id,
+            'month' => $month,
+            'year' => $year,
+            'basic_salary' => $person->basic_salary,
+            'salary_advance' => $salaryAdvance,
+            'days_off' => $absentDays,
+            'present_days' => $presentDays,
+            'final_salary' => $finalSalary,
+            'remarks' => $remarks
+        ]);
+
+        $salary->person = $person;  // Set the relationship manually
+
+        return view('salary.payslip', compact('salary'));
+    }
+    
+    public function basicSalary()
+    {
+        // Use the same approach as in index method
+        $staff = Person::whereHas('staffCode', function($query) {
+            $query->where('is_active', 1);
+        })->get();
+
+        return view('salary.basic', compact('staff'));
     }
 
-    // Create a temporary salary object (not saved to database)
-    $salary = new Salary([
-        'person_id' => $person->id,
-        'month' => $month,
-        'year' => $year,
-        'basic_salary' => $person->basic_salary,
-        'salary_advance' => $salaryAdvance,
-        'days_off' => $absentDays,
-        'present_days' => $presentDays,
-        'final_salary' => $finalSalary,
-        'remarks' => $remarks
-    ]);
+    public function updateBasic(Request $request)
+    {
+        $person = Person::findOrFail($request->person_id);
+        $person->basic_salary = $request->basic_salary;
+        $person->save();
 
-    $salary->person = $person;  // Set the relationship manually
-
-    return view('salary.payslip', compact('salary'));
-}
-public function basicSalary()
-{
-    $staff = DB::table('persons')
-        ->join('staff_codes', 'persons.id', '=', 'staff_codes.person_id')
-        ->where('staff_codes.is_active', 1)
-        ->select('persons.*')
-        ->get();
-
-    return view('salary.basic', compact('staff'));
-}
-
-public function updateBasic(Request $request)
-{
-    $person = Person::findOrFail($request->person_id);
-    $person->basic_salary = $request->basic_salary;
-    $person->save();
-
-    return response()->json(['success' => true]);
-}
-public function payslip($id)
-{
-    $salary = Salary::with('person')->findOrFail($id);
-    return view('salary.payslip', compact('salary'));
-}
-
+        return response()->json(['success' => true]);
+    }
+    
+    public function payslip($id)
+    {
+        $salary = Salary::with('person')->findOrFail($id);
+        return view('salary.payslip', compact('salary'));
+    }
 }

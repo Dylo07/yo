@@ -32,6 +32,7 @@
         color: white;
         font-weight: 700;
         border-bottom: 2px solid #3730a3;
+        position: relative;
     }
     
     .punch-subheader {
@@ -40,6 +41,11 @@
         font-size: 10px;
         font-weight: 500;
         padding: 4px 2px !important;
+        position: relative;
+    }
+    
+    .punch-subheader.out-column {
+        background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
     }
     
     .staff-info {
@@ -185,21 +191,16 @@
         font-weight: 500;
     }
     
-    /* Day separators and visual improvements */
-    .day-separator {
-        border-right: 3px solid #6366f1 !important;
-    }
-    
-    /* Clear day boundaries - this is what you want! */
+    /* Day separators - EVERY DAY gets a separator */
     .day-boundary {
-        border-right: 2px solid #374151 !important;
-        box-shadow: 2px 0 0 0 #374151;
+        border-right: 3px solid #dc2626 !important;
+        box-shadow: 1px 0 0 0 #dc2626;
     }
     
-    /* Week separators - stronger */
+    /* Week separators - even stronger */
     .week-separator {
-        border-right: 4px solid #dc2626 !important;
-        box-shadow: 4px 0 2px -2px rgba(220, 38, 38, 0.3);
+        border-right: 5px solid #991b1b !important;
+        box-shadow: 2px 0 4px rgba(153, 27, 27, 0.4);
     }
     
     /* Weekend styling */
@@ -219,41 +220,6 @@
     .date-group-4 { background-color: #f1f5f9; }
     .date-group-5 { background-color: #f8fafc; }
     
-    /* Enhanced date headers */
-    .date-header {
-        background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
-        color: white;
-        font-weight: 700;
-        border-bottom: 2px solid #3730a3;
-        position: relative;
-    }
-    
-    /* Enhanced punch subheaders */
-    .punch-subheader {
-        background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
-        color: white;
-        font-size: 10px;
-        font-weight: 500;
-        padding: 4px 2px !important;
-        position: relative;
-    }
-    
-    .punch-subheader.out-column {
-        background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
-    }
-    
-    /* Clear visual separation between days */
-    .table th:nth-child(4n),
-    .table td:nth-child(4n) {
-        border-right: 3px solid #6b7280 !important;
-    }
-    
-    /* Every 7 days (week) gets stronger separator */
-    .table th:nth-child(16n),
-    .table td:nth-child(16n) {
-        border-right: 4px solid #dc2626 !important;
-    }
-    
     /* Month sections */
     .first-week { border-left: 4px solid #059669 !important; }
     .mid-month { border-left: 2px solid #6366f1 !important; }
@@ -263,9 +229,22 @@
     .odd-day { background-color: rgba(99, 102, 241, 0.03) !important; }
     .even-day { background-color: rgba(139, 92, 246, 0.03) !important; }
     
-    /* Make borders more visible */
+    /* Make all borders more visible */
     .table td, .table th {
         border: 1px solid #d1d5db !important;
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .table td, .table th {
+            font-size: 9px;
+            padding: 2px 3px !important;
+            min-width: 35px;
+        }
+        
+        .staff-info {
+            min-width: 80px;
+        }
     }
 </style>
 
@@ -320,7 +299,7 @@
                         
                         <div class="col-md-4">
                             <label class="form-label">📅 Month</label>
-                            <input type="month" name="month" class="form-control" value="{{ now()->format('Y-m') }}">
+                            <input type="month" name="month" class="form-control" value="{{ request('month', now()->format('Y-m')) }}">
                         </div>
                         
                         <div class="col-md-12">
@@ -395,7 +374,7 @@
                                             $groupNumber = ceil($day / 5);
                                             $dateClasses[] = 'date-group-' . ($groupNumber % 5 + 1);
                                         @endphp
-                                        <th colspan="2" class="{{ implode(' ', $dateClasses) }} {{ $separatorClass }}">
+                                        <th colspan="2" class="{{ implode(' ', $dateClasses) }} {{ $separatorClass }} day-boundary">
                                             <div style="display: flex; flex-direction: column; align-items: center;">
                                                 <span style="font-size: 13px; font-weight: bold;">{{ str_pad($day, 2, '0', STR_PAD_LEFT) }}</span>
                                                 <span style="font-size: 8px; opacity: 0.8;">{{ $currentDate->format('D') }}</span>
@@ -413,20 +392,13 @@
                                         @php
                                             $currentDate = $selectedDate->copy()->day($day);
                                             $isWeekend = $currentDate->isWeekend();
-                                            $dayOfWeek = $currentDate->dayOfWeek;
                                             
                                             $inClasses = ['punch-subheader'];
                                             $outClasses = ['punch-subheader', 'out-column'];
-                                            $separatorClass = '';
                                             
                                             if($isWeekend) {
                                                 $inClasses[] = 'weekend-column';
                                                 $outClasses[] = 'weekend-column';
-                                            }
-                                            
-                                            // Week separators
-                                            if($dayOfWeek === 0 && $day > 1) {
-                                                $separatorClass = 'week-separator';
                                             }
                                             
                                             // Alternating groups
@@ -455,7 +427,7 @@
                                         
                                         @for($day = 1; $day <= $selectedDate->daysInMonth; $day++)
                                             @php
-                                                // Get attendance for this specific day using the new data structure
+                                                // Get attendance for this specific day
                                                 $attendanceKey = $member->id . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
                                                 $dayData = null;
                                                 $inTime = null;
@@ -463,18 +435,25 @@
                                                 
                                                 if($attendances->has($attendanceKey)) {
                                                     $dayData = $attendances->get($attendanceKey)->first();
+                                                    
+                                                    // Get in_time and out_time from the processed data
                                                     $inTime = $dayData['in_time'] ?? null;
                                                     $outTime = $dayData['out_time'] ?? null;
+                                                    
+                                                    // Fallback: if in_time/out_time don't exist, parse from raw_data
+                                                    if (!$inTime && !$outTime && !empty($dayData['raw_data'])) {
+                                                        $times = array_filter(explode(' ', trim($dayData['raw_data'])));
+                                                        $inTime = isset($times[0]) ? trim($times[0]) : null;
+                                                        $outTime = isset($times[1]) ? trim($times[1]) : null;
+                                                    }
                                                 }
                                                 
                                                 // Styling classes for visual separation
                                                 $currentDate = $selectedDate->copy()->day($day);
                                                 $isWeekend = $currentDate->isWeekend();
-                                                $dayOfWeek = $currentDate->dayOfWeek;
                                                 $isToday = $currentDate->isToday();
                                                 
                                                 $cellClasses = ['time-cell'];
-                                                $separatorClass = '';
                                                 
                                                 if($isWeekend) {
                                                     $cellClasses[] = 'weekend-column';
@@ -482,11 +461,6 @@
                                                 
                                                 if($isToday) {
                                                     $cellClasses[] = 'today-column';
-                                                }
-                                                
-                                                // Week separators
-                                                if($dayOfWeek === 0 && $day > 1) {
-                                                    $separatorClass = 'week-separator';
                                                 }
                                                 
                                                 // Alternating day styling
@@ -526,7 +500,7 @@
                                             </td>
                                             
                                             <!-- OUT Column -->
-                                            <td class="{{ implode(' ', $cellClasses) }} 
+                                            <td class="{{ implode(' ', $cellClasses) }} day-boundary
                                                 @if($outTime)
                                                     @php
                                                         $hour = (int)substr($outTime, 0, 2);
@@ -537,7 +511,6 @@
                                                         }
                                                     @endphp
                                                 @endif
-                                                day-boundary
                                             ">
                                                 @if($outTime)
                                                     <strong>{{ $outTime }}</strong>

@@ -984,7 +984,6 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 // Global Variables
 const functionTypeColors = {
@@ -1010,6 +1009,42 @@ const allRooms = [
     '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
     '103', '104', '105'
 ];
+
+// Success/Error Message Functions
+function showSuccessMessage(message) {
+    showMessage(message, 'success');
+}
+
+function showErrorMessage(message) {
+    showMessage(message, 'danger');
+}
+
+function showMessage(message, type) {
+    // Remove any existing alerts
+    const existingAlerts = document.querySelectorAll('.custom-alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show custom-alert`;
+    alert.style.position = 'fixed';
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.style.minWidth = '300px';
+    alert.innerHTML = `
+        <strong>${type === 'success' ? 'Success!' : 'Error!'}</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
 
 // Time Slot Functions
 function formatDateForDisplay(dateString) {
@@ -1198,25 +1233,12 @@ function useSelectedDateInForm() {
             checkAvailability();
         }
         
-        const alert = document.createElement('div');
-        alert.className = 'alert alert-success alert-dismissible fade show';
-        alert.innerHTML = `
-            <strong>Success!</strong> Selected time slot has been applied to the booking form.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        const bookingForm = document.getElementById('booking-form');
-        bookingForm.parentNode.insertBefore(alert, bookingForm);
-        
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.remove();
-            }
-        }, 5000);
+        showSuccessMessage('Selected time slot has been applied to the booking form.');
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('availableRoomsModal'));
         modal.hide();
         
+        const bookingForm = document.getElementById('booking-form');
         bookingForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
@@ -1467,9 +1489,33 @@ function togglePaymentVerification(paymentId) {
     })
     .then(data => {
         if (data.success) {
-            location.reload();
+            showSuccessMessage("Payment verification updated successfully!");
+            
+            // Update the UI without page reload
+            if (checkbox) {
+                const paymentRecord = checkbox.closest('.payment-record');
+                if (data.payment.is_verified) {
+                    // Add verification badge
+                    const header = paymentRecord.querySelector('.form-check');
+                    const verificationDiv = document.createElement('div');
+                    verificationDiv.className = 'text-success ms-2 d-flex align-items-center';
+                    verificationDiv.innerHTML = `
+                        <span class="badge bg-success me-2">Verified</span>
+                        <small class="text-muted">on ${new Date(data.payment.verified_at).toLocaleDateString()} by ${data.payment.verified_by}</small>
+                    `;
+                    header.appendChild(verificationDiv);
+                    checkbox.style.display = 'none';
+                } else {
+                    // Remove verification badge
+                    const verificationDiv = paymentRecord.querySelector('.text-success');
+                    if (verificationDiv) verificationDiv.remove();
+                    checkbox.style.display = 'inline-block';
+                    checkbox.disabled = false;
+                }
+            }
+            
         } else {
-            alert(data.message || 'An error occurred');
+            showErrorMessage(data.message || 'An error occurred');
             if (checkbox) {
                 checkbox.disabled = false;
             }
@@ -1477,7 +1523,7 @@ function togglePaymentVerification(paymentId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to update verification status');
+        showErrorMessage('Failed to update verification status');
         if (checkbox) {
             checkbox.disabled = false;
         }
@@ -1607,11 +1653,26 @@ function setupEditFormSubmission(info) {
                 },
             });
 
-            alert("Booking updated successfully!");
-            location.reload();
+            showSuccessMessage("Booking updated successfully!");
+            
+            // Close edit modal
+            const editModal = bootstrap.Modal.getInstance(document.getElementById("editModal"));
+            if (editModal) editModal.hide();
+            
+            // Close event modal
+            const eventModal = bootstrap.Modal.getInstance(document.getElementById("eventModal"));
+            if (eventModal) eventModal.hide();
+            
+            // Refresh calendar and recent bookings without page reload
+            await Promise.all([
+                calendar.refetchEvents(),
+                loadRecentBookings(),
+                loadLogDetails()
+            ]);
+
         } catch (error) {
             console.error("Error updating booking:", error.response || error.message);
-            alert("Failed to update booking.");
+            showErrorMessage("Failed to update booking. Please try again.");
         }
     };
 }
@@ -1877,7 +1938,7 @@ function viewBookingFromWidget(bookingId) {
     if (event) {
         handleEventClick({ event: event });
     } else {
-        alert('Booking details not found in calendar. Please refresh the page.');
+        showErrorMessage('Booking details not found in calendar. Please refresh the page.');
     }
 }
 
@@ -1891,11 +1952,27 @@ function editBookingFromWidget(bookingId) {
             document.getElementById('editEvent').click();
         }, 500);
     } else {
-        alert('Booking not found in calendar. Please refresh the page.');
+        showErrorMessage('Booking not found in calendar. Please refresh the page.');
     }
 }
 
-// Form Submission
+// Manual Refresh Function
+function manualRefresh() {
+    showMessage('Refreshing calendar data...', 'info');
+    
+    Promise.all([
+        calendar.refetchEvents(),
+        loadRecentBookings(),
+        loadLogDetails()
+    ]).then(() => {
+        showSuccessMessage('Calendar data refreshed successfully!');
+    }).catch(error => {
+        console.error('Refresh error:', error);
+        showErrorMessage('Failed to refresh calendar data');
+    });
+}
+
+// Form Submission - Updated to avoid page reload
 document.getElementById("booking-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     
@@ -1932,8 +2009,13 @@ document.getElementById("booking-form").addEventListener("submit", async functio
             },
         });
 
-        alert("Booking successful!");
+        showSuccessMessage("Booking successful!");
         
+        // Reset form
+        this.reset();
+        document.getElementById('roomNumbersSection').style.display = 'none';
+        
+        // Update recent bookings to show new booking
         currentDays = 1;
         currentLimit = 5;
         
@@ -1942,17 +2024,18 @@ document.getElementById("booking-form").addEventListener("submit", async functio
         const todayBtn = document.querySelector('[data-days="1"]');
         if (todayBtn) todayBtn.classList.add('active');
         
-        loadRecentBookings();
-        
-        setTimeout(() => {
-            location.reload();
-        }, 1000);
+        // Refresh recent bookings and calendar without page reload
+        await Promise.all([
+            loadRecentBookings(),
+            calendar.refetchEvents(),
+            loadLogDetails()
+        ]);
         
     } catch (error) {
         console.error("Error making booking:", error.response || error.message);
         
         if (error.response && error.response.status === 409) {
-            alert("A similar booking was just created. Please check your recent bookings.");
+            showErrorMessage("A similar booking was just created. Please check your recent bookings.");
             currentDays = 1;
             currentLimit = 5;
             const dayFilters = document.querySelectorAll('.day-filter');
@@ -1961,15 +2044,16 @@ document.getElementById("booking-form").addEventListener("submit", async functio
             if (todayBtn) todayBtn.classList.add('active');
             loadRecentBookings();
         } else {
-            alert("Failed to make booking. Please try again.");
+            showErrorMessage("Failed to make booking. Please try again.");
         }
-        
+    } finally {
+        // Re-enable button
         submitButton.disabled = false;
         submitButton.textContent = originalText;
     }
 });
 
-// Initialize everything when DOM is loaded
+// Initialize everything when DOM is loaded - UPDATED without auto-refresh
 document.addEventListener("DOMContentLoaded", function() {
     // Initialize calendar
     loadLogDetails();
@@ -2004,8 +2088,8 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
     
-    // Refresh recent bookings every 60 seconds
-    setInterval(loadRecentBookings, 60000);
+    // REMOVED: Auto-refresh interval that was causing page refreshes
+    // setInterval(loadRecentBookings, 60000); // This line has been removed
     
     calendar.on('eventsSet', function(events) {
         console.log('Calendar events loaded:', events);

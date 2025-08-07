@@ -55,53 +55,68 @@ class BookingController extends Controller
     /**
      * Store a new booking.
      */
-    public function store(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'start' => 'required|date',
-                'end' => 'nullable|date',
-                'name' => 'required|string',
-                'function_type' => 'required|string',
-                'contact_number' => 'required|string',
-                'room_numbers' => 'required|array',
-                'guest_count' => 'required|string',
-                'advance_payment' => 'required|numeric',
-                'bill_number' => 'required|string',
-                'advance_date' => 'required|date',
-                'payment_method' => 'required|in:online,cash'
-            ]);
-    
-            \DB::beginTransaction();
-    
-            // Create booking
-            $booking = Booking::create([
-                'start' => $validated['start'],
-                'end' => $validated['end'],
-                'name' => $validated['name'],
-                'function_type' => $validated['function_type'],
-                'contact_number' => $validated['contact_number'],
-                'room_numbers' => $validated['room_numbers'],
-                'guest_count' => $validated['guest_count'],
-                'user_id' => auth()->id()
-            ]);
-    
-            // Create payment record
-            $booking->addPayment([
-                'advance_payment' => $validated['advance_payment'],
-                'bill_number' => $validated['bill_number'],
-                'advance_date' => $validated['advance_date'],
-                'payment_method' => $validated['payment_method']
-            ]);
-    
-            \DB::commit();
-            return response()->json(['message' => 'Booking created successfully'], 201);
-        } catch (\Exception $e) {
-            \DB::rollBack();
-            Log::error('Booking Creation Error:', ['error' => $e->getMessage()]);
-            return response()->json(['error' => $e->getMessage()], 500);
+   public function store(Request $request)
+{
+    try {
+        $validated = $request->validate([
+            'start' => 'required|date',
+            'end' => 'nullable|date',
+            'name' => 'required|string',
+            'function_type' => 'required|string',
+            'contact_number' => 'required|string',
+            'room_numbers' => 'required|array',
+            'guest_count' => 'required|string',
+            'advance_payment' => 'required|numeric',
+            'bill_number' => 'required|string',
+            'advance_date' => 'required|date',
+            'payment_method' => 'required|in:online,cash'
+        ]);
+
+        \DB::beginTransaction();
+
+        // Check for potential duplicates (same user, same time, same contact within last 5 minutes)
+        $recentDuplicate = Booking::where('contact_number', $validated['contact_number'])
+            ->where('start', $validated['start'])
+            ->where('user_id', auth()->id())
+            ->where('created_at', '>', now()->subMinutes(5))
+            ->first();
+
+        if ($recentDuplicate) {
+            return response()->json([
+                'error' => 'A similar booking was just created. Please check your recent bookings.',
+                'duplicate_id' => $recentDuplicate->id
+            ], 409);
         }
+
+        // Create booking
+        $booking = Booking::create([
+            'start' => $validated['start'],
+            'end' => $validated['end'],
+            'name' => $validated['name'],
+            'function_type' => $validated['function_type'],
+            'contact_number' => $validated['contact_number'],
+            'room_numbers' => $validated['room_numbers'],
+            'guest_count' => $validated['guest_count'],
+            'user_id' => auth()->id()
+        ]);
+
+        // Create payment record
+        $booking->addPayment([
+            'advance_payment' => $validated['advance_payment'],
+            'bill_number' => $validated['bill_number'],
+            'advance_date' => $validated['advance_date'],
+            'payment_method' => $validated['payment_method']
+        ]);
+
+        \DB::commit();
+        return response()->json(['message' => 'Booking created successfully'], 201);
+        
+    } catch (\Exception $e) {
+        \DB::rollBack();
+        Log::error('Booking Creation Error:', ['error' => $e->getMessage()]);
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
     
     /**
      * Update an existing booking.
@@ -170,78 +185,96 @@ class BookingController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
     public function availableRooms(Request $request)
-    {
-        $startDate = $request->query('date');
-        $endDate = $request->query('endDate', $startDate);
-        $excludeBookingId = $request->query('excludeBooking');
-    
-        if (!$startDate) {
-            return response()->json([], 400);
-        }
-    
-        $allRooms = [
-            'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
-            'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
-            '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
-            '103', '104', '105',
-        ];
-    
-        // Get bookings for the date range
-        $bookings = Booking::where(function ($query) use ($startDate, $endDate, $excludeBookingId) {
-            $query->where(function ($q) use ($startDate, $endDate) {
-                // Check for bookings with end date
-                $q->where('start', '<=', $endDate)
-                  ->where('end', '>=', $startDate)
-                  ->where('end', '!=', 'null');
-                  
-                // OR bookings with no end date (single day bookings)
-                $q->orWhere(function($sq) use ($startDate) {
-                    $sq->whereDate('start', $startDate)
-                       ->where(function($ssq) {
-                           $ssq->whereNull('end')
-                               ->orWhere('end', 'N/A')
-                               ->orWhere('end', '');
-                       });
-                });
+{
+    $startDate = $request->query('date');
+    $endDate = $request->query('endDate', $startDate);
+    $excludeBookingId = $request->query('excludeBooking');
+
+    if (!$startDate) {
+        return response()->json([], 400);
+    }
+
+    $allRooms = [
+        'Ahala', 'Sepalika', 'Sudu Araliya', 'Orchid', 'Olu', 'Nelum', 'Hansa',
+        'Mayura', 'Lihini', '121', '122', '123', '124', '106', '107', '108',
+        '109', 'CH Room', '130', '131', '132', '133', '134', '101', '102', 
+        '103', '104', '105',
+    ];
+
+    // Parse dates properly for ISO datetime strings
+    $startDateTime = Carbon::parse($startDate);
+    $endDateTime = Carbon::parse($endDate);
+
+    // Get bookings that overlap with the requested time period
+    $bookings = Booking::where(function ($query) use ($startDateTime, $endDateTime, $excludeBookingId) {
+        $query->where(function ($q) use ($startDateTime, $endDateTime) {
+            // Check for bookings with end date that overlap
+            $q->where(function($overlaps) use ($startDateTime, $endDateTime) {
+                $overlaps->where('start', '<=', $endDateTime)
+                        ->where('end', '>=', $startDateTime)
+                        ->whereNotNull('end')
+                        ->where('end', '!=', 'null')
+                        ->where('end', '!=', '')
+                        ->where('end', '!=', 'N/A');
             });
             
-            if ($excludeBookingId) {
-                $query->where('id', '!=', $excludeBookingId);
-            }
-        })->get();
-    
-        // Get all booked rooms from the bookings
-        $bookedRooms = [];
-        foreach ($bookings as $booking) {
-            $roomArray = $booking->room_numbers;
-            
-            // If it's a string, try to decode it
-            if (is_string($roomArray)) {
-                $roomArray = json_decode($roomArray, true);
-            }
-            
-            // If it's an array, process each room
-            if (is_array($roomArray)) {
-                foreach ($roomArray as $room) {
-                    $room = trim($room, '"\'[] ');
+            // OR single day bookings that occur within our time range
+            $q->orWhere(function($single) use ($startDateTime, $endDateTime) {
+                $single->whereBetween('start', [$startDateTime, $endDateTime])
+                       ->where(function($nullEnd) {
+                           $nullEnd->whereNull('end')
+                                  ->orWhere('end', 'N/A')
+                                  ->orWhere('end', '')
+                                  ->orWhere('end', 'null');
+                       });
+            });
+        });
+        
+        if ($excludeBookingId) {
+            $query->where('id', '!=', $excludeBookingId);
+        }
+    })->get();
+
+    // Get all booked rooms from the bookings
+    $bookedRooms = [];
+    foreach ($bookings as $booking) {
+        $roomArray = $booking->room_numbers;
+        
+        // Handle different room_numbers formats
+        if (is_string($roomArray)) {
+            $decoded = json_decode($roomArray, true);
+            $roomArray = $decoded ?: [$roomArray];
+        }
+        
+        if (is_array($roomArray)) {
+            foreach ($roomArray as $room) {
+                $room = trim($room, '"\'[] ');
+                if (!empty($room)) {
                     $bookedRooms[] = $room;
                 }
             }
         }
-    
-        // Clean and filter booked rooms
-        $bookedRooms = array_unique(array_filter($bookedRooms));
-    
-        // Debug logging
-        \Log::info('Date Range:', ['start' => $startDate, 'end' => $endDate]);
-        \Log::info('Bookings found:', $bookings->toArray());
-        \Log::info('Booked Rooms:', $bookedRooms);
-    
-        $availableRooms = array_values(array_diff($allRooms, $bookedRooms));
-    
-        return response()->json($availableRooms);
     }
+
+    // Remove duplicates and filter out empty values
+    $bookedRooms = array_unique(array_filter($bookedRooms));
+
+    // Debug logging for time slots
+    \Log::info('Time Slot Availability Check:', [
+        'start' => $startDateTime->toISOString(),
+        'end' => $endDateTime->toISOString(),
+        'bookings_found' => $bookings->count(),
+        'booked_rooms' => $bookedRooms,
+        'exclude_booking' => $excludeBookingId
+    ]);
+
+    $availableRooms = array_values(array_diff($allRooms, $bookedRooms));
+
+    return response()->json($availableRooms);
+}
+
     public function getLogs()
 {
     $logs = Booking::with('user')
@@ -323,5 +356,112 @@ public function toggleVerification(Request $request, $paymentId)
         ]
     ]);
 }
+public function getRecentBookings(Request $request)
+{
+    $limit = $request->get('limit', 5);
+    $days = $request->get('days', 30); // Changed from hours to days, default 30 days
+    
+    $cutoffTime = Carbon::now()->subDays($days); // Changed from subHours to subDays
+    
+    $recentBookings = Booking::with(['user', 'payments' => function($query) {
+        $query->latest()->take(1); // Get latest payment only
+    }])
+    ->where(function($query) use ($cutoffTime) {
+        $query->where('created_at', '>=', $cutoffTime)
+              ->orWhere('updated_at', '>=', $cutoffTime);
+    })
+    ->orderByRaw('GREATEST(created_at, updated_at) DESC')
+    ->limit($limit)
+    ->get();
 
+    return $recentBookings->map(function($booking) use ($cutoffTime) {
+        $latestPayment = $booking->payments->first();
+        
+        // Determine if booking is new or updated
+        $isNew = $booking->created_at >= $cutoffTime && 
+                 $booking->created_at->eq($booking->updated_at);
+        $isUpdated = $booking->updated_at >= $cutoffTime && 
+                    !$booking->created_at->eq($booking->updated_at);
+
+        return [
+            'id' => $booking->id,
+            'function_type' => $booking->function_type,
+            'name' => $booking->name,
+            'contact_number' => $booking->contact_number,
+            'guest_count' => $booking->guest_count,
+            'room_numbers' => $booking->room_numbers,
+            'start' => $booking->start->toISOString(),
+            'end' => $booking->end ? $booking->end->toISOString() : null,
+            'created_at' => $booking->created_at->toISOString(),
+            'updated_at' => $booking->updated_at->toISOString(),
+            'user_name' => $booking->user ? $booking->user->name : 'Unknown',
+            'advance_payment' => $latestPayment ? $latestPayment->amount : 0,
+            'isNew' => $isNew,
+            'isUpdated' => $isUpdated,
+            'formatted_start' => $booking->start->format('M j, Y g:i A'),
+            'formatted_end' => $booking->end ? $booking->end->format('M j, Y g:i A') : null,
+            'time_ago' => $this->getTimeAgo($isUpdated ? $booking->updated_at : $booking->created_at)
+        ];
+    });
+}
+
+/**
+ * Helper method to get human-readable time difference
+ */
+private function getTimeAgo($date)
+{
+    $now = Carbon::now();
+    $diffInMinutes = $date->diffInMinutes($now);
+    
+    if ($diffInMinutes < 1) {
+        return 'Just now';
+    } elseif ($diffInMinutes < 60) {
+        return $diffInMinutes . ' min' . ($diffInMinutes > 1 ? 's' : '') . ' ago';
+    } elseif ($diffInMinutes < 1440) { // 24 hours
+        $hours = floor($diffInMinutes / 60);
+        return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+    } else {
+        return $date->format('M j, g:i A');
+    }
+}
+
+/**
+ * Get booking statistics for dashboard
+ */
+public function getBookingStats()
+{
+    $today = Carbon::today();
+    $thisWeek = Carbon::now()->startOfWeek();
+    $thisMonth = Carbon::now()->startOfMonth();
+    
+    return [
+        'today' => [
+            'total' => Booking::whereDate('created_at', $today)->count(),
+            'new' => Booking::whereDate('created_at', $today)
+                           ->where('created_at', '=', DB::raw('updated_at'))
+                           ->count(),
+            'updated' => Booking::whereDate('updated_at', $today)
+                              ->where('created_at', '!=', DB::raw('updated_at'))
+                              ->count()
+        ],
+        'week' => [
+            'total' => Booking::where('created_at', '>=', $thisWeek)->count(),
+            'revenue' => Booking::with('payments')
+                              ->where('created_at', '>=', $thisWeek)
+                              ->get()
+                              ->sum(function($booking) {
+                                  return $booking->payments->sum('amount');
+                              })
+        ],
+        'month' => [
+            'total' => Booking::where('created_at', '>=', $thisMonth)->count(),
+            'revenue' => Booking::with('payments')
+                              ->where('created_at', '>=', $thisMonth)
+                              ->get()
+                              ->sum(function($booking) {
+                                  return $booking->payments->sum('amount');
+                              })
+        ]
+    ];
+}
 };

@@ -184,7 +184,8 @@ Route::put('/bookings/{id}', [BookingController::class, 'update']);
 Route::get('/available-rooms', [BookingController::class, 'availableRooms']);
 Route::get('/booking-logs', [BookingController::class, 'getLogs']);
 Route::get('/bookings/{id}/print', [BookingController::class, 'printConfirmation'])->name('bookings.print');
-
+Route::get('/bookings/recent', [BookingController::class, 'getRecentBookings']);
+Route::get('/bookings/stats', [BookingController::class, 'getBookingStats']);
 // routes/web.php
 Route::post('/booking-payments/{payment}/toggle-verification', 
     [BookingController::class, 'toggleVerification'])

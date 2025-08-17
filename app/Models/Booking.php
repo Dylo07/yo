@@ -23,6 +23,8 @@ class Booking extends Model
         'contact_number',        
         'room_numbers',
         'guest_count',
+        'bites_details',
+        'other_details',
         'user_id',
     ];
     

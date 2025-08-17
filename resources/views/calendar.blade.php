@@ -727,6 +727,18 @@
         <label for="guest_count" class="form-label">Guest Count (Adults and Kids):</label>
         <input type="text" id="guest_count" name="guest_count" class="form-control" placeholder="E.g., Adults: 2, Kids: 3" required>
     </div>
+    
+    <!-- NEW FIELDS: Bites Details and Other Details -->
+    <div class="mb-3">
+        <label for="bites_details" class="form-label">Bites Details:</label>
+        <textarea id="bites_details" name="bites_details" class="form-control" rows="3" style="resize: none;" placeholder="Enter food/catering details (optional)"></textarea>
+    </div>
+    
+    <div class="mb-3">
+        <label for="other_details" class="form-label">Other Details:</label>
+        <textarea id="other_details" name="other_details" class="form-control" rows="3" style="resize: none;" placeholder="Enter any additional details (optional)"></textarea>
+    </div>
+    
     <div class="mb-3">
         <label for="name" class="form-label">Package Price & Details:</label>
         <textarea id="name" name="name" class="form-control" rows="4" style="resize: none;" required></textarea>
@@ -851,8 +863,9 @@
 </div>
 
 <!-- Edit Modal -->
+<!-- REPLACE your existing edit modal content with this updated version -->
 <div id="editModal" class="modal fade" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document"> <!-- Made modal larger -->
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Edit Booking</h5>
@@ -974,6 +987,18 @@
                         <label for="editGuestCount" class="form-label">Guest Count:</label>
                         <input type="text" id="editGuestCount" name="guest_count" class="form-control" required>
                     </div>
+                    
+                    <!-- NEW FIELDS: Bites Details and Other Details -->
+                    <div class="mb-3">
+                        <label for="editBitesDetails" class="form-label">Bites Details:</label>
+                        <textarea id="editBitesDetails" name="bites_details" class="form-control" rows="3" style="resize: none;" placeholder="Enter food/catering details (optional)"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editOtherDetails" class="form-label">Other Details:</label>
+                        <textarea id="editOtherDetails" name="other_details" class="form-control" rows="3" style="resize: none;" placeholder="Enter any additional details (optional)"></textarea>
+                    </div>
+                    
                     <button type="submit" class="btn btn-success">Save Changes</button>
                 </form>
             </div>
@@ -1349,6 +1374,8 @@ function handleEventClick(info) {
         <p><strong>Contact Number:</strong> ${props.contact_number || 'N/A'}</p>
         <p><strong>Room Numbers:</strong> ${props.room_numbers || 'N/A'}</p>
         <p><strong>Guest Count:</strong> ${props.guest_count || 'N/A'}</p>
+        <p><strong>Bites Details:</strong> ${props.bites_details || 'N/A'}</p>
+        <p><strong>Other Details:</strong> ${props.other_details || 'N/A'}</p>
         <p><strong>Description:</strong> ${props.name || 'N/A'}</p>
         <p><strong>Start Time:</strong> ${new Date(event.start).toLocaleString()}</p>
         <p><strong>End Time:</strong> ${event.end ? new Date(event.end).toLocaleString() : 'N/A'}</p>
@@ -1578,6 +1605,10 @@ async function populateEditForm(info) {
     document.getElementById("editContactNumber").value = info.event.extendedProps.contact_number;
     document.getElementById("editGuestCount").value = info.event.extendedProps.guest_count;
     
+    // Populate new fields
+    document.getElementById("editBitesDetails").value = info.event.extendedProps.bites_details || "";
+    document.getElementById("editOtherDetails").value = info.event.extendedProps.other_details || "";
+    
     const startDate = new Date(info.event.start).toISOString();
     const endDate = info.event.end ? new Date(info.event.end).toISOString() : startDate;
 
@@ -1630,6 +1661,8 @@ function setupEditFormSubmission(info) {
             function_type: document.getElementById("editFunctionType").value,
             contact_number: document.getElementById("editContactNumber").value,
             guest_count: document.getElementById("editGuestCount").value,
+            bites_details: document.getElementById("editBitesDetails").value,
+            other_details: document.getElementById("editOtherDetails").value,
             room_numbers: Array.from(document.querySelectorAll("#editRoomNumbers input:checked"))
                 .map(checkbox => checkbox.value)
         };
@@ -2003,6 +2036,8 @@ document.getElementById("booking-form").addEventListener("submit", async functio
             contact_number: formData.get("contact_number"),
             room_numbers: formData.getAll("room_number[]"),
             guest_count: formData.get("guest_count"),
+            bites_details: formData.get("bites_details"),
+            other_details: formData.get("other_details"),
         }, {
             headers: {
                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),

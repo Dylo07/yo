@@ -310,8 +310,6 @@
 }
 </style>
 
-
-
 <div class="container">
   <div class="main-content-left">
     <div class="row" id="table-detail"></div>
@@ -532,8 +530,14 @@ $(document).ready(function(){
         }
         setTimeout(function(){
             $("#table-detail .table-card.available").first().click();
-            // Auto-load first category
-            $(".nav-link").first().addClass('active').click();
+            // FIXED: Auto-load first category properly
+            setTimeout(function() {
+                $(".nav-link").first().addClass('active');
+                var firstCategoryId = $(".nav-link").first().data("id");
+                if (firstCategoryId) {
+                    getmenuList(firstCategoryId);
+                }
+            }, 500);
         }, 1000);
     };
 
@@ -558,12 +562,14 @@ $(document).ready(function(){
     });
   }
 
-  // Load menus by category
-  $(document).on("click", ".nav-link", function(){
+  // Load menus by category (FIXED: Make sure it works properly)
+  $(document).on("click", ".nav-link", function(e){
+    e.preventDefault();
     $(".nav-link").removeClass('active');
     $(this).addClass('active');
     var id = $(this).data("id");
     $("#searchkeyword").val('');
+    console.log('Loading category:', id); // Debug log
     getmenuList(id);
   });
 

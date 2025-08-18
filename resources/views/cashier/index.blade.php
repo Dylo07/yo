@@ -310,6 +310,8 @@
 }
 </style>
 
+
+
 <div class="container">
   <div class="main-content-left">
     <div class="row" id="table-detail"></div>
@@ -444,7 +446,7 @@ function convertTablesToModernCards(htmlString) {
         modernHtml += `
             <div class="table-card ${statusClass} btn-table" data-id="${tableId}" data-name="${tableName}">
                 <div class="table-icon">
-                    
+                    <i class="fas fa-chair"></i>
                 </div>
                 <div class="table-name">${tableName}</div>
                 <div class="table-status ${statusBg}">${statusText}</div>
@@ -530,14 +532,20 @@ $(document).ready(function(){
         }
         setTimeout(function(){
             $("#table-detail .table-card.available").first().click();
+            // Auto-load first category
+            $(".nav-link").first().addClass('active').click();
         }, 1000);
     };
 
   $(document).on('keyup', '#searchkeyword', function(e) {
     if ($(this).val().length > 2) {  
       e.preventDefault();
-      var id = $(".nav-link.active").data("id");
+      // FIXED: Search across ALL categories (use 0 for all)
       getmenuList(0);
+    } else if ($(this).val().length === 0) {
+      // When search is cleared, reload current active category
+      var id = $(".nav-link.active").data("id") || 0;
+      getmenuList(id);
     }
   });
 
@@ -551,7 +559,9 @@ $(document).ready(function(){
   }
 
   // Load menus by category
-  $(".nav-link").click(function(){
+  $(document).on("click", ".nav-link", function(){
+    $(".nav-link").removeClass('active');
+    $(this).addClass('active');
     var id = $(this).data("id");
     $("#searchkeyword").val('');
     getmenuList(id);

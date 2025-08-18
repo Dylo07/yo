@@ -530,26 +530,19 @@ $(document).ready(function(){
         }
         setTimeout(function(){
             $("#table-detail .table-card.available").first().click();
-            // FIXED: Auto-load first category properly
+            // SIMPLIFIED: Load first category like original code
             setTimeout(function() {
-                $(".nav-link").first().addClass('active');
-                var firstCategoryId = $(".nav-link").first().data("id");
-                if (firstCategoryId) {
-                    getmenuList(firstCategoryId);
-                }
+                $(".nav-link").first().click();
             }, 500);
         }, 1000);
     };
 
+  // SIMPLIFIED: Search function (back to original logic)
   $(document).on('keyup', '#searchkeyword', function(e) {
     if ($(this).val().length > 2) {  
       e.preventDefault();
-      // FIXED: Search across ALL categories (use 0 for all)
+      // Search across all categories when typing
       getmenuList(0);
-    } else if ($(this).val().length === 0) {
-      // When search is cleared, reload current active category
-      var id = $(".nav-link.active").data("id") || 0;
-      getmenuList(id);
     }
   });
 
@@ -562,14 +555,12 @@ $(document).ready(function(){
     });
   }
 
-  // Load menus by category (FIXED: Make sure it works properly)
-  $(document).on("click", ".nav-link", function(e){
-    e.preventDefault();
+  // SIMPLIFIED: Load menus by category (back to original working code)
+  $(".nav-link").click(function(){
     $(".nav-link").removeClass('active');
     $(this).addClass('active');
     var id = $(this).data("id");
     $("#searchkeyword").val('');
-    console.log('Loading category:', id); // Debug log
     getmenuList(id);
   });
 

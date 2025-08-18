@@ -309,7 +309,6 @@
     }
 }
 </style>
-
 <div class="container">
   <div class="main-content-left">
     <div class="row" id="table-detail"></div>
@@ -444,7 +443,7 @@ function convertTablesToModernCards(htmlString) {
         modernHtml += `
             <div class="table-card ${statusClass} btn-table" data-id="${tableId}" data-name="${tableName}">
                 <div class="table-icon">
-                    <i class="fas fa-chair"></i>
+                    
                 </div>
                 <div class="table-name">${tableName}</div>
                 <div class="table-status ${statusBg}">${statusText}</div>
@@ -517,12 +516,15 @@ $(document).ready(function(){
 
     window.onload = function() {
         if($("#table-detail").is(":hidden")){
-            $.get("{{ url('/cashier/getTable') }}", function(data){
+            // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
+            $.get("/cashier/getTable", function(data){
                 // FIXED: Convert old table HTML to modern cards
                 const modernTablesHtml = convertTablesToModernCards(data);
                 $("#table-detail").html(modernTablesHtml);
                 $("#table-detail").slideDown('fast');
                 $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-dark');
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading tables:', error);
             });
         } else {
             $("#table-detail").slideUp('fast');
@@ -548,10 +550,19 @@ $(document).ready(function(){
 
   function getmenuList(id){
     var search_key = $("#searchkeyword").val().trim();
-    $.get("{{ url('/cashier/getMenuByCategory') }}/" + id + "/" + search_key, function(data){
+    // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
+    var url = "/cashier/getMenuByCategory/" + id;
+    if (search_key) {
+        url += "/" + search_key;
+    }
+    
+    $.get(url, function(data){
       $("#list-menu").hide();
       $("#list-menu").html(data);
       $("#list-menu").fadeIn('fast');
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading menu:', error);
+        $("#list-menu").html('<div class="alert alert-danger">Error loading menu items. Please try again.</div>');
     });
   }
 
@@ -578,7 +589,8 @@ $(document).ready(function(){
     $(this).addClass('selected');
     
     $("#selected-table").html('<div class="alert alert-info"><strong>Table: ' + SELECTED_TABLE_NAME + '</strong></div>');
-    $.get("{{ url('/cashier/getSaleDetailsByTable') }}/" + SELECTED_TABLE_ID, function(data){
+    // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
+    $.get("/cashier/getSaleDetailsByTable/" + SELECTED_TABLE_ID, function(data){
         $("#order-detail").html(data);
         
         // If no sale exists for this table, we need to create a new sale first
@@ -587,10 +599,13 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
     var html = '<div class="alert alert-warning">Not Found Any Sale Details for the Selected Table</div>';
     html += '<hr><div class="text-center mt-4">';
     html += '<p>Click Advance Payment for Advance payments.</p>';
-    html += '<a href="{{ url('/cashier/setup-advance-payment/') }}/' + SELECTED_TABLE_ID + '" class="btn btn-primary btn-block mt-3">Advance Payment</a>';
+    html += '<a href="/cashier/setup-advance-payment/' + SELECTED_TABLE_ID + '" class="btn btn-primary btn-block mt-3">Advance Payment</a>';
     html += '</div>';
     $("#order-detail").html(html);
 }
+    }).fail(function(xhr, status, error) {
+        console.error('Error loading sale details:', error);
+        $("#order-detail").html('<div class="alert alert-danger">Error loading order details. Please try again.</div>');
     });
 });
 
@@ -613,7 +628,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
                 "table_name": SELECTED_TABLE_NAME,
                 "quantity": 1
             },
-            url: "{{ url('/cashier/orderFood') }}",
+            url: "/cashier/orderFood",
             success: function(response){
                 // Update the order details
                 $("#order-detail").html(response.html);
@@ -641,7 +656,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "_token": $('meta[name="csrf-token"]').attr('content'),
         "sale_id": SaleID
       },
-      url: "{{ url('/cashier/confirmOrderStatus') }}",
+      url: "/cashier/confirmOrderStatus",
       success: function(data){
         $("#order-detail").html(data);
       }
@@ -657,7 +672,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "_token": $('meta[name="csrf-token"]').attr('content'),
         "saleDetail_id": saleDetailID
       },
-      url: "{{ url('/cashier/deleteSaleDetail') }}",
+      url: "/cashier/deleteSaleDetail",
       success: function(data){
         $("#order-detail").html(data);
       }
@@ -673,7 +688,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "_token": $('meta[name="csrf-token"]').attr('content'),
         "saleDetail_id": saleDetailID
       },
-      url: "{{ url('/cashier/increase-quantity') }}",
+      url: "/cashier/increase-quantity",
       success: function(data){
         $("#order-detail").html(data);
       }
@@ -695,7 +710,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "saleDetail_id": saleDetailID,
         "qty": qty
       },
-      url: "{{ url('/cashier/change-quantity') }}",
+      url: "/cashier/change-quantity",
       success: function(data){
         $("#order-detail").html(data);
       }
@@ -711,7 +726,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "_token": $('meta[name="csrf-token"]').attr('content'),
         "saleDetail_id": saleDetailID
       },
-      url: "{{ url('/cashier/decrease-quantity') }}",
+      url: "/cashier/decrease-quantity",
       success: function(data){
         $("#order-detail").html(data);
       }
@@ -727,7 +742,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "_token": $('meta[name="csrf-token"]').attr('content'),
         "saleID": saleID
       },
-      url: "{{ url('/cashier/printOrder') }}",
+      url: "/cashier/printOrder",
       success: function(data){
         window.open(data, '_blank').focus();
       }
@@ -768,7 +783,7 @@ if(data.includes("Not Found Any Sale Details for the Selected Table")) {
         "recievedAmount": recievedAmount,
         "PaymentType": paymentType
       },
-      url: "{{ url('/cashier/savePayment') }}",
+      url: "/cashier/savePayment",
       success: function(data){
         window.location.href = data;
       }
@@ -781,7 +796,7 @@ $("#order-detail").on("click", ".btn-advance-payment", function(){
     var saleId = $(this).data('id');
     
     // Redirect directly to the function advance receipt page
-    window.location.href = "{{ url('/cashier/showAdvanceRecipt') }}/" + saleId;
+    window.location.href = "/cashier/showAdvanceRecipt/" + saleId;
 });
 
 // Add a new handler for the Wedding Advance Payment button
@@ -789,7 +804,7 @@ $("#order-detail").on("click", ".btn-wedding-payment", function(){
     var saleId = $(this).data('id');
     
     // Redirect directly to the wedding advance receipt page
-    window.location.href = "{{ url('/cashier/showAdvanceWeddingRecipt') }}/" + saleId;
+    window.location.href = "/cashier/showAdvanceWeddingRecipt/" + saleId;
 });
 });
 

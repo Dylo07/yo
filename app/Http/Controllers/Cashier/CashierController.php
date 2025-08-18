@@ -75,6 +75,7 @@ class CashierController extends Controller
         $sale->table_name = $table_name;
         $sale->user_id = $user->id;
         $sale->user_name = $user->name;
+        $sale->total_price = 0; // Initialize to 0
         $sale->save();
         $sale_id = $sale->id;
         
@@ -95,8 +96,8 @@ class CashierController extends Controller
     $saleDetail->count = 1;
     $saleDetail->save();
 
-    $sale->total_price = $sale->total_price + ($request->quantity * $menu->price);
-    $sale->save();
+    // FIXED: Properly recalculate total instead of just adding
+    $this->recalculateSaleTotal($sale_id);
 
     return [
         'html' => $this->getSaleDetails($sale_id),
@@ -116,7 +117,9 @@ class CashierController extends Controller
         return $html;
     }
 
-    private function getSaleDetails($sale_id){
+    // Replace the getSaleDetails method in CashierController.php with this corrected version
+
+private function getSaleDetails($sale_id){
     $html = '<p>Sale ID: '.$sale_id.'</p>';
     $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
     $html .= '<div class="table-responsive-md" tabindex ="-1" style="overflow-y:scroll; min-height: 400px; border: 1px solid #343A40">
@@ -134,8 +137,9 @@ class CashierController extends Controller
     <tbody>';
     
     $showBtnPayment = true;
-    $hasAdvancePayment = false; // Flag to check if there's already an advance payment
-    $hasRegularMenuItems = false; // Flag to check if there are regular menu items
+    $hasAdvancePayment = false;
+    $hasRegularMenuItems = false;
+    $totalItemsAmount = 0; // Track actual items total
     
     foreach($saleDetails as $saleDetail){
         // Check if this is an advance payment item
@@ -145,6 +149,9 @@ class CashierController extends Controller
             $hasRegularMenuItems = true;
         }
         
+        $itemTotal = $saleDetail->menu_price * $saleDetail->quantity;
+        $totalItemsAmount += $itemTotal; // Add to running total
+        
         $updatedDateTime = $saleDetail->updated_at ? $saleDetail->updated_at->format('d/m/Y H:i:s') : '';
         $html .= '
         <tr>
@@ -153,7 +160,7 @@ class CashierController extends Controller
                        style="width:50px;" value="'.$saleDetail->quantity.'"'.
                        ($saleDetail->status == "confirm" ? ' disabled' : '').'></td>
             <td>'.$saleDetail->menu_price.'</td>
-            <td>'.($saleDetail->menu_price * $saleDetail->quantity).'</td>
+            <td>'.number_format($itemTotal, 2).'</td>
             <td>'.$updatedDateTime.'</td>';
             if($saleDetail->status == "noConfirm"){
                 $showBtnPayment = false;
@@ -165,9 +172,26 @@ class CashierController extends Controller
     }
     $html .='</tbody></table></div>';
 
+    // Get sale record 
     $sale = Sale::find($sale_id);
+    
+    // CRITICAL FIX: Always ensure sale total_price matches the sum of all items
+    if ($sale && abs($sale->total_price - $totalItemsAmount) > 0.01) {
+        $oldTotal = $sale->total_price;
+        $sale->total_price = $totalItemsAmount;
+        $sale->save();
+        
+        // Log this correction
+        \Log::warning('Sale total corrected in getSaleDetails', [
+            'sale_id' => $sale_id,
+            'old_total' => $oldTotal,
+            'new_total' => $totalItemsAmount,
+            'difference' => abs($oldTotal - $totalItemsAmount)
+        ]);
+    }
+
     $html .= '<hr>';
-    $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price).'</h3>';
+    $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price, 2).'</h3>';
 
     if($showBtnPayment){
         $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
@@ -182,51 +206,47 @@ class CashierController extends Controller
     }
     return $html;
 }
+   public function increaseQuantity(Request $request){
+    $saleDetail_id = $request->saleDetail_id;
+    $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
+    $saleDetail->quantity = $saleDetail->quantity + 1;
+    $saleDetail->save();
+    
+    // FIXED: Recalculate total properly
+    $this->recalculateSaleTotal($saleDetail->sale_id);
+    
+    return $this->getSaleDetails($saleDetail->sale_id);
+}
 
-    public function increaseQuantity(Request $request){
-        $saleDetail_id = $request->saleDetail_id;
-        $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
-        $saleDetail->quantity = $saleDetail->quantity + 1;
-        $saleDetail->save();
-        
-        $sale = Sale::where('id', $saleDetail->sale_id)->first();
-        $sale->total_price = $sale->total_price + $saleDetail->menu_price;
-        $sale->save();
-        
-        return $this->getSaleDetails($saleDetail->sale_id);
-    }
+   public function changesQuantity(Request $request){
+    $saleDetail_id = $request->saleDetail_id;
+    $qty = $request->qty;
+    $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
 
-    public function changesQuantity(Request $request){
-        $saleDetail_id = $request->saleDetail_id;
-        $qty = $request->qty;
-        $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
-      
-        $sale = Sale::where('id', $saleDetail->sale_id)->first();
-        $Removetotal_price = $saleDetail->quantity * $saleDetail->menu_price;
+    // Update quantity
+    $saleDetail->quantity = $qty;
+    $saleDetail->save();
+    
+    // FIXED: Recalculate total properly
+    $this->recalculateSaleTotal($saleDetail->sale_id);
+    
+    return $this->getSaleDetails($saleDetail->sale_id);
+}
 
-        $saleDetail->quantity = $qty;
-        $saleDetail->save();
-        
-        $remaing = $sale->total_price - $Removetotal_price;
-        $newTot = $remaing + ($qty * $saleDetail->menu_price);
-        $sale->total_price = $newTot;
-        $sale->save();
-        
-        return $this->getSaleDetails($saleDetail->sale_id);
-    }
-
-    public function decreaseQuantity(Request $request){
-        $saleDetail_id = $request->saleDetail_id;
-        $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
+  public function decreaseQuantity(Request $request){
+    $saleDetail_id = $request->saleDetail_id;
+    $saleDetail = SaleDetail::where('id',$saleDetail_id)->first();
+    
+    if($saleDetail->quantity > 1) {
         $saleDetail->quantity = $saleDetail->quantity - 1;
         $saleDetail->save();
-        
-        $sale = Sale::where('id', $saleDetail->sale_id)->first();
-        $sale->total_price = $sale->total_price - abs($saleDetail->menu_price);
-        $sale->save();
-        
-        return $this->getSaleDetails($saleDetail->sale_id);
     }
+    
+    // FIXED: Recalculate total properly
+    $this->recalculateSaleTotal($saleDetail->sale_id);
+    
+    return $this->getSaleDetails($saleDetail->sale_id);
+}
 
     public function confirmOrderStatus(Request $request) {
         $sale_id = $request->sale_id;
@@ -249,24 +269,60 @@ class CashierController extends Controller
     }
 
     public function deleteSaleDetail(Request $request){
-        $saleDetail_id = $request->saleDetail_id;
-        $saleDetail = SaleDetail::find($saleDetail_id);
-        $sale_id = $saleDetail->sale_id;
-        $menu_price = ($saleDetail->menu_price * $saleDetail->quantity);
-        $saleDetail->delete();
+    $saleDetail_id = $request->saleDetail_id;
+    $saleDetail = SaleDetail::find($saleDetail_id);
+    $sale_id = $saleDetail->sale_id;
+    
+    // Delete the item
+    $saleDetail->delete();
 
-        $sale = Sale::find($sale_id);
-        $sale->total_price = $sale->total_price - $menu_price;
-        $sale->save();
-        
-        $saleDetails = SaleDetail::where('sale_id', $sale_id)->first();
-        if($saleDetail){
-            $html = $this->getSaleDetails($sale_id);
-        }else{
-            $html = "Not Found Any Sale Details for the Selected Table";
-        }
-        return $html;
+    // FIXED: Recalculate total properly
+    $this->recalculateSaleTotal($sale_id);
+    
+    $saleDetails = SaleDetail::where('sale_id', $sale_id)->first();
+    if($saleDetails){
+        $html = $this->getSaleDetails($sale_id);
+    }else{
+        $html = "Not Found Any Sale Details for the Selected Table";
     }
+    return $html;
+}
+
+// NEW METHOD: Properly recalculate sale totals
+private function recalculateSaleTotal($sale_id) {
+    try {
+        // Get all sale details for this sale
+        $saleDetails = SaleDetail::where('sale_id', $sale_id)->get();
+        
+        // Calculate correct total
+        $correctTotal = $saleDetails->sum(function($detail) {
+            return $detail->menu_price * $detail->quantity;
+        });
+        
+        // Update the sale record
+        $sale = Sale::find($sale_id);
+        if ($sale) {
+            $sale->total_price = $correctTotal;
+            $sale->save();
+            
+            \Log::info('Sale total recalculated', [
+                'sale_id' => $sale_id,
+                'new_total' => $correctTotal,
+                'items_count' => $saleDetails->count()
+            ]);
+        }
+        
+        return $correctTotal;
+    } catch (\Exception $e) {
+        \Log::error('Error recalculating sale total: ' . $e->getMessage(), [
+            'sale_id' => $sale_id,
+            'trace' => $e->getTraceAsString()
+        ]);
+        return 0;
+    }
+}
+
+
     public function savePayment(Request $request){
         $saleID = $request->saleID;
         $recievedAmount = $request->recievedAmount;

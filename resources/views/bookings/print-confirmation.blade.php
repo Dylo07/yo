@@ -372,7 +372,7 @@
         <div style="margin-top: 5px;"><em>Note: Group Night-Stay Packages & Group Dayout Packages require a minimum of ten guests.</em></div>
     </li>
             
-            <li><strong>Child Policy -</strong> Children under 5 years stay free of charge. Children aged 6-12 years receive a 50% discount on regular packages.</li>
+            <li><strong>Child Policy -</strong> Children under 3 years stay free of charge. Children aged 3-12 years receive a discount on regular packages.</li>
             <li><strong>Function Duration:</strong> Each package has specific time allocations:
     <ul style="list-style-type: none; margin-left: 20px;">
         <li>• Day Out: <span class="value-highlight">09:00 AM</span> to <span class="value-highlight">04:30 PM</span></li>

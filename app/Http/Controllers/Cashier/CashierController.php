@@ -152,7 +152,7 @@ private function getSaleDetails($sale_id){
         $itemTotal = $saleDetail->menu_price * $saleDetail->quantity;
         $totalItemsAmount += $itemTotal; // Add to running total
         
-        $updatedDateTime = $saleDetail->updated_at ? $saleDetail->updated_at->format('d/m/Y H:i:s') : '';
+        $updatedDateTime = $saleDetail->created_at ? $saleDetail->created_at->format('d/m/Y H:i:s') : '';
         $html .= '
         <tr>
             <td>'.$saleDetail->menu_name.'</td>

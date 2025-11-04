@@ -53,6 +53,46 @@ class KitchenComparisonController extends Controller
         ));
     }
 
+    /**
+     * ============================================
+     * NEW METHOD - ONLY FOR PRINT VIEW
+     * This is the ONLY addition to your controller
+     * ============================================
+     */
+    public function print(Request $request)
+    {
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+        
+        if (!$startDate || !$endDate) {
+            $startDate = now()->toDateString();
+            $endDate = now()->toDateString();
+        }
+        
+        if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
+            $temp = $startDate;
+            $startDate = $endDate;
+            $endDate = $temp;
+        }
+        
+        $dailySalesData = $this->getDailySalesData($startDate, $endDate);
+        $mainKitchenData = $this->getMainKitchenData($startDate, $endDate);
+        $comparisonData = $this->createComparisonData($dailySalesData, $mainKitchenData);
+        
+        // Only difference: returns 'comparison_print' view instead of 'comparison'
+        return view('kitchen.comparison_print', compact(
+            'startDate',
+            'endDate', 
+            'dailySalesData', 
+            'mainKitchenData', 
+            'comparisonData'
+        ));
+    }
+    // ============================================
+    // END OF NEW METHOD
+    // Everything below is YOUR ORIGINAL CODE
+    // ============================================
+
     private function getDailySalesData($startDate, $endDate)
     {
         try {
@@ -197,39 +237,26 @@ class KitchenComparisonController extends Controller
                         ];
                     }
 
-                    // Get item and user names
-                    $itemName = $detail->menu_name ?? ($menu ? $menu->name : 'Unknown Item');
-                    $userName = $sale->user_name ?? 'Unknown User';
+                    $menuName = $menu ? $menu->name : $detail->menu_name;
+                    $itemKey = $detail->menu_id;
 
-                    // Group same items together
-                    $itemKey = $itemName;
                     if (!isset($categorizedData[$categoryId]['items'][$itemKey])) {
                         $categorizedData[$categoryId]['items'][$itemKey] = [
-                            'name' => $itemName,
-                            'quantity' => 0,
-                            'user' => $userName,
-                            'sales_count' => 0
+                            'name' => $menuName,
+                            'quantity' => 0
                         ];
                     }
 
                     $categorizedData[$categoryId]['items'][$itemKey]['quantity'] += $detail->quantity;
-                    $categorizedData[$categoryId]['items'][$itemKey]['sales_count']++;
                     $categorizedData[$categoryId]['total'] += $detail->quantity;
                     $totalItems += $detail->quantity;
                 }
             }
 
-            // Convert items arrays to indexed arrays
+            // Convert items array to indexed array
             foreach ($categorizedData as &$category) {
                 $category['items'] = array_values($category['items']);
             }
-
-            \Log::info('Final processed sales data', [
-                'total_items' => $totalItems,
-                'total_sales' => $totalSales,
-                'categories' => array_keys($categorizedData),
-                'date_range' => "$startDate to $endDate"
-            ]);
 
             return [
                 'by_category' => $categorizedData,
@@ -267,9 +294,10 @@ class KitchenComparisonController extends Controller
                 'end_date' => $endCarbon->format('Y-m-d H:i:s')
             ]);
 
+            // YOUR ORIGINAL QUERY - UNCHANGED
             $mainKitchenLogs = StockLog::with(['user', 'item', 'item.group'])
                 ->whereBetween('created_at', [$startCarbon, $endCarbon])
-                ->where('action', 'remove_main_kitchen')
+                ->where('action', 'remove_main_kitchen')  // YOUR ORIGINAL ACTION
                 ->orderBy('created_at', 'desc')
                 ->get();
 

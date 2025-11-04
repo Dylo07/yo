@@ -15,7 +15,7 @@
             <button class="btn btn-outline-primary" id="exportBtn">
                 <i class="fas fa-download me-1"></i> Export CSV
             </button>
-            <button class="btn btn-outline-secondary" onclick="window.print()">
+            <button class="btn btn-outline-secondary" onclick="printComparison()">
                 <i class="fas fa-print me-1"></i> Print
             </button>
         </div>
@@ -180,10 +180,12 @@
                                             <div>
                                                 <span class="fw-medium">{{ $item['name'] }}</span>
                                                 <small class="text-muted d-block">
+                                                @if(isset($item['user']))
                                                     by {{ $item['user'] }}
-                                                    @if(isset($item['sales_count']) && $item['sales_count'] > 1)
-                                                        <span class="badge bg-info badge-sm ms-1">{{ $item['sales_count'] }} sales</span>
-                                                    @endif
+                                                @endif
+                                                @if(isset($item['sales_count']) && $item['sales_count'] > 1)
+                                                    <span class="badge bg-info badge-sm ms-1">{{ $item['sales_count'] }} sales</span>
+                                                @endif
                                                 </small>
                                             </div>
                                             <span class="badge bg-secondary">{{ $item['quantity'] }}</span>
@@ -675,3 +677,12 @@ $('form').on('submit', function() {
 });
 </script>
 @endsection
+<script>
+// Print comparison function
+function printComparison() {
+    const startDate = $('#startDate').val() || '{{ $startDate }}';
+    const endDate = $('#endDate').val() || '{{ $endDate }}';
+    const printUrl = `/kitchen/comparison/print?start_date=${startDate}&end_date=${endDate}`;
+    window.open(printUrl, '_blank');
+}
+</script>

@@ -172,6 +172,12 @@
             white-space: nowrap;
         }
 
+        .item-details {
+            font-size: 5.5pt;
+            color: #666;
+            margin-top: 0.5mm;
+        }
+
         .item-quantity {
             font-weight: bold;
             min-width: 12mm;
@@ -375,7 +381,12 @@
                                 <div class="category-items">
                                     @foreach($category['items'] as $item)
                                         <div class="item-row">
-                                            <span class="item-name">{{ $item['name'] }}</span>
+                                            <div style="flex: 1;">
+                                                <div class="item-name">{{ $item['name'] }}</div>
+                                                @if(isset($item['time']) && isset($item['user']))
+                                                    <div class="item-details">{{ $item['time'] }} by {{ $item['user'] }}</div>
+                                                @endif
+                                            </div>
                                             <span class="item-quantity">{{ number_format($item['quantity'], 1) }}</span>
                                         </div>
                                     @endforeach

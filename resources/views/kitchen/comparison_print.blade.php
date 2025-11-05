@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kitchen vs Sales Comparison - Print</title>
     <style>
-        /* A4 Print Styles */
+        /* A4 Portrait - Compact Layout */
         @page {
-            size: A4 landscape; /* Changed to landscape for better side-by-side view */
-            margin: 10mm;
+            size: A4 portrait;
+            margin: 8mm;
         }
 
         * {
@@ -19,8 +19,8 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 9pt;
-            line-height: 1.3;
+            font-size: 7pt;
+            line-height: 1.2;
             color: #000;
             background: white;
         }
@@ -28,38 +28,34 @@
         .print-container {
             width: 100%;
             max-width: 100%;
-            margin: 0 auto;
+            margin: 0;
             padding: 0;
         }
 
-        /* Header */
+        /* Compact Header */
         .print-header {
             text-align: center;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 4mm;
+            padding-bottom: 2mm;
+            border-bottom: 1.5pt solid #000;
         }
 
         .print-header h1 {
-            font-size: 16pt;
+            font-size: 12pt;
             font-weight: bold;
-            margin-bottom: 3px;
-            color: #2563eb;
+            margin-bottom: 1mm;
+            color: #000;
         }
 
-        .print-header p {
-            font-size: 8pt;
-            color: #666;
-        }
-
-        /* Date Info */
+        /* Compact Date Info */
         .date-info {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            padding: 6px;
-            background: #f3f4f6;
-            border-radius: 3px;
+            margin-bottom: 3mm;
+            padding: 2mm;
+            background: #f5f5f5;
+            font-size: 6.5pt;
+            border: 0.5pt solid #ccc;
         }
 
         .date-info div {
@@ -68,38 +64,37 @@
 
         .date-info label {
             font-weight: bold;
-            font-size: 8pt;
-            display: block;
-            margin-bottom: 2px;
+            display: inline;
+            margin-right: 2px;
         }
 
         .date-info span {
-            font-size: 9pt;
+            display: inline;
         }
 
-        /* Comparison Table - FIXED FOR PRINT */
+        /* Side-by-Side Columns - Compact */
         .comparison-wrapper {
             display: table;
             width: 100%;
             table-layout: fixed;
             border-collapse: separate;
-            border-spacing: 10px 0;
-            margin-top: 10px;
+            border-spacing: 3mm 0;
         }
 
         .comparison-section {
             display: table-cell;
             width: 50%;
             vertical-align: top;
-            border: 2px solid #000;
+            border: 1pt solid #000;
         }
 
         .section-header {
-            padding: 6px;
+            padding: 2mm;
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 9pt;
             text-align: center;
             color: white;
+            background-color: #000;
         }
 
         .section-header.sales {
@@ -111,30 +106,38 @@
         }
 
         .section-content {
-            padding: 8px;
-            min-height: 300px;
+            padding: 2mm;
         }
 
-        /* Category Blocks */
+        /* Compact Summary */
+        .summary-info {
+            margin-bottom: 2mm;
+            padding: 1.5mm;
+            background: #f5f5f5;
+            font-size: 6.5pt;
+            border: 0.5pt solid #ddd;
+        }
+
+        /* Ultra-Compact Category Blocks */
         .category-block {
-            margin-bottom: 8px;
-            border: 1px solid #d1d5db;
-            border-radius: 3px;
-            overflow: hidden;
+            margin-bottom: 2mm;
+            border: 0.5pt solid #ccc;
             page-break-inside: avoid;
         }
 
         .category-header {
-            padding: 4px 6px;
+            padding: 1.5mm 2mm;
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 7.5pt;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: #f0f0f0;
+            border-bottom: 0.5pt solid #ccc;
         }
 
         .category-header.sales {
-            background-color: #dbeafe;
+            background-color: #e0f2fe;
             color: #1e40af;
         }
 
@@ -144,90 +147,67 @@
         }
 
         .category-items {
-            padding: 4px 6px;
+            padding: 1mm 2mm;
             background: white;
         }
 
+        /* Ultra-Compact Item Rows */
         .item-row {
             display: flex;
             justify-content: space-between;
-            padding: 2px 0;
-            border-bottom: 1px solid #f3f4f6;
-            font-size: 8pt;
+            padding: 0.5mm 0;
+            font-size: 6.5pt;
+            line-height: 1.3;
         }
 
-        .item-row:last-child {
-            border-bottom: none;
+        .item-row:not(:last-child) {
+            border-bottom: 0.25pt solid #f0f0f0;
         }
 
         .item-name {
             flex: 1;
-            padding-right: 8px;
+            padding-right: 3mm;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .item-quantity {
             font-weight: bold;
-            min-width: 50px;
+            min-width: 12mm;
             text-align: right;
         }
 
+        /* Compact Badge */
         .badge {
             display: inline-block;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 7pt;
+            padding: 0.5mm 1.5mm;
+            border-radius: 1mm;
+            font-size: 6pt;
             font-weight: bold;
+            background: #e5e7eb;
+            color: #374151;
         }
 
-        .badge-blue {
-            background-color: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-green {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-yellow {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        /* Empty State */
+        /* Empty State - Compact */
         .empty-state {
-            padding: 20px;
+            padding: 5mm;
             text-align: center;
             color: #9ca3af;
-            font-size: 8pt;
-        }
-
-        .empty-state i {
-            font-size: 20pt;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        /* Footer */
-        .print-footer {
-            margin-top: 15px;
-            padding-top: 8px;
-            border-top: 1px solid #d1d5db;
-            text-align: center;
             font-size: 7pt;
-            color: #6b7280;
         }
 
-        /* Summary info */
-        .summary-info {
-            margin-bottom: 8px;
-            padding: 4px;
-            background: #f3f4f6;
-            border-radius: 3px;
-            font-size: 8pt;
+        /* Minimal Footer */
+        .print-footer {
+            margin-top: 3mm;
+            padding-top: 1.5mm;
+            border-top: 0.5pt solid #ccc;
+            text-align: center;
+            font-size: 5.5pt;
+            color: #666;
         }
 
-        /* Print-specific rules */
+        /* Print-specific optimizations */
         @media print {
             body {
                 print-color-adjust: exact;
@@ -239,7 +219,7 @@
                 max-width: none;
             }
 
-            /* CRITICAL: Maintain side-by-side layout in print */
+            /* Force table layout */
             .comparison-wrapper {
                 display: table !important;
                 width: 100% !important;
@@ -250,15 +230,17 @@
                 display: table-cell !important;
                 width: 50% !important;
                 vertical-align: top !important;
-                page-break-inside: auto;
             }
 
+            /* Prevent breaks */
             .category-block {
                 page-break-inside: avoid;
+                break-inside: avoid;
             }
 
-            .section-content {
-                page-break-inside: auto;
+            .item-row {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 
             /* Ensure colors print */
@@ -273,7 +255,7 @@
             }
 
             .category-header.sales {
-                background-color: #dbeafe !important;
+                background-color: #e0f2fe !important;
                 color: #1e40af !important;
             }
 
@@ -281,56 +263,54 @@
                 background-color: #d1fae5 !important;
                 color: #065f46 !important;
             }
+
+            /* Remove unnecessary spacing */
+            h1, h2, h3, p {
+                orphans: 3;
+                widows: 3;
+            }
         }
 
-        /* No data message */
-        .no-data-message {
-            padding: 15px;
-            text-align: center;
-            background: #fef3c7;
-            border: 1px solid #fbbf24;
-            border-radius: 4px;
-            margin: 8px 0;
-            font-size: 8pt;
+        /* Hide emojis for print */
+        .emoji {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="print-container">
-        <!-- Header -->
+        <!-- Compact Header -->
         <div class="print-header">
-            <h1>🔍 Kitchen vs Sales Comparison</h1>
-            <p>Compare daily sales with main kitchen stock issues</p>
+            <h1>Kitchen vs Sales Comparison</h1>
         </div>
 
-        <!-- Date Information -->
+        <!-- Compact Date Information -->
         <div class="date-info">
             <div>
-                <label>Start Date:</label>
+                <label>Start:</label>
                 <span>{{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }}</span>
             </div>
             <div>
-                <label>End Date:</label>
+                <label>End:</label>
                 <span>{{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }}</span>
             </div>
             <div>
-                <label>Date Range:</label>
+                <label>Range:</label>
                 <span>
                     @if($startDate === $endDate)
-                        {{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }}
-                        <span class="badge badge-yellow">1 day</span>
+                        1 day
                     @else
-                        {{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} day(s)
+                        {{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} days
                     @endif
                 </span>
             </div>
             <div>
-                <label>Last Updated:</label>
-                <span>{{ now()->format('M d, Y H:i') }}</span>
+                <label>Updated:</label>
+                <span>{{ now()->format('M d, H:i') }}</span>
             </div>
         </div>
 
-        <!-- Comparison Sections -->
+        <!-- Comparison Sections - Side by Side -->
         <div class="comparison-wrapper">
             <!-- Daily Sales Section -->
             <div class="comparison-section">
@@ -340,22 +320,20 @@
                 <div class="section-content">
                     @if(empty($dailySalesData['by_category']))
                         <div class="empty-state">
-                            <i>📊</i>
                             <p><strong>No sales recorded</strong></p>
-                            <p>for the selected date range</p>
                         </div>
                     @else
-                        <!-- Sales Summary -->
+                        <!-- Compact Summary -->
                         <div class="summary-info">
-                            <strong>Total Items:</strong> {{ $dailySalesData['total_items'] }} &nbsp;|&nbsp;
-                            <strong>Total Bills:</strong> {{ $dailySalesData['total_sales'] }}
+                            <strong>Items:</strong> {{ $dailySalesData['total_items'] }} | 
+                            <strong>Bills:</strong> {{ $dailySalesData['total_sales'] }}
                         </div>
 
                         @foreach($dailySalesData['by_category'] as $categoryId => $category)
                             <div class="category-block">
                                 <div class="category-header sales">
                                     <span>{{ $category['name'] }}</span>
-                                    <span class="badge badge-blue">{{ $category['total'] }} items</span>
+                                    <span class="badge">{{ $category['total'] }}</span>
                                 </div>
                                 <div class="category-items">
                                     @foreach($category['items'] as $item)
@@ -379,28 +357,26 @@
                 <div class="section-content">
                     @if(empty($mainKitchenData['by_category']))
                         <div class="empty-state">
-                            <i>🍳</i>
                             <p><strong>No kitchen issues</strong></p>
-                            <p>for the selected date range</p>
                         </div>
                     @else
-                        <!-- Kitchen Summary -->
+                        <!-- Compact Summary -->
                         <div class="summary-info">
-                            <strong>Total Quantity:</strong> {{ number_format($mainKitchenData['total_quantity'], 2) }} &nbsp;|&nbsp;
-                            <strong>Transactions:</strong> {{ $mainKitchenData['total_transactions'] }}
+                            <strong>Qty:</strong> {{ number_format($mainKitchenData['total_quantity'], 1) }} | 
+                            <strong>Trans:</strong> {{ $mainKitchenData['total_transactions'] }}
                         </div>
 
                         @foreach($mainKitchenData['by_category'] as $categoryId => $category)
                             <div class="category-block">
                                 <div class="category-header kitchen">
                                     <span>{{ $category['name'] }}</span>
-                                    <span class="badge badge-green">{{ number_format($category['total_quantity'], 2) }}</span>
+                                    <span class="badge">{{ number_format($category['total_quantity'], 1) }}</span>
                                 </div>
                                 <div class="category-items">
                                     @foreach($category['items'] as $item)
                                         <div class="item-row">
                                             <span class="item-name">{{ $item['name'] }}</span>
-                                            <span class="item-quantity">{{ number_format($item['quantity'], 2) }}</span>
+                                            <span class="item-quantity">{{ number_format($item['quantity'], 1) }}</span>
                                         </div>
                                     @endforeach
                                 </div>
@@ -411,10 +387,9 @@
             </div>
         </div>
 
-        <!-- Footer -->
+        <!-- Minimal Footer -->
         <div class="print-footer">
-            <p>Generated by Kitchen Management System | {{ now()->format('l, F j, Y \a\t g:i A') }}</p>
-            <p>This is a system-generated report</p>
+            <p>Generated: {{ now()->format('Y-m-d H:i') }}</p>
         </div>
     </div>
 
@@ -422,12 +397,6 @@
         // Auto-print when page loads
         window.onload = function() {
             window.print();
-        };
-
-        // Close window after printing or canceling
-        window.onafterprint = function() {
-            // Optionally close the window after printing
-            // window.close();
         };
     </script>
 </body>

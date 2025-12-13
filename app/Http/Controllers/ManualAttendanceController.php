@@ -7,6 +7,7 @@ use App\Models\ManualAttendance;
 use App\Models\Person;
 use App\Models\StaffCode;
 use App\Models\StaffCategory; // New model for staff categories
+use App\Models\CategoryType; // Dynamic category types
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -27,18 +28,10 @@ class ManualAttendanceController extends Controller
         // Get all staff members
         $allStaff = $staffQuery->get();
         
-        // Define the order of categories
-        $categoryOrder = [
-            'front_office',  // Front Office first
-            'kitchen',
-            'restaurant',
-            'maintenance',
-            'garden',
-            'housekeeping',
-            'laundry',
-            'pool',
-            null, // Uncategorized staff will be at the end
-        ];
+        // Get dynamic category order from database
+        $categoryTypes = CategoryType::getActiveCategories();
+        $categoryOrder = $categoryTypes->pluck('slug')->toArray();
+        $categoryOrder[] = null; // Uncategorized staff will be at the end
         
         // Group staff by category
         $staffByCategory = [];
@@ -71,21 +64,11 @@ class ManualAttendanceController extends Controller
         \Log::info('Staff by category count: ', collect($staffByCategory)->map->count()->toArray());
         \Log::info('Today\'s attendance count: ' . $attendances->count());
     
-        // Define category names for display
-        $categoryNames = [
-            'front_office' => 'Front Office',
-            'kitchen' => 'Kitchen',
-            'restaurant' => 'Restaurant',
-            'maintenance' => 'Maintenance',
-            'garden' => 'Garden',
-            'housekeeping' => 'Housekeeping',
-            'garden' => 'Garden',
-            'pool' => 'Pool',
-            'laundry' => 'Laundry',
-            null => 'Not Assigned'
-        ];
+        // Get category names dynamically from database
+        $categoryNames = $categoryTypes->pluck('name', 'slug')->toArray();
+        $categoryNames[null] = 'Not Assigned';
     
-        return view('attendance.manual.index', compact('staff', 'attendances', 'categoryNames', 'staffByCategory'));
+        return view('attendance.manual.index', compact('staff', 'attendances', 'categoryNames', 'staffByCategory', 'categoryTypes'));
     }
     public function markAttendance(Request $request)
     {
@@ -310,8 +293,49 @@ class ManualAttendanceController extends Controller
             ->where('type', 'individual')
             ->orderBy('name')
             ->get();
+        
+        // Get active staff members for removal section
+        $activeStaff = Person::whereHas('staffCode', function($query) {
+                $query->where('is_active', 1);
+            })
+            ->where('type', 'individual')
+            ->with(['staffCode', 'staffCategory'])
+            ->orderBy('name')
+            ->get();
             
-        return view('attendance.manual.add-staff', compact('availablePersons'));
+        return view('attendance.manual.add-staff', compact('availablePersons', 'activeStaff'));
+    }
+    
+    /**
+     * Remove a staff member from attendance (deactivate staff code)
+     */
+    public function removeStaffMember(Request $request)
+    {
+        $request->validate([
+            'person_id' => 'required|exists:persons,id',
+        ]);
+
+        // Only admin can remove staff members
+        if (!Auth::user()->checkAdmin()) {
+            return redirect()->back()->with('error', 'Only administrators can remove staff members');
+        }
+
+        try {
+            $person = Person::findOrFail($request->person_id);
+            $staffCode = StaffCode::where('person_id', $request->person_id)->first();
+            
+            if ($staffCode) {
+                $staffCode->is_active = 0;
+                $staffCode->save();
+                
+                return redirect()->back()->with('success', "Staff member '{$person->name}' has been removed from attendance");
+            }
+            
+            return redirect()->back()->with('error', 'Staff code not found for this person');
+        } catch (\Exception $e) {
+            \Log::error('Error removing staff member: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error removing staff member: ' . $e->getMessage());
+        }
     }
 
     public function showManageCategories()
@@ -325,29 +349,23 @@ class ManualAttendanceController extends Controller
             ->with('staffCategory') // Eager load staff categories
             ->get();
 
-        // Available categories
-        $categories = [
-            'front_office' => 'Front Office',
-            'garden' => 'Garden',
-            'kitchen' => 'Kitchen',
-            'maintenance' => 'Maintenance',
-            'restaurant' => 'Restaurant',
-            'housekeeping' => 'Housekeeping',
-            'garden' => 'Garden',
-            'pool' => 'Pool',
-            'laundry' => 'Laundry',
-        ];
+        // Get categories dynamically from database
+        $categories = CategoryType::getCategoriesForDropdown();
+        $categoryTypes = CategoryType::getActiveCategories();
         
-        return view('attendance.manual.manage-categories', compact('staff', 'categories'));
+        return view('attendance.manual.manage-categories', compact('staff', 'categories', 'categoryTypes'));
     }
 
 
     public function addStaffMember(Request $request)
     {
+        // Get valid category slugs from database
+        $validCategories = implode(',', CategoryType::getCategorySlugs());
+        
         $request->validate([
             'person_id' => 'required|exists:persons,id',
             'staff_code' => 'required|string|max:20',
-            'staff_category' => 'required|string|in:front_office,garden,kitchen,maintenance,restaurant,housekeeping,laundry,pool',
+            'staff_category' => 'required|string|in:' . $validCategories,
         ]);
 
         // Only admin can add staff members
@@ -1010,5 +1028,92 @@ public function logoutStaffSection()
     
     return redirect()->route('home')->with('success', 'Logged out from staff section successfully');
 }
+
+    /**
+     * Store a new category type
+     */
+    public function storeCategoryType(Request $request)
+    {
+        if (!Auth::user()->checkAdmin()) {
+            return redirect()->back()->with('error', 'Only administrators can add categories');
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:category_types,slug',
+        ]);
+
+        try {
+            $maxOrder = CategoryType::max('sort_order') ?? 0;
+            
+            CategoryType::create([
+                'name' => $request->name,
+                'slug' => $request->slug,
+                'sort_order' => $maxOrder + 1,
+                'is_active' => true,
+            ]);
+
+            return redirect()->back()->with('success', 'Category added successfully');
+        } catch (\Exception $e) {
+            \Log::error('Error adding category: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error adding category: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update a category type
+     */
+    public function updateCategoryType(Request $request, $id)
+    {
+        if (!Auth::user()->checkAdmin()) {
+            return redirect()->back()->with('error', 'Only administrators can update categories');
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        try {
+            $category = CategoryType::findOrFail($id);
+            $category->name = $request->name;
+            if ($request->has('sort_order')) {
+                $category->sort_order = $request->sort_order;
+            }
+            $category->save();
+
+            return redirect()->back()->with('success', 'Category updated successfully');
+        } catch (\Exception $e) {
+            \Log::error('Error updating category: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error updating category: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a category type
+     */
+    public function deleteCategoryType($id)
+    {
+        if (!Auth::user()->checkAdmin()) {
+            return redirect()->back()->with('error', 'Only administrators can delete categories');
+        }
+
+        try {
+            $category = CategoryType::findOrFail($id);
+            
+            // Check if any staff are using this category
+            $staffCount = StaffCategory::where('category', $category->slug)->count();
+            if ($staffCount > 0) {
+                return redirect()->back()->with('error', "Cannot delete category '{$category->name}' - {$staffCount} staff members are assigned to it");
+            }
+            
+            $category->delete();
+
+            return redirect()->back()->with('success', 'Category deleted successfully');
+        } catch (\Exception $e) {
+            \Log::error('Error deleting category: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Error deleting category: ' . $e->getMessage());
+        }
+    }
     
 }

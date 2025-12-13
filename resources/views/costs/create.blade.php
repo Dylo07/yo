@@ -18,9 +18,28 @@
             <label for="person_id">Person/Shop</label>
             <select name="person_id" id="person_id" class="form-control" required>
                 <option value="">Select a person/shop</option>
-                @foreach ($persons as $person)
-                    <option value="{{ $person->id }}">{{ $person->name }}</option>
-                @endforeach
+                
+                @php
+                    $staffIds = \App\Models\StaffCode::where('is_active', 1)->pluck('person_id')->toArray();
+                    $staffPersons = $persons->filter(fn($p) => in_array($p->id, $staffIds));
+                    $otherPersons = $persons->filter(fn($p) => !in_array($p->id, $staffIds));
+                @endphp
+                
+                @if($staffPersons->count() > 0)
+                    <optgroup label="── Staff Members ──">
+                        @foreach ($staffPersons as $person)
+                            <option value="{{ $person->id }}">{{ $person->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endif
+                
+                @if($otherPersons->count() > 0)
+                    <optgroup label="── Others (Shops/Suppliers) ──">
+                        @foreach ($otherPersons as $person)
+                            <option value="{{ $person->id }}">{{ $person->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endif
             </select>
             <a href="{{ route('persons.create') }}" class="btn btn-link mt-2">Add New Person/Shop</a>
         </div>

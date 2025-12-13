@@ -78,30 +78,80 @@
                 </div>
             </form>
             
-            <!-- Debug Information (Remove in production) -->
+            <!-- Manage Category Types Section -->
             <div class="mt-4">
-                <div class="card bg-light">
-                    <div class="card-header">Debug Info</div>
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="fas fa-tags"></i> Manage Category Types</h5>
+                    </div>
                     <div class="card-body">
-                        <h5>Staff Count: {{ $staff->count() }}</h5>
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Person ID</th>
-                                    <th>Has staffCategory Relation?</th>
-                                    <th>Category Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($staff as $member)
+                        <!-- Add New Category Form -->
+                        <div class="mb-4">
+                            <h6>Add New Category</h6>
+                            <form action="{{ route('attendance.manual.store-category-type') }}" method="POST" class="row g-3">
+                                @csrf
+                                <div class="col-md-4">
+                                    <input type="text" name="name" class="form-control" placeholder="Category Name (e.g., Security)" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" name="slug" class="form-control" placeholder="Slug (e.g., security)" required pattern="[a-z_]+" title="Lowercase letters and underscores only">
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> Add Category</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Existing Categories Table -->
+                        <h6>Existing Categories</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-dark">
                                     <tr>
-                                        <td>{{ $member->id }}</td>
-                                        <td>{{ $member->staffCategory ? 'Yes' : 'No' }}</td>
-                                        <td>{{ $member->staffCategory ? $member->staffCategory->category : 'N/A' }}</td>
+                                        <th>Order</th>
+                                        <th>Name</th>
+                                        <th>Slug</th>
+                                        <th>Staff Count</th>
+                                        <th>Actions</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach($categoryTypes as $category)
+                                        @php
+                                            $staffCount = \App\Models\StaffCategory::where('category', $category->slug)->count();
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $category->sort_order }}</td>
+                                            <td>
+                                                <form action="{{ route('attendance.manual.update-category-type', $category->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="text" name="name" value="{{ $category->name }}" class="form-control form-control-sm d-inline-block" style="width: 150px;">
+                                                    <input type="hidden" name="sort_order" value="{{ $category->sort_order }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-save"></i></button>
+                                                </form>
+                                            </td>
+                                            <td><code>{{ $category->slug }}</code></td>
+                                            <td>
+                                                <span class="badge {{ $staffCount > 0 ? 'badge-info' : 'badge-secondary' }}">{{ $staffCount }} staff</span>
+                                            </td>
+                                            <td>
+                                                @if($staffCount == 0)
+                                                    <form action="{{ route('attendance.manual.delete-category-type', $category->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                                                    </form>
+                                                @else
+                                                    <span class="text-muted" title="Cannot delete - staff assigned"><i class="fas fa-lock"></i></span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">Note: Categories with staff assigned cannot be deleted. Reassign staff first.</small>
                     </div>
                 </div>
             </div>

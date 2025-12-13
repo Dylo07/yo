@@ -332,6 +332,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/manual-attendance/search-persons', [ManualAttendanceController::class, 'searchPersons'])->name('attendance.manual.search-persons');
     Route::post('/manual-attendance/add-staff', [ManualAttendanceController::class, 'addStaffMember'])->name('attendance.manual.add-staff');
     Route::get('/manual-attendance/add-staff', [ManualAttendanceController::class, 'showAddStaffForm'])->name('attendance.manual.add-staff-form');
+    Route::post('/manual-attendance/remove-staff', [ManualAttendanceController::class, 'removeStaffMember'])->name('attendance.manual.remove-staff');
 
     Route::get('/manual-attendance/manage-categories', [ManualAttendanceController::class, 'showManageCategories'])
             ->name('attendance.manual.manage-categories');
@@ -343,6 +344,14 @@ Route::middleware(['auth'])->group(function () {
     // Route for bulk updating staff categories (EXISTING)
     Route::post('/manual-attendance/bulk-update-categories', [ManualAttendanceController::class, 'bulkUpdateCategories'])
             ->name('attendance.manual.bulk-update-categories');
+    
+    // Routes for managing category types (add/edit/delete categories)
+    Route::post('/manual-attendance/category-types', [ManualAttendanceController::class, 'storeCategoryType'])
+            ->name('attendance.manual.store-category-type');
+    Route::put('/manual-attendance/category-types/{id}', [ManualAttendanceController::class, 'updateCategoryType'])
+            ->name('attendance.manual.update-category-type');
+    Route::delete('/manual-attendance/category-types/{id}', [ManualAttendanceController::class, 'deleteCategoryType'])
+            ->name('attendance.manual.delete-category-type');
 });
 
 

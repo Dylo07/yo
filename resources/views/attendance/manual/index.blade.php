@@ -54,14 +54,9 @@
                     <label for="category-filter">Filter by Category:</label>
                     <select id="category-filter" class="form-control">
                         <option value="all">All Categories</option>
-                        <option value="front_office">Front Office</option>
-                        <option value="kitchen">Kitchen</option>
-                        <option value="restaurant">Restaurant</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="garden">Garden</option>
-                        <option value="housekeeping">Housekeeping</option>
-                        <option value="pool">Pool</option>
-                        <option value="laundry">Laundry</option>
+                        @foreach($categoryTypes as $category)
+                            <option value="{{ $category->slug }}">{{ $category->name }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>

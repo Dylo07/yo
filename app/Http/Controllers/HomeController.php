@@ -195,6 +195,44 @@ class HomeController extends Controller
         $waterBottleIssued = abs($waterBottleHistory->where('stock', '<', 0)->sum('stock'));
         $waterBottleAdded = $waterBottleHistory->where('stock', '>', 0)->sum('stock');
         $waterBottleCurrentStock = $waterBottle ? $waterBottle->stock : 0;
+
+        // Swimming Pool Tickets Summary for selected date
+        $adultTicketId = 252;
+        $kidsTicketId = 253;
+        
+        $poolDate = $request->input('pool_date', Carbon::today()->format('Y-m-d'));
+        
+        // Get adult ticket sales (negative stock = sold)
+        $adultTicketHistory = InStock::where('menu_id', $adultTicketId)
+            ->whereDate('created_at', $poolDate)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Get kids ticket sales
+        $kidsTicketHistory = InStock::where('menu_id', $kidsTicketId)
+            ->whereDate('created_at', $poolDate)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $adultTicketsSold = abs($adultTicketHistory->where('stock', '<', 0)->sum('stock'));
+        $kidsTicketsSold = abs($kidsTicketHistory->where('stock', '<', 0)->sum('stock'));
+        $totalTicketsSold = $adultTicketsSold + $kidsTicketsSold;
+        
+        // Get current stock levels
+        $adultTicketMenu = Menu::find($adultTicketId);
+        $kidsTicketMenu = Menu::find($kidsTicketId);
+        $adultTicketStock = $adultTicketMenu ? $adultTicketMenu->stock : 0;
+        $kidsTicketStock = $kidsTicketMenu ? $kidsTicketMenu->stock : 0;
+        
+        // Calculate revenue (price from menu)
+        $adultTicketPrice = $adultTicketMenu ? $adultTicketMenu->price : 0;
+        $kidsTicketPrice = $kidsTicketMenu ? $kidsTicketMenu->price : 0;
+        $poolRevenue = ($adultTicketsSold * $adultTicketPrice) + ($kidsTicketsSold * $kidsTicketPrice);
+        
+        // Combine history for display
+        $poolTicketHistory = $adultTicketHistory->merge($kidsTicketHistory)->sortByDesc('created_at');
     
         return view('home', compact(
              'serviceCharge',
@@ -219,7 +257,17 @@ class HomeController extends Controller
              'waterBottleIssued',
              'waterBottleAdded',
              'waterBottleCurrentStock',
-             'waterBottleDate'
+             'waterBottleDate',
+             'poolTicketHistory',
+             'adultTicketsSold',
+             'kidsTicketsSold',
+             'totalTicketsSold',
+             'adultTicketStock',
+             'kidsTicketStock',
+             'poolRevenue',
+             'poolDate',
+             'adultTicketPrice',
+             'kidsTicketPrice'
         ));
      }
 }

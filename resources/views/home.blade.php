@@ -267,6 +267,117 @@
     </div>
 </div>
 
+<!-- Swimming Pool Tickets Summary Section -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3"><i class="fas fa-swimming-pool"></i> Swimming Pool Tickets</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date"
+                        name="pool_date"
+                        class="form-control form-control-sm me-2 dark-input"
+                        value="{{ $poolDate }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+                @if(request('date'))
+                    <input type="hidden" name="date" value="{{ request('date') }}">
+                @endif
+                @if(request('inventory_date'))
+                    <input type="hidden" name="inventory_date" value="{{ request('inventory_date') }}">
+                @endif
+                @if(request('water_bottle_date'))
+                    <input type="hidden" name="water_bottle_date" value="{{ request('water_bottle_date') }}">
+                @endif
+                @if(request('month'))
+                    <input type="hidden" name="month" value="{{ request('month') }}">
+                @endif
+            </form>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-success me-2 fs-6">Revenue: Rs. {{ number_format($poolRevenue, 2) }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="alert alert-primary mb-0 text-center">
+                    <h6 class="mb-1">Adult Tickets</h6>
+                    <h3 class="mb-0">{{ $adultTicketsSold }}</h3>
+                    <small class="text-muted">@ Rs. {{ number_format($adultTicketPrice, 0) }}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="alert alert-info mb-0 text-center">
+                    <h6 class="mb-1">Kids Tickets</h6>
+                    <h3 class="mb-0">{{ $kidsTicketsSold }}</h3>
+                    <small class="text-muted">@ Rs. {{ number_format($kidsTicketPrice, 0) }}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="alert alert-dark mb-0 text-center">
+                    <h6 class="mb-1">Total Sold</h6>
+                    <h3 class="mb-0">{{ $totalTicketsSold }}</h3>
+                    <small class="text-muted">tickets today</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="alert alert-success mb-0 text-center">
+                    <h6 class="mb-1">Revenue</h6>
+                    <h3 class="mb-0">Rs. {{ number_format($poolRevenue, 0) }}</h3>
+                    <small class="text-muted">today</small>
+                </div>
+            </div>
+        </div>
+        
+        @if($poolTicketHistory->count() > 0)
+        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+            <table class="table table-hover table-sm">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Qty</th>
+                        <th>Bill #</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($poolTicketHistory as $record)
+                    <tr>
+                        <td>{{ \Carbon\Carbon::parse($record->created_at)->format('h:i A') }}</td>
+                        <td>
+                            @if($record->menu_id == 252)
+                                <span class="badge bg-primary">Adult</span>
+                            @else
+                                <span class="badge bg-info">Kids</span>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $record->stock > 0 ? 'success' : 'danger' }}">
+                                {{ $record->stock > 0 ? '+' : '' }}{{ $record->stock }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($record->sale_id)
+                                <span class="badge bg-secondary">BILL #{{ $record->sale_id }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>{{ $record->user->name ?? 'Unknown' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-swimming-pool fa-2x mb-3 d-block"></i>
+            No pool ticket sales for {{ \Carbon\Carbon::parse($poolDate)->format('M d, Y') }}
+        </div>
+        @endif
+    </div>
+</div>
+
 <!-- Inventory Changes Section -->
 <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">

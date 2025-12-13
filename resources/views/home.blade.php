@@ -158,6 +158,115 @@
 </div>
 
 
+<!-- Water Bottle Summary Section -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3"><i class="fas fa-tint"></i> Water Bottle Summary</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date"
+                        name="water_bottle_date"
+                        class="form-control form-control-sm me-2 dark-input"
+                        value="{{ $waterBottleDate }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+                @if(request('date'))
+                    <input type="hidden" name="date" value="{{ request('date') }}">
+                @endif
+                @if(request('inventory_date'))
+                    <input type="hidden" name="inventory_date" value="{{ request('inventory_date') }}">
+                @endif
+                @if(request('month'))
+                    <input type="hidden" name="month" value="{{ request('month') }}">
+                @endif
+            </form>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-info me-3 fs-6">Current Stock: {{ $waterBottleCurrentStock }}</span>
+            <a href="{{ route('water-bottle.index') }}" class="btn btn-sm btn-outline-light">
+                Manage Water Bottles
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="alert alert-danger mb-0 text-center">
+                    <h6 class="mb-1">Issued</h6>
+                    <h3 class="mb-0">{{ $waterBottleIssued }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-success mb-0 text-center">
+                    <h6 class="mb-1">Added</h6>
+                    <h3 class="mb-0">{{ $waterBottleAdded }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-{{ ($waterBottleAdded - $waterBottleIssued) >= 0 ? 'info' : 'warning' }} mb-0 text-center">
+                    <h6 class="mb-1">Net Change</h6>
+                    <h3 class="mb-0">{{ ($waterBottleAdded - $waterBottleIssued) >= 0 ? '+' : '' }}{{ $waterBottleAdded - $waterBottleIssued }}</h3>
+                </div>
+            </div>
+        </div>
+        
+        @if($waterBottleHistory->count() > 0)
+        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-hover table-sm">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Qty</th>
+                        <th>Room/Note</th>
+                        <th>Bill #</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($waterBottleHistory as $record)
+                    <tr class="{{ $record->stock > 0 ? 'table-success' : '' }}">
+                        <td>{{ \Carbon\Carbon::parse($record->created_at)->format('h:i A') }}</td>
+                        <td>
+                            @if($record->stock > 0)
+                                <span class="badge bg-success">Added</span>
+                            @else
+                                <span class="badge bg-danger">Issued</span>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $record->stock > 0 ? 'success' : 'danger' }}">
+                                {{ $record->stock > 0 ? '+' : '' }}{{ $record->stock }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($record->notes)
+                                <span class="badge bg-info">{{ str_replace('Room: ', '', $record->notes) }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($record->sale_id)
+                                <span class="badge bg-primary">BILL #{{ $record->sale_id }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>{{ $record->user->name ?? 'Unknown' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-tint fa-2x mb-3 d-block"></i>
+            No water bottle activity for {{ \Carbon\Carbon::parse($waterBottleDate)->format('M d, Y') }}
+        </div>
+        @endif
+    </div>
+</div>
+
 <!-- Inventory Changes Section -->
 <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
@@ -499,8 +608,17 @@
 </div>
 
 <style>
+/* Modern Black & White Theme */
+:root {
+    --primary-black: #0a0a0a;
+    --secondary-black: #1a1a1a;
+    --accent-gray: #2d2d2d;
+    --light-gray: #f8f9fa;
+    --border-gray: #e0e0e0;
+}
+
 .bg-black {
-    background-color: #000000;
+    background: linear-gradient(135deg, var(--primary-black) 0%, var(--secondary-black) 100%);
 }
 
 .form-select-dark {
@@ -508,53 +626,290 @@
     color: white;
     border: 1px solid rgba(255,255,255,0.2);
     padding: 0.375rem 2.25rem 0.375rem 0.75rem;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
+    backdrop-filter: blur(10px);
 }
 
 .form-select-dark option {
-    background-color: #000000;
+    background-color: var(--primary-black);
     color: white;
 }
 
 .dark-input {
-    background-color: rgba(255,255,255,0.9);
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.menu-card {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.menu-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-    border: 1px solid rgba(0,0,0,0.2);
-}
-
-.card {
+    background-color: rgba(255,255,255,0.95);
+    border: 1px solid rgba(255,255,255,0.3);
     border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.dark-input:focus {
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+    border-color: var(--primary-black);
+}
+
+/* Modern Dashboard Cards */
+.menu-card {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: none;
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    position: relative;
     overflow: hidden;
 }
 
-.alert-dark {
-    background-color: rgba(0,0,0,0.05);
-    border-color: rgba(0,0,0,0.1);
-    color: #000000;
+.menu-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-black), var(--accent-gray));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.menu-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.menu-card:hover::before {
+    opacity: 1;
+}
+
+.menu-card .card-body {
+    padding: 1.5rem;
+}
+
+.menu-card img {
+    transition: transform 0.3s ease;
+    filter: grayscale(0%);
+}
+
+.menu-card:hover img {
+    transform: scale(1.1);
+}
+
+.menu-card h5 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+/* Modern Card Styling */
+.card {
+    border-radius: 1rem;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    border-bottom: none;
+    padding: 1.25rem 1.5rem;
+}
+
+.card-header h5 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Modern Table Styling */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    border-bottom: 2px solid var(--border-gray);
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.02);
 }
 
 .table-dark {
-    background-color: #000000;
+    background: linear-gradient(135deg, var(--primary-black) 0%, var(--secondary-black) 100%);
 }
 
+.table-dark th {
+    border-bottom-color: rgba(255,255,255,0.1);
+}
+
+/* Modern Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.85em;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+/* Modern Alerts */
+.alert {
+    border-radius: 0.75rem;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.alert-dark {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid var(--primary-black);
+    color: var(--primary-black);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-left: 4px solid #e53e3e;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    border-left: 4px solid #38a169;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+    border-left: 4px solid #3182ce;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fffff0 0%, #fefcbf 100%);
+    border-left: 4px solid #d69e2e;
+}
+
+/* Task Cell Highlight */
 .task-cell {
-    background-color: #ffffcc;
-    font-size: 1.1em;
-    font-weight: bold;
+    background: linear-gradient(135deg, #fffef0 0%, #fef9c3 100%);
+    font-size: 1.05em;
+    font-weight: 600;
+    border-radius: 0.25rem;
 }
 
-.table td, .table th {
-    vertical-align: middle;
+/* Modern Buttons */
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-light {
+    border-width: 2px;
+}
+
+.btn-outline-light:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Section Dividers */
+.card + .card {
+    margin-top: 1.5rem;
+}
+
+/* Scrollbar Styling */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Room Badge */
+.room-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary-black) 0%, var(--accent-gray) 100%);
+    color: white;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin: 0.1rem;
+}
+
+/* Sticky Table Header */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Animation for page load */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.2s; }
+.card:nth-child(4) { animation-delay: 0.3s; }
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-gray);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-black);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+/* Stats Cards in Water Bottle Section */
+.alert h3 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.alert h6 {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+    opacity: 0.8;
 }
 </style>
 @endsection

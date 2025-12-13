@@ -10,6 +10,8 @@ use App\Models\Cost;
 use App\Models\Task;
 use App\Models\StockLog; // Added for inventory changes
 use App\Models\Item; // Added for item details
+use App\Models\InStock; // Added for water bottle tracking
+use App\Models\Menu; // Added for water bottle menu item
 use Carbon\Carbon;
 use DB;
 
@@ -177,8 +179,24 @@ class HomeController extends Controller
          
          // Pass the selected date and stock levels to the view
          $inventoryDate = Carbon::parse($selectedInventoryDate)->format('Y-m-d');
-     
-         return view('home', compact(
+
+        // Water Bottle Summary for selected date
+        $waterBottleMenuId = 2817;
+        $waterBottle = Menu::find($waterBottleMenuId);
+        
+        $waterBottleDate = $request->input('water_bottle_date', Carbon::today()->format('Y-m-d'));
+        
+        $waterBottleHistory = InStock::where('menu_id', $waterBottleMenuId)
+            ->whereDate('created_at', $waterBottleDate)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $waterBottleIssued = abs($waterBottleHistory->where('stock', '<', 0)->sum('stock'));
+        $waterBottleAdded = $waterBottleHistory->where('stock', '>', 0)->sum('stock');
+        $waterBottleCurrentStock = $waterBottle ? $waterBottle->stock : 0;
+    
+        return view('home', compact(
              'serviceCharge',
              'previousServiceCharge',
              'percentageChange',
@@ -196,7 +214,12 @@ class HomeController extends Controller
              'periods',
              'inventoryChanges',
              'inventoryDate',
-             'currentStockLevels'
-         ));
+             'currentStockLevels',
+             'waterBottleHistory',
+             'waterBottleIssued',
+             'waterBottleAdded',
+             'waterBottleCurrentStock',
+             'waterBottleDate'
+        ));
      }
 }

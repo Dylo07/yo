@@ -171,14 +171,26 @@ class HomeController extends Controller
              
              $presentDays = $attendance->where('status', 'present')->count();
              $halfDays = $attendance->where('status', 'half')->count();
+             $absentDays = $attendance->where('status', 'absent')->count();
              $presentDays += $halfDays * 0.5;
              
-             // Calculate absent days (25 working days - present days)
-             $absentDays = max(0, 25 - $presentDays);
+             // Calculate leave days (total days off including half days)
+             $leaveDays = $absentDays + ($halfDays * 0.5);
              
-             // Formula: Basic - Advance - (Basic/25 × Absent Days)
-             $deduction = ($basicSalary / 25) * $absentDays;
-             $balance = $basicSalary - $totalAdvanceForPerson - $deduction;
+             // Formula with 5 days leave allowance:
+             // If Leave <= 5: Bonus = Basic/30 × (5 - Leave)
+             // If Leave > 5: Deduction = Basic/25 × (Leave - 5)
+             if ($leaveDays == 5) {
+                 $balance = $basicSalary - $totalAdvanceForPerson;
+             } elseif ($leaveDays < 5) {
+                 $extraDays = 5 - $leaveDays;
+                 $bonus = ($basicSalary / 30) * $extraDays;
+                 $balance = $basicSalary - $totalAdvanceForPerson + $bonus;
+             } else {
+                 $excessLeave = $leaveDays - 5;
+                 $deduction = ($basicSalary / 25) * $excessLeave;
+                 $balance = $basicSalary - $totalAdvanceForPerson - $deduction;
+             }
              
              $salaryBalances[$personId] = $balance;
          }

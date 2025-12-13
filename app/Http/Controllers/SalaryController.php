@@ -189,18 +189,31 @@ class SalaryController extends Controller
         $absentDays = $attendance->where('status', 'absent')->count();
         $presentDays += $halfDays * 0.5;
 
-        // Calculate absent days based on 25 working days standard
-        $calculatedAbsentDays = max(0, 25 - $presentDays);
-        
-        // Formula: Basic - Advance - (Basic/25 × Absent Days)
-        $dailyRate = $basicSalary / 25;
-        $deduction = $dailyRate * $calculatedAbsentDays;
-        $finalSalary = $basicSalary - $salaryAdvance - $deduction;
+        // Calculate leave days (total days off including half days)
+        $leaveDays = $absentDays + ($halfDays * 0.5);
+
+        // Formula with 5 days leave allowance:
+        // If Leave <= 5: Bonus = Basic/30 × (5 - Leave)
+        // If Leave > 5: Deduction = Basic/25 × (Leave - 5)
+        if ($leaveDays == 5) {
+            $finalSalary = $basicSalary - $salaryAdvance;
+            $remarks = "Leave: $leaveDays days (standard), No adjustment";
+        } elseif ($leaveDays < 5) {
+            $extraDays = 5 - $leaveDays;
+            $bonus = ($basicSalary / 30) * $extraDays;
+            $finalSalary = $basicSalary - $salaryAdvance + $bonus;
+            $remarks = "Leave: $leaveDays days, Bonus: Rs. " . number_format($bonus, 2) . " for $extraDays extra days";
+        } else {
+            $excessLeave = $leaveDays - 5;
+            $deduction = ($basicSalary / 25) * $excessLeave;
+            $finalSalary = $basicSalary - $salaryAdvance - $deduction;
+            $remarks = "Leave: $leaveDays days, Deduction: Rs. " . number_format($deduction, 2) . " for $excessLeave excess days";
+        }
 
         return $this->processSalary(
             $personId, $month, $year, $basicSalary, $salaryAdvance, 
             $absentDays, $presentDays, $finalSalary,
-            "Present: $presentDays days, Absent: $calculatedAbsentDays days, Deduction: Rs. " . number_format($deduction, 2)
+            $remarks
         );
     }
 
@@ -254,14 +267,26 @@ class SalaryController extends Controller
         $absentDays = $attendance->where('status', 'absent')->count();
         $presentDays += $halfDays * 0.5;
 
-        // Calculate absent days based on 25 working days standard
-        $calculatedAbsentDays = max(0, 25 - $presentDays);
-        
-        // Formula: Basic - Advance - (Basic/25 × Absent Days)
-        $dailyRate = $person->basic_salary / 25;
-        $deduction = $dailyRate * $calculatedAbsentDays;
-        $finalSalary = $person->basic_salary - $salaryAdvance - $deduction;
-        $remarks = "Present: $presentDays days, Absent: $calculatedAbsentDays days, Deduction: Rs. " . number_format($deduction, 2);
+        // Calculate leave days (total days off including half days)
+        $leaveDays = $absentDays + ($halfDays * 0.5);
+
+        // Formula with 5 days leave allowance:
+        // If Leave <= 5: Bonus = Basic/30 × (5 - Leave)
+        // If Leave > 5: Deduction = Basic/25 × (Leave - 5)
+        if ($leaveDays == 5) {
+            $finalSalary = $person->basic_salary - $salaryAdvance;
+            $remarks = "Leave: $leaveDays days (standard), No adjustment";
+        } elseif ($leaveDays < 5) {
+            $extraDays = 5 - $leaveDays;
+            $bonus = ($person->basic_salary / 30) * $extraDays;
+            $finalSalary = $person->basic_salary - $salaryAdvance + $bonus;
+            $remarks = "Leave: $leaveDays days, Bonus: Rs. " . number_format($bonus, 2) . " for $extraDays extra days";
+        } else {
+            $excessLeave = $leaveDays - 5;
+            $deduction = ($person->basic_salary / 25) * $excessLeave;
+            $finalSalary = $person->basic_salary - $salaryAdvance - $deduction;
+            $remarks = "Leave: $leaveDays days, Deduction: Rs. " . number_format($deduction, 2) . " for $excessLeave excess days";
+        }
 
         // Create a temporary salary object (not saved to database)
         $salary = new Salary([

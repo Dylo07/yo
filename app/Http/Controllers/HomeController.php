@@ -12,6 +12,8 @@ use App\Models\StockLog; // Added for inventory changes
 use App\Models\Item; // Added for item details
 use App\Models\InStock; // Added for water bottle tracking
 use App\Models\Menu; // Added for water bottle menu item
+use App\Models\ManualAttendance; // Added for salary balance calculation
+use App\Models\Person; // Added for salary balance calculation
 use Carbon\Carbon;
 use DB;
 
@@ -144,6 +146,42 @@ class HomeController extends Controller
      
          $totalAdvance = $salaryAdvances->sum('amount');
          $dateRangeText = $selectedPeriodDates['label'];
+
+         // Calculate salary balance for each employee with advances
+         // The period determines which month's attendance to use
+         // Period Dec 10 - Jan 10 corresponds to December attendance
+         $salaryMonth = $startDate->month; // Month of the period start (10th)
+         $salaryYear = $startDate->year;
+         
+         $salaryBalances = [];
+         $employeesWithAdvances = $salaryAdvances->pluck('person_id')->unique();
+         
+         foreach ($employeesWithAdvances as $personId) {
+             $person = Person::find($personId);
+             if (!$person) continue;
+             
+             $basicSalary = $person->basic_salary ?? 0;
+             $totalAdvanceForPerson = $salaryAdvances->where('person_id', $personId)->sum('amount');
+             
+             // Get attendance for the salary month
+             $attendance = ManualAttendance::where('person_id', $personId)
+                 ->whereYear('attendance_date', $salaryYear)
+                 ->whereMonth('attendance_date', $salaryMonth)
+                 ->get();
+             
+             $presentDays = $attendance->where('status', 'present')->count();
+             $halfDays = $attendance->where('status', 'half')->count();
+             $presentDays += $halfDays * 0.5;
+             
+             // Calculate absent days (25 working days - present days)
+             $absentDays = max(0, 25 - $presentDays);
+             
+             // Formula: Basic - Advance - (Basic/25 × Absent Days)
+             $deduction = ($basicSalary / 25) * $absentDays;
+             $balance = $basicSalary - $totalAdvanceForPerson - $deduction;
+             
+             $salaryBalances[$personId] = $balance;
+         }
      
          // Service charge period labels
          $periodLabel = $dateStart->format('M d, Y') . ' - ' . $dateEnd->format('M d, Y');
@@ -267,7 +305,8 @@ class HomeController extends Controller
              'poolRevenue',
              'poolDate',
              'adultTicketPrice',
-             'kidsTicketPrice'
+             'kidsTicketPrice',
+             'salaryBalances'
         ));
      }
 }

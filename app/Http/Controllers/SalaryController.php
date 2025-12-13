@@ -189,37 +189,18 @@ class SalaryController extends Controller
         $absentDays = $attendance->where('status', 'absent')->count();
         $presentDays += $halfDays * 0.5;
 
-        $lastDayOfMonth = Carbon::create($year, $month)->endOfMonth()->day;
-        $markedDays = $attendance->count();
-
-        if ($markedDays < $lastDayOfMonth) {
-            $finalSalary = ($presentDays * $basicSalary / 30) - $salaryAdvance;
-            return $this->processSalary(
-                $personId, $month, $year, $basicSalary, $salaryAdvance, 
-                $absentDays, $presentDays, $finalSalary, 
-                "Partial month calculation: $presentDays days present"
-            );
-        }
-
-        // Regular calculation with attendance rules
-        $totalDaysOff = $absentDays + ($halfDays * 0.5);
-
-        if ($totalDaysOff == 5) {
-            $finalSalary = $basicSalary - $salaryAdvance;
-        } elseif ($totalDaysOff < 5) {
-            $additionalDays = 5 - $totalDaysOff;
-            $dailyRate = $basicSalary / 30;
-            $finalSalary = $basicSalary - $salaryAdvance + ($additionalDays * $dailyRate);
-        } else {
-            $excessDays = $totalDaysOff - 5;
-            $dailyRate = $basicSalary / 25;
-            $finalSalary = $basicSalary - $salaryAdvance - ($excessDays * $dailyRate);
-        }
+        // Calculate absent days based on 25 working days standard
+        $calculatedAbsentDays = max(0, 25 - $presentDays);
+        
+        // Formula: Basic - Advance - (Basic/25 × Absent Days)
+        $dailyRate = $basicSalary / 25;
+        $deduction = $dailyRate * $calculatedAbsentDays;
+        $finalSalary = $basicSalary - $salaryAdvance - $deduction;
 
         return $this->processSalary(
             $personId, $month, $year, $basicSalary, $salaryAdvance, 
             $absentDays, $presentDays, $finalSalary,
-            "Full month calculation with $totalDaysOff days off"
+            "Present: $presentDays days, Absent: $calculatedAbsentDays days, Deduction: Rs. " . number_format($deduction, 2)
         );
     }
 
@@ -272,29 +253,15 @@ class SalaryController extends Controller
         $halfDays = $attendance->where('status', 'half')->count();
         $absentDays = $attendance->where('status', 'absent')->count();
         $presentDays += $halfDays * 0.5;
-        $totalDaysOff = $absentDays + ($halfDays * 0.5);
 
-        $lastDayOfMonth = Carbon::create($year, $month)->endOfMonth()->day;
-        $markedDays = $attendance->count();
-
-        // Calculate final salary based on conditions
-        if ($markedDays < $lastDayOfMonth) {
-            $finalSalary = ($presentDays * $person->basic_salary / 30) - $salaryAdvance;
-            $remarks = "Partial month calculation: $presentDays days present";
-        } else {
-            if ($totalDaysOff == 5) {
-                $finalSalary = $person->basic_salary - $salaryAdvance;
-            } elseif ($totalDaysOff < 5) {
-                $additionalDays = 5 - $totalDaysOff;
-                $dailyRate = $person->basic_salary / 30;
-                $finalSalary = $person->basic_salary - $salaryAdvance + ($additionalDays * $dailyRate);
-            } else {
-                $excessDays = $totalDaysOff - 5;
-                $dailyRate = $person->basic_salary / 25;
-                $finalSalary = $person->basic_salary - $salaryAdvance - ($excessDays * $dailyRate);
-            }
-            $remarks = "Full month calculation with $totalDaysOff days off";
-        }
+        // Calculate absent days based on 25 working days standard
+        $calculatedAbsentDays = max(0, 25 - $presentDays);
+        
+        // Formula: Basic - Advance - (Basic/25 × Absent Days)
+        $dailyRate = $person->basic_salary / 25;
+        $deduction = $dailyRate * $calculatedAbsentDays;
+        $finalSalary = $person->basic_salary - $salaryAdvance - $deduction;
+        $remarks = "Present: $presentDays days, Absent: $calculatedAbsentDays days, Deduction: Rs. " . number_format($deduction, 2);
 
         // Create a temporary salary object (not saved to database)
         $salary = new Salary([

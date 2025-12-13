@@ -674,19 +674,25 @@
                     <tr>
                         <th>Employee Name</th>
                         <th class="text-end">Total Amount</th>
+                        <th class="text-end">Balance Amount</th>
                         <th class="text-center">Number of Advances</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($salaryAdvances->groupBy('person.name') as $employeeName => $advances)
+                    @forelse($salaryAdvances->groupBy('person_id') as $personId => $advances)
+                        @php
+                            $employeeName = $advances->first()->person->name ?? 'Unknown';
+                            $balance = $salaryBalances[$personId] ?? 0;
+                        @endphp
                         <tr>
                             <td><strong>{{ $employeeName }}</strong></td>
                             <td class="text-end text-danger fw-bold">Rs. {{ number_format($advances->sum('amount'), 2) }}</td>
+                            <td class="text-end {{ $balance >= 0 ? 'text-success' : 'text-danger' }} fw-bold">Rs. {{ number_format($balance, 2) }}</td>
                             <td class="text-center">{{ $advances->count() }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="text-center text-muted py-4">
+                            <td colspan="4" class="text-center text-muted py-4">
                                 No salary advances found for this period
                             </td>
                         </tr>
@@ -696,6 +702,7 @@
                     <tr>
                         <td><strong>Total</strong></td>
                         <td class="text-end text-warning"><strong>Rs. {{ number_format($totalAdvance, 2) }}</strong></td>
+                        <td class="text-end text-success"><strong>Rs. {{ number_format(array_sum($salaryBalances), 2) }}</strong></td>
                         <td class="text-center"><strong>{{ $salaryAdvances->count() }}</strong></td>
                     </tr>
                 </tfoot>

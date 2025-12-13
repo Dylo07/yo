@@ -292,38 +292,25 @@
                 @endif
             </form>
         </div>
-        <div class="d-flex align-items-center">
-            <span class="badge bg-success me-2 fs-6">Revenue: Rs. {{ number_format($poolRevenue, 2) }}</span>
-        </div>
     </div>
     <div class="card-body">
         <div class="row mb-3">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="alert alert-primary mb-0 text-center">
                     <h6 class="mb-1">Adult Tickets</h6>
                     <h3 class="mb-0">{{ $adultTicketsSold }}</h3>
-                    <small class="text-muted">@ Rs. {{ number_format($adultTicketPrice, 0) }}</small>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="alert alert-info mb-0 text-center">
                     <h6 class="mb-1">Kids Tickets</h6>
                     <h3 class="mb-0">{{ $kidsTicketsSold }}</h3>
-                    <small class="text-muted">@ Rs. {{ number_format($kidsTicketPrice, 0) }}</small>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="alert alert-dark mb-0 text-center">
                     <h6 class="mb-1">Total Sold</h6>
                     <h3 class="mb-0">{{ $totalTicketsSold }}</h3>
-                    <small class="text-muted">tickets today</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="alert alert-success mb-0 text-center">
-                    <h6 class="mb-1">Revenue</h6>
-                    <h3 class="mb-0">Rs. {{ number_format($poolRevenue, 0) }}</h3>
-                    <small class="text-muted">today</small>
                 </div>
             </div>
         </div>

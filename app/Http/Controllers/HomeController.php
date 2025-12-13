@@ -174,22 +174,32 @@ class HomeController extends Controller
              $absentDays = $attendance->where('status', 'absent')->count();
              $presentDays += $halfDays * 0.5;
              
+             // Get last day of month and total marked days
+             $lastDayOfMonth = Carbon::create($salaryYear, $salaryMonth)->endOfMonth()->day;
+             $totalMarkedDays = $attendance->count();
+             
              // Calculate leave days (total days off including half days)
              $leaveDays = $absentDays + ($halfDays * 0.5);
              
-             // Formula with 5 days leave allowance:
-             // If Leave <= 5: Bonus = Basic/30 × (5 - Leave)
-             // If Leave > 5: Deduction = Basic/25 × (Leave - 5)
-             if ($leaveDays == 5) {
-                 $balance = $basicSalary - $totalAdvanceForPerson;
-             } elseif ($leaveDays < 5) {
-                 $extraDays = 5 - $leaveDays;
-                 $bonus = ($basicSalary / 30) * $extraDays;
-                 $balance = $basicSalary - $totalAdvanceForPerson + $bonus;
+             // Same logic as /salary page:
+             // If month is not complete (partial month), use: (presentDays × basic / 30) - advance
+             // If month is complete, use 5 days leave allowance formula
+             if ($totalMarkedDays < $lastDayOfMonth) {
+                 // Partial month calculation
+                 $balance = ($presentDays * $basicSalary / 30) - $totalAdvanceForPerson;
              } else {
-                 $excessLeave = $leaveDays - 5;
-                 $deduction = ($basicSalary / 25) * $excessLeave;
-                 $balance = $basicSalary - $totalAdvanceForPerson - $deduction;
+                 // Full month with 5 days leave allowance
+                 if ($leaveDays == 5) {
+                     $balance = $basicSalary - $totalAdvanceForPerson;
+                 } elseif ($leaveDays < 5) {
+                     $extraDays = 5 - $leaveDays;
+                     $bonus = ($basicSalary / 30) * $extraDays;
+                     $balance = $basicSalary - $totalAdvanceForPerson + $bonus;
+                 } else {
+                     $excessLeave = $leaveDays - 5;
+                     $deduction = ($basicSalary / 25) * $excessLeave;
+                     $balance = $basicSalary - $totalAdvanceForPerson - $deduction;
+                 }
              }
              
              $salaryBalances[$personId] = $balance;

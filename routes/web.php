@@ -32,6 +32,7 @@ use App\Http\Controllers\RoomAvailabilityVisualizerController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\UltraSimpleKitchenController;
 use App\Http\Controllers\SimpleRecipeController;
+use App\Http\Controllers\WaterBottleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -100,6 +101,11 @@ Route::get('/cashier/showAdvanceWeddingRecipt/{saleID}', 'App\Http\Controllers\C
     Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
     Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
     Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));
+
+    // Water Bottle Room Issuance Routes
+    Route::get('/water-bottle', [WaterBottleController::class, 'index'])->name('water-bottle.index');
+    Route::post('/water-bottle/issue', [WaterBottleController::class, 'issue'])->name('water-bottle.issue');
+    Route::get('/water-bottle/report', [WaterBottleController::class, 'report'])->name('water-bottle.report');
 
 });Route::get('/management',function(){
     return view('management.index'); 

@@ -9,7 +9,7 @@ class InStock extends Model
     protected $table = 'in_stocks';
     
     protected $fillable = [
-        'menu_id', 'stock', 'user_id' , 'sale_id'
+        'menu_id', 'stock', 'user_id' , 'sale_id', 'notes'
     ];
 
     /**

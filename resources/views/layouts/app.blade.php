@@ -55,7 +55,7 @@
 <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
     <div class="container">
         <a class="navbar-brand" href="{{ url('/home') }}">
-            <i class="fa-solid fa-plate-utensils"></i> {{ config('app.name', 'Laravel') }}
+            <i class="fa-solid fa-hotel"></i> Soba Lanka
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
             <span class="navbar-toggler-icon"></span>

@@ -41,7 +41,8 @@ class ManualAttendanceController extends Controller
                     // For null category, get staff with no category
                     return $staff->staffCategory === null;
                 }
-                return $staff->staffCategory && $staff->staffCategory->category === $category;
+                // Case-insensitive comparison to handle legacy data
+                return $staff->staffCategory && strtolower($staff->staffCategory->category) === strtolower($category);
             })->sortBy('name')->values();
         }
         

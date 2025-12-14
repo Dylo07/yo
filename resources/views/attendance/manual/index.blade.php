@@ -75,8 +75,9 @@
                     </thead>
                     <tbody>
                         @php
-                            // Define the category order
-                            $displayOrder = ['front_office', 'kitchen', 'restaurant', 'maintenance', 'garden','laundry','pool','housekeeping', null];
+                            // Get category order dynamically from database
+                            $displayOrder = $categoryTypes->pluck('slug')->toArray();
+                            $displayOrder[] = null; // Add null for uncategorized staff at the end
                         @endphp
                         
                         @foreach($displayOrder as $category)

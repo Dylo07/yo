@@ -267,6 +267,306 @@
     </div>
 </div>
 
+<!-- Soft Drink Summary Section -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3"><i class="fas fa-glass-whiskey"></i> Soft Drink Summary</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date"
+                        name="soft_drink_date"
+                        class="form-control form-control-sm me-2 dark-input"
+                        value="{{ $softDrinkDate }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+                @if(request('date'))
+                    <input type="hidden" name="date" value="{{ request('date') }}">
+                @endif
+                @if(request('water_bottle_date'))
+                    <input type="hidden" name="water_bottle_date" value="{{ request('water_bottle_date') }}">
+                @endif
+            </form>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-info me-3 fs-6">Total Stock: {{ $softDrinkCurrentStock }}</span>
+            <a href="{{ url('/inventory/stock') }}" class="btn btn-sm btn-outline-light">
+                Manage Stock
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="alert alert-danger mb-0 text-center">
+                    <h6 class="mb-1">Issued</h6>
+                    <h3 class="mb-0">{{ $softDrinkIssued }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-success mb-0 text-center">
+                    <h6 class="mb-1">Added</h6>
+                    <h3 class="mb-0">{{ $softDrinkAdded }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-{{ ($softDrinkAdded - $softDrinkIssued) >= 0 ? 'info' : 'warning' }} mb-0 text-center">
+                    <h6 class="mb-1">Net Change</h6>
+                    <h3 class="mb-0">{{ ($softDrinkAdded - $softDrinkIssued) >= 0 ? '+' : '' }}{{ $softDrinkAdded - $softDrinkIssued }}</h3>
+                </div>
+            </div>
+        </div>
+        
+        @if($softDrinkHistory->count() > 0)
+        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-hover table-sm">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th>Time</th>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Qty</th>
+                        <th>Bill #</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($softDrinkHistory as $record)
+                    <tr class="{{ $record->stock > 0 ? 'table-success' : '' }}">
+                        <td>{{ \Carbon\Carbon::parse($record->created_at)->format('h:i A') }}</td>
+                        <td>{{ $record->menu->name ?? 'Unknown' }}</td>
+                        <td>
+                            @if($record->stock > 0)
+                                <span class="badge bg-success">Added</span>
+                            @else
+                                <span class="badge bg-danger">Issued</span>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $record->stock > 0 ? 'success' : 'danger' }}">
+                                {{ $record->stock > 0 ? '+' : '' }}{{ $record->stock }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($record->sale_id)
+                                <span class="badge bg-primary">BILL #{{ $record->sale_id }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>{{ $record->user->name ?? 'Unknown' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-glass-whiskey fa-2x mb-3 d-block"></i>
+            No soft drink activity for {{ \Carbon\Carbon::parse($softDrinkDate)->format('M d, Y') }}
+        </div>
+        @endif
+    </div>
+</div>
+
+<!-- Beer Summary Section -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3"><i class="fas fa-beer"></i> Beer Summary</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date"
+                        name="beer_date"
+                        class="form-control form-control-sm me-2 dark-input"
+                        value="{{ $beerDate }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+                @if(request('date'))
+                    <input type="hidden" name="date" value="{{ request('date') }}">
+                @endif
+                @if(request('water_bottle_date'))
+                    <input type="hidden" name="water_bottle_date" value="{{ request('water_bottle_date') }}">
+                @endif
+            </form>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-info me-3 fs-6">Total Stock: {{ $beerCurrentStock }}</span>
+            <a href="{{ url('/inventory/stock') }}" class="btn btn-sm btn-outline-light">
+                Manage Stock
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="alert alert-danger mb-0 text-center">
+                    <h6 class="mb-1">Issued</h6>
+                    <h3 class="mb-0">{{ $beerIssued }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-success mb-0 text-center">
+                    <h6 class="mb-1">Added</h6>
+                    <h3 class="mb-0">{{ $beerAdded }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-{{ ($beerAdded - $beerIssued) >= 0 ? 'info' : 'warning' }} mb-0 text-center">
+                    <h6 class="mb-1">Net Change</h6>
+                    <h3 class="mb-0">{{ ($beerAdded - $beerIssued) >= 0 ? '+' : '' }}{{ $beerAdded - $beerIssued }}</h3>
+                </div>
+            </div>
+        </div>
+        
+        @if($beerHistory->count() > 0)
+        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-hover table-sm">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th>Time</th>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Qty</th>
+                        <th>Bill #</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($beerHistory as $record)
+                    <tr class="{{ $record->stock > 0 ? 'table-success' : '' }}">
+                        <td>{{ \Carbon\Carbon::parse($record->created_at)->format('h:i A') }}</td>
+                        <td>{{ $record->menu->name ?? 'Unknown' }}</td>
+                        <td>
+                            @if($record->stock > 0)
+                                <span class="badge bg-success">Added</span>
+                            @else
+                                <span class="badge bg-danger">Issued</span>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $record->stock > 0 ? 'success' : 'danger' }}">
+                                {{ $record->stock > 0 ? '+' : '' }}{{ $record->stock }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($record->sale_id)
+                                <span class="badge bg-primary">BILL #{{ $record->sale_id }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>{{ $record->user->name ?? 'Unknown' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-beer fa-2x mb-3 d-block"></i>
+            No beer activity for {{ \Carbon\Carbon::parse($beerDate)->format('M d, Y') }}
+        </div>
+        @endif
+    </div>
+</div>
+
+<!-- Arrack Summary Section -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
+        <div class="d-flex align-items-center">
+            <h5 class="mb-0 me-3"><i class="fas fa-wine-bottle"></i> Arrack Summary</h5>
+            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
+                <input type="date"
+                        name="arrack_date"
+                        class="form-control form-control-sm me-2 dark-input"
+                        value="{{ $arrackDate }}">
+                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
+                @if(request('date'))
+                    <input type="hidden" name="date" value="{{ request('date') }}">
+                @endif
+                @if(request('water_bottle_date'))
+                    <input type="hidden" name="water_bottle_date" value="{{ request('water_bottle_date') }}">
+                @endif
+            </form>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-info me-3 fs-6">Total Stock: {{ $arrackCurrentStock }}</span>
+            <a href="{{ url('/inventory/stock') }}" class="btn btn-sm btn-outline-light">
+                Manage Stock
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="alert alert-danger mb-0 text-center">
+                    <h6 class="mb-1">Issued</h6>
+                    <h3 class="mb-0">{{ $arrackIssued }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-success mb-0 text-center">
+                    <h6 class="mb-1">Added</h6>
+                    <h3 class="mb-0">{{ $arrackAdded }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert alert-{{ ($arrackAdded - $arrackIssued) >= 0 ? 'info' : 'warning' }} mb-0 text-center">
+                    <h6 class="mb-1">Net Change</h6>
+                    <h3 class="mb-0">{{ ($arrackAdded - $arrackIssued) >= 0 ? '+' : '' }}{{ $arrackAdded - $arrackIssued }}</h3>
+                </div>
+            </div>
+        </div>
+        
+        @if($arrackHistory->count() > 0)
+        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-hover table-sm">
+                <thead class="table-dark sticky-top">
+                    <tr>
+                        <th>Time</th>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Qty</th>
+                        <th>Bill #</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($arrackHistory as $record)
+                    <tr class="{{ $record->stock > 0 ? 'table-success' : '' }}">
+                        <td>{{ \Carbon\Carbon::parse($record->created_at)->format('h:i A') }}</td>
+                        <td>{{ $record->menu->name ?? 'Unknown' }}</td>
+                        <td>
+                            @if($record->stock > 0)
+                                <span class="badge bg-success">Added</span>
+                            @else
+                                <span class="badge bg-danger">Issued</span>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $record->stock > 0 ? 'success' : 'danger' }}">
+                                {{ $record->stock > 0 ? '+' : '' }}{{ $record->stock }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($record->sale_id)
+                                <span class="badge bg-primary">BILL #{{ $record->sale_id }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>{{ $record->user->name ?? 'Unknown' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-wine-bottle fa-2x mb-3 d-block"></i>
+            No arrack activity for {{ \Carbon\Carbon::parse($arrackDate)->format('M d, Y') }}
+        </div>
+        @endif
+    </div>
+</div>
+
 <!-- Swimming Pool Tickets Summary Section -->
 <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">

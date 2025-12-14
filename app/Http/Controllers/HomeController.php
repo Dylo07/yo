@@ -257,6 +257,51 @@ class HomeController extends Controller
         $waterBottleAdded = $waterBottleHistory->where('stock', '>', 0)->sum('stock');
         $waterBottleCurrentStock = $waterBottle ? $waterBottle->stock : 0;
 
+        // Soft Drink Summary (Category ID: 5)
+        $softDrinkCategoryId = 5;
+        $softDrinkDate = $request->input('soft_drink_date', Carbon::today()->format('Y-m-d'));
+        $softDrinkMenuIds = Menu::where('category_id', $softDrinkCategoryId)->pluck('id')->toArray();
+        
+        $softDrinkHistory = InStock::whereIn('menu_id', $softDrinkMenuIds)
+            ->whereDate('created_at', $softDrinkDate)
+            ->with(['user', 'menu'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $softDrinkIssued = abs($softDrinkHistory->where('stock', '<', 0)->sum('stock'));
+        $softDrinkAdded = $softDrinkHistory->where('stock', '>', 0)->sum('stock');
+        $softDrinkCurrentStock = Menu::where('category_id', $softDrinkCategoryId)->sum('stock');
+
+        // Beer Summary (Category ID: 28)
+        $beerCategoryId = 28;
+        $beerDate = $request->input('beer_date', Carbon::today()->format('Y-m-d'));
+        $beerMenuIds = Menu::where('category_id', $beerCategoryId)->pluck('id')->toArray();
+        
+        $beerHistory = InStock::whereIn('menu_id', $beerMenuIds)
+            ->whereDate('created_at', $beerDate)
+            ->with(['user', 'menu'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $beerIssued = abs($beerHistory->where('stock', '<', 0)->sum('stock'));
+        $beerAdded = $beerHistory->where('stock', '>', 0)->sum('stock');
+        $beerCurrentStock = Menu::where('category_id', $beerCategoryId)->sum('stock');
+
+        // Arrack Summary (Category ID: 29)
+        $arrackCategoryId = 29;
+        $arrackDate = $request->input('arrack_date', Carbon::today()->format('Y-m-d'));
+        $arrackMenuIds = Menu::where('category_id', $arrackCategoryId)->pluck('id')->toArray();
+        
+        $arrackHistory = InStock::whereIn('menu_id', $arrackMenuIds)
+            ->whereDate('created_at', $arrackDate)
+            ->with(['user', 'menu'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $arrackIssued = abs($arrackHistory->where('stock', '<', 0)->sum('stock'));
+        $arrackAdded = $arrackHistory->where('stock', '>', 0)->sum('stock');
+        $arrackCurrentStock = Menu::where('category_id', $arrackCategoryId)->sum('stock');
+
         // Swimming Pool Tickets Summary for selected date
         $adultTicketId = 252;
         $kidsTicketId = 253;
@@ -319,6 +364,21 @@ class HomeController extends Controller
              'waterBottleAdded',
              'waterBottleCurrentStock',
              'waterBottleDate',
+             'softDrinkHistory',
+             'softDrinkIssued',
+             'softDrinkAdded',
+             'softDrinkCurrentStock',
+             'softDrinkDate',
+             'beerHistory',
+             'beerIssued',
+             'beerAdded',
+             'beerCurrentStock',
+             'beerDate',
+             'arrackHistory',
+             'arrackIssued',
+             'arrackAdded',
+             'arrackCurrentStock',
+             'arrackDate',
              'poolTicketHistory',
              'adultTicketsSold',
              'kidsTicketsSold',

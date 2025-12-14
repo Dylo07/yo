@@ -767,6 +767,13 @@
                             'housekeeping' => '🛏️',
                             'pool' => '🏊',
                             'laundry' => '🧺',
+                            'welding' => '⚙️',
+                            'carpentry' => '🪚',
+                            'groundskeeper' => '🧹',
+                            'gardener' => '🌱',
+                            'mile' => '🏠',
+                            'poola' => '🏊‍♂️',
+                            'so' => '🛡️',
                         ];
                         $icon = $categoryIcons[$category->slug] ?? '📋';
                     @endphp
@@ -835,6 +842,13 @@
                             'housekeeping' => '🛏️',
                             'pool' => '🏊',
                             'laundry' => '🧺',
+                            'welding' => '⚙️',
+                            'carpentry' => '🪚',
+                            'groundskeeper' => '🧹',
+                            'gardener' => '🌱',
+                            'mile' => '🏠',
+                            'poola' => '🏊‍♂️',
+                            'so' => '🛡️',
                         ];
                         $icon = $categoryIcons[$category->slug] ?? '📋';
                         $staffInCategory = $staffByCategory[$category->slug] ?? collect();

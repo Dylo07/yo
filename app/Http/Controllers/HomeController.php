@@ -104,9 +104,10 @@ class HomeController extends Controller
              ->get();
      
          // Get pending tasks
-         $pendingTasks = Task::with('taskCategory')
-             ->where('is_done', false)
-             ->get();
+        $pendingTasks = Task::with(['taskCategory', 'assignedPerson'])
+            ->where('is_done', false)
+            ->orderBy('date_added', 'desc')
+            ->get();
      
          // Add period navigation for salary advances
          $selectedPeriod = $request->get('period', 0);

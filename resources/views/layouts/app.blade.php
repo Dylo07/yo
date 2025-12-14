@@ -45,6 +45,7 @@
             color: white;
         }
     </style>
+    @yield('styles')
 </head>
 <body style="background-color:#FFFFFF; color: #000000 ">
     <div id="app">

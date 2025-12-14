@@ -582,9 +582,9 @@
 
     <div class="card mt-4 shadow-sm">
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
-        <h5 class="mb-0">Pending Tasks</h5>
-        <a href="{{ route('tasks.create') }}" class="btn btn-sm btn-outline-light">
-            Add Task
+        <h5 class="mb-0">Pending Tasks <span class="badge bg-warning text-dark ms-2">{{ $pendingTasks->count() }}</span></h5>
+        <a href="{{ route('tasks.index') }}" class="btn btn-sm btn-outline-light">
+            <i class="fas fa-tasks"></i> View All Tasks
         </a>
     </div>
     <div class="card-body">
@@ -593,24 +593,39 @@
                 <thead class="table-dark">
                     <tr>
                         <th>ID</th>
-                        <th>User</th>
-                        <th>Date Added</th>
+                        <th>Date</th>
                         <th width="30%">Task</th>
-                        <th>Category</th>
-                        <th>Person Incharge</th>
+                        <th>Department</th>
+                        <th>Assigned To</th>
                         <th>Priority</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($pendingTasks as $task)
-                    <tr>
+                    @forelse($pendingTasks->take(10) as $task)
+                    <tr class="{{ $task->isOverdue() ? 'table-danger' : '' }}">
                         <td>{{ $task->id }}</td>
-                        <td>{{ $task->user }}</td>
-                        <td>{{ $task->date_added }}</td>
+                        <td>
+                            {{ $task->date_added }}
+                            @if($task->isOverdue())
+                                <span class="badge bg-danger">Overdue</span>
+                            @endif
+                        </td>
                         <td class="task-cell">{{ $task->task }}</td>
-                        <td>{{ $task->taskCategory->name }}</td>
-                        <td>{{ $task->person_incharge }}</td>
+                        <td>
+                            @if($task->staff_category)
+                                <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $task->staff_category)) }}</span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($task->assignedPerson)
+                                {{ $task->assignedPerson->name }}
+                            @else
+                                <span class="text-muted">{{ $task->person_incharge ?? 'Unassigned' }}</span>
+                            @endif
+                        </td>
                         <td>
                             @if($task->priority_order == 'High')
                                 <span class="badge bg-danger">High</span>
@@ -625,20 +640,28 @@
                                 @csrf
                                 <input type="hidden" name="is_done" value="1">
                                 <button type="submit" class="btn btn-sm btn-success">
-                                    Complete
+                                    <i class="fas fa-check"></i> Done
                                 </button>
                             </form>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            No pending tasks found
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-success"></i><br>
+                            No pending tasks - All caught up!
                         </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
+            @if($pendingTasks->count() > 10)
+                <div class="text-center mt-2">
+                    <a href="{{ route('tasks.index') }}" class="btn btn-outline-dark btn-sm">
+                        View all {{ $pendingTasks->count() }} pending tasks <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
 

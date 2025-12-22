@@ -229,6 +229,18 @@
                             <input type="text" name="comments[]" class="form-control" 
                                    value="All meals are served buffet-style.">
                         </div>
+                        <div class="mb-2">
+                            <input type="text" name="comments[]" class="form-control" 
+                                   value="All hotel packages include complimentary access to indoor games (Badminton, Carrom, Darts, Chess, etc.) and outdoor games (Cricket, Volleyball, and custom team activities).">
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" name="comments[]" class="form-control" 
+                                   value="All rooms are fully air-conditioned for your comfort.">
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" name="comments[]" class="form-control" 
+                                   value="Complimentary bottled water is provided in all rooms.">
+                        </div>
                     </div>
                     <button type="button" class="btn btn-secondary" onclick="addComment()">Add Comment</button>
                 </div>

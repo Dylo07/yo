@@ -101,7 +101,10 @@ class QuotationController extends Controller
         'comments' => $request->comments ?? [
             'Cash payment or Online bank Transfer only accepted.',
             'Please provide the confirmed guest count to the hotel at least two days in advance.',
-            'All meals are served buffet-style.'
+            'All meals are served buffet-style.',
+            'All hotel packages include complimentary access to indoor games (Badminton, Carrom, Darts, Chess, etc.) and outdoor games (Cricket, Volleyball, and custom team activities).',
+            'All rooms are fully air-conditioned for your comfort.',
+            'Complimentary bottled water is provided in all rooms.'
         ]
     ]);
 

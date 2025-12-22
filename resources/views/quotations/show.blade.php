@@ -7,8 +7,11 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Quotation Details #{{ $quotation->id }}</h5>
                 <div>
+                    <a href="{{ route('quotations.download-pdf', $quotation) }}" class="btn btn-sm btn-success me-2">
+                        <i class="bi bi-download"></i> Download PDF
+                    </a>
                     <a href="{{ route('quotations.print', $quotation) }}" class="btn btn-sm btn-outline-light me-2">
-                        Print
+                        <i class="bi bi-printer"></i> Print
                     </a>
                     <a href="{{ route('quotations.index') }}" class="btn btn-sm btn-outline-light">
                         Back to List
@@ -45,6 +48,28 @@
                     </table>
                 </div>
             </div>
+
+            @if($quotation->menu_items && count($quotation->menu_items) > 0)
+            <div class="mb-4">
+                <h6 class="mb-3"><i class="bi bi-menu-button-wide me-2"></i>Menu Selection</h6>
+                @php
+                    $menuOrder = ['welcome_drink', 'evening_snack', 'dinner', 'live_bbq', 'bed_tea', 'breakfast', 'morning_snack', 'lunch', 'desserts'];
+                @endphp
+                
+                @foreach($menuOrder as $menuKey)
+                    @if(isset($quotation->menu_items[$menuKey]) && !empty($quotation->menu_items[$menuKey]['content']))
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>{{ $quotation->menu_items[$menuKey]['category'] }}</strong>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0" style="white-space: pre-line;">{{ $quotation->menu_items[$menuKey]['content'] }}</p>
+                        </div>
+                    </div>
+                    @endif
+                @endforeach
+            </div>
+            @endif
 
             <div class="mb-4">
                 <h6 class="mb-3">Items</h6>

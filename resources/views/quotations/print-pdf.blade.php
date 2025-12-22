@@ -6,46 +6,30 @@
     <style>
         @page {
             margin: 15mm;
-            /* Hide browser headers and footers */
-            margin-top: 0;
-            margin-bottom: 0;
-        }
-        @media print {
-            /* Remove browser default headers/footers */
-            @page {
-                margin: 10mm;
-            }
-            html, body {
-                margin: 0 !important;
-                padding: 15px 30px !important;
-            }
-            .print-actions {
-                display: none !important;
-            }
         }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: DejaVu Sans, sans-serif;
             line-height: 1.5;
             margin: 0;
-            padding: 30px 40px;
+            padding: 20px;
             color: #333;
             font-size: 11px;
         }
         .header {
             margin-bottom: 25px;
-            position: relative;
-            min-height: 80px;
             border-bottom: 2px solid #2ea022;
             padding-bottom: 15px;
+            overflow: hidden;
+        }
+        .logo-section {
+            float: left;
         }
         .logo {
             width: 80px;
             height: auto;
         }
         .company-info {
-            position: absolute;
-            right: 0;
-            top: 0;
+            float: right;
             text-align: right;
         }
         .company-info h2 {
@@ -59,29 +43,29 @@
             line-height: 1.4;
             color: #555;
         }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
         
         /* Client Info Section */
         .client-section {
-            display: table;
-            width: 100%;
             margin-bottom: 20px;
             background: #f8f9fa;
-            border-radius: 4px;
             padding: 12px 15px;
         }
         .client-row {
-            display: table-row;
+            margin-bottom: 5px;
         }
         .client-label {
-            display: table-cell;
             font-weight: 600;
             color: #555;
-            padding: 3px 15px 3px 0;
+            display: inline-block;
             width: 100px;
         }
         .client-value {
-            display: table-cell;
-            padding: 3px 0;
+            display: inline-block;
         }
         .date-badge {
             background: #2ea022;
@@ -90,15 +74,12 @@
             font-size: 11px;
             display: inline-block;
             margin-bottom: 15px;
-            border-radius: 3px;
         }
 
-        /* Menu Section - Clean Design */
+        /* Menu Section */
         .menu-section {
             margin: 20px 0;
             border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
         }
         .menu-header {
             background: #2ea022;
@@ -107,7 +88,6 @@
             font-size: 13px;
             font-weight: 600;
             text-align: center;
-            letter-spacing: 0.5px;
         }
         .menu-content {
             padding: 15px 20px;
@@ -115,15 +95,11 @@
         .menu-category {
             margin-bottom: 12px;
         }
-        .menu-category:last-child {
-            margin-bottom: 0;
-        }
         .menu-category-title {
             font-weight: 700;
             color: #2ea022;
             font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 4px;
             border-bottom: 1px solid #e8e8e8;
             padding-bottom: 3px;
@@ -146,7 +122,6 @@
             padding: 8px 15px;
             font-size: 12px;
             font-weight: 600;
-            border-radius: 4px 4px 0 0;
         }
         table.pricing-table {
             width: 100%;
@@ -154,7 +129,7 @@
             margin: 0;
             font-size: 10px;
         }
-        .pricing-table thead th {
+        .pricing-table th {
             background-color: #f5f5f5;
             color: #333;
             padding: 10px 8px;
@@ -162,18 +137,18 @@
             font-weight: 600;
             border-bottom: 2px solid #ddd;
         }
-        .pricing-table tbody td {
+        .pricing-table td {
             padding: 8px;
             border-bottom: 1px solid #eee;
         }
-        .pricing-table .text-right {
+        .text-right {
             text-align: right;
         }
         .pricing-table tfoot td {
             padding: 8px;
             font-weight: 600;
         }
-        .pricing-table tfoot tr:last-child td {
+        .total-row td {
             background: #f8f9fa;
             border-top: 2px solid #2ea022;
             font-size: 12px;
@@ -219,18 +194,14 @@
             color: #2ea022;
             font-weight: 600;
             font-size: 12px;
-            margin-top: 10px !important;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="header clearfix">
         <div class="logo-section">
-            @if(isset($isPdf) && $isPdf && isset($logoBase64) && $logoBase64)
-                <img src="{!! $logoBase64 !!}" alt="Soba Lanka Logo" class="logo">
-            @else
-                <img src="{{asset('image/Holidaym.png')}}" alt="Soba Lanka Logo" class="logo">
-            @endif
+            <img src="{{ $logoPath }}" alt="Soba Lanka Logo" class="logo">
         </div>
         <div class="company-info">
             <h2>Soba Lanka Holiday Resort (PVT) LTD</h2>
@@ -319,7 +290,7 @@
                     <td colspan="4" class="text-right">Service Charge</td>
                     <td class="text-right">{{ number_format((float)$quotation->service_charge, 2) }}</td>
                 </tr>
-                <tr>
+                <tr class="total-row">
                     <td colspan="4" class="text-right"><strong>Grand Total (LKR)</strong></td>
                     <td class="text-right"><strong>Rs. {{ number_format((float)$quotation->total_amount, 2) }}</strong></td>
                 </tr>
@@ -341,72 +312,5 @@
         <p>This is a computer-generated quotation; therefore, no signature is required.</p>
         <p class="thank-you">Thank You for Choosing Soba Lanka!</p>
     </div>
-
-    @if(!isset($isPdf) || !$isPdf)
-    <!-- Print Actions (hidden when printing) -->
-    <div class="print-actions" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-        <a href="{{ route('quotations.download-pdf', $quotation) }}" class="action-btn download-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 5px;">
-                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-            </svg>
-            Download PDF
-        </a>
-        <button onclick="window.print()" class="action-btn print-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 5px;">
-                <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-                <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
-            </svg>
-            Print
-        </button>
-        <a href="{{ route('quotations.show', $quotation) }}" class="action-btn back-btn">
-            ← Back
-        </a>
-    </div>
-
-    <style>
-        @media print {
-            .print-actions {
-                display: none !important;
-            }
-        }
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 16px;
-            margin-left: 8px;
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .download-btn {
-            background: #2ea022;
-            color: white;
-        }
-        .download-btn:hover {
-            background: #259019;
-            color: white;
-        }
-        .print-btn {
-            background: #333;
-            color: white;
-        }
-        .print-btn:hover {
-            background: #555;
-        }
-        .back-btn {
-            background: #f0f0f0;
-            color: #333;
-        }
-        .back-btn:hover {
-            background: #e0e0e0;
-            color: #333;
-        }
-    </style>
-    @endif
 </body>
 </html>

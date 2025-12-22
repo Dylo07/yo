@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Quotation;
+use App\Models\Menu;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -62,12 +64,38 @@ class QuotationController extends Controller
         ];
     })->toArray();
 
+    // Process manual menu items (text-based categories)
+    $menuItems = [];
+    if ($request->has('menu_items') && is_array($request->menu_items)) {
+        $menuCategories = [
+            'welcome_drink' => 'WELCOME DRINK',
+            'evening_snack' => 'EVENING SNACK',
+            'dinner' => 'DINNER',
+            'live_bbq' => 'LIVE BBQ EXPERIENCE',
+            'bed_tea' => 'BED TEA',
+            'breakfast' => 'BREAKFAST',
+            'morning_snack' => 'MORNING SNACK',
+            'lunch' => 'LUNCH',
+            'desserts' => 'DESSERTS'
+        ];
+        
+        foreach ($request->menu_items as $key => $content) {
+            if (!empty($content) && isset($menuCategories[$key])) {
+                $menuItems[$key] = [
+                    'category' => $menuCategories[$key],
+                    'content' => $content
+                ];
+            }
+        }
+    }
+
     $quotation = Quotation::create([
         'client_name' => $validated['client_name'],
         'client_address' => $validated['client_address'],
         'quotation_date' => $validated['quotation_date'],
         'schedule' => $validated['schedule'],
         'items' => $items,
+        'menu_items' => $menuItems,
         'service_charge' => floatval($validated['service_charge']),
         'total_amount' => floatval($validated['total_amount']),
         'comments' => $request->comments ?? [
@@ -177,6 +205,54 @@ class QuotationController extends Controller
     }
 }
     
+
+    public function downloadPdf(Quotation $quotation)
+    {
+        try {
+            // Validate and prepare quotation items
+            $quotation->items = collect($quotation->items)->map(function ($item) {
+                $pricePerItem = isset($item['pricePerItem']) ? 
+                    floatval($item['pricePerItem']) : 
+                    (isset($item['price_per_item']) ? floatval($item['price_per_item']) : 0);
+                
+                $pax = isset($item['pax']) ? intval($item['pax']) : 1;
+                $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
+                
+                $amount = isset($item['amount']) ? 
+                    floatval($item['amount']) : 
+                    round($pricePerItem * $pax * $quantity, 2);
+
+                return [
+                    'description' => $item['description'] ?? 'No Description',
+                    'pricePerItem' => number_format($pricePerItem, 2, '.', ''),
+                    'pax' => $pax,
+                    'quantity' => $quantity,
+                    'amount' => number_format($amount, 2, '.', '')
+                ];
+            })->toArray();
+
+            // Get logo path for PDF
+            $logoPath = public_path('image/Holidaym.png');
+
+            $pdf = Pdf::loadView('quotations.print-pdf', [
+                'quotation' => $quotation,
+                'logoPath' => $logoPath
+            ]);
+            $pdf->setPaper('A4', 'portrait');
+            $pdf->setOption('isRemoteEnabled', true);
+            $pdf->setOption('chroot', public_path());
+            
+            return $pdf->download('quotation-' . $quotation->id . '-' . $quotation->client_name . '.pdf');
+
+        } catch (\Exception $e) {
+            \Log::error('PDF Download Error', [
+                'message' => $e->getMessage(),
+                'quotation_id' => $quotation->id ?? 'Unknown'
+            ]);
+
+            return back()->with('error', 'Failed to generate PDF: ' . $e->getMessage());
+        }
+    }
 
     public function convertToBooking(Quotation $quotation)
     {

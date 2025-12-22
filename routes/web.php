@@ -492,6 +492,8 @@ Route::middleware(['auth'])->group(function () {
        ->name('quotations.convert-to-booking');
    Route::get('/quotations/{quotation}/print', [QuotationController::class, 'print'])
        ->name('quotations.print');
+   Route::get('/quotations/{quotation}/download-pdf', [QuotationController::class, 'downloadPdf'])
+       ->name('quotations.download-pdf');
 });
 
 

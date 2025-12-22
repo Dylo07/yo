@@ -57,6 +57,103 @@
                     </div>
                 </div>
 
+                <!-- Menu Selection Section -->
+                <div class="mb-4">
+                    <h6 class="mb-3 d-flex align-items-center">
+                        <i class="bi bi-menu-button-wide me-2"></i> Menu Selection
+                    </h6>
+                    
+                    <!-- Welcome Drink -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>WELCOME DRINK</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[welcome_drink]" class="form-control" rows="2" placeholder="e.g., Fresh Fruit Juice">{{ old('menu_items.welcome_drink') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Evening Snack -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>EVENING SNACK</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[evening_snack]" class="form-control" rows="3" placeholder="e.g., Tea and Cake Pieces & Sandwiches / Pan Cake / Fish Roll">{{ old('menu_items.evening_snack') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Dinner -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>DINNER</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[dinner]" class="form-control" rows="6" placeholder="e.g., Macaroni / Spaghetti&#10;Hoppers (Live Action) / Kottu (Live Action)&#10;Egg Fried Rice & Egg Fried Noodles&#10;Chicken Kurma / Chicken Devilled / Chicken Masala&#10;Vegetable Chopsuey&#10;Desserts: Melons, Pineapple, Papaya, Ice Cream, Jelly">{{ old('menu_items.dinner') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Live BBQ Experience (Optional) -->
+                    <div class="card border-warning mb-3">
+                        <div class="card-header bg-warning text-dark py-2">
+                            <strong>LIVE BBQ EXPERIENCE (Optional)</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[live_bbq]" class="form-control" rows="2" placeholder="e.g., Live BBQ Experience (5KG) with Musical Entertainment (DJ/Calipso) in Campfire Setting">{{ old('menu_items.live_bbq') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Bed Tea -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>BED TEA</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[bed_tea]" class="form-control" rows="2" placeholder="e.g., Tea & Kola Kanda with Hakuru (Hathawariya)">{{ old('menu_items.bed_tea') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Breakfast -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>BREAKFAST</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[breakfast]" class="form-control" rows="5" placeholder="e.g., White Rice & Noodles / Milk Rice&#10;Bread & String Hoppers&#10;Boiled Egg & Fish Curry / Sprats Fried&#10;Pol Sambal / Dried Shrimp Sambal&#10;Dhall Curry / Potato Curry&#10;Desserts: Ambon Banana">{{ old('menu_items.breakfast') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Morning Snack -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>MORNING SNACK</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[morning_snack]" class="form-control" rows="2" placeholder="e.g., Fresh Fruits / Juice / Short Eats">{{ old('menu_items.morning_snack') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Lunch -->
+                    <div class="card border-success mb-3">
+                        <div class="card-header bg-success text-white py-2">
+                            <strong>LUNCH</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[lunch]" class="form-control" rows="6" placeholder="e.g., White Rice & Vegetable Rice / Red Rice&#10;Savory Rice with Sultana / Noodles / Biryani&#10;Chicken Curry / Lake Fish Curry&#10;Fried Egg&#10;Dhall Curry / Potato Tempered&#10;Cutlets&#10;Three Vegetable Curry&#10;Mixed Salads&#10;Mallung & Papadam&#10;Desserts: Ice Cream, Melons, Pineapple, Papaya, Watalappan / Jelly">{{ old('menu_items.lunch') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Desserts (Additional) -->
+                    <div class="card border-info mb-3">
+                        <div class="card-header bg-info text-white py-2">
+                            <strong>DESSERTS (Additional)</strong>
+                        </div>
+                        <div class="card-body py-2">
+                            <textarea name="menu_items[desserts]" class="form-control" rows="2" placeholder="e.g., Ice Cream, Melons, Pineapple, Papaya, Watalappan, Cream Caramel & Jelly">{{ old('menu_items.desserts') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <h6 class="mb-3">Items</h6>
                     <div class="table-responsive">

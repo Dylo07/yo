@@ -12,6 +12,7 @@ class Quotation extends Model
         'quotation_date',
         'schedule',
         'items',
+        'menu_items',
         'service_charge',
         'total_amount',
         'comments'
@@ -19,11 +20,12 @@ class Quotation extends Model
 
     protected $casts = [
         'quotation_date' => 'date',
-    'schedule' => 'date',
-    'items' => 'array',
-    'service_charge' => 'float',
-    'total_amount' => 'float',
-    'comments' => 'array',
-    'status' => 'string'
+        'schedule' => 'date',
+        'items' => 'array',
+        'menu_items' => 'array',
+        'service_charge' => 'float',
+        'total_amount' => 'float',
+        'comments' => 'array',
+        'status' => 'string'
     ];
 }

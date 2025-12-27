@@ -1372,6 +1372,7 @@
                 const data = response.data;
 
                 if (data.dateRange && data.dateRange.length > 0) {
+                    assignSequenceColors(data.dateRange);
                     renderVisualizerGrid(data.dateRange, [prevDate, selectedDate, nextDate]);
 
                     document.getElementById('timeSlotsContainer').style.display = 'none';

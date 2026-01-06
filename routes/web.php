@@ -742,57 +742,42 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
 
      // Export to excel
      Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');
-     
-});
-    
-//salary
-Route::middleware(['auth'])->group(function () {
-   Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
-   Route::post('/salary/calculate', [SalaryController::class, 'calculate'])->name('salary.calculate');
-   Route::get('/salary/{salary}/payslip', [SalaryController::class, 'payslip'])->name('salary.payslip');
-   Route::get('/salary/generate-payslip', [SalaryController::class, 'generatePayslip'])
-    ->name('salary.generatePayslip');
+
+    //salary (Admin Only)
+    Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
+    Route::post('/salary/calculate', [SalaryController::class, 'calculate'])->name('salary.calculate');
+    Route::get('/salary/{salary}/payslip', [SalaryController::class, 'payslip'])->name('salary.payslip');
+    Route::get('/salary/generate-payslip', [SalaryController::class, 'generatePayslip'])
+        ->name('salary.generatePayslip');
     Route::get('/salary/{id}/payslip', [SalaryController::class, 'generatePayslip'])->name('salary.payslip');
-   Route::get('/salary/basic', [SalaryController::class, 'basicSalary'])->name('salary.basic');
-   Route::post('/salary/update-basic', [SalaryController::class, 'updateBasic'])->name('salary.updateBasic');
-   Route::post('/person/update-basic-salary', [SalaryController::class, 'updateBasicSalary'])->name('person.updateBasicSalary');
-});
+    Route::get('/salary/basic', [SalaryController::class, 'basicSalary'])->name('salary.basic');
+    Route::post('/salary/update-basic', [SalaryController::class, 'updateBasic'])->name('salary.updateBasic');
+    Route::post('/person/update-basic-salary', [SalaryController::class, 'updateBasicSalary'])->name('person.updateBasicSalary');
 
-
-//S/C
-Route::middleware(['auth'])->group(function () {
-    // Main index page for service charge
+    //S/C (Admin Only)
     Route::get('/service-charge', [ServiceChargeController::class, 'index'])
         ->name('service-charge.index');
- 
-    // Update points for an employee
     Route::post('/service-charge/update-points', [ServiceChargeController::class, 'updatePoints'])
         ->name('service-charge.updatePoints');
- 
-    // Generate service charge for a specific employee
     Route::post('/service-charge/generate', [ServiceChargeController::class, 'generateServiceCharge'])
         ->name('service-charge.generate');
- 
-    // Print service charge receipt for a specific service charge record
     Route::get('/service-charge/{id}/print', [ServiceChargeController::class, 'printServiceCharge'])
         ->name('service-charge.print');
- 
-        Route::get('/service-charge/points', [ServiceChargeController::class, 'managePoints'])
-     ->name('service-charge.points');
- Route::post('/service-charge/points/update-bulk', [ServiceChargeController::class, 'updatePointsBulk'])
-     ->name('service-charge.points.update-bulk');
- });
+    Route::get('/service-charge/points', [ServiceChargeController::class, 'managePoints'])
+        ->name('service-charge.points');
+    Route::post('/service-charge/points/update-bulk', [ServiceChargeController::class, 'updatePointsBulk'])
+        ->name('service-charge.points.update-bulk');
 
-
-// Cashier Balance Routes
-Route::prefix('cashier')->name('cashier.')->group(function () {
-    Route::get('/balance', [CashierBalanceController::class, 'index'])->name('balance');
-    Route::post('/balance/update-opening', [CashierBalanceController::class, 'updateOpeningBalance'])->name('update-opening-balance');
-    Route::post('/balance/add-transaction', [CashierBalanceController::class, 'addManualTransaction'])->name('add-manual-transaction');
-    Route::post('/balance/close-day', [CashierBalanceController::class, 'closeDay'])->name('close-day');
-    Route::get('/balance/report', [CashierBalanceController::class, 'generateReport'])->name('report');
-});
-
+    // Cashier Balance Routes (Admin Only)
+    Route::prefix('cashier')->name('cashier.')->group(function () {
+        Route::get('/balance', [CashierBalanceController::class, 'index'])->name('balance');
+        Route::post('/balance/update-opening', [CashierBalanceController::class, 'updateOpeningBalance'])->name('update-opening-balance');
+        Route::post('/balance/add-transaction', [CashierBalanceController::class, 'addManualTransaction'])->name('add-manual-transaction');
+        Route::post('/balance/close-day', [CashierBalanceController::class, 'closeDay'])->name('close-day');
+        Route::get('/balance/report', [CashierBalanceController::class, 'generateReport'])->name('report');
+    });
+     
+}); // End of VerifyAdmin middleware group
 
 //summey page
 Route::middleware(['auth'])->group(function () {

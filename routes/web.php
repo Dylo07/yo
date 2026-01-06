@@ -743,6 +743,7 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function(){
      // Export to excel
      Route::get('/report/show/export', 'App\Http\Controllers\Report\ReportController@export');
      
+});
     
 //salary
 Route::middleware(['auth'])->group(function () {
@@ -806,5 +807,3 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/welfare-fund/add', [App\Http\Controllers\WelfareFundController::class, 'add'])->name('welfare-fund.add');
     Route::post('/welfare-fund/deduct', [App\Http\Controllers\WelfareFundController::class, 'deduct'])->name('welfare-fund.deduct');
 });
-
-    });

@@ -800,4 +800,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sales/summary/print', [SalesSummaryController::class, 'printSummary'])->name('sales.summary.print');
 });
 
+// Welfare Fund Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/welfare-fund', [App\Http\Controllers\WelfareFundController::class, 'index'])->name('welfare-fund.index');
+    Route::post('/welfare-fund/add', [App\Http\Controllers\WelfareFundController::class, 'add'])->name('welfare-fund.add');
+    Route::post('/welfare-fund/deduct', [App\Http\Controllers\WelfareFundController::class, 'deduct'])->name('welfare-fund.deduct');
+});
+
     });

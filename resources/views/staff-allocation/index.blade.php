@@ -264,11 +264,13 @@
                 <!-- Date Selection -->
                 <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
                     <i class="fas fa-calendar-alt text-blue-500"></i>
+                    <button onclick="goToYesterday()" class="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded hover:bg-gray-100">← Yesterday</button>
                     <input type="date" id="allocationDate" 
                         class="border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium"
                         value="{{ date('Y-m-d') }}"
                         onchange="handleDateChange(this.value)">
-                    <button onclick="goToToday()" class="text-xs text-blue-600 hover:text-blue-800 font-medium ml-2">Today</button>
+                    <button onclick="goToToday()" class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50">Today</button>
+                    <button onclick="goToTomorrow()" class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50">Tomorrow →</button>
                 </div>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
@@ -975,6 +977,22 @@ function goToToday() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('allocationDate').value = today;
     handleDateChange(today);
+}
+
+function goToYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateStr = yesterday.toISOString().split('T')[0];
+    document.getElementById('allocationDate').value = dateStr;
+    handleDateChange(dateStr);
+}
+
+function goToTomorrow() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    document.getElementById('allocationDate').value = dateStr;
+    handleDateChange(dateStr);
 }
 
 function clearAllAssignmentsQuiet() {

@@ -270,7 +270,8 @@
                         value="{{ date('Y-m-d') }}"
                         onchange="handleDateChange(this.value)">
                     <button onclick="goToToday()" class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50">Today</button>
-                    <button onclick="goToTomorrow()" class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50">Tomorrow →</button>
+                    <button onclick="goToTomorrow()" class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50">Tomorrow</button>
+                    <button onclick="goToNextDay()" class="text-xs text-purple-600 hover:text-purple-800 font-medium px-2 py-1 rounded hover:bg-purple-50">Next →</button>
                 </div>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
@@ -991,6 +992,15 @@ function goToTomorrow() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateStr = tomorrow.toISOString().split('T')[0];
+    document.getElementById('allocationDate').value = dateStr;
+    handleDateChange(dateStr);
+}
+
+function goToNextDay() {
+    const currentDateStr = document.getElementById('allocationDate').value;
+    const currentDate = new Date(currentDateStr);
+    currentDate.setDate(currentDate.getDate() + 1);
+    const dateStr = currentDate.toISOString().split('T')[0];
     document.getElementById('allocationDate').value = dateStr;
     handleDateChange(dateStr);
 }

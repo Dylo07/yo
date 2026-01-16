@@ -364,6 +364,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/duty-roster/allocations', [StaffAllocationController::class, 'saveAllocation'])->name('duty.roster.api.save');
     Route::delete('/api/duty-roster/allocations', [StaffAllocationController::class, 'removeAllocation'])->name('duty.roster.api.remove');
     Route::post('/api/duty-roster/allocations/clear', [StaffAllocationController::class, 'clearAllocations'])->name('duty.roster.api.clear');
+    
+    // Function/Booking Staff Assignment Routes
+    Route::get('/api/duty-roster/function-assignments', [StaffAllocationController::class, 'getAllFunctionAssignments'])->name('duty.roster.api.function.all');
+    Route::get('/api/duty-roster/function-assignment', [StaffAllocationController::class, 'getFunctionAssignments'])->name('duty.roster.api.function.get');
+    Route::post('/api/duty-roster/function-assignment', [StaffAllocationController::class, 'assignToFunction'])->name('duty.roster.api.function.assign');
+    Route::delete('/api/duty-roster/function-assignment', [StaffAllocationController::class, 'removeFromFunction'])->name('duty.roster.api.function.remove');
 });
 
    // UPDATED Staff Personal Information Routes with Password Protection

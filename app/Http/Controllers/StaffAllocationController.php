@@ -7,6 +7,7 @@ use App\Models\Person;
 use App\Models\CategoryType;
 use App\Models\StaffAllocation;
 use App\Models\LeaveRequest;
+use App\Models\FunctionAssignment;
 use Carbon\Carbon;
 
 class StaffAllocationController extends Controller
@@ -221,6 +222,109 @@ class StaffAllocationController extends Controller
             'success' => true,
             'message' => "Cleared {$deleted} allocations",
             'deleted_count' => $deleted,
+        ]);
+    }
+
+    /**
+     * Assign staff to a function/booking
+     */
+    public function assignToFunction(Request $request)
+    {
+        $validated = $request->validate([
+            'booking_id' => 'required|integer',
+            'person_id' => 'required|exists:persons,id',
+            'role' => 'nullable|string|max:100',
+        ]);
+
+        $assignment = FunctionAssignment::updateOrCreate(
+            [
+                'booking_id' => $validated['booking_id'],
+                'person_id' => $validated['person_id'],
+            ],
+            [
+                'role' => $validated['role'] ?? null,
+                'assigned_by' => auth()->id(),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Staff assigned to function successfully',
+            'assignment' => $assignment,
+        ]);
+    }
+
+    /**
+     * Remove staff from a function/booking
+     */
+    public function removeFromFunction(Request $request)
+    {
+        $validated = $request->validate([
+            'booking_id' => 'required|integer',
+            'person_id' => 'required|exists:persons,id',
+        ]);
+
+        $deleted = FunctionAssignment::where('booking_id', $validated['booking_id'])
+            ->where('person_id', $validated['person_id'])
+            ->delete();
+
+        return response()->json([
+            'success' => $deleted > 0,
+            'message' => $deleted > 0 ? 'Staff removed from function' : 'Assignment not found',
+        ]);
+    }
+
+    /**
+     * Get all staff assigned to a function/booking
+     */
+    public function getFunctionAssignments(Request $request)
+    {
+        $bookingId = $request->query('booking_id');
+        
+        if (!$bookingId) {
+            return response()->json(['error' => 'booking_id is required'], 400);
+        }
+
+        $assignments = FunctionAssignment::where('booking_id', $bookingId)
+            ->with('person')
+            ->get()
+            ->map(function($assignment) {
+                return [
+                    'person_id' => $assignment->person_id,
+                    'person_name' => $assignment->person ? $assignment->person->name : 'Unknown',
+                    'role' => $assignment->role,
+                ];
+            });
+
+        return response()->json([
+            'booking_id' => $bookingId,
+            'assignments' => $assignments,
+        ]);
+    }
+
+    /**
+     * Get all function assignments for bookings on a specific date
+     */
+    public function getAllFunctionAssignments(Request $request)
+    {
+        $date = $request->query('date', Carbon::today()->format('Y-m-d'));
+        
+        // Get all function assignments and group by booking_id
+        $assignments = FunctionAssignment::with('person')
+            ->get()
+            ->groupBy('booking_id')
+            ->map(function($group) {
+                return $group->map(function($assignment) {
+                    return [
+                        'person_id' => $assignment->person_id,
+                        'person_name' => $assignment->person ? $assignment->person->name : 'Unknown',
+                        'role' => $assignment->role,
+                    ];
+                });
+            });
+
+        return response()->json([
+            'assignments' => $assignments,
         ]);
     }
 }

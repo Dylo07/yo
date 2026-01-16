@@ -1005,6 +1005,13 @@ function renderBookings(bookings) {
                     </div>
                 </div>
                 <div class="px-3 py-2 border-t border-gray-100">
+                    <!-- Assigned Staff Section -->
+                    <div class="mb-2">
+                        <p class="text-xs text-gray-500 mb-1"><i class="fas fa-user-check mr-1"></i>Assigned Staff:</p>
+                        <div class="function-staff-list flex flex-wrap gap-1" id="function-staff-${booking.id}">
+                            <span class="text-xs text-gray-400 italic">Drop staff here</span>
+                        </div>
+                    </div>
                     <button onclick='showBookingDetails(${JSON.stringify(booking).replace(/'/g, "&#39;")}, "${outlineColor}")' 
                         class="w-full text-xs py-1.5 rounded-md font-medium text-white transition-colors hover:opacity-90"
                         style="background-color: ${outlineColor};">
@@ -1017,6 +1024,10 @@ function renderBookings(bookings) {
     
     html += '</div>';
     bookingsList.innerHTML = html;
+    
+    // Setup drop zones for booking cards and load existing assignments
+    setupBookingDropZones();
+    loadFunctionAssignments();
     
     document.getElementById('totalBookings').textContent = bookings.length;
     document.getElementById('totalRoomsBooked').textContent = totalRooms;
@@ -1580,6 +1591,163 @@ function printRoster() {
     setTimeout(() => {
         printWindow.print();
     }, 250);
+}
+
+// ============================================
+// Function/Booking Staff Assignment Functions
+// ============================================
+
+// Store for function assignments { bookingId: [{ person_id, person_name, role }] }
+let functionAssignments = {};
+
+// Setup booking cards as drop zones
+function setupBookingDropZones() {
+    document.querySelectorAll('.booking-card').forEach(card => {
+        card.addEventListener('dragover', handleBookingDragOver);
+        card.addEventListener('dragleave', handleBookingDragLeave);
+        card.addEventListener('drop', handleBookingDrop);
+    });
+}
+
+function handleBookingDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    e.currentTarget.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+}
+
+function handleBookingDragLeave(e) {
+    e.currentTarget.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+}
+
+function handleBookingDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+    
+    if (draggedStaffId) {
+        // Find the booking ID from the staff list container
+        const staffListEl = e.currentTarget.querySelector('.function-staff-list');
+        if (staffListEl) {
+            const bookingId = staffListEl.id.replace('function-staff-', '');
+            assignStaffToFunction(draggedStaffId, bookingId);
+        }
+    }
+}
+
+// Assign staff to a function/booking
+async function assignStaffToFunction(staffId, bookingId) {
+    const staffCard = document.getElementById(`staff-${staffId}`);
+    if (!staffCard) return;
+    
+    const staffName = staffCard.dataset.staffName;
+    
+    try {
+        const response = await fetch('/api/duty-roster/function-assignment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                person_id: staffId,
+            }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // Update local state
+            if (!functionAssignments[bookingId]) {
+                functionAssignments[bookingId] = [];
+            }
+            
+            // Check if already assigned
+            if (!functionAssignments[bookingId].find(a => a.person_id == staffId)) {
+                functionAssignments[bookingId].push({
+                    person_id: staffId,
+                    person_name: staffName,
+                    role: null
+                });
+            }
+            
+            // Update UI
+            updateFunctionStaffList(bookingId);
+            showNotification(`${staffName} assigned to function`);
+        }
+    } catch (error) {
+        console.error('Error assigning staff to function:', error);
+    }
+}
+
+// Remove staff from a function/booking
+async function removeStaffFromFunction(staffId, bookingId) {
+    try {
+        const response = await fetch('/api/duty-roster/function-assignment', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                booking_id: bookingId,
+                person_id: staffId,
+            }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // Update local state
+            if (functionAssignments[bookingId]) {
+                functionAssignments[bookingId] = functionAssignments[bookingId].filter(a => a.person_id != staffId);
+            }
+            
+            // Update UI
+            updateFunctionStaffList(bookingId);
+            showNotification('Staff removed from function');
+        }
+    } catch (error) {
+        console.error('Error removing staff from function:', error);
+    }
+}
+
+// Load all function assignments
+async function loadFunctionAssignments() {
+    try {
+        const response = await fetch('/api/duty-roster/function-assignments');
+        const data = await response.json();
+        
+        functionAssignments = {};
+        
+        // Convert the grouped data to our format
+        if (data.assignments) {
+            Object.entries(data.assignments).forEach(([bookingId, staffList]) => {
+                functionAssignments[bookingId] = staffList;
+                updateFunctionStaffList(bookingId);
+            });
+        }
+        
+        console.log('Loaded function assignments:', functionAssignments);
+    } catch (error) {
+        console.error('Error loading function assignments:', error);
+    }
+}
+
+// Update the staff list UI for a booking
+function updateFunctionStaffList(bookingId) {
+    const listEl = document.getElementById(`function-staff-${bookingId}`);
+    if (!listEl) return;
+    
+    const staff = functionAssignments[bookingId] || [];
+    
+    if (staff.length === 0) {
+        listEl.innerHTML = '<span class="text-xs text-gray-400 italic">Drop staff here</span>';
+    } else {
+        listEl.innerHTML = staff.map(s => `
+            <span class="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                ${s.person_name}
+                <button onclick="removeStaffFromFunction(${s.person_id}, ${bookingId})" class="text-blue-600 hover:text-red-600 ml-1" title="Remove">×</button>
+            </span>
+        `).join('');
+    }
 }
 </script>
 @endpush

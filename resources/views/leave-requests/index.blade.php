@@ -245,6 +245,14 @@ function getLeaveTypeColor($leaveType) {
                 <button class="btn btn-light btn-custom" onclick="showCreateModal()">
                     <i class="fas fa-plus me-2"></i>New Leave Request
                 </button>
+                @if($statistics['pending'] > 0)
+                <form action="{{ route('leave-requests.bulk-approve') }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to approve all {{ $statistics['pending'] }} pending leave requests?');">
+                    @csrf
+                    <button type="submit" class="btn btn-success btn-custom">
+                        <i class="fas fa-check-double me-2"></i>Approve All ({{ $statistics['pending'] }})
+                    </button>
+                </form>
+                @endif
                 <a href="{{ route('leave-requests.calendar') }}" class="btn btn-info btn-custom">
                     <i class="fas fa-calendar me-2"></i>Calendar View
                 </a>

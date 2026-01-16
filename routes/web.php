@@ -411,6 +411,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/leave-requests/calendar-data', [LeaveRequestController::class, 'getCalendarData'])
         ->name('leave-requests.calendar-data');
     
+    // Bulk approve all pending leave requests
+    Route::post('/leave-requests/bulk-approve', [LeaveRequestController::class, 'bulkApprove'])
+        ->name('leave-requests.bulk-approve');
+    
     // Main leave request resource routes (MUST come AFTER the custom routes above)
     Route::resource('leave-requests', LeaveRequestController::class);
 });

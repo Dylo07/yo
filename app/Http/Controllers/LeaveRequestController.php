@@ -485,6 +485,33 @@ class LeaveRequestController extends Controller
     }
 
     /**
+     * Bulk approve all pending leave requests
+     */
+    public function bulkApprove()
+    {
+        $pendingCount = LeaveRequest::where('status', 'pending')->count();
+        
+        if ($pendingCount === 0) {
+            return redirect()->route('leave-requests.index')
+                            ->with('info', 'No pending leave requests to approve.');
+        }
+
+        LeaveRequest::where('status', 'pending')->update([
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now()
+        ]);
+
+        \Log::info('Bulk approved leave requests', [
+            'count' => $pendingCount,
+            'approved_by' => Auth::id()
+        ]);
+
+        return redirect()->route('leave-requests.index')
+                        ->with('success', "Successfully approved {$pendingCount} pending leave request(s)!");
+    }
+
+    /**
      * Remove the specified leave request
      */
     public function destroy(LeaveRequest $leaveRequest)

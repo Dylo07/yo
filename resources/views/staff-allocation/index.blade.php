@@ -1778,16 +1778,24 @@ function updateFunctionStaffList(bookingId) {
     if (!listEl) return;
     
     const staff = functionAssignments[bookingId] || [];
+    const parentSection = listEl.closest('.px-3');
     
     if (staff.length === 0) {
         listEl.innerHTML = '<span class="text-xs text-gray-400 italic">Drop staff here</span>';
+        if (parentSection) {
+            parentSection.classList.remove('bg-green-50', 'border-l-4', 'border-green-500');
+        }
     } else {
         listEl.innerHTML = staff.map(s => `
-            <span class="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+            <span class="inline-flex items-center gap-1 text-sm font-medium bg-green-500 text-white px-3 py-1 rounded-full shadow-sm">
+                <i class="fas fa-user-check text-xs"></i>
                 ${s.person_name}
-                <button onclick="removeStaffFromFunction(${s.person_id}, ${bookingId})" class="text-blue-600 hover:text-red-600 ml-1" title="Remove">×</button>
+                <button onclick="removeStaffFromFunction(${s.person_id}, ${bookingId})" class="text-green-200 hover:text-white ml-1 font-bold" title="Remove">×</button>
             </span>
         `).join('');
+        if (parentSection) {
+            parentSection.classList.add('bg-green-50', 'border-l-4', 'border-green-500');
+        }
     }
 }
 </script>

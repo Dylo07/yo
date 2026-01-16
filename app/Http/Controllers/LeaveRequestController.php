@@ -213,13 +213,15 @@ class LeaveRequestController extends Controller
 
         $request->validate($rules);
 
-        // Prepare data for storage
+        // Prepare data for storage - Auto-approve all leave requests
         $data = [
             'person_id' => $request->person_id,
             'requested_by' => Auth::id(),
             'reason' => $request->reason,
             'leave_type' => $request->leave_type,
-            'status' => 'pending'
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now()
         ];
 
         if ($request->duration_type === 'full_day') {

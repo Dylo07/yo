@@ -600,7 +600,8 @@ function setupDragAndDrop() {
 function handleDragStart(e) {
     draggedStaffId = e.target.dataset.staffId;
     e.target.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.effectAllowed = 'copyMove';
+    e.dataTransfer.setData('text/plain', draggedStaffId);
 }
 
 function handleDragEnd(e) {
@@ -1621,14 +1622,19 @@ function handleBookingDragLeave(e) {
 
 function handleBookingDrop(e) {
     e.preventDefault();
+    e.stopPropagation();
     e.currentTarget.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
     
-    if (draggedStaffId) {
+    // Get staff ID from dataTransfer or from the global variable
+    let staffId = e.dataTransfer.getData('text/plain') || draggedStaffId;
+    
+    if (staffId) {
         // Find the booking ID from the staff list container
         const staffListEl = e.currentTarget.querySelector('.function-staff-list');
         if (staffListEl) {
             const bookingId = staffListEl.id.replace('function-staff-', '');
-            assignStaffToFunction(draggedStaffId, bookingId);
+            console.log('Dropping staff', staffId, 'onto booking', bookingId);
+            assignStaffToFunction(staffId, bookingId);
         }
     }
 }

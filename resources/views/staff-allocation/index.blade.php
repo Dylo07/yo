@@ -96,6 +96,47 @@
         background: rgba(255,255,255,0.5);
         border-radius: 2px;
     }
+    .staff-card.on-leave {
+        opacity: 0.5;
+        background: #fef2f2 !important;
+        border-color: #fca5a5 !important;
+    }
+    .staff-card.on-leave::after {
+        content: 'ON LEAVE';
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: #ef4444;
+        color: white;
+        font-size: 8px;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-weight: bold;
+    }
+    .leave-badge {
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+        color: #dc2626;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    /* Category color coding for staff avatars */
+    .category-front_office { background: linear-gradient(135deg, #22c55e, #16a34a) !important; }
+    .category-kitchen { background: linear-gradient(135deg, #3b82f6, #2563eb) !important; }
+    .category-restaurant { background: linear-gradient(135deg, #f97316, #ea580c) !important; }
+    .category-housekeeping { background: linear-gradient(135deg, #ec4899, #db2777) !important; }
+    .category-maintenance { background: linear-gradient(135deg, #eab308, #ca8a04) !important; }
+    .category-garden { background: linear-gradient(135deg, #84cc16, #65a30d) !important; }
+    .category-pool { background: linear-gradient(135deg, #06b6d4, #0891b2) !important; }
+    .category-laundry { background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important; }
+    .category-uncategorized { background: linear-gradient(135deg, #6b7280, #4b5563) !important; }
+    @media print {
+        .no-print { display: none !important; }
+        .print-only { display: block !important; }
+        body { background: white !important; }
+        .map-container { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
     .tooltip {
         position: absolute;
         background: #1f2937;
@@ -207,14 +248,14 @@
                     </button>
                     <div class="px-3 pb-3 space-y-2 category-content" id="content-{{ $category }}">
                         @foreach($members as $member)
-                        <div class="staff-card flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300"
+                        <div class="staff-card relative flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300"
                             draggable="true"
                             data-staff-id="{{ $member->id }}"
                             data-staff-name="{{ $member->name }}"
                             data-category="{{ $category }}"
                             id="staff-{{ $member->id }}">
                             <div class="relative flex-shrink-0">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-inner">
+                                <div class="w-10 h-10 rounded-full category-{{ $category }} flex items-center justify-center text-white font-semibold text-sm shadow-inner">
                                     {{ strtoupper(substr($member->name, 0, 1)) }}
                                 </div>
                                 <div class="assigned-indicator absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white hidden"></div>
@@ -237,6 +278,17 @@
             @endforeach
         </div>
 
+        <!-- Staff On Leave Section -->
+        <div class="p-3 border-t border-gray-200 bg-red-50" id="staffOnLeaveSection" style="display: none;">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-user-slash text-red-500"></i>
+                <span class="text-sm font-medium text-red-700">Staff On Leave (<span id="leaveCount">0</span>)</span>
+            </div>
+            <div class="space-y-1 text-xs max-h-32 overflow-y-auto" id="staffOnLeaveList">
+                <!-- Staff on leave will be listed here -->
+            </div>
+        </div>
+
         <!-- Footer Stats -->
         <div class="p-4 border-t border-gray-200 bg-gray-50">
             <div class="text-xs text-gray-500 space-y-1">
@@ -247,6 +299,10 @@
                 <div class="flex justify-between">
                     <span>Assigned:</span>
                     <span class="font-medium text-green-600" id="totalAssigned">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>On Leave:</span>
+                    <span class="font-medium text-red-600" id="totalOnLeave">0</span>
                 </div>
             </div>
         </div>
@@ -282,9 +338,13 @@
                     <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-purple-500"></div><span>Hall</span></div>
                     <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Office</span></div>
                     <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-cyan-400"></div><span>Pool</span></div>
+                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-lime-500"></div><span>Garden</span></div>
                 </div>
-                <button onclick="clearAllAssignments()" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1">
+                <button onclick="clearAllAssignments()" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
                     <i class="fas fa-trash-alt"></i> Clear All
+                </button>
+                <button onclick="printRoster()" class="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
+                    <i class="fas fa-print"></i> Print Roster
                 </button>
             </div>
         </div>
@@ -357,8 +417,8 @@ const sections = [
     // Top row rooms
     { id: 'ahala', name: 'Ahala', type: 'ROOM', top: 3, left: 17, width: 4, height: 6 },
     { id: 'orchid', name: 'Orchid', type: 'ROOM', top: 8, left: 17, width: 4, height: 6 },
-    { id: 'sudu-araliya', name: 'Sudu Araliya', type: 'ROOM', top: 8, left: 30, width: 6, height: 6 },
-    { id: 'sepalika', name: 'Sepalika', type: 'ROOM', top: 3, left: 38, width: 6, height: 6 },
+    { id: 'sudu-araliya', name: 'Sudu Araliya', type: 'ROOM', top: 6, left: 30, width: 6, height: 6 },
+    { id: 'sepalika', name: 'Sepalika', type: 'ROOM', top: 6, left: 38, width: 6, height: 6 },
     
     // Room numbers 121-124
     { id: 'room-121', name: '121', type: 'ROOM', top: 3, left: 52, width: 3.5, height: 5 },
@@ -417,14 +477,18 @@ const sections = [
     // CH Room
     { id: 'ch-room', name: 'CH Room', type: 'ROOM', top: 72, left: 26, width: 6, height: 6 },
     
-    // Lihini
-    { id: 'lihini', name: 'Lihini', type: 'ROOM', top: 74, left: 34, width: 5, height: 6 },
-    
-    // Mayura
-    { id: 'mayura', name: 'Mayura', type: 'ROOM', top: 68, left: 40, width: 6, height: 6 },
+    // Lihini & Mayura (side by side)
+    { id: 'lihini', name: 'Lihini', type: 'ROOM', top: 70, left: 34, width: 5, height: 6 },
+    { id: 'mayura', name: 'Mayura', type: 'ROOM', top: 70, left: 41, width: 6, height: 6 },
     
     // Front Office
     { id: 'front-office', name: 'Front Office', type: 'OFFICE', top: 64, left: 52, width: 24, height: 12 },
+    
+    // Garden Quadrants (4 zones covering the whole property)
+    { id: 'garden-a', name: 'Garden A', type: 'GARDEN', top: 1, left: 1, width: 48, height: 48 },
+    { id: 'garden-b', name: 'Garden B', type: 'GARDEN', top: 1, left: 51, width: 48, height: 48 },
+    { id: 'garden-c', name: 'Garden C', type: 'GARDEN', top: 51, left: 51, width: 48, height: 48 },
+    { id: 'garden-d', name: 'Garden D', type: 'GARDEN', top: 51, left: 1, width: 48, height: 48 },
 ];
 
 const sectionColors = {
@@ -434,11 +498,15 @@ const sectionColors = {
     HALL: { bg: 'bg-purple-500', label: 'text-purple-600' },
     OFFICE: { bg: 'bg-green-500', label: 'text-green-600' },
     POOL: { bg: 'bg-cyan-400', label: 'text-cyan-600' },
+    GARDEN: { bg: 'bg-lime-500', label: 'text-lime-700' },
 };
 
 // State
 let assignments = {}; // { staffId: sectionId }
 let draggedStaffId = null;
+
+// State for staff on leave
+let staffOnLeave = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -447,15 +515,50 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSearch();
     loadBookings(currentDate); // Load bookings for today
     loadAllocations(currentDate); // Load saved allocations for today
+    loadStaffOnLeave(currentDate); // Load staff on leave for today
 });
 
 function renderSections() {
     const container = document.getElementById('mapContainer');
     
     // Sections that should have labels on the left side (stacked vertically)
-    const leftLabelSections = ['orchid', 'nelum', 'olu', 'ahala', 'kitchen-2'];
+    const leftLabelSections = ['orchid', 'nelum', 'olu', 'ahala'];
     
-    sections.forEach(section => {
+    // Render garden sections first (as background, z-index: 1)
+    const gardenSections = sections.filter(s => s.type === 'GARDEN');
+    const otherSections = sections.filter(s => s.type !== 'GARDEN');
+    
+    // Render gardens first (background layer) - subtle white with thin gray border
+    // Position labels and staff list in empty corners based on quadrant
+    const gardenPositions = {
+        'garden-a': { labelPos: 'items-start justify-end', labelClass: 'absolute bottom-4 left-4' },  // Bottom-left corner
+        'garden-b': { labelPos: 'items-end justify-end', labelClass: 'absolute bottom-4 right-4' },   // Bottom-right corner
+        'garden-c': { labelPos: 'items-end justify-end', labelClass: 'absolute bottom-4 right-4' },   // Bottom-right corner
+        'garden-d': { labelPos: 'items-start justify-end', labelClass: 'absolute bottom-4 left-4' },  // Bottom-left corner (center area)
+    };
+    
+    gardenSections.forEach(section => {
+        const pos = gardenPositions[section.id] || { labelPos: 'items-center justify-center', labelClass: '' };
+        
+        const sectionEl = document.createElement('div');
+        sectionEl.className = 'absolute';
+        sectionEl.style.cssText = `top: ${section.top}%; left: ${section.left}%; width: ${section.width}%; height: ${section.height}%; z-index: 1;`;
+        sectionEl.innerHTML = `
+            <div class="section-box w-full h-full rounded-lg border border-gray-200 bg-white flex flex-col overflow-hidden relative"
+                data-section-id="${section.id}"
+                data-section-name="${section.name}"
+                data-section-size="large">
+                <div class="${pos.labelClass} flex flex-col items-center">
+                    <span class="text-gray-500 font-bold text-xl mb-2">${section.name}</span>
+                    <div class="section-staff-list flex flex-col items-center gap-1"></div>
+                </div>
+            </div>
+        `;
+        container.appendChild(sectionEl);
+    });
+    
+    // Render other sections on top (z-index: 10)
+    otherSections.forEach(section => {
         const colors = sectionColors[section.type];
         const isSmall = section.width < 5 || section.height < 6;
         const isMedium = section.width < 8 || section.height < 10;
@@ -463,7 +566,7 @@ function renderSections() {
         
         const sectionEl = document.createElement('div');
         sectionEl.className = 'absolute';
-        sectionEl.style.cssText = `top: ${section.top}%; left: ${section.left}%; width: ${section.width}%; height: ${section.height}%;`;
+        sectionEl.style.cssText = `top: ${section.top}%; left: ${section.left}%; width: ${section.width}%; height: ${section.height}%; z-index: 10;`;
         sectionEl.innerHTML = `
             <span class="section-label ${colors.label} ${useLeftLabel ? 'label-left' : 'label-top'}">
                 ${section.name}
@@ -961,9 +1064,10 @@ function handleDateChange(date) {
     // Clear current UI assignments (not database)
     clearAllAssignmentsQuiet();
     
-    // Load bookings and allocations for the new date
+    // Load bookings, allocations, and staff on leave for the new date
     loadBookings(date);
     loadAllocations(date);
+    loadStaffOnLeave(date);
     
     // Format and display the selected date
     const dateObj = new Date(date);
@@ -1297,6 +1401,185 @@ async function clearAllocationsFromDb() {
         console.error('Error clearing allocations:', error);
         throw error;
     }
+}
+
+// ============================================
+// Staff On Leave Functions
+// ============================================
+
+// Load staff on leave for a specific date
+async function loadStaffOnLeave(date) {
+    try {
+        const response = await fetch(`/api/duty-roster/staff-on-leave?date=${date}`);
+        const data = await response.json();
+        
+        staffOnLeave = data.staffOnLeave || [];
+        
+        // Update UI
+        updateStaffOnLeaveUI();
+        
+        // Mark staff cards as on leave
+        markStaffOnLeave();
+        
+        console.log(`Loaded ${staffOnLeave.length} staff on leave for ${date}`);
+    } catch (error) {
+        console.error('Error loading staff on leave:', error);
+    }
+}
+
+function updateStaffOnLeaveUI() {
+    const section = document.getElementById('staffOnLeaveSection');
+    const list = document.getElementById('staffOnLeaveList');
+    const countEl = document.getElementById('leaveCount');
+    const totalOnLeaveEl = document.getElementById('totalOnLeave');
+    
+    if (staffOnLeave.length > 0) {
+        section.style.display = 'block';
+        countEl.textContent = staffOnLeave.length;
+        totalOnLeaveEl.textContent = staffOnLeave.length;
+        
+        list.innerHTML = staffOnLeave.map(staff => `
+            <div class="flex items-center justify-between bg-white rounded p-2 border border-red-200">
+                <span class="font-medium text-gray-700">${staff.person_name}</span>
+                <span class="leave-badge">${staff.leave_type}</span>
+            </div>
+        `).join('');
+    } else {
+        section.style.display = 'none';
+        countEl.textContent = '0';
+        totalOnLeaveEl.textContent = '0';
+        list.innerHTML = '';
+    }
+}
+
+function markStaffOnLeave() {
+    // First, remove on-leave class from all staff cards
+    document.querySelectorAll('.staff-card').forEach(card => {
+        card.classList.remove('on-leave');
+        card.draggable = true;
+    });
+    
+    // Mark staff on leave
+    staffOnLeave.forEach(staff => {
+        const card = document.getElementById(`staff-${staff.person_id}`);
+        if (card) {
+            card.classList.add('on-leave');
+            card.draggable = false; // Disable dragging for staff on leave
+        }
+    });
+}
+
+// ============================================
+// Print Roster Function
+// ============================================
+
+function printRoster() {
+    const date = document.getElementById('allocationDate').value;
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    // Build print content
+    let printContent = `
+        <html>
+        <head>
+            <title>Duty Roster - ${formattedDate}</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h1 { text-align: center; color: #1e40af; margin-bottom: 5px; }
+                h2 { text-align: center; color: #6b7280; font-weight: normal; margin-top: 0; }
+                .section { margin-bottom: 20px; page-break-inside: avoid; }
+                .section-title { background: #1e40af; color: white; padding: 8px 15px; border-radius: 5px; margin-bottom: 10px; }
+                .staff-list { padding-left: 20px; }
+                .staff-item { padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
+                .no-staff { color: #9ca3af; font-style: italic; }
+                .leave-section { background: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                .leave-title { color: #dc2626; font-weight: bold; margin-bottom: 10px; }
+                .stats { display: flex; justify-content: space-around; margin-top: 30px; padding: 15px; background: #f3f4f6; border-radius: 5px; }
+                .stat-item { text-align: center; }
+                .stat-value { font-size: 24px; font-weight: bold; color: #1e40af; }
+                .stat-label { color: #6b7280; font-size: 12px; }
+                @media print { body { padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <h1>🏨 Hotel Duty Roster</h1>
+            <h2>${formattedDate}</h2>
+    `;
+    
+    // Add staff on leave section
+    if (staffOnLeave.length > 0) {
+        printContent += `
+            <div class="leave-section">
+                <div class="leave-title">⚠️ Staff On Leave (${staffOnLeave.length})</div>
+                <div class="staff-list">
+                    ${staffOnLeave.map(s => `<div class="staff-item">${s.person_name} - ${s.leave_type}</div>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Group assignments by section
+    const sectionAssignments = {};
+    sections.forEach(section => {
+        sectionAssignments[section.id] = {
+            name: section.name,
+            type: section.type,
+            staff: []
+        };
+    });
+    
+    Object.entries(assignments).forEach(([staffId, sectionId]) => {
+        const card = document.getElementById(`staff-${staffId}`);
+        if (card && sectionAssignments[sectionId]) {
+            sectionAssignments[sectionId].staff.push(card.dataset.staffName);
+        }
+    });
+    
+    // Add sections to print content
+    Object.values(sectionAssignments).forEach(section => {
+        if (section.staff.length > 0) {
+            printContent += `
+                <div class="section">
+                    <div class="section-title">${section.name} (${section.type})</div>
+                    <div class="staff-list">
+                        ${section.staff.map(name => `<div class="staff-item">• ${name}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    // Add stats
+    const totalAssigned = Object.keys(assignments).length;
+    const totalStaff = document.querySelectorAll('.staff-card').length;
+    
+    printContent += `
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value">${totalStaff}</div>
+                    <div class="stat-label">Total Staff</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${totalAssigned}</div>
+                    <div class="stat-label">Assigned</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${staffOnLeave.length}</div>
+                    <div class="stat-label">On Leave</div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+    }, 250);
 }
 </script>
 @endpush

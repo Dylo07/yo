@@ -360,6 +360,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/duty-roster', [StaffAllocationController::class, 'index'])->name('duty.roster.index');
     Route::get('/api/duty-roster/staff', [StaffAllocationController::class, 'getStaff'])->name('duty.roster.api.staff');
     Route::get('/api/duty-roster/allocations', [StaffAllocationController::class, 'getAllocations'])->name('duty.roster.api.allocations');
+    Route::get('/api/duty-roster/staff-on-leave', [StaffAllocationController::class, 'getStaffOnLeave'])->name('duty.roster.api.leave');
     Route::post('/api/duty-roster/allocations', [StaffAllocationController::class, 'saveAllocation'])->name('duty.roster.api.save');
     Route::delete('/api/duty-roster/allocations', [StaffAllocationController::class, 'removeAllocation'])->name('duty.roster.api.remove');
     Route::post('/api/duty-roster/allocations/clear', [StaffAllocationController::class, 'clearAllocations'])->name('duty.roster.api.clear');

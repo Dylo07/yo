@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Person;
 use App\Models\CategoryType;
 use App\Models\StaffAllocation;
+use App\Models\LeaveRequest;
 use Carbon\Carbon;
 
 class StaffAllocationController extends Controller
@@ -98,6 +99,33 @@ class StaffAllocationController extends Controller
         return response()->json([
             'staffByCategory' => $staffByCategory,
             'categoryNames' => $categoryNames,
+        ]);
+    }
+
+    /**
+     * Get staff on leave for a specific date
+     */
+    public function getStaffOnLeave(Request $request)
+    {
+        $date = $request->query('date', Carbon::today()->format('Y-m-d'));
+        
+        $staffOnLeave = LeaveRequest::with('person')
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->get()
+            ->map(function($leave) {
+                return [
+                    'person_id' => $leave->person_id,
+                    'person_name' => $leave->person ? $leave->person->name : 'Unknown',
+                    'leave_type' => $leave->leave_type,
+                    'reason' => $leave->reason,
+                ];
+            });
+
+        return response()->json([
+            'date' => $date,
+            'staffOnLeave' => $staffOnLeave,
         ]);
     }
 

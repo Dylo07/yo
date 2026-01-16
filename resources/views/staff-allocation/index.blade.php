@@ -1561,6 +1561,41 @@ function printRoster() {
         }
     });
     
+    // Add function/booking assignments
+    const bookingCards = document.querySelectorAll('.booking-card');
+    if (Object.keys(functionAssignments).length > 0) {
+        printContent += `
+            <div style="margin-top: 30px; border-top: 2px solid #1e40af; padding-top: 20px;">
+                <h3 style="color: #1e40af; margin-bottom: 15px;">📋 Function/Event Staff Assignments</h3>
+        `;
+        
+        Object.entries(functionAssignments).forEach(([bookingId, staffList]) => {
+            if (staffList.length > 0) {
+                // Try to get booking name from the card
+                const staffListEl = document.getElementById(`function-staff-${bookingId}`);
+                let bookingName = `Booking #${bookingId}`;
+                if (staffListEl) {
+                    const card = staffListEl.closest('.booking-card');
+                    if (card) {
+                        const nameEl = card.querySelector('.font-semibold');
+                        if (nameEl) bookingName = nameEl.textContent;
+                    }
+                }
+                
+                printContent += `
+                    <div class="section">
+                        <div class="section-title" style="background: #059669;">${bookingName}</div>
+                        <div class="staff-list">
+                            ${staffList.map(s => `<div class="staff-item">• ${s.person_name}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        printContent += `</div>`;
+    }
+    
     // Add stats
     const totalAssigned = Object.keys(assignments).length;
     const totalStaff = document.querySelectorAll('.staff-card').length;

@@ -94,6 +94,12 @@
                                     <i class="fas fa-download"></i> Export Staff Data
                                 </a>
                             </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('duty.roster.index') }}">
+                                    <i class="fas fa-map-marker-alt"></i> Duty Roster
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 @endauth

@@ -49,6 +49,14 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+    @keyframes pulse-wedding {
+        0%, 100% {
+            box-shadow: 0 0 0 4px #ef4444, 0 0 20px #ef444490;
+        }
+        50% {
+            box-shadow: 0 0 0 6px #ef4444, 0 0 30px #ef4444;
+        }
+    }
     .staff-list-item {
         display: flex;
         align-items: center;
@@ -320,7 +328,7 @@
                 <!-- Date Selection -->
                 <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
                     <i class="fas fa-calendar-alt text-blue-500"></i>
-                    <button onclick="goToYesterday()" class="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded hover:bg-gray-100">← Yesterday</button>
+                    <button onclick="goToPreviousDay()" class="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded hover:bg-gray-100">← Previous</button>
                     <input type="date" id="allocationDate" 
                         class="border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium"
                         value="{{ date('Y-m-d') }}"
@@ -1043,14 +1051,16 @@ function renderBookings(bookings) {
 }
 
 function highlightBookedRooms(bookings) {
-    // Reset all section highlights
+    // Reset all section highlights including animation
     document.querySelectorAll('.section-box').forEach(section => {
         section.classList.remove('booked-room');
         section.style.boxShadow = '';
+        section.style.animation = '';
     });
     
     // Create a map of room -> unique booking color (each booking gets a unique color)
     const roomColorMap = new Map();
+    let hasWedding = false;
     
     bookings.forEach((booking, index) => {
         // Each booking gets a unique color from the array
@@ -1065,6 +1075,12 @@ function highlightBookedRooms(bookings) {
         rooms.forEach(room => {
             roomColorMap.set(room.trim(), color);
         });
+        
+        // Check if this is a wedding booking
+        const bookingType = (booking.booking_type || booking.function_type || '').toLowerCase();
+        if (bookingType.includes('wedding')) {
+            hasWedding = true;
+        }
     });
     
     // Highlight booked rooms on the map with their unique booking color
@@ -1077,6 +1093,15 @@ function highlightBookedRooms(bookings) {
             }
         }
     });
+    
+    // Highlight Banquet Hall if there's a wedding
+    if (hasWedding) {
+        const banquetEl = document.querySelector('[data-section-id="banquet-hall"]');
+        if (banquetEl) {
+            banquetEl.style.boxShadow = '0 0 0 4px #ef4444, 0 0 20px #ef444490';
+            banquetEl.style.animation = 'pulse-wedding 2s infinite';
+        }
+    }
 }
 
 function handleDateChange(date) {
@@ -1110,10 +1135,11 @@ function goToToday() {
     handleDateChange(today);
 }
 
-function goToYesterday() {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const dateStr = yesterday.toISOString().split('T')[0];
+function goToPreviousDay() {
+    const currentDate = document.getElementById('allocationDate').value;
+    const prevDate = new Date(currentDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const dateStr = prevDate.toISOString().split('T')[0];
     document.getElementById('allocationDate').value = dateStr;
     handleDateChange(dateStr);
 }

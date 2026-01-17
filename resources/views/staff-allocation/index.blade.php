@@ -339,6 +339,7 @@
                     <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Office</span></div>
                     <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-cyan-400"></div><span>Pool</span></div>
                     <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-lime-500"></div><span>Garden</span></div>
+                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-yellow-600"></div><span>Maintenance</span></div>
                 </div>
                 <button onclick="clearAllAssignments()" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
                     <i class="fas fa-trash-alt"></i> Clear All
@@ -445,6 +446,9 @@ const sections = [
     // Villa
     { id: 'villa', name: 'Villa', type: 'ROOM', top: 18, left: 72, width: 10, height: 12 },
     
+    // Maintenance Work
+    { id: 'maintenance', name: 'Maintenance', type: 'MAINTENANCE', top: 32, left: 1, width: 10, height: 12 },
+    
     // Swimming Pool
     { id: 'swimming-pool', name: 'Swimming Pool', type: 'POOL', top: 34, left: 14, width: 18, height: 10 },
     
@@ -499,6 +503,7 @@ const sectionColors = {
     OFFICE: { bg: 'bg-green-500', label: 'text-green-600' },
     POOL: { bg: 'bg-cyan-400', label: 'text-cyan-600' },
     GARDEN: { bg: 'bg-lime-500', label: 'text-lime-700' },
+    MAINTENANCE: { bg: 'bg-yellow-600', label: 'text-yellow-700' },
 };
 
 // State

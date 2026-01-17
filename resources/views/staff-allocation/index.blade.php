@@ -369,10 +369,19 @@
 
     <!-- Bookings Sidebar (Right) -->
     <div class="w-80 bg-white border-l border-gray-200 flex flex-col shadow-lg">
+        <!-- Quick Navigation Buttons -->
+        <div class="flex">
+            <a href="/room-visualizer" class="flex-1 py-3 text-center text-white font-bold text-sm" style="background: #f97316;">
+                Room<br>Availability
+            </a>
+            <a href="/calendar" class="flex-1 py-3 text-center text-white font-bold text-sm" style="background: #ea580c;">
+                Booking<br>Calendar
+            </a>
+        </div>
         <!-- Header -->
         <div class="p-4 border-b border-gray-200" style="background: linear-gradient(to right, #059669, #047857);">
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                <i class="fas fa-calendar-check"></i> Today's Bookings
+                <i class="fas fa-calendar-check"></i> <span id="bookingsDateTitle">Today's Bookings</span>
             </h2>
             <p class="text-green-100 text-sm mt-1">Rooms with active bookings</p>
         </div>
@@ -989,12 +998,13 @@ function renderBookings(bookings) {
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: ${outlineColor};"></div>
-                            <span class="font-semibold text-gray-800 text-sm">${booking.name || 'Guest'}</span>
+                            <span class="font-semibold text-gray-800 text-sm">${booking.function_type || 'Event'}</span>
                         </div>
                         <span class="text-xs px-2 py-0.5 rounded-full text-white" style="background-color: ${functionColor};">
-                            ${booking.function_type || 'Event'}
+                            ${booking.booking_type || booking.function_type || 'Event'}
                         </span>
                     </div>
+                    <div class="text-xs text-gray-600 mt-1 font-medium">${booking.name || 'Guest'}</div>
                     <div class="text-xs text-gray-500 mt-1">
                         <i class="fas fa-users mr-1"></i>${booking.guest_count || '0'} guests
                         <span class="mx-2">|</span>
@@ -1124,6 +1134,18 @@ function handleDateChange(date) {
     const dateObj = new Date(date);
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const formattedDate = dateObj.toLocaleDateString('en-US', options);
+    
+    // Update bookings sidebar title with date
+    const today = new Date().toISOString().split('T')[0];
+    const bookingsTitle = document.getElementById('bookingsDateTitle');
+    if (bookingsTitle) {
+        if (date === today) {
+            bookingsTitle.textContent = "Today's Bookings";
+        } else {
+            const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            bookingsTitle.textContent = `Bookings - ${shortDate}`;
+        }
+    }
     
     // Show notification
     showNotification(`Viewing allocations for: ${formattedDate}`);
@@ -1545,38 +1567,33 @@ async function printRoster() {
         console.error('Error loading tasks for print:', error);
     }
     
-    // Build print content
+    // Build print content - compact table-based layout
     let printContent = `
         <html>
         <head>
             <title>Duty Roster - ${formattedDate}</title>
             <style>
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; max-width: 900px; margin: 0 auto; }
-                .header { text-align: center; border-bottom: 3px solid #1e40af; padding-bottom: 20px; margin-bottom: 25px; }
-                .header h1 { color: #1e40af; margin: 0 0 5px 0; font-size: 28px; }
-                .header h2 { color: #6b7280; font-weight: normal; margin: 0; font-size: 16px; }
-                .section { margin-bottom: 25px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
-                .section-title { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 12px 20px; font-size: 14px; font-weight: 600; margin: 0; }
-                .staff-list { padding: 0; margin: 0; }
-                .staff-item { padding: 12px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: flex-start; gap: 10px; }
-                .staff-item:last-child { border-bottom: none; }
-                .staff-name { font-weight: 600; color: #1f2937; min-width: 150px; }
-                .task-list { flex: 1; }
-                .task-item { background: #f0fdf4; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 13px; margin: 3px 0; border-left: 3px solid #22c55e; }
-                .no-tasks { color: #9ca3af; font-style: italic; font-size: 13px; }
-                .leave-section { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
-                .leave-title { color: #dc2626; font-weight: bold; margin-bottom: 15px; font-size: 16px; }
-                .leave-item { padding: 8px 0; border-bottom: 1px dashed #fca5a5; }
-                .leave-item:last-child { border-bottom: none; }
-                .stats { display: flex; justify-content: space-around; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 8px; border: 1px solid #e2e8f0; }
+                body { font-family: Arial, sans-serif; padding: 10px; margin: 0; font-size: 11px; }
+                .header { text-align: center; border-bottom: 2px solid #1e40af; padding-bottom: 8px; margin-bottom: 10px; }
+                .header h1 { color: #1e40af; margin: 0; font-size: 16px; }
+                .header h2 { color: #666; font-weight: normal; margin: 2px 0 0 0; font-size: 11px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                th { background: #1e40af; color: white; padding: 6px 8px; text-align: left; font-size: 11px; font-weight: 600; }
+                td { padding: 4px 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+                .section-header { background: #f1f5f9; font-weight: 600; color: #1e40af; }
+                .staff-name { font-weight: 500; }
+                .tasks { color: #059669; font-size: 10px; }
+                .no-tasks { color: #9ca3af; font-style: italic; font-size: 10px; }
+                .function-header { background: #059669; color: white; }
+                .leave-row { background: #fef2f2; color: #dc2626; }
+                .stats { display: flex; justify-content: center; gap: 40px; margin-top: 10px; padding: 8px; background: #f8fafc; border-radius: 4px; }
                 .stat-item { text-align: center; }
-                .stat-value { font-size: 32px; font-weight: bold; color: #1e40af; }
-                .stat-label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-                .function-section .section-title { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
-                .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; }
+                .stat-value { font-size: 18px; font-weight: bold; color: #1e40af; }
+                .stat-label { color: #6b7280; font-size: 9px; text-transform: uppercase; }
                 @media print { 
-                    body { padding: 15px; } 
-                    .section { break-inside: avoid; }
+                    body { padding: 5px; }
+                    table { page-break-inside: auto; }
+                    tr { page-break-inside: avoid; }
                 }
             </style>
         </head>
@@ -1587,16 +1604,12 @@ async function printRoster() {
             </div>
     `;
     
+    // Start main table
+    printContent += `<table><thead><tr><th style="width:30%">Location</th><th style="width:25%">Staff</th><th>Tasks</th></tr></thead><tbody>`;
+    
     // Add staff on leave section
     if (staffOnLeave.length > 0) {
-        printContent += `
-            <div class="leave-section">
-                <div class="leave-title">⚠️ Staff On Leave (${staffOnLeave.length})</div>
-                <div class="staff-list">
-                    ${staffOnLeave.map(s => `<div class="staff-item">${s.person_name} - ${s.leave_type}</div>`).join('')}
-                </div>
-            </div>
-        `;
+        printContent += `<tr class="leave-row"><td colspan="3"><strong>⚠️ On Leave:</strong> ${staffOnLeave.map(s => s.person_name).join(', ')}</td></tr>`;
     }
     
     // Group assignments by section
@@ -1619,42 +1632,27 @@ async function printRoster() {
         }
     });
     
-    // Add sections to print content
+    // Add sections to print content as table rows
     Object.values(sectionAssignments).forEach(section => {
         if (section.staff.length > 0) {
-            printContent += `
-                <div class="section">
-                    <div class="section-title">${section.name} (${section.type})</div>
-                    <div class="staff-list">
-                        ${section.staff.map(staff => {
-                            const tasks = staffTasks[staff.id] || [];
-                            let taskHtml = '<span class="no-tasks">No tasks assigned</span>';
-                            if (tasks.length > 0) {
-                                taskHtml = `
-                                    <div class="task-list">
-                                        ${tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
-                                    </div>
-                                `;
-                            }
-                            return `<div class="staff-item"><span class="staff-name">${staff.name}</span>${taskHtml}</div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
+            section.staff.forEach((staff, idx) => {
+                const tasks = staffTasks[staff.id] || [];
+                const taskText = tasks.length > 0 ? tasks.join('; ') : '<span class="no-tasks">-</span>';
+                if (idx === 0) {
+                    printContent += `<tr><td rowspan="${section.staff.length}" class="section-header">${section.name}</td><td class="staff-name">${staff.name}</td><td class="tasks">${taskText}</td></tr>`;
+                } else {
+                    printContent += `<tr><td class="staff-name">${staff.name}</td><td class="tasks">${taskText}</td></tr>`;
+                }
+            });
         }
     });
     
-    // Add function/booking assignments
-    const bookingCards = document.querySelectorAll('.booking-card');
+    // Add function/booking assignments as table rows
     if (Object.keys(functionAssignments).length > 0) {
-        printContent += `
-            <div style="margin-top: 30px; border-top: 2px solid #1e40af; padding-top: 20px;">
-                <h3 style="color: #1e40af; margin-bottom: 15px;">📋 Function/Event Staff Assignments</h3>
-        `;
+        printContent += `<tr><th colspan="3" class="function-header">📋 Function/Event Assignments</th></tr>`;
         
         Object.entries(functionAssignments).forEach(([bookingId, staffList]) => {
             if (staffList.length > 0) {
-                // Try to get booking name from the card
                 const staffListEl = document.getElementById(`function-staff-${bookingId}`);
                 let bookingName = `Booking #${bookingId}`;
                 if (staffListEl) {
@@ -1665,30 +1663,21 @@ async function printRoster() {
                     }
                 }
                 
-                printContent += `
-                    <div class="section">
-                        <div class="section-title" style="background: #059669;">${bookingName}</div>
-                        <div class="staff-list">
-                            ${staffList.map(s => {
-                                const tasks = staffTasks[s.person_id] || [];
-                                let taskHtml = '<span class="no-tasks">No tasks assigned</span>';
-                                if (tasks.length > 0) {
-                                    taskHtml = `
-                                        <div class="task-list">
-                                            ${tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
-                                        </div>
-                                    `;
-                                }
-                                return `<div class="staff-item"><span class="staff-name">${s.person_name}</span>${taskHtml}</div>`;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
+                staffList.forEach((s, idx) => {
+                    const tasks = staffTasks[s.person_id] || [];
+                    const taskText = tasks.length > 0 ? tasks.join('; ') : '<span class="no-tasks">-</span>';
+                    if (idx === 0) {
+                        printContent += `<tr><td rowspan="${staffList.length}" class="section-header" style="color:#059669">${bookingName}</td><td class="staff-name">${s.person_name}</td><td class="tasks">${taskText}</td></tr>`;
+                    } else {
+                        printContent += `<tr><td class="staff-name">${s.person_name}</td><td class="tasks">${taskText}</td></tr>`;
+                    }
+                });
             }
         });
-        
-        printContent += `</div>`;
     }
+    
+    // Close table
+    printContent += `</tbody></table>`;
     
     // Add stats
     const totalAssigned = Object.keys(assignments).length;

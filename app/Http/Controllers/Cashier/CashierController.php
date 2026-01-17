@@ -30,24 +30,25 @@ class CashierController extends Controller
      * OPTIMIZED: Cache tables for 30 seconds (status changes frequently)
      */
     public function getTables(){
-        $tables = Cache::remember('cashier_tables', 30, function () {
-            return Table::all();
-        });
-        $html = '';
+        $tables = Table::all(); // Remove cache temporarily
+        
+        $html = '<div class="tables-grid">';
         
         foreach($tables as $table){
-            $html .= '<div class="col-lg-2 col-md-3 col-sm-1 mb-2">';
-            $html .= '<button tabindex ="-1" class="btn btn-dark btn-outline-secondary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
-            <img class="img-fluid" style="width:0%" src="'.url('/image/table.svg').'"/>
-            <br>';
-            if($table->status == "available"){
-                $html .= '<span class="badge badge-pill badge-success">'.$table->name.'</span>';
-            }else{
-                $html .= '<span class="badge badge-pill badge-danger">'.$table->name.'</span>';
-            }
-            $html .='</button>';
-            $html .= '</div>';
+            $statusClass = $table->status == "available" ? 'available' : 'occupied';
+            $statusText = $table->status == "available" ? 'Available' : 'Occupied';
+            $statusBg = $table->status == "available" ? 'bg-success' : 'bg-warning';
+            
+            $html .= '<div class="table-card '.$statusClass.' btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'">
+                <div class="table-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="table-name">'.$table->name.'</div>
+                <div class="table-status '.$statusBg.'">'.$statusText.'</div>
+            </div>';
         }
+        
+        $html .= '</div>';
         return $html;
     }
     

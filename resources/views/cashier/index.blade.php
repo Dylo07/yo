@@ -24,10 +24,10 @@
     margin-right: 490px; /* Space for right panel */
 }
 
-/* FIXED: Modern table grid styling */
+/* FIXED: Modern table grid styling using flexbox */
 .tables-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
     gap: 10px !important;
     padding: 10px !important;
     background: white !important;
@@ -37,7 +37,8 @@
 }
 
 #table-detail .tables-grid {
-    display: grid !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
 }
 
 /* FIXED: Modern table cards */
@@ -51,10 +52,12 @@
     transition: all 0.3s ease;
     position: relative;
     min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    width: 120px;
+    flex: 0 0 auto;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
 }
 
 .table-card:hover {
@@ -521,11 +524,8 @@ $(document).ready(function(){
 
     window.onload = function() {
         if($("#table-detail").is(":hidden")){
-            // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
             $.get("/cashier/getTable", function(data){
-                // FIXED: Convert old table HTML to modern cards
-                const modernTablesHtml = convertTablesToModernCards(data);
-                $("#table-detail").html(modernTablesHtml);
+                $("#table-detail").html(data);
                 $("#table-detail").slideDown('fast');
                 $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-dark');
             }).fail(function(xhr, status, error) {
@@ -537,7 +537,6 @@ $(document).ready(function(){
         }
         setTimeout(function(){
             $("#table-detail .table-card.available").first().click();
-            // SIMPLIFIED: Load first category like original code
             setTimeout(function() {
                 $(".nav-link").first().click();
             }, 500);

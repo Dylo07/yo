@@ -1,8 +1,6 @@
 @extends('layouts.app')
 
-@section('content')
-<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-
+@section('styles')
 <!-- FIXED: Enhanced CSS for modern table styling -->
 <style>
 .order-panel-right {
@@ -28,7 +26,7 @@
 .tables-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 10px;
+    gap: 6px;
     padding: 10px;
     background: white;
     border-radius: 10px;
@@ -36,17 +34,17 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* FIXED: Modern table cards */
+/* FIXED: Modern table cards - simpler styling to match controller inline styles */
 .table-card {
-    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 16px;
+    background: #ffffff; /* Fallback */
+    /* Border is handled by controller inline style */
+    border-radius: 10px;
+    padding: 5px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     position: relative;
-    min-height: 100px;
+    min-height: 85px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -55,102 +53,64 @@
 
 .table-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-    border-color: #3b82f6;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    /* Keep background white on hover to match "modern" look */
+    background-color: #ffffff !important; 
 }
 
-/* Available table styling */
-.table-card.available {
-    border-color: #10b981;
-    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-}
-
+/* Status classes primarily for selection logic now, styling is inline/controller based */
 .table-card.available:hover {
-    border-color: #059669;
-    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
-}
-
-/* Occupied table styling */
-.table-card.occupied {
-    border-color: #f59e0b;
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    /* Border color handled by controller or specific overrides if needed */
 }
 
 .table-card.occupied:hover {
-    border-color: #d97706;
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+    /* Border color handled by controller */
 }
 
-/* Selected table styling */
+/* Selected table styling - Needs to be distinct */
 .table-card.selected {
-    border-color: #3b82f6;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    /* Force a distinct look for selected item */
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3) !important;
     transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3);
 }
 
 .table-card.selected::after {
     content: '✓';
     position: absolute;
-    top: -8px;
-    right: -8px;
+    top: -5px;
+    right: -5px;
     background: #10b981;
     color: white;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: bold;
     border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .table-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
-    color: #64748b;
-}
-
-.table-card.available .table-icon {
-    color: #10b981;
-}
-
-.table-card.occupied .table-icon {
-    color: #f59e0b;
-}
-
-.table-card.selected .table-icon {
-    color: #3b82f6;
+    /* Icon styling handled by controller inline styles mostly */
+    margin-bottom: 2px;
+    font-size: 1.2rem;
 }
 
 .table-name {
-    font-weight: 700;
-    font-size: 0.9rem;
-    margin-bottom: 6px;
-    color: #1e293b;
-    line-height: 1.2;
+    /* Name styling handled by controller */
+    margin-bottom: 2px;
+    font-size: 0.75rem;
+    line-height: 1.1;
 }
 
 .table-status {
-    font-size: 0.7rem;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.table-status.bg-success {
-    background-color: #10b981 !important;
-    color: white;
-}
-
-.table-status.bg-warning {
-    background-color: #f59e0b !important;
-    color: white;
+    /* Status badge styling handled by controller */
+    font-size: 0.65rem;
+    padding: 2px 6px;
 }
 
 /* Categories styling */
@@ -309,9 +269,20 @@
     }
 }
 </style>
+<!-- Include only one version of jQuery (full version for AJAX support) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<!-- Optionally, update to a more recent version if possible -->
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+@endsection
+
+@section('content')
 <div class="container">
   <div class="main-content-left">
-    <div class="row" id="table-detail"></div>
+    <div id="table-detail"></div>
     <div class="row justify-content-center py5">
       <div class="col-md-12"> <!-- CHANGED: Full width for left content -->
         <button tabindex="-2" class="btn btn-primary btn-block" id="btn-show-tables">View All Tables</button>
@@ -348,15 +319,42 @@
   <div id="order-detail"></div>
 </div>
 
-<!-- Include only one version of jQuery (full version for AJAX support) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<!-- Optionally, update to a more recent version if possible -->
-<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<!-- Payment Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Payment</h5>
+        <button tabindex="-4" type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h3 class="totalAmount"></h3>
+        <h3 class="changeAmount">Service Charege: </h3>
+        <div tabindex="-1" class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text">Rs</span>
+          </div>
+          <input tabindex="-2" type="number" id="recieved-amount" class="form-control">
+        </div>
+        <div class="form-group">
+          <label tabindex="-1" for="payment">Payment Type</label>
+          <select tabindex="-3" class="form-control" id="payment-type">
+            <option tabindex="-2" value="cash">Cash</option>
+            <option value="credit card">Credit Card</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button tabindex="-1" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary btn-save-payment">Save Payment</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
+@push('scripts')
 <!-- Total Calculation Code -->
 <script>
 
@@ -423,73 +421,7 @@ function debouncedUpdate() {
         }
     }, 150); // Slightly longer delay for stability
 }
-
-// ADDED: Function to convert old table HTML to modern cards
-function convertTablesToModernCards(htmlString) {
-    const $temp = $('<div>').html(htmlString);
-    let modernHtml = '<div class="tables-grid">';
-    
-    $temp.find('.btn-table').each(function() {
-        const $btn = $(this);
-        const tableId = $btn.data('id');
-        const tableName = $btn.data('name');
-        const $badge = $btn.find('.badge');
-        const isAvailable = $badge.hasClass('badge-success');
-        
-        const statusClass = isAvailable ? 'available' : 'occupied';
-        const statusText = isAvailable ? 'Available' : 'Occupied';
-        const statusBg = isAvailable ? 'bg-success' : 'bg-warning';
-        
-        modernHtml += `
-            <div class="table-card ${statusClass} btn-table" data-id="${tableId}" data-name="${tableName}">
-                <div class="table-icon">
-                    
-                </div>
-                <div class="table-name">${tableName}</div>
-                <div class="table-status ${statusBg}">${statusText}</div>
-            </div>
-        `;
-    });
-    
-    modernHtml += '</div>';
-    return modernHtml;
-}
 </script>
-
-<!-- Payment Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Payment</h5>
-        <button tabindex="-4" type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <h3 class="totalAmount"></h3>
-        <h3 class="changeAmount">Service Charege: </h3>
-        <div tabindex="-1" class="input-group mb-3">
-          <div class="input-group-prepend">
-            <span class="input-group-text">Rs</span>
-          </div>
-          <input tabindex="-2" type="number" id="recieved-amount" class="form-control">
-        </div>
-        <div class="form-group">
-          <label tabindex="-1" for="payment">Payment Type</label>
-          <select tabindex="-3" class="form-control" id="payment-type">
-            <option tabindex="-2" value="cash">Cash</option>
-            <option value="credit card">Credit Card</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button tabindex="-1" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary btn-save-payment">Save Payment</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 $(document).ready(function(){
@@ -518,9 +450,7 @@ $(document).ready(function(){
         if($("#table-detail").is(":hidden")){
             // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
             $.get("/cashier/getTable", function(data){
-                // FIXED: Convert old table HTML to modern cards
-                const modernTablesHtml = convertTablesToModernCards(data);
-                $("#table-detail").html(modernTablesHtml);
+                $("#table-detail").html(data);
                 $("#table-detail").slideDown('fast');
                 $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-dark');
             }).fail(function(xhr, status, error) {
@@ -810,4 +740,5 @@ $("#order-detail").on("click", ".btn-wedding-payment", function(){
 
 
 </script>
+@endpush
 @endsection

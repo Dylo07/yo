@@ -30,24 +30,61 @@ class CashierController extends Controller
      * OPTIMIZED: Cache tables for 30 seconds (status changes frequently)
      */
     public function getTables(){
-        $tables = Cache::remember('cashier_tables', 30, function () {
-            return Table::all();
-        });
-        $html = '';
+        // Disable cache to ensure UI updates are seen immediately
+        Cache::forget('cashier_tables');
+        $tables = Table::all();
+        
+        // Container with flexbox grid - using inline styles to force layout
+        $html = '<div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px;">';
         
         foreach($tables as $table){
-            $html .= '<div class="col-lg-2 col-md-3 col-sm-1 mb-2">';
-            $html .= '<button tabindex ="-1" class="btn btn-dark btn-outline-secondary btn-table" data-id="'.$table->id.'" data-name="'.$table->name.'" >
-            <img class="img-fluid" style="width:0%" src="'.url('/image/table.svg').'"/>
-            <br>';
-            if($table->status == "available"){
-                $html .= '<span class="badge badge-pill badge-success">'.$table->name.'</span>';
-            }else{
-                $html .= '<span class="badge badge-pill badge-danger">'.$table->name.'</span>';
-            }
-            $html .='</button>';
+            $isAvailable = $table->status == "available";
+            $statusClass = $isAvailable ? 'available' : 'occupied';
+            
+            // Colors matching the online screenshot
+            // Available: Green/Teal theme
+            // Occupied: Orange/Yellow theme
+            $themeColor = $isAvailable ? '#00b894' : '#fdcb6e'; // Mint green vs Mustard yellow
+            if (!$isAvailable) $themeColor = '#ffa502'; // Darker orange for occupied
+            
+            $statusText = $isAvailable ? 'AVAILABLE' : 'OCCUPIED';
+            
+            // Table Card - White background, colored border
+            $html .= '<div class="btn-table table-card '.$statusClass.'" data-id="'.$table->id.'" data-name="'.$table->name.'" style="
+                width: 85px;
+                height: 85px;
+                border: 2px solid '.$themeColor.';
+                border-radius: 10px;
+                background-color: #ffffff;
+                margin: 2px;
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                transition: transform 0.2s;
+                position: relative;
+            " onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">';
+            
+            // Name
+            $html .= '<div class="table-name" style="font-weight: 700; color: #2d3436; font-size: 11px; margin-bottom: 4px; text-align: center; line-height: 1.1;">'.$table->name.'</div>';
+            
+            // Status Badge
+            $html .= '<div class="table-status" style="
+                background-color: '.$themeColor.';
+                color: white;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 8px;
+                text-transform: uppercase;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            ">'.$statusText.'</div>';
+            
             $html .= '</div>';
         }
+        $html .= '</div>';
         return $html;
     }
     

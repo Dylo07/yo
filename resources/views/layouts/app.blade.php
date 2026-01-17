@@ -47,7 +47,7 @@
     </style>
     @yield('styles')
 </head>
-<body style="background-color:#FFFFFF; color: #000000 ">
+<body>
     <div id="app">
         
    {{-- Replace the navigation section in your app.blade.php file with this corrected version --}}

@@ -1,33 +1,6 @@
 @extends('layouts.app')
 
-@section('content')
-@php
-// Helper functions to replace $this-> calls
-function getLeaveTypeBadgeClass($leaveType) {
-    $colors = [
-        'sick' => 'danger',
-        'annual' => 'success', 
-        'emergency' => 'warning',
-        'personal' => 'info',
-        'maternity' => 'primary',
-        'other' => 'secondary'
-    ];
-    return $colors[$leaveType] ?? 'secondary';
-}
-
-function getLeaveTypeColor($leaveType) {
-    $colors = [
-        'sick' => 'danger',
-        'annual' => 'success',
-        'emergency' => 'warning', 
-        'personal' => 'info',
-        'maternity' => 'primary',
-        'other' => 'secondary'
-    ];
-    return $colors[$leaveType] ?? 'secondary';
-}
-@endphp
-
+@section('styles')
 <style>
     :root {
         --primary-color: #2c3e50;
@@ -48,6 +21,14 @@ function getLeaveTypeColor($leaveType) {
         color: white;
         padding: 2rem 0;
         margin-bottom: 2rem;
+        /* Counteract the py-4 padding from main layout */
+        margin-top: -1.5rem; 
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .main-header h1, .main-header p, .main-header i {
+        color: white;
     }
 
     .dashboard-card {
@@ -56,6 +37,7 @@ function getLeaveTypeColor($leaveType) {
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         height: 100%;
+        background: white;
     }
 
     .dashboard-card:hover {
@@ -229,9 +211,37 @@ function getLeaveTypeColor($leaveType) {
         .btn-custom {
             width: 100%;
             margin: 0.25rem 0;
-        }
     }
 </style>
+@endsection
+
+@section('content')
+@php
+// Helper functions to replace $this-> calls
+function getLeaveTypeBadgeClass($leaveType) {
+    $colors = [
+        'sick' => 'danger',
+        'annual' => 'success', 
+        'emergency' => 'warning',
+        'personal' => 'info',
+        'maternity' => 'primary',
+        'other' => 'secondary'
+    ];
+    return $colors[$leaveType] ?? 'secondary';
+}
+
+function getLeaveTypeColor($leaveType) {
+    $colors = [
+        'sick' => 'danger',
+        'annual' => 'success',
+        'emergency' => 'warning', 
+        'personal' => 'info',
+        'maternity' => 'primary',
+        'other' => 'secondary'
+    ];
+    return $colors[$leaveType] ?? 'secondary';
+}
+@endphp
 
 <!-- Main Header -->
 <div class="main-header">

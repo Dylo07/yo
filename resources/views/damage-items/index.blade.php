@@ -1,7 +1,7 @@
 {{-- resources/views/damage-items/index.blade.php --}}
 @extends('layouts.app')
 
-@section('content')
+@section('styles')
 <style>
     body {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -234,10 +234,10 @@
         opacity: 0.3;
     }
 </style>
-
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+@endsection
 
+@section('content')
 <div class="main-container">
     <!-- Header Section -->
     <div class="header-section">
@@ -446,6 +446,8 @@
     </div>
 </div>
 
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Yearly chart data from Laravel
 const yearlyData = @json($yearlyData ?? []);
@@ -558,4 +560,5 @@ document.addEventListener('DOMContentLoaded', function() {
     initChart();
 });
 </script>
+@endpush
 @endsection

@@ -45,16 +45,18 @@ import interactionPlugin from '@fullcalendar/interaction';
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
 
-    const calendar = new Calendar(calendarEl, {
-        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-        initialView: 'dayGridMonth',
-        selectable: true,
-        editable: false,
-        events: '/bookings', // Fetch events from the backend
-        dateClick: function (info) {
-            alert('Date clicked: ' + info.dateStr);
-        },
-    });
+    if (calendarEl) {
+        const calendar = new Calendar(calendarEl, {
+            plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+            initialView: 'dayGridMonth',
+            selectable: true,
+            editable: false,
+            events: '/bookings', // Fetch events from the backend
+            dateClick: function (info) {
+                alert('Date clicked: ' + info.dateStr);
+            },
+        });
 
-    calendar.render();
+        calendar.render();
+    }
 });

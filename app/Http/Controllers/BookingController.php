@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\BookingPayment;
+use App\Models\BookingAuditLog;
 use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -114,6 +115,18 @@ class BookingController extends Controller
             'payment_method' => $validated['payment_method']
         ]);
 
+        // Log booking creation
+        BookingAuditLog::create([
+            'booking_id' => $booking->id,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'action' => 'created',
+            'field_changed' => null,
+            'old_value' => null,
+            'new_value' => json_encode($booking->toArray()),
+            'ip_address' => $request->ip()
+        ]);
+
         \DB::commit();
         return response()->json(['message' => 'Booking created successfully'], 201);
         
@@ -131,6 +144,20 @@ class BookingController extends Controller
 {
     try {
         $booking = Booking::findOrFail($id);
+        $originalBooking = $booking->toArray();
+        $user = auth()->user();
+        
+        // Check if user is trying to change dates/times - only admin can do this
+        $isDateTimeChange = $request->has('start') && (
+            $request->input('start') !== $booking->start || 
+            $request->input('end') !== $booking->end
+        );
+        
+        if ($isDateTimeChange && $user->role !== 'admin') {
+            return response()->json([
+                'error' => 'Only administrators can change booking dates and times. Please contact an admin.'
+            ], 403);
+        }
         
         // Base validation rules without dates
         $validationRules = [
@@ -166,10 +193,33 @@ class BookingController extends Controller
             'name', 'function_type', 'contact_number', 'room_numbers', 'guest_count', 'bites_details', 'other_details'
         ]));
 
-        // Only include dates if they were provided
-        if ($request->has('start')) {
+        // Only include dates if they were provided (and user is admin)
+        if ($request->has('start') && $user->role === 'admin') {
             $updateData['start'] = $validated['start'];
             $updateData['end'] = $validated['end'];
+        }
+
+        // Log each field change
+        foreach ($updateData as $field => $newValue) {
+            $oldValue = $originalBooking[$field] ?? null;
+            if (is_array($newValue)) {
+                $newValue = json_encode($newValue);
+            }
+            if (is_array($oldValue)) {
+                $oldValue = json_encode($oldValue);
+            }
+            if ($oldValue != $newValue) {
+                BookingAuditLog::create([
+                    'booking_id' => $booking->id,
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'action' => 'updated',
+                    'field_changed' => $field,
+                    'old_value' => $oldValue,
+                    'new_value' => $newValue,
+                    'ip_address' => $request->ip()
+                ]);
+            }
         }
 
         $booking->update($updateData);
@@ -181,6 +231,23 @@ class BookingController extends Controller
                 'bill_number' => $validated['bill_number'],
                 'advance_date' => $validated['advance_date'],
                 'payment_method' => $validated['payment_method']
+            ]);
+            
+            // Log payment addition
+            BookingAuditLog::create([
+                'booking_id' => $booking->id,
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'action' => 'payment_added',
+                'field_changed' => 'payment',
+                'old_value' => null,
+                'new_value' => json_encode([
+                    'amount' => $validated['advance_payment'],
+                    'bill_number' => $validated['bill_number'],
+                    'date' => $validated['advance_date'],
+                    'method' => $validated['payment_method']
+                ]),
+                'ip_address' => $request->ip()
             ]);
         }
 
@@ -473,5 +540,41 @@ public function getBookingStats()
                               })
         ]
     ];
+}
+
+/**
+ * Get audit logs for a specific booking
+ */
+public function getAuditLogs($id)
+{
+    $logs = BookingAuditLog::where('booking_id', $id)
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function($log) {
+            return [
+                'id' => $log->id,
+                'user_name' => $log->user_name,
+                'action' => $log->action,
+                'field_changed' => $log->field_changed,
+                'old_value' => $log->old_value,
+                'new_value' => $log->new_value,
+                'ip_address' => $log->ip_address,
+                'created_at' => $log->created_at->format('M j, Y g:i A'),
+                'time_ago' => $this->getTimeAgo($log->created_at)
+            ];
+        });
+    
+    return response()->json(['logs' => $logs]);
+}
+
+/**
+ * Check if current user can edit dates
+ */
+public function canEditDates()
+{
+    $user = auth()->user();
+    return response()->json([
+        'can_edit_dates' => $user && $user->role === 'admin'
+    ]);
 }
 };

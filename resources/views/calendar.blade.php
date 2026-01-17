@@ -689,7 +689,10 @@
                 <a href="/" class="btn btn-primary me-2">
                     <i class="fas fa-home me-1"></i> Home
                 </a>
-                <a href="{{ route('room.visualizer') }}" class="btn btn-info">
+                <a href="/duty-roster" class="btn btn-success me-2">
+                    <i class="fas fa-clipboard-list me-1"></i> Duty Roster
+                </a>
+                <a href="{{ route('room.visualizer') }}" class="btn btn-info me-2">
                     <i class="fas fa-chart-bar me-1"></i> Room Availability
                 </a>
                 <a href="{{ route('food-menu.index') }}" class="btn btn-info">
@@ -1047,6 +1050,18 @@
                             <!-- Payment history will be injected here -->
                         </div>
                     </div>
+
+                    <div class="audit-history mt-4">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-history me-1"></i> Change History
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="toggleAuditLog()">
+                                <i class="fas fa-chevron-down" id="auditToggleIcon"></i>
+                            </button>
+                        </h6>
+                        <div id="auditLogBody" style="display: none; max-height: 300px; overflow-y: auto;">
+                            <!-- Audit log will be injected here -->
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" id="editEvent" class="btn btn-primary">Edit</button>
@@ -1251,7 +1266,86 @@
             '103', '104', '105'
         ];
 
+        // User role check
+        const userRole = document.querySelector('meta[name="user-role"]')?.content || '';
+        const canEditDates = userRole === 'admin';
 
+        // Toggle audit log visibility
+        function toggleAuditLog() {
+            const auditBody = document.getElementById('auditLogBody');
+            const icon = document.getElementById('auditToggleIcon');
+            if (auditBody.style.display === 'none') {
+                auditBody.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                auditBody.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        // Load audit logs for a booking
+        async function loadAuditLogs(bookingId) {
+            const auditBody = document.getElementById('auditLogBody');
+            try {
+                const response = await axios.get(`/bookings/${bookingId}/audit-logs`);
+                const logs = response.data.logs;
+                
+                if (logs.length === 0) {
+                    auditBody.innerHTML = '<p class="text-muted">No change history available.</p>';
+                    return;
+                }
+                
+                let html = '<div class="list-group list-group-flush">';
+                logs.forEach(log => {
+                    let actionBadge = '';
+                    let actionIcon = '';
+                    switch(log.action) {
+                        case 'created':
+                            actionBadge = 'bg-success';
+                            actionIcon = 'fa-plus-circle';
+                            break;
+                        case 'updated':
+                            actionBadge = 'bg-warning text-dark';
+                            actionIcon = 'fa-edit';
+                            break;
+                        case 'payment_added':
+                            actionBadge = 'bg-info';
+                            actionIcon = 'fa-money-bill';
+                            break;
+                        default:
+                            actionBadge = 'bg-secondary';
+                            actionIcon = 'fa-history';
+                    }
+                    
+                    let changeDetail = '';
+                    if (log.field_changed && log.action === 'updated') {
+                        changeDetail = `<br><small class="text-muted"><strong>${log.field_changed}:</strong> "${log.old_value || 'empty'}" → "${log.new_value || 'empty'}"</small>`;
+                    }
+                    
+                    html += `
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge ${actionBadge} me-2">
+                                        <i class="fas ${actionIcon} me-1"></i>${log.action.replace('_', ' ')}
+                                    </span>
+                                    <strong>${log.user_name}</strong>
+                                    ${changeDetail}
+                                </div>
+                                <small class="text-muted">${log.time_ago}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                auditBody.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading audit logs:', error);
+                auditBody.innerHTML = '<p class="text-danger">Failed to load change history.</p>';
+            }
+        }
 
         // Success/Error Message Functions
         function showSuccessMessage(message) {
@@ -1580,6 +1674,9 @@
     `;
 
             handlePaymentHistory(props);
+            
+            // Load audit logs for this booking
+            loadAuditLogs(event.id);
 
             const modal = new bootstrap.Modal(document.getElementById("eventModal"));
             modal.show();
@@ -1802,10 +1899,19 @@
             document.getElementById("editName").value = info.event.extendedProps.name || "";
             document.getElementById("editContactNumber").value = info.event.extendedProps.contact_number;
             document.getElementById("editGuestCount").value = info.event.extendedProps.guest_count;
-
-            // Populate new fields
             document.getElementById("editBitesDetails").value = info.event.extendedProps.bites_details || "";
             document.getElementById("editOtherDetails").value = info.event.extendedProps.other_details || "";
+            
+            // Hide date/time change option for non-admin users
+            const dateTimeCheckbox = document.getElementById('updateDateTime');
+            const dateTimeContainer = dateTimeCheckbox.parentElement.parentElement;
+            if (!canEditDates) {
+                dateTimeContainer.style.display = 'none';
+                dateTimeCheckbox.checked = false;
+                document.getElementById('dateTimeFields').style.display = 'none';
+            } else {
+                dateTimeContainer.style.display = 'block';
+            }
 
             const startDate = new Date(info.event.start).toISOString();
             const endDate = info.event.end ? new Date(info.event.end).toISOString() : startDate;
@@ -1814,7 +1920,7 @@
             const editEnd = document.getElementById("editEnd");
             if (editStart) editStart.value = new Date(info.event.start).toISOString().slice(0, 16);
             if (editEnd) editEnd.value = info.event.end ? new Date(info.event.end).toISOString().slice(0, 16) : '';
-
+            
             const availableRooms = await checkRoomAvailabilityForEdit(startDate, endDate, info.event.id);
             const roomCheckboxes = document.querySelectorAll("#editRoomNumbers input[type='checkbox']");
 
@@ -1886,20 +1992,10 @@
 
                     showSuccessMessage("Booking updated successfully!");
 
-                    // Close edit modal
-                    const editModal = bootstrap.Modal.getInstance(document.getElementById("editModal"));
-                    if (editModal) editModal.hide();
-
-                    // Close event modal
-                    const eventModal = bootstrap.Modal.getInstance(document.getElementById("eventModal"));
-                    if (eventModal) eventModal.hide();
-
-                    // Refresh calendar and recent bookings without page reload
-                    await Promise.all([
-                        calendar.refetchEvents(),
-                        loadRecentBookings(),
-                        loadLogDetails()
-                    ]);
+                    // Refresh the page after a short delay to show the success message
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
 
                 } catch (error) {
                     console.error("Error updating booking:", error.response || error.message);
@@ -2285,6 +2381,49 @@
                 submitButton.textContent = originalText;
             }
         });
+
+        // Quick Date Preset function
+        function setDatePreset(preset) {
+            const today = new Date();
+            let startDate, endDate;
+            
+            switch(preset) {
+                case 'today':
+                    startDate = today;
+                    endDate = today;
+                    break;
+                case 'tomorrow':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() + 1);
+                    endDate = startDate;
+                    break;
+                case 'weekend':
+                    // Find next Saturday
+                    startDate = new Date(today);
+                    const daysUntilSaturday = (6 - today.getDay() + 7) % 7 || 7;
+                    startDate.setDate(today.getDate() + daysUntilSaturday);
+                    // Sunday
+                    endDate = new Date(startDate);
+                    endDate.setDate(startDate.getDate() + 1);
+                    break;
+                case 'nextWeek':
+                    // Next Monday
+                    startDate = new Date(today);
+                    const daysUntilMonday = (1 - today.getDay() + 7) % 7 || 7;
+                    startDate.setDate(today.getDate() + daysUntilMonday);
+                    endDate = startDate;
+                    break;
+            }
+            
+            // Format dates as YYYY-MM-DD
+            const formatDate = (d) => d.toISOString().split('T')[0];
+            
+            document.getElementById('date').value = formatDate(startDate);
+            document.getElementById('end_date').value = formatDate(endDate);
+            
+            // Trigger availability check
+            checkAvailability();
+        }
 
         // Initialize everything when DOM is loaded - UPDATED without auto-refresh
         document.addEventListener("DOMContentLoaded", function () {

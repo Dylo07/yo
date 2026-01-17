@@ -193,6 +193,8 @@ Route::get('/booking-logs', [BookingController::class, 'getLogs']);
 Route::get('/bookings/{id}/print', [BookingController::class, 'printConfirmation'])->name('bookings.print');
 Route::get('/bookings/recent', [BookingController::class, 'getRecentBookings']);
 Route::get('/bookings/stats', [BookingController::class, 'getBookingStats']);
+Route::get('/bookings/{id}/audit-logs', [BookingController::class, 'getAuditLogs']);
+Route::get('/bookings/can-edit-dates', [BookingController::class, 'canEditDates']);
 // routes/web.php
 Route::post('/booking-payments/{payment}/toggle-verification', 
     [BookingController::class, 'toggleVerification'])

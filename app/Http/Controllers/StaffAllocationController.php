@@ -397,6 +397,7 @@ class StaffAllocationController extends Controller
             'start_date' => $validated['date'],
             'end_date' => $validated['date'],
             'task' => $validated['task'],
+            'category' => 'Daily Task',
             'assigned_to' => $validated['person_id'],
             'person_incharge' => '',
             'priority_order' => 'Medium',

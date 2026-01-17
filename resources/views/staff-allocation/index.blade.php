@@ -1525,29 +1525,40 @@ async function printRoster() {
         <head>
             <title>Duty Roster - ${formattedDate}</title>
             <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                h1 { text-align: center; color: #1e40af; margin-bottom: 5px; }
-                h2 { text-align: center; color: #6b7280; font-weight: normal; margin-top: 0; }
-                .section { margin-bottom: 20px; page-break-inside: avoid; }
-                .section-title { background: #1e40af; color: white; padding: 8px 15px; border-radius: 5px; margin-bottom: 10px; }
-                .staff-list { padding-left: 20px; }
-                .staff-item { padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
-                .task-button { background: #000; color: white; padding: 8px 15px; border-radius: 5px; margin: 10px 0; font-weight: bold; text-align: center; }
-                .task-list { padding-left: 30px; margin-top: 5px; }
-                .task-item { padding: 3px 0; color: #4b5563; font-size: 14px; }
-                .no-staff { color: #9ca3af; font-style: italic; }
-                .leave-section { background: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-                .leave-title { color: #dc2626; font-weight: bold; margin-bottom: 10px; }
-                .stats { display: flex; justify-content: space-around; margin-top: 30px; padding: 15px; background: #f3f4f6; border-radius: 5px; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; max-width: 900px; margin: 0 auto; }
+                .header { text-align: center; border-bottom: 3px solid #1e40af; padding-bottom: 20px; margin-bottom: 25px; }
+                .header h1 { color: #1e40af; margin: 0 0 5px 0; font-size: 28px; }
+                .header h2 { color: #6b7280; font-weight: normal; margin: 0; font-size: 16px; }
+                .section { margin-bottom: 25px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+                .section-title { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 12px 20px; font-size: 14px; font-weight: 600; margin: 0; }
+                .staff-list { padding: 0; margin: 0; }
+                .staff-item { padding: 12px 20px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: flex-start; gap: 10px; }
+                .staff-item:last-child { border-bottom: none; }
+                .staff-name { font-weight: 600; color: #1f2937; min-width: 150px; }
+                .task-list { flex: 1; }
+                .task-item { background: #f0fdf4; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 13px; margin: 3px 0; border-left: 3px solid #22c55e; }
+                .no-tasks { color: #9ca3af; font-style: italic; font-size: 13px; }
+                .leave-section { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+                .leave-title { color: #dc2626; font-weight: bold; margin-bottom: 15px; font-size: 16px; }
+                .leave-item { padding: 8px 0; border-bottom: 1px dashed #fca5a5; }
+                .leave-item:last-child { border-bottom: none; }
+                .stats { display: flex; justify-content: space-around; margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 8px; border: 1px solid #e2e8f0; }
                 .stat-item { text-align: center; }
-                .stat-value { font-size: 24px; font-weight: bold; color: #1e40af; }
-                .stat-label { color: #6b7280; font-size: 12px; }
-                @media print { body { padding: 0; } }
+                .stat-value { font-size: 32px; font-weight: bold; color: #1e40af; }
+                .stat-label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+                .function-section .section-title { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+                .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 12px; }
+                @media print { 
+                    body { padding: 15px; } 
+                    .section { break-inside: avoid; }
+                }
             </style>
         </head>
         <body>
-            <h1>🏨 Hotel Duty Roster</h1>
-            <h2>${formattedDate}</h2>
+            <div class="header">
+                <h1>🏨 Hotel Soba Lanka - Duty Roster</h1>
+                <h2>${formattedDate}</h2>
+            </div>
     `;
     
     // Add staff on leave section
@@ -1591,18 +1602,15 @@ async function printRoster() {
                     <div class="staff-list">
                         ${section.staff.map(staff => {
                             const tasks = staffTasks[staff.id] || [];
-                            let taskHtml = '';
+                            let taskHtml = '<span class="no-tasks">No tasks assigned</span>';
                             if (tasks.length > 0) {
                                 taskHtml = `
-                                    <div class="task-button">Assign Task</div>
                                     <div class="task-list">
-                                        ${tasks.map(task => `<div class="task-item">→ ${task}</div>`).join('')}
+                                        ${tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
                                     </div>
                                 `;
-                            } else {
-                                taskHtml = '<div class="task-button">Assign Task</div>';
                             }
-                            return `<div class="staff-item">• ${staff.name}${taskHtml}</div>`;
+                            return `<div class="staff-item"><span class="staff-name">${staff.name}</span>${taskHtml}</div>`;
                         }).join('')}
                     </div>
                 </div>
@@ -1637,18 +1645,15 @@ async function printRoster() {
                         <div class="staff-list">
                             ${staffList.map(s => {
                                 const tasks = staffTasks[s.person_id] || [];
-                                let taskHtml = '';
+                                let taskHtml = '<span class="no-tasks">No tasks assigned</span>';
                                 if (tasks.length > 0) {
                                     taskHtml = `
-                                        <div class="task-button">Assign Task</div>
                                         <div class="task-list">
-                                            ${tasks.map(task => `<div class="task-item">→ ${task}</div>`).join('')}
+                                            ${tasks.map(task => `<div class="task-item">${task}</div>`).join('')}
                                         </div>
                                     `;
-                                } else {
-                                    taskHtml = '<div class="task-button">Assign Task</div>';
                                 }
-                                return `<div class="staff-item">• ${s.person_name}${taskHtml}</div>`;
+                                return `<div class="staff-item"><span class="staff-name">${s.person_name}</span>${taskHtml}</div>`;
                             }).join('')}
                         </div>
                     </div>

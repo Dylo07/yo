@@ -17,6 +17,7 @@ class Task extends Model
         'start_date',        // Task start date
         'end_date',          // Task end/due date
         'task',              // Task description
+        'category',          // Task category (required field from original migration)
         'task_category_id',  // ID of the related task category
         'person_incharge',   // The person responsible for the task (legacy)
         'assigned_to',       // person_id from persons table (staff member)

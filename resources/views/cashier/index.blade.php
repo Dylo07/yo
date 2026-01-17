@@ -26,18 +26,14 @@
 
 /* FIXED: Modern table grid styling */
 .tables-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important;
-    gap: 10px !important;
-    padding: 10px !important;
-    background: white !important;
-    border-radius: 10px !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
-}
-
-#table-detail .tables-grid {
-    display: grid !important;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 /* FIXED: Modern table cards */
@@ -315,7 +311,7 @@
 </style>
 <div class="container">
   <div class="main-content-left">
-    <div id="table-detail"></div>
+    <div class="row" id="table-detail"></div>
     <div class="row justify-content-center py5">
       <div class="col-md-12"> <!-- CHANGED: Full width for left content -->
         <button tabindex="-2" class="btn btn-primary btn-block" id="btn-show-tables">View All Tables</button>
@@ -447,7 +443,7 @@ function convertTablesToModernCards(htmlString) {
         modernHtml += `
             <div class="table-card ${statusClass} btn-table" data-id="${tableId}" data-name="${tableName}">
                 <div class="table-icon">
-                    <i class="fas fa-utensils"></i>
+                    
                 </div>
                 <div class="table-name">${tableName}</div>
                 <div class="table-status ${statusBg}">${statusText}</div>
@@ -456,7 +452,6 @@ function convertTablesToModernCards(htmlString) {
     });
     
     modernHtml += '</div>';
-    console.log('Converted HTML:', modernHtml);
     return modernHtml;
 }
 </script>

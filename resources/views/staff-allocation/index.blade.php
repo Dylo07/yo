@@ -347,6 +347,9 @@
                 <button onclick="printRoster()" class="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
                     <i class="fas fa-print"></i> Print Roster
                 </button>
+                <a href="{{ route('duty.roster.assign.tasks') }}?date={{ date('Y-m-d') }}" id="assignTasksBtn" class="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print text-decoration-none">
+                    <i class="fas fa-tasks"></i> Assign Tasks
+                </a>
             </div>
         </div>
 
@@ -1082,9 +1085,15 @@ function handleDateChange(date) {
     clearAllAssignmentsQuiet();
     
     // Load bookings, allocations, and staff on leave for the new date
-    loadBookings(date);
     loadAllocations(date);
+    loadBookings(date);
     loadStaffOnLeave(date);
+    
+    // Update Assign Tasks button URL
+    const assignTasksBtn = document.getElementById('assignTasksBtn');
+    if (assignTasksBtn) {
+        assignTasksBtn.href = `{{ route('duty.roster.assign.tasks') }}?date=${date}`;
+    }
     
     // Format and display the selected date
     const dateObj = new Date(date);
@@ -1490,10 +1499,25 @@ function markStaffOnLeave() {
 // Print Roster Function
 // ============================================
 
-function printRoster() {
+async function printRoster() {
     const date = document.getElementById('allocationDate').value;
     const dateObj = new Date(date);
     const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    // Load tasks for this date
+    let staffTasks = {};
+    try {
+        const response = await fetch(`/api/duty-roster/tasks?date=${date}`);
+        const data = await response.json();
+        data.tasks.forEach(task => {
+            if (!staffTasks[task.person_id]) {
+                staffTasks[task.person_id] = [];
+            }
+            staffTasks[task.person_id].push(task.task);
+        });
+    } catch (error) {
+        console.error('Error loading tasks for print:', error);
+    }
     
     // Build print content
     let printContent = `
@@ -1508,6 +1532,9 @@ function printRoster() {
                 .section-title { background: #1e40af; color: white; padding: 8px 15px; border-radius: 5px; margin-bottom: 10px; }
                 .staff-list { padding-left: 20px; }
                 .staff-item { padding: 5px 0; border-bottom: 1px solid #e5e7eb; }
+                .task-button { background: #000; color: white; padding: 8px 15px; border-radius: 5px; margin: 10px 0; font-weight: bold; text-align: center; }
+                .task-list { padding-left: 30px; margin-top: 5px; }
+                .task-item { padding: 3px 0; color: #4b5563; font-size: 14px; }
                 .no-staff { color: #9ca3af; font-style: italic; }
                 .leave-section { background: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
                 .leave-title { color: #dc2626; font-weight: bold; margin-bottom: 10px; }
@@ -1548,7 +1575,10 @@ function printRoster() {
     Object.entries(assignments).forEach(([staffId, sectionId]) => {
         const card = document.getElementById(`staff-${staffId}`);
         if (card && sectionAssignments[sectionId]) {
-            sectionAssignments[sectionId].staff.push(card.dataset.staffName);
+            sectionAssignments[sectionId].staff.push({
+                id: staffId,
+                name: card.dataset.staffName
+            });
         }
     });
     
@@ -1559,7 +1589,21 @@ function printRoster() {
                 <div class="section">
                     <div class="section-title">${section.name} (${section.type})</div>
                     <div class="staff-list">
-                        ${section.staff.map(name => `<div class="staff-item">• ${name}</div>`).join('')}
+                        ${section.staff.map(staff => {
+                            const tasks = staffTasks[staff.id] || [];
+                            let taskHtml = '';
+                            if (tasks.length > 0) {
+                                taskHtml = `
+                                    <div class="task-button">Assign Task</div>
+                                    <div class="task-list">
+                                        ${tasks.map(task => `<div class="task-item">→ ${task}</div>`).join('')}
+                                    </div>
+                                `;
+                            } else {
+                                taskHtml = '<div class="task-button">Assign Task</div>';
+                            }
+                            return `<div class="staff-item">• ${staff.name}${taskHtml}</div>`;
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -1591,7 +1635,21 @@ function printRoster() {
                     <div class="section">
                         <div class="section-title" style="background: #059669;">${bookingName}</div>
                         <div class="staff-list">
-                            ${staffList.map(s => `<div class="staff-item">• ${s.person_name}</div>`).join('')}
+                            ${staffList.map(s => {
+                                const tasks = staffTasks[s.person_id] || [];
+                                let taskHtml = '';
+                                if (tasks.length > 0) {
+                                    taskHtml = `
+                                        <div class="task-button">Assign Task</div>
+                                        <div class="task-list">
+                                            ${tasks.map(task => `<div class="task-item">→ ${task}</div>`).join('')}
+                                        </div>
+                                    `;
+                                } else {
+                                    taskHtml = '<div class="task-button">Assign Task</div>';
+                                }
+                                return `<div class="staff-item">• ${s.person_name}${taskHtml}</div>`;
+                            }).join('')}
                         </div>
                     </div>
                 `;

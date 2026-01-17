@@ -8,6 +8,7 @@ use App\Models\CategoryType;
 use App\Models\StaffAllocation;
 use App\Models\LeaveRequest;
 use App\Models\FunctionAssignment;
+use App\Models\Task;
 use Carbon\Carbon;
 
 class StaffAllocationController extends Controller
@@ -326,5 +327,100 @@ class StaffAllocationController extends Controller
         return response()->json([
             'assignments' => $assignments,
         ]);
+    }
+
+    /**
+     * Show the task assignment page for a specific date
+     */
+    public function assignTasks(Request $request)
+    {
+        $date = $request->query('date', Carbon::today()->format('Y-m-d'));
+        
+        // Get staff allocations for this date
+        $allocations = StaffAllocation::where('allocation_date', $date)
+            ->with('person')
+            ->get();
+        
+        // Get function assignments for this date
+        $functionAssignments = FunctionAssignment::with(['person', 'booking'])
+            ->get()
+            ->groupBy('booking_id');
+        
+        // Get staff on leave for this date
+        $staffOnLeave = LeaveRequest::where('status', 'approved')
+            ->where(function($query) use ($date) {
+                $query->whereDate('start_date', '<=', $date)
+                      ->whereDate('end_date', '>=', $date);
+            })
+            ->with('person')
+            ->get();
+        
+        return view('staff-allocation.assign-tasks', compact('date', 'allocations', 'functionAssignments', 'staffOnLeave'));
+    }
+
+    /**
+     * Get tasks for a specific date
+     */
+    public function getTasks(Request $request)
+    {
+        $date = $request->query('date', Carbon::today()->format('Y-m-d'));
+        
+        $tasks = Task::where('start_date', $date)
+            ->with('assignedPerson')
+            ->get()
+            ->map(function($task) {
+                return [
+                    'id' => $task->id,
+                    'person_id' => $task->assigned_to,
+                    'person_name' => $task->assignedPerson ? $task->assignedPerson->name : 'Unknown',
+                    'task' => $task->task,
+                ];
+            });
+        
+        return response()->json(['tasks' => $tasks]);
+    }
+
+    /**
+     * Save a new task
+     */
+    public function saveTask(Request $request)
+    {
+        $validated = $request->validate([
+            'person_id' => 'required|exists:persons,id',
+            'task' => 'required|string',
+            'date' => 'required|date',
+        ]);
+        
+        $task = Task::create([
+            'user' => auth()->user()->name,
+            'date_added' => Carbon::today(),
+            'start_date' => $validated['date'],
+            'end_date' => $validated['date'],
+            'task' => $validated['task'],
+            'assigned_to' => $validated['person_id'],
+            'person_incharge' => '',
+            'priority_order' => 'Medium',
+            'is_done' => false,
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'task' => [
+                'id' => $task->id,
+                'person_id' => $task->assigned_to,
+                'task' => $task->task,
+            ],
+        ]);
+    }
+
+    /**
+     * Delete a task
+     */
+    public function deleteTask($id)
+    {
+        $task = Task::findOrFail($id);
+        $task->delete();
+        
+        return response()->json(['success' => true]);
     }
 }

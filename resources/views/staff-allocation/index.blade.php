@@ -447,7 +447,7 @@ const sections = [
     { id: 'villa', name: 'Villa', type: 'ROOM', top: 18, left: 72, width: 10, height: 12 },
     
     // Maintenance Work
-    { id: 'maintenance', name: 'Maintenance', type: 'MAINTENANCE', top: 32, left: 1, width: 10, height: 12 },
+    { id: 'maintenance', name: 'Maintenance', type: 'MAINTENANCE', top: 18, left: 1, width: 10, height: 12 },
     
     // Swimming Pool
     { id: 'swimming-pool', name: 'Swimming Pool', type: 'POOL', top: 34, left: 14, width: 18, height: 10 },

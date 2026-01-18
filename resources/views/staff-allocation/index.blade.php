@@ -334,6 +334,21 @@
             </div>
         </div>
 
+        <!-- Mini Calendar Widget -->
+        <div class="px-3 py-2 border-t border-gray-200 bg-white">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-gray-600"><i class="fas fa-calendar-alt mr-1"></i>This Month</p>
+                <div class="flex gap-1">
+                    <button onclick="changeCalendarMonth(-1)" class="text-xs text-gray-500 hover:text-gray-700 px-1"><i class="fas fa-chevron-left"></i></button>
+                    <span id="miniCalendarMonth" class="text-xs font-medium text-gray-600"></span>
+                    <button onclick="changeCalendarMonth(1)" class="text-xs text-gray-500 hover:text-gray-700 px-1"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div id="miniCalendar" class="grid grid-cols-7 gap-0.5 text-center">
+                <!-- Calendar will be rendered here -->
+            </div>
+        </div>
+
         <!-- Footer Stats -->
         <div class="p-4 border-t border-gray-200 bg-gray-50">
             <div class="text-xs text-gray-500 space-y-1">
@@ -354,47 +369,49 @@
     </div>
 
     <!-- Map Area -->
-    <div class="flex-1 p-6 overflow-auto" style="background-color: #f8fafc;">
-        <!-- Header -->
-        <div class="mb-4 flex items-center justify-between flex-wrap gap-4">
-            <div class="flex items-center gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">Hotel Floor Plan</h1>
-                    <p class="text-sm text-gray-500">Drag and drop staff members to assign them to locations</p>
-                </div>
+    <div class="flex-1 p-4 overflow-auto" style="background-color: #f8fafc;">
+        <!-- Compact Header -->
+        <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-3">
+                <h1 class="text-lg font-bold text-gray-800">Hotel Floor Plan</h1>
                 <!-- Date Selection -->
-                <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
+                <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg shadow-sm border text-xs">
                     <i class="fas fa-calendar-alt text-blue-500"></i>
-                    <button onclick="goToPreviousDay()" class="text-xs text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded hover:bg-gray-100">← Previous</button>
+                    <button onclick="goToPreviousDay()" class="text-gray-600 hover:text-gray-800 font-medium px-1.5 py-0.5 rounded hover:bg-gray-100">←</button>
                     <input type="date" id="allocationDate" 
-                        class="border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium"
+                        class="border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium text-xs w-28"
                         value="{{ date('Y-m-d') }}"
                         onchange="handleDateChange(this.value)">
-                    <button onclick="goToToday()" class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50">Today</button>
-                    <button onclick="goToTomorrow()" class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50">Tomorrow</button>
-                    <button onclick="goToNextDay()" class="text-xs text-purple-600 hover:text-purple-800 font-medium px-2 py-1 rounded hover:bg-purple-50">Next →</button>
+                    <button onclick="goToToday()" class="text-blue-600 hover:text-blue-800 font-medium px-1.5 py-0.5 rounded hover:bg-blue-50">Today</button>
+                    <button onclick="goToTomorrow()" class="text-green-600 hover:text-green-800 font-medium px-1.5 py-0.5 rounded hover:bg-green-50">Tomorrow</button>
+                    <button onclick="goToNextDay()" class="text-gray-600 hover:text-gray-800 font-medium px-1.5 py-0.5 rounded hover:bg-gray-100">→</button>
                 </div>
             </div>
-            <div class="flex items-center gap-3 flex-wrap">
-                <div class="flex items-center gap-3 text-xs bg-white px-3 py-2 rounded-lg shadow-sm border">
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-slate-600"></div><span>Rooms</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-blue-500"></div><span>Kitchen</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-orange-500"></div><span>Dining</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-purple-500"></div><span>Hall</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Office</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-cyan-400"></div><span>Pool</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-lime-500"></div><span>Garden</span></div>
-                    <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-yellow-600"></div><span>Maintenance</span></div>
-                </div>
-                <button onclick="clearAllAssignments()" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
-                    <i class="fas fa-trash-alt"></i> Clear All
+            <div class="flex items-center gap-2">
+                <button onclick="clearAllAssignments()" class="px-2 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
+                    <i class="fas fa-trash-alt"></i> Clear
                 </button>
-                <button onclick="printRoster()" class="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
-                    <i class="fas fa-print"></i> Print Roster
+                <button onclick="printRoster()" class="px-2 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
+                    <i class="fas fa-print"></i> Print
                 </button>
-                <a href="{{ route('duty.roster.assign.tasks') }}?date={{ date('Y-m-d') }}" id="assignTasksBtn" class="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print text-decoration-none">
-                    <i class="fas fa-tasks"></i> Assign Tasks
+                <a href="{{ route('duty.roster.assign.tasks') }}?date={{ date('Y-m-d') }}" id="assignTasksBtn" class="px-2 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print text-decoration-none">
+                    <i class="fas fa-tasks"></i> Tasks
                 </a>
+            </div>
+        </div>
+
+        <!-- Booking Timeline View -->
+        <div class="mb-4 bg-white rounded-lg shadow-sm border p-3">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-semibold text-gray-700"><i class="fas fa-stream mr-1"></i>Today's Booking Timeline</p>
+                <span class="text-xs text-gray-400">Scroll to see full day</span>
+            </div>
+            <div class="relative overflow-x-auto" id="timelineContainer">
+                <div class="relative h-auto min-h-[60px]" id="bookingTimeline" style="min-width: 100%;">
+                    <div class="text-center py-4 text-gray-400 text-xs">
+                        <i class="fas fa-spinner fa-spin"></i> Loading timeline...
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -424,6 +441,31 @@
                 <span id="currentTimeDisplay" class="text-white text-sm font-medium bg-white/20 px-2 py-1 rounded"></span>
             </div>
             <p class="text-green-100 text-sm mt-1">Rooms with active bookings</p>
+        </div>
+        <!-- Time Slider -->
+        <div class="px-3 py-3 bg-gray-50 border-b border-gray-200">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-gray-600"><i class="fas fa-clock mr-1"></i>View Time:</p>
+                <div class="flex items-center gap-2">
+                    <span id="selectedTimeDisplay" class="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Now</span>
+                    <button onclick="resetToCurrentTime()" class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50" title="Reset to current time">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-400">12AM</span>
+                <input type="range" id="timeSlider" min="0" max="1439" step="15" 
+                    class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    style="background: linear-gradient(to right, #6b7280 0%, #059669 50%, #f59e0b 100%);"
+                    oninput="handleTimeSliderChange(this.value)">
+                <span class="text-xs text-gray-400">11:59PM</span>
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-400 mt-1 px-6">
+                <span>6AM</span>
+                <span>12PM</span>
+                <span>6PM</span>
+            </div>
         </div>
         <!-- Room Status Legend -->
         <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
@@ -483,8 +525,14 @@
             <!-- Content will be injected here -->
         </div>
         <div class="p-4 border-t bg-gray-50 flex justify-end gap-2">
-            <button onclick="closeBookingModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+            <button id="editBookingBtn" onclick="editCurrentBooking()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button onclick="closeBookingModal()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
                 Close
+            </button>
+            <button id="printConfirmationBtn" onclick="printBookingConfirmation()" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1">
+                <i class="fas fa-print"></i> Print Confirmation
             </button>
         </div>
     </div>
@@ -593,6 +641,91 @@ let draggedStaffId = null;
 // State for staff on leave
 let staffOnLeave = [];
 
+// State for time slider - stores the selected viewing time (null = current time)
+let selectedViewTime = null;
+let cachedBookings = []; // Store loaded bookings for re-rendering with different times
+
+// Get the effective viewing time (slider time or current time)
+function getViewingTime() {
+    if (selectedViewTime !== null) {
+        // Create a date object for today with the selected time
+        const today = new Date(currentDate);
+        const hours = Math.floor(selectedViewTime / 60);
+        const minutes = selectedViewTime % 60;
+        today.setHours(hours, minutes, 0, 0);
+        return today;
+    }
+    return new Date();
+}
+
+// Convert minutes since midnight to formatted time string
+function formatSliderTime(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : (hours > 12 ? hours - 12 : hours);
+    return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+}
+
+// Handle time slider change
+function handleTimeSliderChange(value) {
+    const minutes = parseInt(value);
+    selectedViewTime = minutes;
+    
+    // Update the display
+    const display = document.getElementById('selectedTimeDisplay');
+    if (display) {
+        display.textContent = formatSliderTime(minutes);
+        display.classList.remove('text-emerald-600', 'bg-emerald-50');
+        display.classList.add('text-amber-600', 'bg-amber-50');
+    }
+    
+    // Re-render bookings and floor plan with the new time
+    if (cachedBookings.length > 0) {
+        renderBookings(cachedBookings);
+        highlightBookedRooms(cachedBookings);
+        renderBookingTimeline(cachedBookings);
+    }
+}
+
+// Reset to current time
+function resetToCurrentTime() {
+    selectedViewTime = null;
+    
+    // Reset slider to current time
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const slider = document.getElementById('timeSlider');
+    if (slider) {
+        slider.value = currentMinutes;
+    }
+    
+    // Update display
+    const display = document.getElementById('selectedTimeDisplay');
+    if (display) {
+        display.textContent = 'Now';
+        display.classList.remove('text-amber-600', 'bg-amber-50');
+        display.classList.add('text-emerald-600', 'bg-emerald-50');
+    }
+    
+    // Re-render with current time
+    if (cachedBookings.length > 0) {
+        renderBookings(cachedBookings);
+        highlightBookedRooms(cachedBookings);
+        renderBookingTimeline(cachedBookings);
+    }
+}
+
+// Initialize time slider to current time
+function initTimeSlider() {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const slider = document.getElementById('timeSlider');
+    if (slider) {
+        slider.value = currentMinutes;
+    }
+}
+
 // Update current time display
 function updateCurrentTime() {
     const timeDisplay = document.getElementById('currentTimeDisplay');
@@ -603,6 +736,330 @@ function updateCurrentTime() {
             minute: '2-digit',
             hour12: true 
         });
+    }
+    
+    // If viewing current time (not using slider), update slider position too
+    if (selectedViewTime === null) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const slider = document.getElementById('timeSlider');
+        if (slider) {
+            slider.value = currentMinutes;
+        }
+    }
+}
+
+// ============ BOOKING TIMELINE VIEW ============
+function renderBookingTimeline(bookings) {
+    const timeline = document.getElementById('bookingTimeline');
+    if (!timeline || bookings.length === 0) {
+        timeline.innerHTML = '<div class="text-center py-3 text-gray-400 text-xs">No bookings to display</div>';
+        return;
+    }
+    
+    const viewTime = getViewingTime();
+    
+    // Time labels for full 24 hours
+    const timeLabels = [
+        { hour: 0, label: '12AM' },
+        { hour: 3, label: '3AM' },
+        { hour: 6, label: '6AM' },
+        { hour: 9, label: '9AM' },
+        { hour: 12, label: '12PM' },
+        { hour: 15, label: '3PM' },
+        { hour: 18, label: '6PM' },
+        { hour: 21, label: '9PM' },
+        { hour: 24, label: '12AM' }
+    ];
+    
+    // Create timeline HTML
+    let html = `
+        <div class="relative" style="min-width: 600px;">
+            <!-- Time axis -->
+            <div class="flex border-b border-gray-200 mb-1">
+                ${timeLabels.map((t, i) => `
+                    <div class="flex-1 text-[9px] text-gray-400 text-center border-l border-gray-100" style="min-width: 60px;">
+                        ${i < timeLabels.length - 1 ? t.label : ''}
+                    </div>
+                `).join('')}
+            </div>
+            <!-- Current time indicator -->
+            <div class="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10" style="left: ${(viewTime.getHours() * 60 + viewTime.getMinutes()) / 1440 * 100}%;">
+                <div class="absolute -top-1 -left-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            </div>
+            <!-- Bookings -->
+            <div class="relative space-y-1 py-1">
+    `;
+    
+    // Get the selected date for comparison
+    const selectedDateStr = currentDate;
+    const selectedDate = new Date(selectedDateStr);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    bookings.forEach((booking, index) => {
+        const checkIn = booking.start ? new Date(booking.start) : null;
+        const checkOut = booking.end ? new Date(booking.end) : null;
+        if (!checkIn) return;
+        
+        // Get just the date parts for comparison
+        const checkInDate = new Date(checkIn);
+        checkInDate.setHours(0, 0, 0, 0);
+        const checkOutDate = checkOut ? new Date(checkOut) : null;
+        if (checkOutDate) checkOutDate.setHours(0, 0, 0, 0);
+        
+        // Calculate start and end minutes for the SELECTED day
+        let startMinutes, endMinutes;
+        
+        // If booking starts before selected date, start from midnight (0)
+        if (checkInDate < selectedDate) {
+            startMinutes = 0;
+        } else {
+            startMinutes = checkIn.getHours() * 60 + checkIn.getMinutes();
+        }
+        
+        // If booking ends after selected date (or on a different day), end at midnight (1439)
+        if (!checkOut || (checkOutDate && checkOutDate > selectedDate)) {
+            endMinutes = 1439;
+        } else {
+            endMinutes = checkOut.getHours() * 60 + checkOut.getMinutes();
+        }
+        
+        // Handle edge case: if start and end are same time but different days
+        if (endMinutes <= startMinutes && checkOutDate && checkOutDate > checkInDate) {
+            endMinutes = 1439; // Extend to end of day
+        }
+        
+        const startPercent = (startMinutes / 1440) * 100;
+        const widthPercent = ((endMinutes - startMinutes) / 1440) * 100;
+        
+        const color = getBookingColor(booking);
+        const isDeparted = checkOut && viewTime > checkOut;
+        const opacity = isDeparted ? '0.5' : '1';
+        
+        // Get room count
+        let rooms = [];
+        try {
+            rooms = JSON.parse(booking.room_numbers);
+            if (!Array.isArray(rooms)) rooms = [rooms];
+        } catch (e) {
+            rooms = booking.room_numbers ? [booking.room_numbers] : [];
+        }
+        
+        // Determine if this is a multi-day booking
+        const isMultiDay = checkOutDate && checkOutDate.getTime() !== checkInDate.getTime();
+        const dayIndicator = isMultiDay ? '↔' : '';
+        
+        html += `
+            <div class="relative h-5 group" style="opacity: ${opacity};">
+                <div class="absolute h-full rounded-sm flex items-center px-1 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                    style="left: ${startPercent}%; width: ${Math.max(widthPercent, 5)}%; background-color: ${color};"
+                    onclick='showBookingDetails(${JSON.stringify(booking).replace(/'/g, "&#39;")}, "${color}")'
+                    title="${booking.name || 'Guest'} - ${rooms.length} room(s)${isMultiDay ? ' (Multi-day)' : ''}">
+                    <span class="text-[8px] text-white font-medium truncate">${dayIndicator}${booking.name || 'Guest'} (${rooms.length})</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div></div>';
+    timeline.innerHTML = html;
+}
+
+// ============ MINI CALENDAR WIDGET ============
+let calendarMonth = new Date().getMonth();
+let calendarYear = new Date().getFullYear();
+let allBookingsForCalendar = [];
+
+function changeCalendarMonth(delta) {
+    calendarMonth += delta;
+    if (calendarMonth > 11) {
+        calendarMonth = 0;
+        calendarYear++;
+    } else if (calendarMonth < 0) {
+        calendarMonth = 11;
+        calendarYear--;
+    }
+    renderMiniCalendar();
+}
+
+function renderMiniCalendar() {
+    const calendar = document.getElementById('miniCalendar');
+    const monthLabel = document.getElementById('miniCalendarMonth');
+    if (!calendar) return;
+    
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    monthLabel.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
+    
+    const firstDay = new Date(calendarYear, calendarMonth, 1);
+    const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const selectedDateStr = currentDate;
+    
+    // Get booking counts per day
+    const bookingCounts = {};
+    allBookingsForCalendar.forEach(booking => {
+        const start = new Date(booking.start);
+        const end = booking.end ? new Date(booking.end) : start;
+        
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            bookingCounts[dateStr] = (bookingCounts[dateStr] || 0) + 1;
+        }
+    });
+    
+    // Day headers
+    let html = ['S','M','T','W','T','F','S'].map(d => 
+        `<div class="text-[9px] text-gray-400 font-medium py-0.5">${d}</div>`
+    ).join('');
+    
+    // Empty cells before first day
+    for (let i = 0; i < startDayOfWeek; i++) {
+        html += '<div></div>';
+    }
+    
+    // Days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = dateStr === todayStr;
+        const isSelected = dateStr === selectedDateStr;
+        const bookingCount = bookingCounts[dateStr] || 0;
+        
+        let bgClass = 'bg-transparent hover:bg-gray-100';
+        let textClass = 'text-gray-600';
+        let dotHtml = '';
+        
+        if (isSelected) {
+            bgClass = 'bg-emerald-500';
+            textClass = 'text-white';
+        } else if (isToday) {
+            bgClass = 'bg-blue-100';
+            textClass = 'text-blue-700 font-bold';
+        }
+        
+        if (bookingCount > 0 && !isSelected) {
+            const dotColor = bookingCount >= 3 ? 'bg-red-500' : bookingCount >= 2 ? 'bg-amber-500' : 'bg-green-500';
+            dotHtml = `<div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${dotColor}"></div>`;
+        }
+        
+        html += `
+            <div class="relative cursor-pointer rounded ${bgClass} ${textClass} text-[10px] py-1 transition-colors"
+                onclick="selectCalendarDate('${dateStr}')"
+                title="${bookingCount} booking(s)">
+                ${day}
+                ${dotHtml}
+            </div>
+        `;
+    }
+    
+    calendar.innerHTML = html;
+}
+
+function selectCalendarDate(dateStr) {
+    document.getElementById('allocationDate').value = dateStr;
+    handleDateChange(dateStr);
+    renderMiniCalendar();
+}
+
+async function loadAllBookingsForCalendar() {
+    try {
+        const response = await fetch('/bookings');
+        allBookingsForCalendar = await response.json();
+        renderMiniCalendar();
+    } catch (error) {
+        console.error('Error loading bookings for calendar:', error);
+    }
+}
+
+// ============ ROOM HOVER DETAILS ============
+let roomTooltip = null;
+
+function showRoomTooltip(element, roomName) {
+    hideRoomTooltip();
+    
+    // Find booking for this room
+    const booking = cachedBookings.find(b => {
+        let rooms = [];
+        try {
+            rooms = JSON.parse(b.room_numbers);
+            if (!Array.isArray(rooms)) rooms = [rooms];
+        } catch (e) {
+            rooms = b.room_numbers ? [b.room_numbers] : [];
+        }
+        return rooms.map(r => r.trim()).includes(roomName);
+    });
+    
+    if (!booking) return;
+    
+    const viewTime = getViewingTime();
+    const checkOut = booking.end ? new Date(booking.end) : null;
+    const isDeparted = checkOut && viewTime > checkOut;
+    const status = isDeparted ? 'Departed' : 'Active';
+    const statusColor = isDeparted ? '#6b7280' : '#22c55e';
+    
+    const checkIn = booking.start ? new Date(booking.start) : null;
+    const formatTime = (date) => date ? date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
+    
+    roomTooltip = document.createElement('div');
+    roomTooltip.className = 'fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-3 max-w-xs';
+    roomTooltip.innerHTML = `
+        <div class="flex items-center gap-2 mb-2 pb-2 border-b">
+            <div class="w-2 h-2 rounded-full" style="background-color: ${statusColor};"></div>
+            <span class="font-bold text-gray-800">${roomName}</span>
+            <span class="text-xs px-1.5 py-0.5 rounded text-white ml-auto" style="background-color: ${statusColor};">${status}</span>
+        </div>
+        <div class="space-y-1 text-xs">
+            <div class="flex justify-between">
+                <span class="text-gray-500">Guest:</span>
+                <span class="font-medium text-gray-800">${booking.name || 'N/A'}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Type:</span>
+                <span class="font-medium text-gray-800">${booking.function_type || 'N/A'}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Check In:</span>
+                <span class="font-medium text-green-600">${formatTime(checkIn)}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Check Out:</span>
+                <span class="font-medium text-red-600">${formatTime(checkOut)}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Guests:</span>
+                <span class="font-medium text-gray-800">${booking.guest_count || 'N/A'}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Contact:</span>
+                <span class="font-medium text-gray-800">${booking.contact_number || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(roomTooltip);
+    
+    const rect = element.getBoundingClientRect();
+    const tooltipRect = roomTooltip.getBoundingClientRect();
+    
+    let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+    let top = rect.top - tooltipRect.height - 10;
+    
+    // Keep within viewport
+    if (left < 10) left = 10;
+    if (left + tooltipRect.width > window.innerWidth - 10) left = window.innerWidth - tooltipRect.width - 10;
+    if (top < 10) top = rect.bottom + 10;
+    
+    roomTooltip.style.left = left + 'px';
+    roomTooltip.style.top = top + 'px';
+}
+
+function hideRoomTooltip() {
+    if (roomTooltip) {
+        roomTooltip.remove();
+        roomTooltip = null;
     }
 }
 
@@ -615,9 +1072,15 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAllocations(currentDate); // Load saved allocations for today
     loadStaffOnLeave(currentDate); // Load staff on leave for today
     
+    // Initialize time slider to current time
+    initTimeSlider();
+    
     // Update time display immediately and every minute
     updateCurrentTime();
     setInterval(updateCurrentTime, 60000);
+    
+    // Load all bookings for mini calendar
+    loadAllBookingsForCalendar();
 });
 
 function renderSections() {
@@ -691,11 +1154,22 @@ function setupDragAndDrop() {
         card.addEventListener('dragend', handleDragEnd);
     });
     
-    // Section drop events
+    // Section drop events and room hover events
     document.querySelectorAll('.section-box').forEach(section => {
         section.addEventListener('dragover', handleDragOver);
         section.addEventListener('dragleave', handleDragLeave);
         section.addEventListener('drop', handleDrop);
+        
+        // Room hover details - only for ROOM type sections
+        const sectionName = section.dataset.sectionName;
+        if (sectionName && !sectionName.includes('Garden') && !sectionName.includes('Kitchen') && 
+            !sectionName.includes('Restaurant') && !sectionName.includes('Office') && 
+            !sectionName.includes('Pool') && !sectionName.includes('Maintenance')) {
+            section.addEventListener('mouseenter', function(e) {
+                showRoomTooltip(this, sectionName);
+            });
+            section.addEventListener('mouseleave', hideRoomTooltip);
+        }
     });
 }
 
@@ -986,6 +1460,14 @@ const bookingOutlineColors = [
     '#a855f7', // Violet
 ];
 
+// Get consistent color for a booking based on its ID
+function getBookingColor(booking) {
+    // Use booking ID to generate a consistent color index
+    const bookingId = booking.id || 0;
+    const colorIndex = bookingId % bookingOutlineColors.length;
+    return bookingOutlineColors[colorIndex];
+}
+
 // Load bookings for the selected date
 async function loadBookings(date) {
     const bookingsList = document.getElementById('bookingsList');
@@ -1014,8 +1496,12 @@ async function loadBookings(date) {
             return selectedDate >= startDate && selectedDate <= endDate;
         });
 
+        // Cache bookings for time slider re-rendering
+        cachedBookings = filteredBookings;
+        
         renderBookings(filteredBookings);
         highlightBookedRooms(filteredBookings);
+        renderBookingTimeline(filteredBookings);
         
     } catch (error) {
         console.error('Error loading bookings:', error);
@@ -1043,17 +1529,17 @@ function renderBookings(bookings) {
         return;
     }
 
-    // Get current time for comparison
-    const now = new Date();
+    // Get viewing time (from slider or current time)
+    const viewTime = getViewingTime();
     
-    // Separate bookings into active and departed
+    // Separate bookings into active and departed based on viewing time
     const activeBookings = [];
     const departedBookings = [];
     
     bookings.forEach(booking => {
         const checkOut = booking.end ? new Date(booking.end) : null;
-        // If checkout time has passed, it's departed
-        if (checkOut && now > checkOut) {
+        // If checkout time has passed relative to viewing time, it's departed
+        if (checkOut && viewTime > checkOut) {
             departedBookings.push(booking);
         } else {
             activeBookings.push(booking);
@@ -1066,7 +1552,7 @@ function renderBookings(bookings) {
     // Helper function to render a single booking card
     const renderBookingCard = (booking, index, isDeparted) => {
         const functionColor = functionTypeColors[booking.function_type] || functionTypeColors['Other'];
-        const outlineColor = isDeparted ? '#6b7280' : bookingOutlineColors[index % bookingOutlineColors.length];
+        const outlineColor = isDeparted ? '#6b7280' : getBookingColor(booking);
         let rooms = [];
         
         try {
@@ -1198,15 +1684,16 @@ function highlightBookedRooms(bookings) {
         section.style.outlineOffset = '';
     });
     
-    const now = new Date();
+    // Get viewing time (from slider or current time)
+    const viewTime = getViewingTime();
     
-    // Separate bookings into active and departed
+    // Separate bookings into active and departed based on viewing time
     const activeBookings = [];
     const departedBookings = [];
     
     bookings.forEach(booking => {
         const checkOut = booking.end ? new Date(booking.end) : null;
-        if (checkOut && now > checkOut) {
+        if (checkOut && viewTime > checkOut) {
             departedBookings.push(booking);
         } else {
             activeBookings.push(booking);
@@ -1222,7 +1709,7 @@ function highlightBookedRooms(bookings) {
     
     // Process active bookings first
     activeBookings.forEach((booking, index) => {
-        const color = bookingOutlineColors[index % bookingOutlineColors.length];
+        const color = getBookingColor(booking);
         let rooms = [];
         try {
             rooms = JSON.parse(booking.room_numbers);
@@ -1406,7 +1893,11 @@ function showNotification(message) {
 }
 
 // Booking Details Modal Functions
+let currentModalBooking = null; // Store current booking for edit/print actions
+
 function showBookingDetails(booking, color) {
+    currentModalBooking = booking; // Store for later use
+    
     const modal = document.getElementById('bookingDetailModal');
     const title = document.getElementById('modalBookingTitle');
     const content = document.getElementById('modalBookingContent');
@@ -1542,6 +2033,33 @@ function showBookingDetails(booking, color) {
 
 function closeBookingModal() {
     document.getElementById('bookingDetailModal').classList.add('hidden');
+    currentModalBooking = null;
+}
+
+// Edit current booking - opens the booking edit form
+function editCurrentBooking() {
+    if (!currentModalBooking || !currentModalBooking.id) {
+        showNotification('Unable to edit: Booking ID not found', 'error');
+        return;
+    }
+    
+    // Redirect to calendar with the booking date and trigger edit
+    const bookingDate = currentModalBooking.start ? new Date(currentModalBooking.start) : new Date();
+    const dateStr = bookingDate.toISOString().split('T')[0];
+    
+    // Open in new tab or redirect to calendar with booking ID
+    window.location.href = `/calendar?edit=${currentModalBooking.id}&date=${dateStr}`;
+}
+
+// Print booking confirmation
+function printBookingConfirmation() {
+    if (!currentModalBooking || !currentModalBooking.id) {
+        showNotification('Unable to print: Booking ID not found', 'error');
+        return;
+    }
+    
+    // Open print confirmation in new window
+    window.open(`/bookings/${currentModalBooking.id}/print-confirmation`, '_blank');
 }
 
 // Close modal when clicking outside

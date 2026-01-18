@@ -57,6 +57,43 @@
             box-shadow: 0 0 0 6px #ef4444, 0 0 30px #ef4444;
         }
     }
+    @keyframes pulse-turnover {
+        0%, 100% {
+            outline-color: #f59e0b;
+            outline-offset: 6px;
+        }
+        50% {
+            outline-color: #fbbf24;
+            outline-offset: 8px;
+        }
+    }
+    .departed-room {
+        opacity: 0.7;
+    }
+    .turnover-room {
+        position: relative;
+    }
+    .turnover-room::before {
+        content: '⟳';
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #f59e0b;
+        color: white;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        animation: spin-icon 2s linear infinite;
+    }
+    @keyframes spin-icon {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
     .staff-list-item {
         display: flex;
         align-items: center;
@@ -380,10 +417,33 @@
         </div>
         <!-- Header -->
         <div class="p-4 border-b border-gray-200" style="background: linear-gradient(to right, #059669, #047857);">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                <i class="fas fa-calendar-check"></i> <span id="bookingsDateTitle">Today's Bookings</span>
-            </h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-check"></i> <span id="bookingsDateTitle">Today's Bookings</span>
+                </h2>
+                <span id="currentTimeDisplay" class="text-white text-sm font-medium bg-white/20 px-2 py-1 rounded"></span>
+            </div>
             <p class="text-green-100 text-sm mt-1">Rooms with active bookings</p>
+        </div>
+        <!-- Room Status Legend -->
+        <div class="px-3 py-2 bg-gray-100 border-b border-gray-200">
+            <p class="text-xs font-semibold text-gray-600 mb-1">Floor Plan Legend:</p>
+            <div class="flex flex-wrap gap-2 text-xs">
+                <div class="flex items-center gap-1">
+                    <div class="w-4 h-4 rounded border-2 border-green-500" style="box-shadow: 0 0 0 2px #22c55e;"></div>
+                    <span class="text-gray-600">Active</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <div class="w-4 h-4 rounded opacity-70" style="outline: 2px dashed #6b7280; outline-offset: 1px;"></div>
+                    <span class="text-gray-600">Departed</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <div class="w-4 h-4 rounded border-2 border-green-500 relative" style="box-shadow: 0 0 0 2px #22c55e; outline: 2px dashed #f59e0b; outline-offset: 3px;">
+                        <span class="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full text-[6px] w-2 h-2 flex items-center justify-center">⟳</span>
+                    </div>
+                    <span class="text-gray-600">Turnover</span>
+                </div>
+            </div>
         </div>
 
         <!-- Bookings List -->
@@ -533,6 +593,19 @@ let draggedStaffId = null;
 // State for staff on leave
 let staffOnLeave = [];
 
+// Update current time display
+function updateCurrentTime() {
+    const timeDisplay = document.getElementById('currentTimeDisplay');
+    if (timeDisplay) {
+        const now = new Date();
+        timeDisplay.textContent = now.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        });
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -541,6 +614,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadBookings(currentDate); // Load bookings for today
     loadAllocations(currentDate); // Load saved allocations for today
     loadStaffOnLeave(currentDate); // Load staff on leave for today
+    
+    // Update time display immediately and every minute
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 60000);
 });
 
 function renderSections() {
@@ -966,12 +1043,30 @@ function renderBookings(bookings) {
         return;
     }
 
-    let totalRooms = 0;
-    let html = '<div class="space-y-3">';
+    // Get current time for comparison
+    const now = new Date();
     
-    bookings.forEach((booking, index) => {
+    // Separate bookings into active and departed
+    const activeBookings = [];
+    const departedBookings = [];
+    
+    bookings.forEach(booking => {
+        const checkOut = booking.end ? new Date(booking.end) : null;
+        // If checkout time has passed, it's departed
+        if (checkOut && now > checkOut) {
+            departedBookings.push(booking);
+        } else {
+            activeBookings.push(booking);
+        }
+    });
+
+    let totalRooms = 0;
+    let html = '';
+    
+    // Helper function to render a single booking card
+    const renderBookingCard = (booking, index, isDeparted) => {
         const functionColor = functionTypeColors[booking.function_type] || functionTypeColors['Other'];
-        const outlineColor = bookingOutlineColors[index % bookingOutlineColors.length];
+        const outlineColor = isDeparted ? '#6b7280' : bookingOutlineColors[index % bookingOutlineColors.length];
         let rooms = [];
         
         try {
@@ -992,16 +1087,18 @@ function renderBookings(bookings) {
                    date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         };
         
-        html += `
-            <div class="booking-card bg-white rounded-lg border-2 shadow-sm overflow-hidden hover:shadow-md transition-shadow" style="border-color: ${outlineColor};">
+        const opacityClass = isDeparted ? 'opacity-60' : '';
+        
+        return `
+            <div class="booking-card bg-white rounded-lg border-2 shadow-sm overflow-hidden hover:shadow-md transition-shadow ${opacityClass}" style="border-color: ${outlineColor};">
                 <div class="px-3 py-2" style="background-color: ${outlineColor}15;">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: ${outlineColor};"></div>
                             <span class="font-semibold text-gray-800 text-sm">${booking.function_type || 'Event'}</span>
                         </div>
-                        <span class="text-xs px-2 py-0.5 rounded-full text-white" style="background-color: ${functionColor};">
-                            ${booking.booking_type || booking.function_type || 'Event'}
+                        <span class="text-xs px-2 py-0.5 rounded-full text-white" style="background-color: ${isDeparted ? '#6b7280' : functionColor};">
+                            ${isDeparted ? 'Departed' : (booking.booking_type || booking.function_type || 'Event')}
                         </span>
                     </div>
                     <div class="text-xs text-gray-600 mt-1 font-medium">${booking.name || 'Guest'}</div>
@@ -1047,9 +1144,40 @@ function renderBookings(bookings) {
                 </div>
             </div>
         `;
-    });
+    };
     
-    html += '</div>';
+    // Render Active Bookings Section
+    if (activeBookings.length > 0) {
+        html += `
+            <div class="mb-4">
+                <div class="flex items-center gap-2 mb-2 px-1">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-xs font-bold text-green-700 uppercase tracking-wide">Active Bookings (${activeBookings.length})</span>
+                </div>
+                <div class="space-y-3">
+        `;
+        activeBookings.forEach((booking, index) => {
+            html += renderBookingCard(booking, index, false);
+        });
+        html += '</div></div>';
+    }
+    
+    // Render Departed Bookings Section
+    if (departedBookings.length > 0) {
+        html += `
+            <div class="mb-4">
+                <div class="flex items-center gap-2 mb-2 px-1">
+                    <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Departed (${departedBookings.length})</span>
+                </div>
+                <div class="space-y-3">
+        `;
+        departedBookings.forEach((booking, index) => {
+            html += renderBookingCard(booking, index, true);
+        });
+        html += '</div></div>';
+    }
+    
     bookingsList.innerHTML = html;
     
     // Setup drop zones for booking cards and load existing assignments
@@ -1063,17 +1191,37 @@ function renderBookings(bookings) {
 function highlightBookedRooms(bookings) {
     // Reset all section highlights including animation
     document.querySelectorAll('.section-box').forEach(section => {
-        section.classList.remove('booked-room');
+        section.classList.remove('booked-room', 'departed-room', 'turnover-room');
         section.style.boxShadow = '';
         section.style.animation = '';
+        section.style.outline = '';
+        section.style.outlineOffset = '';
     });
     
-    // Create a map of room -> unique booking color (each booking gets a unique color)
-    const roomColorMap = new Map();
+    const now = new Date();
+    
+    // Separate bookings into active and departed
+    const activeBookings = [];
+    const departedBookings = [];
+    
+    bookings.forEach(booking => {
+        const checkOut = booking.end ? new Date(booking.end) : null;
+        if (checkOut && now > checkOut) {
+            departedBookings.push(booking);
+        } else {
+            activeBookings.push(booking);
+        }
+    });
+    
+    // Track rooms: which are active, which are departed, and which have turnover (departed + upcoming active)
+    const activeRoomMap = new Map(); // room -> { color, booking }
+    const departedRoomMap = new Map(); // room -> { color, booking }
+    const turnoverRooms = new Set(); // rooms that have both departed and active bookings
+    
     let hasWedding = false;
     
-    bookings.forEach((booking, index) => {
-        // Each booking gets a unique color from the array
+    // Process active bookings first
+    activeBookings.forEach((booking, index) => {
         const color = bookingOutlineColors[index % bookingOutlineColors.length];
         let rooms = [];
         try {
@@ -1083,24 +1231,63 @@ function highlightBookedRooms(bookings) {
             rooms = booking.room_numbers ? [booking.room_numbers] : [];
         }
         rooms.forEach(room => {
-            roomColorMap.set(room.trim(), color);
+            const roomName = room.trim();
+            activeRoomMap.set(roomName, { color, booking });
         });
         
-        // Check if this is a wedding booking
         const bookingType = (booking.booking_type || booking.function_type || '').toLowerCase();
         if (bookingType.includes('wedding')) {
             hasWedding = true;
         }
     });
     
-    // Highlight booked rooms on the map with their unique booking color
-    sections.forEach(section => {
-        if (roomColorMap.has(section.name)) {
-            const color = roomColorMap.get(section.name);
-            const sectionEl = document.querySelector(`[data-section-id="${section.id}"]`);
-            if (sectionEl) {
-                sectionEl.style.boxShadow = `0 0 0 4px ${color}, 0 0 15px ${color}90`;
+    // Process departed bookings
+    departedBookings.forEach((booking, index) => {
+        let rooms = [];
+        try {
+            rooms = JSON.parse(booking.room_numbers);
+            if (!Array.isArray(rooms)) rooms = [rooms];
+        } catch (e) {
+            rooms = booking.room_numbers ? [booking.room_numbers] : [];
+        }
+        rooms.forEach(room => {
+            const roomName = room.trim();
+            // Check if this room also has an active booking (turnover situation)
+            if (activeRoomMap.has(roomName)) {
+                turnoverRooms.add(roomName);
+            } else {
+                departedRoomMap.set(roomName, { booking });
             }
+        });
+    });
+    
+    // Highlight rooms on the map
+    sections.forEach(section => {
+        const sectionEl = document.querySelector(`[data-section-id="${section.id}"]`);
+        if (!sectionEl) return;
+        
+        const roomName = section.name;
+        
+        // Priority: Turnover > Active > Departed
+        if (turnoverRooms.has(roomName)) {
+            // Turnover room: has departed booking AND new active booking
+            // Show with pulsing animation and special indicator
+            const activeData = activeRoomMap.get(roomName);
+            const color = activeData ? activeData.color : '#22c55e';
+            sectionEl.style.boxShadow = `0 0 0 4px ${color}, 0 0 15px ${color}90`;
+            sectionEl.style.outline = '3px dashed #f59e0b';
+            sectionEl.style.outlineOffset = '6px';
+            sectionEl.style.animation = 'pulse-turnover 1.5s infinite';
+            sectionEl.classList.add('turnover-room');
+        } else if (activeRoomMap.has(roomName)) {
+            // Active booking - solid colored border
+            const { color } = activeRoomMap.get(roomName);
+            sectionEl.style.boxShadow = `0 0 0 4px ${color}, 0 0 15px ${color}90`;
+        } else if (departedRoomMap.has(roomName)) {
+            // Departed booking - dashed gray border
+            sectionEl.style.outline = '3px dashed #6b7280';
+            sectionEl.style.outlineOffset = '2px';
+            sectionEl.classList.add('departed-room');
         }
     });
     

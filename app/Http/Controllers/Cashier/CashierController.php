@@ -255,7 +255,7 @@ class CashierController extends Controller
         $html .= '<h3>Total Amount: Rs '.number_format($sale->total_price, 2).'</h3>';
 
         if($showBtnPayment){
-            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-toggle="modal" data-target="#exampleModal">Payment</button>';
+            $html .= '<button data-id="'.$sale_id.'" data-totalAmount="'.$sale->total_price.'" class="btn btn-success btn-block btn-payment" data-bs-toggle="modal" data-bs-target="#exampleModal">Payment</button>';
             $html .= '<button data-id="'.$sale_id.'" class="btn btn-dark btn-block btn-payment printKot">Print KOT</button>';
             
             // Only show advance payment button if there are no regular menu items AND no existing advance payment

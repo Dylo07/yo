@@ -114,5 +114,18 @@
 
     <!-- Place for scripts -->
     @stack('scripts')
+    
+    <!-- Initialize Bootstrap dropdowns safely -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                // Check if already initialized to avoid conflicts
+                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    return bootstrap.Dropdown.getOrCreateInstance(dropdownToggleEl);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

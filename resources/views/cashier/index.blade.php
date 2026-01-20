@@ -269,13 +269,6 @@
     }
 }
 </style>
-<!-- Include only one version of jQuery (full version for AJAX support) -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<!-- Optionally, update to a more recent version if possible -->
-<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 @endsection
 
@@ -292,7 +285,7 @@
           <nav>
             <div class="nav nav-tabs" id="nav-tab" role="tablist">
               @foreach($categories as $category)
-                <a class="nav-item nav-link btn-outline-success" data-id="{{ $category->id }}" data-toggle="tab">
+                <a class="nav-item nav-link btn-outline-success" data-id="{{ $category->id }}" data-bs-toggle="tab">
                   {{ $category->name }}
                 </a>
               @endforeach
@@ -301,7 +294,7 @@
           <br>
           <div class="row search-sec">
             <div class="col-md-6"></div>
-            <div class="col-md-6 pull-right">
+            <div class="col-md-6 text-end">
               <input type="text" class="form-control" id="searchkeyword" placeholder="search menu" name="search">
             </div>
           </div>
@@ -325,13 +318,11 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLabel">Payment</h5>
-        <button tabindex="-4" type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <button tabindex="-4" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <h3 class="totalAmount"></h3>
-        <h3 class="changeAmount">Service Charege: </h3>
+        <h3 class="changeAmount">Service Charge: </h3>
         <div tabindex="-1" class="input-group mb-3">
           <div class="input-group-prepend">
             <span class="input-group-text">Rs</span>
@@ -347,7 +338,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button tabindex="-1" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button tabindex="-1" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary btn-save-payment">Save Payment</button>
       </div>
     </div>

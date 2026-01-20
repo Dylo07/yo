@@ -9,7 +9,16 @@ use App\Models\StaffAllocation;
 use App\Models\LeaveRequest;
 use App\Models\FunctionAssignment;
 use App\Models\Task;
+use App\Models\Sale;
+use App\Models\Cost;
+use App\Models\Group;
+use App\Models\VehicleSecurity;
+use App\Models\StockLog;
+use App\Models\Inventory;
+use App\Models\InStock;
+use App\Models\Menu;
 use Carbon\Carbon;
+use DB;
 
 class StaffAllocationController extends Controller
 {
@@ -423,5 +432,261 @@ class StaffAllocationController extends Controller
         $task->delete();
         
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get bills report for a specific date (00:00 to 23:59 or current time if today)
+     */
+    public function getTodayBills(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $isToday = $date === date('Y-m-d');
+        
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = $isToday ? Carbon::now() : Carbon::parse($date)->endOfDay();
+
+        $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
+            ->where('sale_status', 'paid')
+            ->with('saleDetails')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $totalSale = $sales->sum('total_price');
+        $serviceCharge = $sales->sum('total_recieved') - $sales->sum('total_price');
+        $totalBills = $sales->count();
+
+        // Get hourly breakdown
+        $hourlyBreakdown = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
+            ->where('sale_status', 'paid')
+            ->select(
+                DB::raw('HOUR(updated_at) as hour'),
+                DB::raw('COUNT(*) as bill_count'),
+                DB::raw('SUM(total_price) as total_amount')
+            )
+            ->groupBy('hour')
+            ->orderBy('hour', 'asc')
+            ->get();
+
+        // Get top selling items today
+        $topItems = DB::table('sale_details')
+            ->join('sales', 'sales.id', '=', 'sale_details.sale_id')
+            ->join('menus', 'menus.id', '=', 'sale_details.menu_id')
+            ->whereBetween('sales.updated_at', [$dateStart, $dateEnd])
+            ->where('sales.sale_status', 'paid')
+            ->select(
+                'sale_details.menu_name',
+                DB::raw('SUM(sale_details.quantity) as total_qty'),
+                DB::raw('SUM(sale_details.menu_price * sale_details.quantity) as total_revenue')
+            )
+            ->groupBy('sale_details.menu_id', 'sale_details.menu_name')
+            ->orderBy('total_revenue', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Get recent bills (last 10) with items
+        $recentBills = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
+            ->where('sale_status', 'paid')
+            ->with('saleDetails')
+            ->orderBy('updated_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_sale' => $totalSale,
+                'service_charge' => $serviceCharge,
+                'total_bills' => $totalBills,
+                'hourly_breakdown' => $hourlyBreakdown,
+                'top_items' => $topItems,
+                'recent_bills' => $recentBills,
+                'period_start' => $dateStart->format('Y-m-d H:i:s'),
+                'period_end' => $dateEnd->format('Y-m-d H:i:s'),
+            ]
+        ]);
+    }
+
+    /**
+     * Get daily costs report for a specific date
+     */
+    public function getDailyCosts(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
+
+        // Get costs for the selected date
+        $costs = Cost::with(['group', 'person', 'user'])
+            ->whereBetween('cost_date', [$dateStart, $dateEnd])
+            ->orderBy('cost_date', 'desc')
+            ->get();
+
+        $totalCosts = $costs->sum('amount');
+        $totalTransactions = $costs->count();
+
+        // Group by category
+        $categoryBreakdown = $costs
+            ->groupBy('group.name')
+            ->map(function ($costs) {
+                return [
+                    'name' => $costs->first()->group->name ?? 'N/A',
+                    'total' => $costs->sum('amount'),
+                    'count' => $costs->count(),
+                    'items' => $costs->map(function($cost) {
+                        return [
+                            'id' => $cost->id,
+                            'person' => $cost->person->name ?? 'N/A',
+                            'amount' => $cost->amount,
+                            'description' => $cost->description,
+                            'time' => $cost->created_at->format('H:i'),
+                            'user' => $cost->user->name ?? 'N/A'
+                        ];
+                    })->values()
+                ];
+            })
+            ->sortByDesc(function($category) {
+                return $category['total'];
+            })
+            ->values();
+
+        // Get recent costs (last 10)
+        $recentCosts = $costs->take(10)->map(function($cost) {
+            return [
+                'id' => $cost->id,
+                'category' => $cost->group->name ?? 'N/A',
+                'person' => $cost->person->name ?? 'N/A',
+                'amount' => $cost->amount,
+                'description' => $cost->description,
+                'time' => $cost->created_at->format('H:i'),
+                'user' => $cost->user->name ?? 'N/A'
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_costs' => $totalCosts,
+                'total_transactions' => $totalTransactions,
+                'category_breakdown' => $categoryBreakdown,
+                'recent_costs' => $recentCosts,
+                'date' => $date,
+            ]
+        ]);
+    }
+
+    /**
+     * Get daily inventory changes report for a specific date
+     */
+    public function getDailyInventoryChanges(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        
+        $inventoryChanges = StockLog::with(['user', 'item.group'])
+            ->whereDate('created_at', $date)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Get current stock levels for items with changes today
+        $itemIds = $inventoryChanges->pluck('item_id')->unique();
+        $currentDate = Carbon::today()->format('Y-m-d');
+        $currentStockLevels = [];
+        
+        if ($itemIds->count() > 0) {
+            $inventoryRecords = Inventory::whereIn('item_id', $itemIds)
+                ->where('stock_date', '<=', $currentDate)
+                ->orderBy('stock_date', 'desc')
+                ->get()
+                ->groupBy('item_id');
+            
+            foreach ($itemIds as $itemId) {
+                if (isset($inventoryRecords[$itemId]) && $inventoryRecords[$itemId]->count() > 0) {
+                    $currentStockLevels[$itemId] = $inventoryRecords[$itemId]->first()->stock_level;
+                } else {
+                    $currentStockLevels[$itemId] = 0;
+                }
+            }
+        }
+
+        // Format data for frontend
+        $formattedChanges = $inventoryChanges->map(function($log) use ($currentStockLevels) {
+            $currentStock = $currentStockLevels[$log->item_id] ?? 0;
+            return [
+                'id' => $log->id,
+                'time' => $log->created_at->format('H:i'),
+                'item_name' => $log->item->name ?? 'Unknown Item',
+                'category' => $log->item->group->name ?? 'Unknown Category',
+                'action' => $log->action, // 'added', 'removed', 'updated'
+                'location' => $log->location ?? 'Main Kitchen',
+                'quantity' => $log->quantity,
+                'current_stock' => $currentStock,
+                'user' => $log->user->name ?? 'Unknown',
+                'description' => $log->description,
+                'type' => $log->quantity > 0 ? 'added' : 'removed'
+            ];
+        });
+
+        // Calculate summary stats
+        $totalChanges = $formattedChanges->count();
+        $itemsAdded = $formattedChanges->where('quantity', '>', 0)->count();
+        $itemsRemoved = $formattedChanges->where('quantity', '<', 0)->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'changes' => $formattedChanges,
+                'summary' => [
+                    'total_changes' => $totalChanges,
+                    'items_added' => $itemsAdded,
+                    'items_removed' => $itemsRemoved
+                ],
+                'date' => $date,
+            ]
+        ]);
+    }
+
+    /**
+     * Get daily water bottle summary for a specific date
+     */
+    public function getDailyWaterBottleSummary(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $waterBottleMenuId = 2817;
+        
+        $waterBottleHistory = InStock::where('menu_id', $waterBottleMenuId)
+            ->whereDate('created_at', $date)
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $waterBottle = Menu::find($waterBottleMenuId);
+        $currentStock = $waterBottle ? $waterBottle->stock : 0;
+        
+        $issued = abs($waterBottleHistory->where('stock', '<', 0)->sum('stock'));
+        $added = $waterBottleHistory->where('stock', '>', 0)->sum('stock');
+        $netChange = $added - $issued;
+
+        $history = $waterBottleHistory->map(function($record) {
+            return [
+                'id' => $record->id,
+                'time' => $record->created_at->format('H:i'),
+                'quantity' => $record->stock,
+                'type' => $record->stock > 0 ? 'added' : 'issued',
+                'user' => $record->user->name ?? 'Unknown',
+                'description' => $record->description
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'current_stock' => $currentStock,
+                'issued' => $issued,
+                'added' => $added,
+                'net_change' => $netChange,
+                'history' => $history,
+                'date' => $date
+            ]
+        ]);
     }
 }

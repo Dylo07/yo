@@ -176,6 +176,87 @@ class VehicleSecurityController extends Controller
         return response()->json($this->getStats());
     }
 
+    /**
+     * Get daily vehicle security summary for a specific date
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getDailySummary(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
+
+        // Get all vehicles for the date
+        $vehicles = VehicleSecurity::whereBetween('created_at', [$dateStart, $dateEnd])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $totalVehicles = $vehicles->count();
+        
+        // Count by status
+        $checkedIn = $vehicles->filter(function($v) {
+            return is_null($v->checkout_time) && !$v->is_note;
+        })->count();
+        
+        $checkedOut = $vehicles->filter(function($v) {
+            return !is_null($v->checkout_time) && !$v->is_note;
+        })->count();
+        
+        $tempOut = $vehicles->filter(function($v) {
+            return is_null($v->checkout_time) && $v->is_temp_out && !$v->is_note;
+        })->count();
+
+        // Group by matter (purpose)
+        $byMatter = $vehicles->groupBy('matter')->map(function($group, $key) {
+            return [
+                'name' => $key ?: 'General',
+                'count' => $group->count(),
+                'vehicles' => $group->map(function($v) {
+                    return [
+                        'id' => $v->id,
+                        'vehicle_number' => $v->vehicle_number,
+                        'matter' => $v->matter,
+                        'description' => $v->description,
+                        'room_numbers' => $v->room_numbers,
+                        'adult_pool_count' => $v->adult_pool_count,
+                        'kids_pool_count' => $v->kids_pool_count,
+                        'team' => $v->team,
+                        'time' => $v->created_at->format('H:i'),
+                        'status' => $v->is_note ? 'Note' : ($v->checkout_time ? 'Checked Out' : ($v->is_temp_out ? 'Temp Out' : 'On Property'))
+                    ];
+                })->values()
+            ];
+        })->sortByDesc('count')->values();
+
+        // Pool usage for the day
+        $poolUsage = [
+            'adults' => $vehicles->sum('adult_pool_count'),
+            'kids' => $vehicles->sum('kids_pool_count')
+        ];
+
+        // Room occupancy
+        $roomsUsed = $vehicles->filter(function($v) {
+            return !empty($v->room_numbers);
+        })->pluck('room_numbers')->flatten()->unique()->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_vehicles' => $totalVehicles,
+                'checked_in' => $checkedIn,
+                'checked_out' => $checkedOut,
+                'temp_out' => $tempOut,
+                'by_matter' => $byMatter,
+                'pool_usage' => $poolUsage,
+                'rooms_used' => $roomsUsed,
+                'date' => $date,
+            ]
+        ]);
+    }
+
     public function showByDate($date = null)
     {
         try {

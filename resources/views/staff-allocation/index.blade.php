@@ -419,6 +419,281 @@
         <div class="map-container bg-white rounded-xl shadow-lg border border-gray-200 p-6" id="mapContainer">
             <!-- Sections will be rendered here -->
         </div>
+
+        <!-- Today's Bills Report (Admin Only) -->
+        @if(Auth::user()->role === 'admin')
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-600">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-receipt"></i> Bills Report
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span id="billsTimeRange" class="text-xs text-emerald-100"></span>
+                        <button onclick="refreshBillsReport()" class="text-white hover:text-emerald-100 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadBillsForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i> Yesterday
+                    </button>
+                    <input type="date" id="billsDatePicker" 
+                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        value="{{ date('Y-m-d') }}"
+                        onchange="loadBillsForDate(this.value)">
+                    <button onclick="loadBillsForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
+                        Today
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-3 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Sales</div>
+                    <div class="text-lg font-bold text-emerald-600" id="totalSales">Rs 0.00</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Bills Count</div>
+                    <div class="text-lg font-bold text-blue-600" id="billsCount">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Avg Bill</div>
+                    <div class="text-lg font-bold text-purple-600" id="avgBill">Rs 0.00</div>
+                </div>
+            </div>
+
+            <!-- Hourly Chart -->
+            <div class="p-3 border-b">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-semibold text-gray-600"><i class="fas fa-chart-bar mr-1"></i>Hourly Sales</p>
+                </div>
+                <div id="hourlyChart" class="h-24 flex items-end gap-0.5">
+                    <!-- Chart bars will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Bills with Items -->
+            <div class="p-3 max-h-96 overflow-y-auto">
+                <p class="text-xs font-semibold text-gray-600 mb-2"><i class="fas fa-receipt mr-1"></i>Recent Bills</p>
+                <div id="recentBillsList" class="space-y-2">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Costs Report (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-gradient-to-r from-red-600 to-orange-600">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-money-bill-wave"></i> Daily Costs Report
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshCostsReport()" class="text-white hover:text-red-100 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadCostsForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i> Yesterday
+                    </button>
+                    <input type="date" id="costsDatePicker" 
+                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        value="{{ date('Y-m-d') }}"
+                        onchange="loadCostsForDate(this.value)">
+                    <button onclick="loadCostsForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
+                        Today
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-2 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Costs</div>
+                    <div class="text-lg font-bold text-red-600" id="totalCosts">Rs 0.00</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Transactions</div>
+                    <div class="text-lg font-bold text-orange-600" id="costsCount">0</div>
+                </div>
+            </div>
+
+            <!-- Expenses by Category (Collapsible) -->
+            <div class="p-3 max-h-[600px] overflow-y-auto">
+                <p class="text-xs font-semibold text-gray-600 mb-2"><i class="fas fa-list mr-1"></i>Expenses by Category</p>
+                <div id="categorizedCostsList" class="space-y-2">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Vehicle Security Summary (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-gradient-to-r from-blue-600 to-indigo-600">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-car"></i> Vehicle Security Summary
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshVehicleSummary()" class="text-white hover:text-blue-100 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadVehicleSummaryForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i> Yesterday
+                    </button>
+                    <input type="date" id="vehicleSummaryDatePicker" 
+                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        value="{{ date('Y-m-d') }}"
+                        onchange="loadVehicleSummaryForDate(this.value)">
+                    <button onclick="loadVehicleSummaryForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
+                        Today
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-4 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Vehicles</div>
+                    <div class="text-lg font-bold text-blue-600" id="vehicleTotalCount">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">On Property</div>
+                    <div class="text-lg font-bold text-green-600" id="vehicleCheckedIn">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Pool Usage</div>
+                    <div class="text-lg font-bold text-cyan-600" id="vehiclePoolUsage">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Checked Out</div>
+                    <div class="text-lg font-bold text-gray-600" id="vehicleCheckedOut">0</div>
+                </div>
+            </div>
+
+            <!-- Vehicles by Purpose (Collapsible) -->
+            <div class="p-3" style="max-height: 600px; overflow-y: auto;">
+                <p class="text-xs font-semibold text-gray-600 mb-2"><i class="fas fa-list mr-1"></i>Vehicles by Purpose</p>
+                <div id="vehiclesByPurposeList">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Changes Report (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-black text-white">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-boxes"></i> Inventory Changes
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshInventoryReport()" class="text-white hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadInventoryForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i> Yesterday
+                    </button>
+                    <input type="date" id="inventoryDatePicker" 
+                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50 text-black"
+                        value="{{ date('Y-m-d') }}"
+                        onchange="loadInventoryForDate(this.value)">
+                    <button onclick="loadInventoryForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
+                        Today
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-3 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Changes</div>
+                    <div class="text-lg font-bold text-gray-800" id="invTotalChanges">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Items Added</div>
+                    <div class="text-lg font-bold text-emerald-600" id="invItemsAdded">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Items Removed</div>
+                    <div class="text-lg font-bold text-red-600" id="invItemsRemoved">0</div>
+                </div>
+            </div>
+
+            <!-- Inventory List -->
+            <div class="p-3" style="max-height: 500px; overflow-y: auto;">
+                <div id="inventoryList" class="space-y-2">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Bottle Summary (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-cyan-600 text-white">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-wine-bottle"></i> Water Bottle Summary
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshWaterBottleReport()" class="text-white hover:text-cyan-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadWaterBottleForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i> Yesterday
+                    </button>
+                    <input type="date" id="waterBottleDatePicker" 
+                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50 text-black"
+                        value="{{ date('Y-m-d') }}"
+                        onchange="loadWaterBottleForDate(this.value)">
+                    <button onclick="loadWaterBottleForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
+                        Today
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-4 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Current Stock</div>
+                    <div class="text-lg font-bold text-gray-800" id="wbCurrentStock">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Added</div>
+                    <div class="text-lg font-bold text-emerald-600" id="wbAdded">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Issued</div>
+                    <div class="text-lg font-bold text-red-600" id="wbIssued">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Net Change</div>
+                    <div class="text-lg font-bold text-blue-600" id="wbNetChange">0</div>
+                </div>
+            </div>
+
+            <!-- History List -->
+            <div class="p-3" style="max-height: 500px; overflow-y: auto;">
+                <div id="waterBottleList" class="space-y-2">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
     <!-- Bookings Sidebar (Right) -->
@@ -1063,6 +1338,619 @@ function hideRoomTooltip() {
     }
 }
 
+// ============ TODAY'S BILLS REPORT ============
+let currentBillsDate = '{{ date("Y-m-d") }}';
+
+async function loadTodayBills(date = null) {
+    if (date) {
+        currentBillsDate = date;
+    }
+    
+    try {
+        const url = `/api/duty-roster/today-bills?date=${currentBillsDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // Update key metrics
+            document.getElementById('totalSales').textContent = `Rs ${parseFloat(data.total_sale).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('billsCount').textContent = data.total_bills;
+            const avgBill = data.total_bills > 0 ? data.total_sale / data.total_bills : 0;
+            document.getElementById('avgBill').textContent = `Rs ${parseFloat(avgBill).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            // Update time range
+            const startTime = new Date(data.period_start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const endTime = new Date(data.period_end).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            document.getElementById('billsTimeRange').textContent = `${startTime} - ${endTime}`;
+            
+            // Render hourly chart
+            renderHourlyChart(data.hourly_breakdown);
+            
+            // Render recent bills
+            renderRecentBills(data.recent_bills);
+        }
+    } catch (error) {
+        console.error('Error loading bills report:', error);
+    }
+}
+
+function renderHourlyChart(hourlyData) {
+    const chart = document.getElementById('hourlyChart');
+    if (!hourlyData || hourlyData.length === 0) {
+        chart.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">No data available</div>';
+        return;
+    }
+    
+    const maxAmount = Math.max(...hourlyData.map(h => parseFloat(h.total_amount)));
+    const currentHour = new Date().getHours();
+    
+    let html = '';
+    for (let hour = 0; hour < 24; hour++) {
+        const hourData = hourlyData.find(h => parseInt(h.hour) === hour);
+        const amount = hourData ? parseFloat(hourData.total_amount) : 0;
+        const height = maxAmount > 0 ? (amount / maxAmount) * 100 : 0;
+        const isCurrentHour = hour === currentHour;
+        const barColor = isCurrentHour ? '#059669' : '#d1d5db';
+        
+        html += `
+            <div class="flex-1 flex flex-col items-center justify-end group relative" style="min-width: 8px;">
+                <div class="w-full rounded-t transition-all" 
+                     style="height: ${height}%; background-color: ${barColor}; min-height: ${amount > 0 ? '2px' : '0'};"
+                     title="${hour}:00 - Rs ${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}">
+                </div>
+                ${hour % 3 === 0 ? `<div class="text-[8px] text-gray-400 mt-1">${hour}</div>` : ''}
+            </div>
+        `;
+    }
+    chart.innerHTML = html;
+}
+
+function renderTopItems(items) {
+    const list = document.getElementById('topItemsList');
+    if (!items || items.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No items sold yet</div>';
+        return;
+    }
+    
+    let html = '';
+    items.forEach((item, index) => {
+        const revenue = parseFloat(item.total_revenue);
+        html += `
+            <div class="flex items-center justify-between p-2 rounded hover:bg-gray-50 text-xs">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <span class="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-bold">${index + 1}</span>
+                    <span class="font-medium text-gray-800 truncate">${item.menu_name}</span>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    <span class="text-gray-500">×${item.total_qty}</span>
+                    <span class="font-bold text-emerald-600">Rs ${revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                </div>
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function renderRecentBills(bills) {
+    const list = document.getElementById('recentBillsList');
+    if (!bills || bills.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No bills yet</div>';
+        return;
+    }
+    
+    let html = '';
+    bills.forEach(bill => {
+        const time = new Date(bill.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const amount = parseFloat(bill.total_price);
+        
+        // Get bill items
+        let itemsHtml = '';
+        if (bill.sale_details && bill.sale_details.length > 0) {
+            bill.sale_details.forEach(item => {
+                const itemTotal = parseFloat(item.menu_price) * parseInt(item.quantity);
+                itemsHtml += `
+                    <div class="flex justify-between text-[10px] text-gray-600 py-0.5">
+                        <span>${item.menu_name} × ${item.quantity}</span>
+                        <span>Rs ${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `
+            <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
+                    <div class="flex flex-col gap-0.5">
+                        <span class="font-bold text-gray-800 text-sm">#${bill.id}</span>
+                        <span class="text-gray-500 text-[10px]">${time} • ${bill.table_name || 'N/A'} • ${bill.user_name || 'N/A'}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-emerald-600 text-sm">Rs ${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                    </div>
+                </div>
+                ${itemsHtml ? `
+                    <div class="space-y-0.5 bg-gray-50 rounded p-2">
+                        ${itemsHtml}
+                    </div>
+                ` : '<div class="text-center text-gray-400 text-[10px]">No items</div>'}
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function refreshBillsReport() {
+    loadTodayBills();
+}
+
+function loadBillsForDate(date) {
+    currentBillsDate = date;
+    document.getElementById('billsDatePicker').value = date;
+    loadTodayBills(date);
+}
+
+function loadBillsForToday() {
+    const today = new Date().toISOString().split('T')[0];
+    loadBillsForDate(today);
+}
+
+function loadBillsForYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    loadBillsForDate(yesterdayStr);
+}
+
+// ============ DAILY COSTS REPORT ============
+let currentCostsDate = '{{ date("Y-m-d") }}';
+
+async function loadDailyCosts(date = null) {
+    if (date) {
+        currentCostsDate = date;
+    }
+    
+    try {
+        const url = `/api/duty-roster/daily-costs?date=${currentCostsDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // Update key metrics
+            document.getElementById('totalCosts').textContent = `Rs ${parseFloat(data.total_costs).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('costsCount').textContent = data.total_transactions;
+            
+            // Render categorized costs (collapsible)
+            renderCategorizedCosts(data.category_breakdown);
+        }
+    } catch (error) {
+        console.error('Error loading costs report:', error);
+    }
+}
+
+function renderCategorizedCosts(categories) {
+    const list = document.getElementById('categorizedCostsList');
+    if (!categories || categories.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No expenses yet</div>';
+        return;
+    }
+    
+    let html = '';
+    categories.forEach((category, index) => {
+        const total = parseFloat(category.total);
+        const percentage = categories.reduce((sum, c) => sum + parseFloat(c.total), 0);
+        const percent = percentage > 0 ? ((total / percentage) * 100).toFixed(1) : 0;
+        const categoryId = `category-${index}`;
+        
+        html += `
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 transition-colors" onclick="toggleCostCategory('${categoryId}')">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform" id="${categoryId}-icon"></i>
+                        <span class="font-bold text-gray-800 text-sm">${category.name}</span>
+                        <span class="text-[10px] text-gray-500">${category.count} transaction${category.count !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-gray-500">${percent}%</span>
+                        <span class="font-bold text-red-600 text-sm">Rs ${total.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                </div>
+                <div id="${categoryId}" class="hidden bg-gray-50 border-t border-gray-200">
+                    ${category.items && category.items.length > 0 ? `
+                        <div class="divide-y divide-gray-200">
+                            ${category.items.map(item => `
+                                <div class="p-3 hover:bg-white transition-colors">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-medium text-gray-700 text-xs">${item.person}</span>
+                                        <span class="font-bold text-red-600 text-sm">Rs ${parseFloat(item.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    ${item.description ? `
+                                        <div class="text-[10px] text-gray-600 mb-1">${item.description}</div>
+                                    ` : ''}
+                                    <div class="text-[10px] text-gray-500">${item.time} • ${item.user}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<div class="p-3 text-center text-gray-400 text-xs">No items</div>'}
+                </div>
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function toggleCostCategory(categoryId) {
+    const content = document.getElementById(categoryId);
+    const icon = document.getElementById(`${categoryId}-icon`);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function refreshCostsReport() {
+    loadDailyCosts();
+}
+
+function loadCostsForDate(date) {
+    currentCostsDate = date;
+    document.getElementById('costsDatePicker').value = date;
+    loadDailyCosts(date);
+}
+
+function loadCostsForToday() {
+    const today = new Date().toISOString().split('T')[0];
+    loadCostsForDate(today);
+}
+
+function loadCostsForYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    loadCostsForDate(yesterdayStr);
+}
+
+// ============ DAILY VEHICLE SECURITY SUMMARY ============
+let currentVehicleSummaryDate = '{{ date("Y-m-d") }}';
+
+function renderVehiclesByPurpose(matters) {
+    const list = document.getElementById('vehiclesByPurposeList');
+    if (!matters || matters.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No vehicles yet</div>';
+        return;
+    }
+    
+    let html = '';
+    matters.forEach((matter, index) => {
+        const matterId = `vehicle-matter-${index}`;
+        
+        html += `
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 transition-colors" onclick="toggleVehicleMatter('${matterId}')">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform" id="${matterId}-icon"></i>
+                        <span class="font-bold text-gray-800 text-sm">${matter.name || 'Unknown'}</span>
+                        <span class="text-[10px] text-gray-500">${matter.count} vehicle${matter.count !== 1 ? 's' : ''}</span>
+                    </div>
+                </div>
+                <div id="${matterId}" class="hidden bg-gray-50 border-t border-gray-200">
+                    ${matter.vehicles && matter.vehicles.length > 0 ? `
+                        <div class="divide-y divide-gray-200">
+                            ${matter.vehicles.map(vehicle => `
+                                <div class="p-3 hover:bg-white transition-colors">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-bold text-blue-600 text-sm">${vehicle.vehicle_number}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded ${
+                                            vehicle.status === 'Checked Out' ? 'bg-gray-200 text-gray-700' : 
+                                            (vehicle.status === 'Temp Out' ? 'bg-yellow-100 text-yellow-700' : 
+                                            (vehicle.status === 'Note' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'))
+                                        }">${vehicle.status}</span>
+                                    </div>
+                                    ${vehicle.description ? `
+                                        <div class="text-[10px] text-gray-600 mb-1">${vehicle.description}</div>
+                                    ` : ''}
+                                    <div class="flex flex-wrap gap-2 text-[10px] text-gray-500">
+                                        <span><i class="fas fa-clock mr-1"></i>${vehicle.time}</span>
+                                        ${(() => {
+                                            let rooms = [];
+                                            if (Array.isArray(vehicle.room_numbers)) {
+                                                rooms = vehicle.room_numbers;
+                                            } else if (typeof vehicle.room_numbers === 'string') {
+                                                try {
+                                                    rooms = JSON.parse(vehicle.room_numbers);
+                                                } catch (e) {
+                                                    rooms = [vehicle.room_numbers];
+                                                }
+                                            }
+                                            return rooms && rooms.length > 0 ? 
+                                                `<span><i class="fas fa-bed mr-1"></i>${rooms.join(', ')}</span>` : '';
+                                        })()}
+                                        ${vehicle.adult_pool_count > 0 || vehicle.kids_pool_count > 0 ? `
+                                            <span><i class="fas fa-swimming-pool mr-1"></i>A:${vehicle.adult_pool_count} K:${vehicle.kids_pool_count}</span>
+                                        ` : ''}
+                                        ${vehicle.team ? `
+                                            <span><i class="fas fa-users mr-1"></i>${vehicle.team}</span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<div class="p-3 text-center text-gray-400 text-xs">No vehicles</div>'}
+                </div>
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function toggleVehicleMatter(matterId) {
+    const content = document.getElementById(matterId);
+    const icon = document.getElementById(`${matterId}-icon`);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+async function loadVehicleSummary(date = null) {
+    if (date) {
+        currentVehicleSummaryDate = date;
+    }
+    
+    try {
+        const url = `/vehicle-security/daily-summary?date=${currentVehicleSummaryDate}`;
+        console.log('Fetching vehicle summary from:', url);
+        const response = await fetch(url);
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Vehicle summary data:', result);
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // Update key metrics
+            document.getElementById('vehicleTotalCount').textContent = data.total_vehicles;
+            document.getElementById('vehicleCheckedIn').textContent = data.checked_in;
+            document.getElementById('vehiclePoolUsage').textContent = data.pool_usage.adults + data.pool_usage.kids;
+            document.getElementById('vehicleCheckedOut').textContent = data.checked_out;
+            
+            // Render vehicles by purpose
+            renderVehiclesByPurpose(data.by_matter);
+        } else {
+            console.error('API returned success: false');
+            document.getElementById('vehiclesByPurposeList').innerHTML = '<div class="text-center text-red-500 text-xs py-2">Failed to load data</div>';
+        }
+    } catch (error) {
+        console.error('Error loading vehicle summary:', error);
+        document.getElementById('vehiclesByPurposeList').innerHTML = '<div class="text-center text-red-500 text-xs py-2">Error loading data</div>';
+    }
+}
+
+function refreshVehicleSummary() {
+    loadVehicleSummary();
+}
+
+function loadVehicleSummaryForDate(date) {
+    currentVehicleSummaryDate = date;
+    document.getElementById('vehicleSummaryDatePicker').value = date;
+    loadVehicleSummary(date);
+}
+
+function loadVehicleSummaryForToday() {
+    const today = new Date().toISOString().split('T')[0];
+    loadVehicleSummaryForDate(today);
+}
+
+function loadVehicleSummaryForYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    loadVehicleSummaryForDate(yesterdayStr);
+}
+
+// ============ INVENTORY CHANGES REPORT ============
+let currentInventoryDate = '{{ date("Y-m-d") }}';
+
+async function loadInventoryReport(date = null) {
+    if (date) {
+        currentInventoryDate = date;
+    }
+    
+    try {
+        const url = `/api/duty-roster/inventory-changes?date=${currentInventoryDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            const summary = data.summary;
+            
+            // Update key metrics
+            document.getElementById('invTotalChanges').textContent = summary.total_changes;
+            document.getElementById('invItemsAdded').textContent = summary.items_added;
+            document.getElementById('invItemsRemoved').textContent = summary.items_removed;
+            
+            // Render inventory list
+            renderInventoryList(data.changes);
+        }
+    } catch (error) {
+        console.error('Error loading inventory report:', error);
+        document.getElementById('inventoryList').innerHTML = '<div class="text-center text-red-500 text-xs py-2">Error loading data</div>';
+    }
+}
+
+function renderInventoryList(changes) {
+    const list = document.getElementById('inventoryList');
+    if (!changes || changes.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No inventory changes</div>';
+        return;
+    }
+    
+    let html = '';
+    changes.forEach(log => {
+        const isAdded = log.type === 'added';
+        const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
+        const actionIcon = isAdded ? 'fa-plus' : 'fa-minus';
+        const qtyPrefix = isAdded ? '+' : '';
+        
+        html += `
+            <div class="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor} font-bold">
+                            ${qtyPrefix}${log.quantity}
+                        </span>
+                        <span class="font-bold text-gray-800 text-sm">${log.item_name}</span>
+                    </div>
+                    <span class="text-[10px] text-gray-500">${log.time}</span>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-gray-600">
+                    <div class="flex flex-col gap-0.5">
+                        <span><i class="fas fa-layer-group mr-1 text-gray-400"></i>${log.category}</span>
+                        <span><i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>${log.location}</span>
+                    </div>
+                    <div class="text-right flex flex-col gap-0.5">
+                        <span class="font-medium">Current: ${log.current_stock}</span>
+                        <span class="text-gray-400">By: ${log.user}</span>
+                    </div>
+                </div>
+                ${log.description ? `
+                    <div class="text-[10px] text-gray-500 mt-1 italic border-t border-gray-100 pt-1">
+                        "${log.description}"
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function refreshInventoryReport() {
+    loadInventoryReport();
+}
+
+function loadInventoryForDate(date) {
+    currentInventoryDate = date;
+    document.getElementById('inventoryDatePicker').value = date;
+    loadInventoryReport(date);
+}
+
+function loadInventoryForToday() {
+    const today = new Date().toISOString().split('T')[0];
+    loadInventoryForDate(today);
+}
+
+function loadInventoryForYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    loadInventoryForDate(yesterdayStr);
+}
+
+// ============ WATER BOTTLE SUMMARY REPORT ============
+let currentWaterBottleDate = '{{ date("Y-m-d") }}';
+
+async function loadWaterBottleReport(date = null) {
+    if (date) {
+        currentWaterBottleDate = date;
+    }
+    
+    try {
+        const url = `/api/duty-roster/water-bottle-summary?date=${currentWaterBottleDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // Update key metrics
+            document.getElementById('wbCurrentStock').textContent = data.current_stock;
+            document.getElementById('wbAdded').textContent = data.added;
+            document.getElementById('wbIssued').textContent = data.issued;
+            document.getElementById('wbNetChange').textContent = (data.net_change > 0 ? '+' : '') + data.net_change;
+            
+            // Render history list
+            renderWaterBottleList(data.history);
+        }
+    } catch (error) {
+        console.error('Error loading water bottle report:', error);
+        document.getElementById('waterBottleList').innerHTML = '<div class="text-center text-red-500 text-xs py-2">Error loading data</div>';
+    }
+}
+
+function renderWaterBottleList(history) {
+    const list = document.getElementById('waterBottleList');
+    if (!history || history.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No activity</div>';
+        return;
+    }
+    
+    let html = '';
+    history.forEach(record => {
+        const isAdded = record.type === 'added';
+        const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
+        const qtyPrefix = isAdded ? '+' : '';
+        
+        html += `
+            <div class="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor} font-bold">
+                            ${qtyPrefix}${record.quantity}
+                        </span>
+                        <span class="font-bold text-gray-800 text-sm">${isAdded ? 'Stock Added' : 'Issued'}</span>
+                    </div>
+                    <span class="text-[10px] text-gray-500">${record.time}</span>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-gray-600">
+                    <div class="text-right flex flex-col gap-0.5 w-full">
+                        <span class="text-gray-400">By: ${record.user}</span>
+                    </div>
+                </div>
+                ${record.description ? `
+                    <div class="text-[10px] text-gray-500 mt-1 italic border-t border-gray-100 pt-1">
+                        "${record.description}"
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    list.innerHTML = html;
+}
+
+function refreshWaterBottleReport() {
+    loadWaterBottleReport();
+}
+
+function loadWaterBottleForDate(date) {
+    currentWaterBottleDate = date;
+    document.getElementById('waterBottleDatePicker').value = date;
+    loadWaterBottleReport(date);
+}
+
+function loadWaterBottleForToday() {
+    const today = new Date().toISOString().split('T')[0];
+    loadWaterBottleForDate(today);
+}
+
+function loadWaterBottleForYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    loadWaterBottleForDate(yesterdayStr);
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -1081,6 +1969,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load all bookings for mini calendar
     loadAllBookingsForCalendar();
+    
+    // Load today's bills report
+    loadTodayBills();
+    // Refresh bills report every 5 minutes
+    setInterval(loadTodayBills, 300000);
+    
+    // Load daily costs report
+    loadDailyCosts();
+    // Refresh costs report every 5 minutes
+    setInterval(loadDailyCosts, 300000);
+    
+    // Load vehicle security summary
+    loadVehicleSummary();
+    // Refresh vehicle summary every 5 minutes
+    setInterval(loadVehicleSummary, 300000);
+    
+    // Load inventory changes report
+    loadInventoryReport();
+    // Refresh inventory report every 5 minutes
+    setInterval(loadInventoryReport, 300000);
+    
+    // Load water bottle summary report
+    loadWaterBottleReport();
+    // Refresh water bottle report every 5 minutes
+    setInterval(loadWaterBottleReport, 300000);
 });
 
 function renderSections() {

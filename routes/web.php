@@ -264,6 +264,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('vehicle-security/dashboard-stats', [VehicleSecurityController::class, 'getDashboardStats'])
     ->name('vehicle-security.dashboard-stats');
+    Route::get('vehicle-security/daily-summary', [VehicleSecurityController::class, 'getDailySummary'])
+    ->name('vehicle-security.daily-summary');
     Route::post('vehicle-security/reset-rooms', [VehicleSecurityController::class, 'resetRoomStatus'])
     ->name('vehicle-security.reset-rooms');
    Route::resource('vehicle-security', VehicleSecurityController::class);
@@ -378,6 +380,18 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/duty-roster/tasks', [StaffAllocationController::class, 'saveTask'])->name('duty.roster.api.task.save');
     Route::delete('/api/duty-roster/tasks/{id}', [StaffAllocationController::class, 'deleteTask'])->name('duty.roster.api.task.delete');
     Route::get('/api/duty-roster/tasks', [StaffAllocationController::class, 'getTasks'])->name('duty.roster.api.tasks');
+    
+    // Today's Bills Report
+    Route::get('/api/duty-roster/today-bills', [StaffAllocationController::class, 'getTodayBills'])->name('duty.roster.api.today-bills');
+    
+    // Daily Costs Report
+    Route::get('/api/duty-roster/daily-costs', [StaffAllocationController::class, 'getDailyCosts'])->name('duty.roster.api.daily-costs');
+    
+    // Daily Inventory Changes Report
+    Route::get('/api/duty-roster/inventory-changes', [StaffAllocationController::class, 'getDailyInventoryChanges'])->name('duty.roster.api.inventory-changes');
+    
+    // Daily Water Bottle Summary Report
+    Route::get('/api/duty-roster/water-bottle-summary', [StaffAllocationController::class, 'getDailyWaterBottleSummary'])->name('duty.roster.api.water-bottle-summary');
 });
 
    // UPDATED Staff Personal Information Routes with Password Protection

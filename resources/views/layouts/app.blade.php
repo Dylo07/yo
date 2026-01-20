@@ -64,45 +64,6 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <!-- Left Side Of Navbar -->
             <ul class="navbar-nav me-auto">
-                @auth
-                    {{-- Add Staff Management dropdown here --}}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="staffDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-users"></i> Staff Management
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="staffDropdown">
-                            <li>
-                                <a class="dropdown-item" href="{{ route('attendance.manual.index') }}">
-                                    <i class="fas fa-calendar-check"></i> Manual Attendance
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ route('staff.information') }}">
-                                    <i class="fas fa-id-card"></i> Staff Information 
-                                    <small class="text-warning">(Password Required)</small>
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">Quick Actions</h6></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ route('staff.personal.create') }}">
-                                    <i class="fas fa-user-plus"></i> Add New Staff
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{{ route('staff.information.export') }}">
-                                    <i class="fas fa-download"></i> Export Staff Data
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item" href="{{ route('duty.roster.index') }}">
-                                    <i class="fas fa-map-marker-alt"></i> Duty Roster
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                @endauth
             </ul>
 
             <!-- Right Side Of Navbar -->
@@ -153,5 +114,16 @@
 
     <!-- Place for scripts -->
     @stack('scripts')
+    
+    <!-- Initialize Bootstrap dropdowns -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all Bootstrap dropdowns
+            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        });
+    </script>
 </body>
 </html>

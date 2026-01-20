@@ -114,16 +114,5 @@
 
     <!-- Place for scripts -->
     @stack('scripts')
-    
-    <!-- Initialize Bootstrap dropdowns -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize all Bootstrap dropdowns
-            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
-            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
-                return new bootstrap.Dropdown(dropdownToggleEl);
-            });
-        });
-    </script>
 </body>
 </html>

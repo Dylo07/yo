@@ -1394,7 +1394,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
 @endsection
 
 @push('scripts')

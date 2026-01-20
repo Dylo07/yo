@@ -392,6 +392,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Daily Water Bottle Summary Report
     Route::get('/api/duty-roster/water-bottle-summary', [StaffAllocationController::class, 'getDailyWaterBottleSummary'])->name('duty.roster.api.water-bottle-summary');
+    
+    // Active Orders Summary Report
+    Route::get('/api/duty-roster/active-orders', [StaffAllocationController::class, 'getActiveOrders'])->name('duty.roster.api.active-orders');
 });
 
    // UPDATED Staff Personal Information Routes with Password Protection

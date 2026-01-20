@@ -693,6 +693,45 @@
                 </div>
             </div>
         </div>
+
+        <!-- Active Orders Summary (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-orange-600 text-white">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-utensils"></i> Active Orders
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshActiveOrders()" class="text-white hover:text-orange-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-3 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Active Tables</div>
+                    <div class="text-lg font-bold text-gray-800" id="aoTotalOrders">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Items</div>
+                    <div class="text-lg font-bold text-blue-600" id="aoTotalItems">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Amount</div>
+                    <div class="text-lg font-bold text-emerald-600" id="aoTotalAmount">Rs 0</div>
+                </div>
+            </div>
+
+            <!-- Active Orders List -->
+            <div class="p-3" style="max-height: 500px; overflow-y: auto;">
+                <div id="activeOrdersList" class="space-y-2">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
         @endif
     </div>
 
@@ -2014,6 +2053,133 @@ function loadWaterBottleForYesterday() {
     loadWaterBottleForDate(yesterdayStr);
 }
 
+// ============ ACTIVE ORDERS SUMMARY ============
+async function loadActiveOrders() {
+    try {
+        const response = await fetch('/api/duty-roster/active-orders');
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // Update summary stats
+            document.getElementById('aoTotalOrders').textContent = data.summary.total_orders;
+            document.getElementById('aoTotalItems').textContent = data.summary.total_items;
+            document.getElementById('aoTotalAmount').textContent = 'Rs ' + Number(data.summary.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            // Render orders list
+            renderActiveOrdersList(data.orders);
+        }
+    } catch (error) {
+        console.error('Error loading active orders:', error);
+        document.getElementById('activeOrdersList').innerHTML = '<div class="text-center text-red-500 text-xs py-2">Error loading data</div>';
+    }
+}
+
+function renderActiveOrdersList(orders) {
+    const list = document.getElementById('activeOrdersList');
+    
+    if (!orders || orders.length === 0) {
+        list.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No active orders</div>';
+        return;
+    }
+    
+    let html = '';
+    orders.forEach((order, index) => {
+        const totalAmount = Number(order.total_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const accordionId = `order-${order.id}`;
+        
+        html += `
+            <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                <!-- Accordion Header (Always Visible) -->
+                <div class="p-3 cursor-pointer hover:bg-gray-50 transition-colors" onclick="toggleOrderDetails('${accordionId}')">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 flex-1">
+                            <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform duration-200" id="${accordionId}-icon"></i>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-sm text-gray-800">${order.table_name}</span>
+                                    <span class="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium">
+                                        Sale #${order.id}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-0.5">
+                                    <i class="fas fa-user text-gray-400"></i> ${order.user_name}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right ml-2">
+                            <div class="text-sm font-bold text-emerald-600">Rs ${totalAmount}</div>
+                            <div class="text-xs text-gray-500">${order.item_count} items</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Accordion Content (Expandable) -->
+                <div id="${accordionId}" class="accordion-content" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
+                    <div class="px-3 pb-3 border-t border-gray-100">
+                        <div class="text-xs text-gray-500 mb-2 mt-2">
+                            <i class="far fa-clock"></i> ${order.last_updated}
+                        </div>
+                        
+                        <!-- All Order Items -->
+                        <div class="space-y-1">`;
+        
+        // Show ALL items when expanded
+        order.items.forEach(item => {
+            const itemTotal = Number(item.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const statusBadge = item.status === 'confirm' 
+                ? '<span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">✓</span>'
+                : '<span class="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">⏳</span>';
+            
+            html += `
+                <div class="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1.5">
+                    <div class="flex items-center gap-2 flex-1">
+                        ${statusBadge}
+                        <span class="text-gray-700">${item.menu_name}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-500">×${item.quantity}</span>
+                        <span class="text-gray-700 font-medium">Rs ${itemTotal}</span>
+                    </div>
+                </div>`;
+        });
+        
+        html += `
+                        </div>
+                        
+                        <div class="mt-3 pt-2 border-t border-gray-100">
+                            <a href="/cashier" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1">
+                                <i class="fas fa-external-link-alt"></i> View in Cashier
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    });
+    
+    list.innerHTML = html;
+}
+
+function toggleOrderDetails(accordionId) {
+    const content = document.getElementById(accordionId);
+    const icon = document.getElementById(accordionId + '-icon');
+    
+    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+        // Collapse
+        content.style.maxHeight = '0px';
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        // Expand
+        content.style.maxHeight = content.scrollHeight + 'px';
+        icon.style.transform = 'rotate(90deg)';
+    }
+}
+
+function refreshActiveOrders() {
+    loadActiveOrders();
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -2057,6 +2223,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadWaterBottleReport();
     // Refresh water bottle report every 5 minutes
     setInterval(loadWaterBottleReport, 300000);
+    
+    // Load active orders summary
+    loadActiveOrders();
+    // Refresh active orders every 2 minutes (more frequent for real-time updates)
+    setInterval(loadActiveOrders, 120000);
 });
 
 function renderSections() {

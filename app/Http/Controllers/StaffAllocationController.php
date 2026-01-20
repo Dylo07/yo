@@ -703,4 +703,60 @@ class StaffAllocationController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get active orders (unpaid sales) from cashier system
+     */
+    public function getActiveOrders(Request $request)
+    {
+        // Get all unpaid sales with their details
+        $activeOrders = Sale::where('sale_status', 'unpaid')
+            ->with(['saleDetails'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $formattedOrders = $activeOrders->map(function($sale) {
+            $itemCount = $sale->saleDetails->sum('quantity');
+            $lastUpdated = $sale->updated_at->diffForHumans();
+            
+            return [
+                'id' => $sale->id,
+                'table_name' => $sale->table_name,
+                'table_id' => $sale->table_id,
+                'total_price' => $sale->total_price,
+                'item_count' => $itemCount,
+                'user_name' => $sale->user_name,
+                'created_at' => $sale->created_at->format('Y-m-d H:i'),
+                'updated_at' => $sale->updated_at->format('Y-m-d H:i'),
+                'last_updated' => $lastUpdated,
+                'items' => $sale->saleDetails->map(function($detail) {
+                    return [
+                        'menu_name' => $detail->menu_name,
+                        'quantity' => $detail->quantity,
+                        'price' => $detail->menu_price,
+                        'total' => $detail->menu_price * $detail->quantity,
+                        'status' => $detail->status
+                    ];
+                })
+            ];
+        });
+
+        $totalOrders = $activeOrders->count();
+        $totalAmount = $activeOrders->sum('total_price');
+        $totalItems = $activeOrders->sum(function($sale) {
+            return $sale->saleDetails->sum('quantity');
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'orders' => $formattedOrders,
+                'summary' => [
+                    'total_orders' => $totalOrders,
+                    'total_amount' => $totalAmount,
+                    'total_items' => $totalItems
+                ]
+            ]
+        ]);
+    }
 }

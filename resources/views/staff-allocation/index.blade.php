@@ -1444,6 +1444,7 @@ function renderRecentBills(bills) {
     bills.forEach(bill => {
         const time = new Date(bill.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const amount = parseFloat(bill.total_price);
+        const billId = `bill-content-${bill.id}`;
         
         // Get bill items
         let itemsHtml = '';
@@ -1451,34 +1452,61 @@ function renderRecentBills(bills) {
             bill.sale_details.forEach(item => {
                 const itemTotal = parseFloat(item.menu_price) * parseInt(item.quantity);
                 itemsHtml += `
-                    <div class="flex justify-between text-[10px] text-gray-600 py-0.5">
-                        <span>${item.menu_name} × ${item.quantity}</span>
-                        <span>Rs ${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    <div class="flex justify-between items-center text-[11px] text-gray-600 py-1 border-b border-gray-100 last:border-0">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium text-gray-800">${item.menu_name}</span>
+                            <span class="text-gray-400 text-[10px]">× ${item.quantity}</span>
+                        </div>
+                        <span class="font-medium">Rs ${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
                 `;
             });
+        } else {
+            itemsHtml = '<div class="text-center text-gray-400 text-[10px] py-1">No items found</div>';
         }
         
         html += `
-            <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-2 transition-shadow hover:shadow-sm">
+                <div class="flex items-center justify-between p-3 bg-white cursor-pointer hover:bg-gray-50 transition-colors" onclick="toggleBillDetails('${billId}')">
                     <div class="flex flex-col gap-0.5">
-                        <span class="font-bold text-gray-800 text-sm">#${bill.id}</span>
-                        <span class="text-gray-500 text-[10px]">${time} • ${bill.table_name || 'N/A'} • ${bill.user_name || 'N/A'}</span>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform duration-200" id="${billId}-icon"></i>
+                            <span class="font-bold text-gray-800 text-sm">#${bill.id}</span>
+                        </div>
+                        <span class="text-gray-500 text-[10px] pl-5 flex items-center gap-1">
+                            <span>${time}</span>
+                            <span>•</span>
+                            <span>${bill.table_name || 'Table N/A'}</span>
+                            <span>•</span>
+                            <span>${bill.user_name || 'N/A'}</span>
+                        </span>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right pl-2">
                         <div class="font-bold text-emerald-600 text-sm">Rs ${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
                     </div>
                 </div>
-                ${itemsHtml ? `
-                    <div class="space-y-0.5 bg-gray-50 rounded p-2">
+                <div id="${billId}" class="hidden bg-gray-50 border-t border-gray-100 px-3 py-2 transition-all duration-300">
+                    <div class="pl-2">
                         ${itemsHtml}
                     </div>
-                ` : '<div class="text-center text-gray-400 text-[10px]">No items</div>'}
+                </div>
             </div>
         `;
     });
     list.innerHTML = html;
+}
+
+function toggleBillDetails(billId) {
+    const content = document.getElementById(billId);
+    const icon = document.getElementById(`${billId}-icon`);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
 }
 
 function refreshBillsReport() {

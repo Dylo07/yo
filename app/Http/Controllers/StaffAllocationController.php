@@ -611,30 +611,42 @@ class StaffAllocationController extends Controller
         // Format data for frontend
         $formattedChanges = $inventoryChanges->map(function($log) use ($currentStockLevels) {
             $currentStock = $currentStockLevels[$log->item_id] ?? 0;
+            $isAdd = $log->action === 'add';
+            
             return [
                 'id' => $log->id,
                 'time' => $log->created_at->format('H:i'),
                 'item_name' => $log->item->name ?? 'Unknown Item',
-                'category' => $log->item->group->name ?? 'Unknown Category',
+                'category' => $log->item->group->name ?? 'Other',
                 'action' => $log->action, // 'added', 'removed', 'updated'
                 'location' => $log->location ?? 'Main Kitchen',
-                'quantity' => $log->quantity,
+                'quantity' => $log->quantity, // Always positive in DB
                 'current_stock' => $currentStock,
                 'user' => $log->user->name ?? 'Unknown',
                 'description' => $log->description,
-                'type' => $log->quantity > 0 ? 'added' : 'removed'
+                'type' => $isAdd ? 'added' : 'removed'
             ];
         });
 
         // Calculate summary stats
         $totalChanges = $formattedChanges->count();
-        $itemsAdded = $formattedChanges->where('quantity', '>', 0)->count();
-        $itemsRemoved = $formattedChanges->where('quantity', '<', 0)->count();
+        $itemsAdded = $formattedChanges->where('type', 'added')->count();
+        $itemsRemoved = $formattedChanges->where('type', 'removed')->count();
+
+        // Group by category for frontend
+        $groupedChanges = $formattedChanges->groupBy('category')->map(function($items, $category) {
+            return [
+                'name' => $category,
+                'count' => $items->count(),
+                'items' => $items->values()
+            ];
+        })->values(); // Convert to array list
 
         return response()->json([
             'success' => true,
             'data' => [
-                'changes' => $formattedChanges,
+                'changes' => $formattedChanges, // Keep flat list for backward compat or flexible use
+                'grouped_changes' => $groupedChanges, // New grouped structure
                 'summary' => [
                     'total_changes' => $totalChanges,
                     'items_added' => $itemsAdded,

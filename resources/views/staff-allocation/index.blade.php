@@ -1782,7 +1782,7 @@ async function loadInventoryReport(date = null) {
             document.getElementById('invItemsRemoved').textContent = summary.items_removed;
             
             // Render inventory list
-            renderInventoryList(data.changes);
+            renderInventoryList(data.grouped_changes);
         }
     } catch (error) {
         console.error('Error loading inventory report:', error);
@@ -1790,50 +1790,79 @@ async function loadInventoryReport(date = null) {
     }
 }
 
-function renderInventoryList(changes) {
+function renderInventoryList(groupedChanges) {
     const list = document.getElementById('inventoryList');
-    if (!changes || changes.length === 0) {
+    if (!groupedChanges || groupedChanges.length === 0) {
         list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No inventory changes</div>';
         return;
     }
     
     let html = '';
-    changes.forEach(log => {
-        const isAdded = log.type === 'added';
-        const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
-        const actionIcon = isAdded ? 'fa-plus' : 'fa-minus';
-        const qtyPrefix = isAdded ? '+' : '';
+    groupedChanges.forEach((group, index) => {
+        const groupId = `inv-group-${index}`;
         
         html += `
-            <div class="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between mb-1">
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-2">
+                <div class="flex items-center justify-between p-2 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors" onclick="toggleInventoryGroup('${groupId}')">
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor} font-bold">
-                            ${qtyPrefix}${log.quantity}
-                        </span>
-                        <span class="font-bold text-gray-800 text-sm">${log.item_name}</span>
+                        <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform" id="${groupId}-icon"></i>
+                        <span class="font-bold text-gray-700 text-xs">${group.name}</span>
                     </div>
-                    <span class="text-[10px] text-gray-500">${log.time}</span>
+                    <span class="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">${group.count}</span>
                 </div>
-                <div class="flex items-center justify-between text-[10px] text-gray-600">
-                    <div class="flex flex-col gap-0.5">
-                        <span><i class="fas fa-layer-group mr-1 text-gray-400"></i>${log.category}</span>
-                        <span><i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>${log.location}</span>
-                    </div>
-                    <div class="text-right flex flex-col gap-0.5">
-                        <span class="font-medium">Current: ${log.current_stock}</span>
-                        <span class="text-gray-400">By: ${log.user}</span>
+                <div id="${groupId}" class="hidden border-t border-gray-200 bg-white">
+                    <div class="divide-y divide-gray-100">
+                        ${group.items.map(log => {
+                            const isAdded = log.type === 'added';
+                            const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
+                            const qtyPrefix = isAdded ? '+' : '-';
+                            
+                            return `
+                                <div class="p-2 hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor} font-bold min-w-[30px] text-center">
+                                                ${qtyPrefix}${Math.abs(log.quantity)}
+                                            </span>
+                                            <span class="font-bold text-gray-800 text-xs truncate max-w-[150px]">${log.item_name}</span>
+                                        </div>
+                                        <span class="text-[10px] text-gray-500">${log.time}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[10px] text-gray-500 pl-1">
+                                        <div class="flex items-center gap-2">
+                                            <span><i class="fas fa-map-marker-alt mr-1 text-gray-300"></i>${log.location}</span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-gray-400">By: ${log.user}</span>
+                                        </div>
+                                    </div>
+                                    ${log.description ? `
+                                        <div class="text-[10px] text-gray-400 mt-1 italic pl-1 border-l-2 border-gray-100 ml-1">
+                                            ${log.description}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
-                ${log.description ? `
-                    <div class="text-[10px] text-gray-500 mt-1 italic border-t border-gray-100 pt-1">
-                        "${log.description}"
-                    </div>
-                ` : ''}
             </div>
         `;
     });
     list.innerHTML = html;
+}
+
+function toggleInventoryGroup(groupId) {
+    const content = document.getElementById(groupId);
+    const icon = document.getElementById(`${groupId}-icon`);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
 }
 
 function refreshInventoryReport() {

@@ -685,7 +685,9 @@ class StaffAllocationController extends Controller
                 'quantity' => $record->stock,
                 'type' => $record->stock > 0 ? 'added' : 'issued',
                 'user' => $record->user->name ?? 'Unknown',
-                'description' => $record->description
+                'description' => $record->description,
+                'notes' => $record->notes,
+                'sale_id' => $record->sale_id
             ];
         });
 

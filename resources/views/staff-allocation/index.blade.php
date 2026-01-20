@@ -1958,6 +1958,7 @@ function renderWaterBottleList(history) {
         const isAdded = record.type === 'added';
         const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
         const qtyPrefix = isAdded ? '+' : '';
+        const cleanNote = record.notes ? record.notes.replace('Room: ', '') : '';
         
         html += `
             <div class="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition-colors">
@@ -1971,7 +1972,12 @@ function renderWaterBottleList(history) {
                     <span class="text-[10px] text-gray-500">${record.time}</span>
                 </div>
                 <div class="flex items-center justify-between text-[10px] text-gray-600">
-                    <div class="text-right flex flex-col gap-0.5 w-full">
+                    <div class="flex items-center gap-1">
+                        ${cleanNote ? `<span class="bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded font-medium">${cleanNote}</span>` : ''}
+                        ${record.sale_id ? `<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">BILL #${record.sale_id}</span>` : ''}
+                        ${!cleanNote && !record.sale_id ? '<span class="text-gray-300">-</span>' : ''}
+                    </div>
+                    <div class="text-right">
                         <span class="text-gray-400">By: ${record.user}</span>
                     </div>
                 </div>

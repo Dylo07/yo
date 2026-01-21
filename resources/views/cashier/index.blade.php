@@ -437,15 +437,18 @@ $(document).ready(function(){
   // Hide table details by default
  $("#table-detail").hide();
 
-    window.onload = function() {
+    // Load tables immediately on document ready (not window.onload)
+    function loadTables() {
         if($("#table-detail").is(":hidden")){
-            // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
-            $.get("/cashier/getTable", function(data){
+            // Add cache busting parameter to force fresh data
+            $.get("/cashier/getTable?_=" + new Date().getTime(), function(data){
                 $("#table-detail").html(data);
                 $("#table-detail").slideDown('fast');
                 $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-dark');
             }).fail(function(xhr, status, error) {
                 console.error('Error loading tables:', error);
+                // Retry once after 1 second if failed
+                setTimeout(loadTables, 1000);
             });
         } else {
             $("#table-detail").slideUp('fast');
@@ -727,6 +730,9 @@ $("#order-detail").on("click", ".btn-wedding-payment", function(){
     // Redirect directly to the wedding advance receipt page
     window.location.href = "/cashier/showAdvanceWeddingRecipt/" + saleId;
 });
+
+// Call loadTables immediately on document ready
+loadTables();
 });
 
 

@@ -435,20 +435,19 @@ class StaffAllocationController extends Controller
     }
 
     /**
-     * Get bills report for a specific date (00:00 to 23:59 or current time if today)
+     * Get bills report for a specific date (00:00 to 23:59 - always full day)
      */
     public function getTodayBills(Request $request)
     {
         $date = $request->input('date', date('Y-m-d'));
-        $isToday = $date === date('Y-m-d');
         
         $dateStart = Carbon::parse($date)->startOfDay();
-        $dateEnd = $isToday ? Carbon::now() : Carbon::parse($date)->endOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
 
         $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
             ->where('sale_status', 'paid')
             ->with('saleDetails')
-            ->orderBy('updated_at', 'desc')
+            ->orderBy('id', 'asc')
             ->get();
 
         $totalSale = $sales->sum('total_price');
@@ -483,12 +482,11 @@ class StaffAllocationController extends Controller
             ->limit(10)
             ->get();
 
-        // Get recent bills (last 10) with items
+        // Get all bills ordered by ID (same as report) - no limit
         $recentBills = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
             ->where('sale_status', 'paid')
             ->with('saleDetails')
-            ->orderBy('updated_at', 'desc')
-            ->limit(10)
+            ->orderBy('id', 'asc')
             ->get();
 
         return response()->json([

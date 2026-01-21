@@ -208,24 +208,6 @@
     text-align: center;
 }
 
-/* Hide Tables button styling */
-#btn-show-tables {
-    background: #3b82f6;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    color: white;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    margin-bottom: 20px;
-}
-
-#btn-show-tables:hover {
-    background: #1d4ed8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
 @media (max-width: 1200px) {
     .order-panel-right {
         position: static;
@@ -278,8 +260,6 @@
     <div id="table-detail"></div>
     <div class="row justify-content-center py5">
       <div class="col-md-12"> <!-- CHANGED: Full width for left content -->
-        <button tabindex="-2" class="btn btn-primary btn-block" id="btn-show-tables">View All Tables</button>
-        
         <!-- MOVED: Categories and menu to main area -->
         <div class="mt-3">
           <nav>
@@ -434,33 +414,22 @@ $(document).ready(function(){
         }
     });
 
-  // Hide table details by default
- $("#table-detail").hide();
-
-    // Load tables immediately on document ready (not window.onload)
+    // Load tables immediately without animation
     function loadTables() {
-        if($("#table-detail").is(":hidden")){
-            // Add cache busting parameter to force fresh data
-            $.get("/cashier/getTable?_=" + new Date().getTime(), function(data){
-                $("#table-detail").html(data);
-                $("#table-detail").slideDown('fast');
-                $("#btn-show-tables").html('Hide Tables').removeClass('btn-primary').addClass('btn-dark');
-            }).fail(function(xhr, status, error) {
-                console.error('Error loading tables:', error);
-                // Retry once after 1 second if failed
-                setTimeout(loadTables, 1000);
-            });
-        } else {
-            $("#table-detail").slideUp('fast');
-            $("#btn-show-tables").html('View All Tables').removeClass('btn-danger').addClass('btn-primary');
-        }
-        setTimeout(function(){
-            $("#table-detail .table-card.available").first().click();
-            // SIMPLIFIED: Load first category like original code
-            setTimeout(function() {
+        // Add cache busting parameter to force fresh data
+        $.get("/cashier/getTable?_=" + new Date().getTime(), function(data){
+            $("#table-detail").html(data).show();
+            
+            // Auto-select first available table and category
+            setTimeout(function(){
+                $("#table-detail .table-card.available").first().click();
                 $(".nav-link").first().click();
-            }, 500);
-        }, 1000);
+            }, 300);
+        }).fail(function(xhr, status, error) {
+            console.error('Error loading tables:', error);
+            // Retry once after 1 second if failed
+            setTimeout(loadTables, 1000);
+        });
     };
 
   // SIMPLIFIED: Search function (back to original logic)

@@ -166,7 +166,12 @@ class CashierController extends Controller
     }
 
     public function getSaleDetailsByTable($table_id){
-        $sale = Sale::where('table_id', $table_id)->where('sale_status','unpaid')->first();
+        // Optimize: Use eager loading to fetch sale with details in one query
+        $sale = Sale::where('table_id', $table_id)
+            ->where('sale_status','unpaid')
+            ->with('saleDetails')
+            ->first();
+        
         $html = '';
         if($sale){
             $sale_id = $sale->id;

@@ -477,25 +477,30 @@ $(document).ready(function(){
     SELECTED_TABLE_ID = $(this).data("id");
     SELECTED_TABLE_NAME = $(this).data("name");
     
-    // Update visual selection for modern cards
+    // Update visual selection immediately for instant feedback
     $(".table-card").removeClass('selected');
     $(this).addClass('selected');
     
+    // Show selected table immediately
     $("#selected-table").html('<div class="alert alert-info"><strong>Table: ' + SELECTED_TABLE_NAME + '</strong></div>');
-    // FIXED: Use relative URL to avoid HTTPS/HTTP conflicts
-    $.get("/cashier/getSaleDetailsByTable/" + SELECTED_TABLE_ID, function(data){
+    
+    // Show loading indicator immediately for better UX
+    $("#order-detail").html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Loading order details...</p></div>');
+    
+    // Add cache busting and fetch sale details
+    $.get("/cashier/getSaleDetailsByTable/" + SELECTED_TABLE_ID + "?_=" + new Date().getTime(), function(data){
         $("#order-detail").html(data);
         
         // If no sale exists for this table, we need to create a new sale first
-if(data.includes("Not Found Any Sale Details for the Selected Table")) {
-    // Create a new table interface for tables without existing orders
-    var html = '<div class="alert alert-warning">Not Found Any Sale Details for the Selected Table</div>';
-    html += '<hr><div class="text-center mt-4">';
-    html += '<p>Click Advance Payment for Advance payments.</p>';
-    html += '<a href="/cashier/setup-advance-payment/' + SELECTED_TABLE_ID + '" class="btn btn-primary btn-block mt-3">Advance Payment</a>';
-    html += '</div>';
-    $("#order-detail").html(html);
-}
+        if(data.includes("Not Found Any Sale Details for the Selected Table")) {
+            // Create a new table interface for tables without existing orders
+            var html = '<div class="alert alert-warning">Not Found Any Sale Details for the Selected Table</div>';
+            html += '<hr><div class="text-center mt-4">';
+            html += '<p>Click Advance Payment for Advance payments.</p>';
+            html += '<a href="/cashier/setup-advance-payment/' + SELECTED_TABLE_ID + '" class="btn btn-primary btn-block mt-3">Advance Payment</a>';
+            html += '</div>';
+            $("#order-detail").html(html);
+        }
     }).fail(function(xhr, status, error) {
         console.error('Error loading sale details:', error);
         $("#order-detail").html('<div class="alert alert-danger">Error loading order details. Please try again.</div>');

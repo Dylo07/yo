@@ -1482,7 +1482,7 @@ function renderRecentBills(bills) {
     let html = '';
     bills.forEach(bill => {
         const time = new Date(bill.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-        const amount = parseFloat(bill.total_price);
+        const amount = parseFloat(bill.total_recieved);
         const billId = `bill-content-${bill.id}`;
         
         // Get bill items

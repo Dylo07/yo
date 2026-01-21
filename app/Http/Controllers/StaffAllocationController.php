@@ -450,8 +450,11 @@ class StaffAllocationController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        $totalSale = $sales->sum('total_recieved');
-        $serviceCharge = $sales->sum('total_recieved') - $sales->sum('total_price');
+        // total_recieved is service charge only, so total = total_price + total_recieved
+        $totalSale = $sales->sum(function($sale) {
+            return $sale->total_price + ($sale->total_recieved ?? 0);
+        });
+        $serviceCharge = $sales->sum('total_recieved');
         $totalBills = $sales->count();
 
         // Get hourly breakdown
@@ -460,7 +463,7 @@ class StaffAllocationController extends Controller
             ->select(
                 DB::raw('HOUR(updated_at) as hour'),
                 DB::raw('COUNT(*) as bill_count'),
-                DB::raw('SUM(total_recieved) as total_amount')
+                DB::raw('SUM(total_price + COALESCE(total_recieved, 0)) as total_amount')
             )
             ->groupBy('hour')
             ->orderBy('hour', 'asc')

@@ -42,6 +42,11 @@
                         <i class="fas fa-chart-line me-1"></i>Monthly Stock Movement Dashboard
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-warning fw-bold" id="cost-tab" data-bs-toggle="tab" data-bs-target="#costPane" type="button" role="tab">
+                        <i class="fas fa-rupee-sign me-1"></i>Cost Analysis Dashboard
+                    </button>
+                </li>
                 <li class="nav-item">
                     <a href="{{ route('categories-products.index') }}" class="nav-link">
                         Category & Product Management
@@ -482,8 +487,10 @@
         </div>
     </div>
     @endif
+    </div><!-- End Monthly Stock Movement Dashboard Tab -->
 
-    <!-- Cost Analysis Dashboard -->
+    <!-- Cost Analysis Dashboard Tab -->
+    <div class="tab-pane fade" id="costPane" role="tabpanel">
     @if(isset($demandData) && count($demandData) > 0)
     @php
         $itemsWithCost = array_filter($demandData, function($item) {
@@ -653,361 +660,11 @@
         </div>
     </div>
     @endif
-    @endif
-
-    @if($selectedGroup)
-        <!-- Stock Table for Selected Category -->
-        <h4>{{ $selectedGroup->name }}</h4>
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th style="min-width: 200px; position: sticky; left: 0; background: #f8f9fa; z-index: 20;">Item</th>
-                        @for($i = 1; $i <= 31; $i++)
-                            <th class="text-center" style="min-width: 60px;">{{ $i }}</th>
-                        @endfor
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($selectedGroup->items as $item)
-                        @php
-                            // Determine initial last known stock from previous month if available
-                            $lastKnownStock = '-';
-                            $prevMonthDate = sprintf('%04d-%02d-%02d', 
-                                $currentMonth == 1 ? $currentYear - 1 : $currentYear, 
-                                $currentMonth == 1 ? 12 : $currentMonth - 1, 
-                                \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->subDay()->day
-                            );
-                            
-                            // Check if we have the previous month's data in our pre-loaded set
-                            // (The controller loads current month + last day of prev month)
-                            // We need to construct the date string correctly for the check
-                            $prevDateObj = \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->subDay();
-                            $prevDateString = $prevDateObj->toDateString();
-                            
-                            if (isset($inventoryData[$item->id][$prevDateString])) {
-                                $lastKnownStock = $inventoryData[$item->id][$prevDateString];
-                            }
-                        @endphp
-                        <tr>
-                            <td style="position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #dee2e6;">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold">{{ $item->name }}</span>
-                                    <button type="button" class="btn btn-sm btn-outline-primary ms-2 rounded-circle" 
-                                            onclick="showItemTrend({{ $item->id }}, '{{ addslashes($item->name) }}')"
-                                            title="View Trend Graph"
-                                            style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                                        <i class="fas fa-chart-line"></i>
-                                    </button>
-                                </div>
-                            </td>
-                            @for($i = 1; $i <= 31; $i++)
-                                @php
-                                    $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
-                                    $isFuture = $date > now()->toDateString();
-                                    
-                                    // 1. Determine Stock Level (O(1) Lookup)
-                                    if (isset($inventoryData[$item->id][$date])) {
-                                        $displayStock = $inventoryData[$item->id][$date];
-                                        $lastKnownStock = $displayStock; // Update tracker
-                                    } else {
-                                        // Use carried over value if not in future
-                                        $displayStock = $isFuture ? '-' : $lastKnownStock;
-                                    }
-                                    
-                                    // 2. Determine Logs (O(1) Lookup)
-                                    $logData = $logsGrouped[$item->id][$date] ?? ['add' => 0, 'remove' => 0];
-                                    $additions = $logData['add'];
-                                    $removals = $logData['remove'];
-                                @endphp
-                                <td class="text-center p-1">
-                                    @if(!$isFuture)
-                                        <div class="fw-bold" style="font-size: 0.95rem;">{{ $displayStock }}</div>
-                                        @if($additions > 0)
-                                            <div class="text-success small" style="font-size: 0.75rem; line-height: 1;">+{{ $additions }}</div>
-                                        @endif
-                                        @if($removals > 0)
-                                            <div class="text-danger small" style="font-size: 0.75rem; line-height: 1;">-{{ $removals }}</div>
-                                        @endif
-                                    @else
-                                        <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                            @endfor
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Stock Update Section -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Update Stock</h3>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('stock.update') }}" method="POST" class="mb-4" onsubmit="showLoading()">
-                    @csrf
-                    <div class="mb-3">
-                        <label for="item" class="form-label">Item</label>
-                        <select name="item_id" id="item" class="form-select" required>
-                            <option value="">Select an item</option>
-                            @foreach($selectedGroup->items as $item)
-                                <option value="{{ $item->id }}">{{ $item->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="quantity" class="form-label">Quantity</label>
-                        <input type="number" name="quantity" id="quantity" class="form-control" 
-                               step="0.01" min="0.01" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <input type="text" name="description" id="description" class="form-control" 
-                               placeholder="Enter a description" required>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="submit" name="action" value="add" class="btn btn-success">Add Stock</button>
-                        <button type="submit" name="action" value="remove_main_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Main Kitchen')">Main Kitchen</button>
-                        <button type="submit" name="action" value="remove_banquet_hall_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall Kitchen')">Banquet Hall Kitchen</button>
-                        <button type="submit" name="action" value="remove_banquet_hall" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall')">Banquet Hall</button>
-                        <button type="submit" name="action" value="remove_restaurant" class="btn btn-danger" onclick="return confirmRemoval('Restaurant')">Restaurant</button>
-                        <button type="submit" name="action" value="remove_rooms" class="btn btn-danger" onclick="return confirmRemoval('Rooms')">Rooms</button>
-                        <button type="submit" name="action" value="remove_garden" class="btn btn-danger" onclick="return confirmRemoval('Garden')">Garden</button>
-                        <button type="submit" name="action" value="remove_other" class="btn btn-danger" onclick="return confirmRemoval('Other')">Other</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Category-wise Usage Report Section -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Category-wise Usage Report</h3>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
-                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                    <input type="hidden" name="month" value="{{ $currentMonth }}">
-                    <input type="hidden" name="year" value="{{ $currentYear }}">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="usage_date" class="form-label">Select Date</label>
-                            <input type="date" id="usage_date" name="usage_date" class="form-control" 
-                                   value="{{ request('usage_date', now()->toDateString()) }}"
-                                   max="{{ now()->toDateString() }}"
-                                   onchange="this.form.submit()">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="usage_category" class="form-label">Filter by Location</label>
-                            <select name="usage_category" id="usage_category" class="form-select" onchange="this.form.submit()">
-                                <option value="">All Locations</option>
-                                <option value="remove_main_kitchen" {{ request('usage_category') == 'remove_main_kitchen' ? 'selected' : '' }}>Main Kitchen</option>
-                                <option value="remove_banquet_hall_kitchen" {{ request('usage_category') == 'remove_banquet_hall_kitchen' ? 'selected' : '' }}>Banquet Hall Kitchen</option>
-                                <option value="remove_banquet_hall" {{ request('usage_category') == 'remove_banquet_hall' ? 'selected' : '' }}>Banquet Hall</option>
-                                <option value="remove_restaurant" {{ request('usage_category') == 'remove_restaurant' ? 'selected' : '' }}>Restaurant</option>
-                                <option value="remove_rooms" {{ request('usage_category') == 'remove_rooms' ? 'selected' : '' }}>Rooms</option>
-                                <option value="remove_garden" {{ request('usage_category') == 'remove_garden' ? 'selected' : '' }}>Garden</option>
-                                <option value="remove_other" {{ request('usage_category') == 'remove_other' ? 'selected' : '' }}>Other</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-
-                <!-- Usage Summary by Category -->
-                @if(isset($usageSummary) && $usageSummary->count() > 0)
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <h5>Usage Summary for {{ request('usage_date', now()->toDateString()) }}</h5>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Location</th>
-                                        <th>Total Items Used</th>
-                                        <th>Total Quantity</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($usageSummary as $summary)
-                                        <tr>
-                                            <td>
-                                                @switch($summary->action)
-                                                    @case('remove_main_kitchen')
-                                                        <span class="badge bg-primary">Main Kitchen</span>
-                                                        @break
-                                                    @case('remove_banquet_hall_kitchen')
-                                                        <span class="badge bg-info">Banquet Hall Kitchen</span>
-                                                        @break
-                                                    @case('remove_banquet_hall')
-                                                        <span class="badge bg-warning">Banquet Hall</span>
-                                                        @break
-                                                    @case('remove_restaurant')
-                                                        <span class="badge bg-success">Restaurant</span>
-                                                        @break
-                                                    @case('remove_rooms')
-                                                        <span class="badge bg-secondary">Rooms</span>
-                                                        @break
-                                                    @case('remove_garden')
-                                                        <span class="badge bg-dark">Garden</span>
-                                                        @break
-                                                    @case('remove_other')
-                                                        <span class="badge bg-danger">Other</span>
-                                                        @break
-                                                @endswitch
-                                            </td>
-                                            <td>{{ $summary->item_count }}</td>
-                                            <td>{{ number_format($summary->total_quantity, 2) }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                <!-- Detailed Usage Log -->
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>User</th>
-                                <th>Item</th>
-                                <th>Location</th>
-                                <th>Quantity</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($usageLogs as $log)
-                                <tr>
-                                    <td>{{ $log->created_at->format('H:i') }}</td>
-                                    <td>{{ $log->user->name }}</td>
-                                    <td>{{ $log->item->name }}</td>
-                                    <td>
-                                        @switch($log->action)
-                                            @case('add')
-                                                <span class="badge bg-success">Stock Added</span>
-                                                @break
-                                            @case('remove_main_kitchen')
-                                                <span class="badge bg-primary">Main Kitchen</span>
-                                                @break
-                                            @case('remove_banquet_hall_kitchen')
-                                                <span class="badge bg-info">Banquet Hall Kitchen</span>
-                                                @break
-                                            @case('remove_banquet_hall')
-                                                <span class="badge bg-warning">Banquet Hall</span>
-                                                @break
-                                            @case('remove_restaurant')
-                                                <span class="badge bg-success">Restaurant</span>
-                                                @break
-                                            @case('remove_rooms')
-                                                <span class="badge bg-secondary">Rooms</span>
-                                                @break
-                                            @case('remove_garden')
-                                                <span class="badge bg-dark">Garden</span>
-                                                @break
-                                            @case('remove_other')
-                                                <span class="badge bg-danger">Other</span>
-                                                @break
-                                            @default
-                                                <span class="badge bg-light text-dark">{{ ucfirst($log->action) }}</span>
-                                        @endswitch
-                                    </td>
-                                    <td>{{ $log->quantity }}</td>
-                                    <td>{{ $log->description }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">No stock movements on this date</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                @if(isset($usageLogs) && $usageLogs->hasPages())
-                <div class="d-flex justify-content-center mt-3">
-                    {{ $usageLogs->appends(request()->except('page'))->links('pagination::bootstrap-4') }}
-                </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- Stock Log Details Section (Original) -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">All Stock Activities</h3>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
-                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                    <input type="hidden" name="month" value="{{ $currentMonth }}">
-                    <input type="hidden" name="year" value="{{ $currentYear }}">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="log_date" class="form-label">Select Date</label>
-                            <input type="date" id="log_date" name="log_date" class="form-control" 
-                                   value="{{ request('log_date', now()->toDateString()) }}"
-                                   max="{{ now()->toDateString() }}"
-                                   onchange="this.form.submit()">
-                        </div>
-                    </div>
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>User</th>
-                                <th>Item</th>
-                                <th>Action</th>
-                                <th>Quantity</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($logs as $log)
-                                <tr>
-                                    <td>{{ $log->created_at->format('H:i') }}</td>
-                                    <td>{{ $log->user->name }}</td>
-                                    <td>{{ $log->item->name }}</td>
-                                    <td>
-                                        @if($log->action == 'add')
-                                            <span class="badge bg-success">Add</span>
-                                        @else
-                                            <span class="badge bg-danger">{{ str_replace('remove_', '', ucwords(str_replace('_', ' ', $log->action))) }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $log->quantity }}</td>
-                                    <td>{{ $log->description }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">No stock movements on this date</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                @if(isset($logs) && $logs->hasPages())
-                <div class="d-flex justify-content-center mt-3">
-                    {{ $logs->appends(request()->except('page'))->links('pagination::bootstrap-4') }}
-                </div>
-                @endif
-            </div>
-        </div>
     @else
-        <div class="alert alert-info">
-            Please select a category to view stock details
-        </div>
+        <div class="alert alert-info">No cost data available. Items need cost_per_unit assigned in kitchen inventory.</div>
     @endif
-    </div><!-- End Dashboard Tab -->
+    </div><!-- End Cost Analysis Dashboard Tab -->
+
     </div><!-- End Tab Content -->
 </div>
 
@@ -1039,260 +696,23 @@ td {
     padding: 8px !important;
     font-size: 0.9em;
 }
-td div {
-    line-height: 1.2;
-}
-.text-success {
-    color: #28a745 !important;
-    font-weight: bold;
-}
-.text-danger {
-    color: #dc3545 !important;
-    font-weight: bold;
-}
-.nav-tabs {
-    border-bottom: none;
-    padding: 0.5rem 1rem 0;
-}
-
-.nav-tabs .nav-link {
-    color: #6c757d;
-    border: none;
-    padding: 0.75rem 1rem;
-    margin-right: 0.5rem;
-}
-
-.nav-tabs .nav-link:hover {
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.nav-tabs .nav-link.active {
-    color: #0d6efd;
-    border-bottom: 2px solid #0d6efd;
-    background: transparent;
-}
-
-.card {
-    border-radius: 0.375rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.btn-danger {
-    margin-bottom: 5px;
-}
-
-.d-flex.gap-2.flex-wrap .btn {
-    margin-right: 5px;
-    margin-bottom: 5px;
-}
-
-/* Stock Dashboard Styles */
-.stock-dashboard .card-header.bg-gradient-primary {
+.stock-dashboard .card-header {
     background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-    border-bottom: none;
 }
-
-.stock-dashboard .stat-badge {
-    min-width: 90px;
+.cost-dashboard .card-header {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+.stat-badge {
+    min-width: 100px;
     text-align: center;
-    backdrop-filter: blur(10px);
-}
-
-.stock-dashboard .stat-badge small {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.stock-dashboard .stat-badge .fw-bold {
-    font-size: 1.1rem;
-}
-
-.bg-success-subtle {
-    background-color: rgba(40, 167, 69, 0.15) !important;
-}
-
-.bg-danger-subtle {
-    background-color: rgba(220, 53, 69, 0.15) !important;
-}
-
-.bg-info-subtle {
-    background-color: rgba(13, 202, 240, 0.15) !important;
-}
-
-.bg-warning-subtle {
-    background-color: rgba(255, 193, 7, 0.15) !important;
-}
-
-.bg-primary-subtle {
-    background-color: rgba(13, 110, 253, 0.15) !important;
-}
-
-.stock-dashboard .table th {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #6c757d;
-    font-weight: 600;
-    border-bottom: 2px solid #dee2e6;
-}
-
-.stock-dashboard .table td {
-    vertical-align: middle;
-    padding: 0.75rem 0.5rem;
-}
-
-.stock-dashboard .badge {
-    font-weight: 500;
-    padding: 0.4em 0.8em;
-}
-
-.stock-dashboard .progress {
-    background-color: #e9ecef;
-    border-radius: 10px;
-}
-
-.stock-dashboard .progress-bar {
-    border-radius: 10px;
-}
-
-.chart-container {
-    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
-    border-radius: 8px;
-    padding: 15px;
-}
-
-@media (max-width: 991px) {
-    .stock-dashboard .dashboard-stats {
-        flex-wrap: wrap;
-        margin-top: 10px;
-    }
-    .stock-dashboard .stat-badge {
-        flex: 1;
-        min-width: 80px;
-    }
 }
 </style>
 
-<!-- Chart.js CDN -->
+@endsection
+
+@section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-let trendChart = null;
-
-function showItemTrend(itemId, itemName) {
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('trendModal'));
-    modal.show();
-    
-    // Update title
-    document.getElementById('trendModalTitle').innerText = 'Stock Trend: ' + itemName;
-    
-    // Reset view
-    document.getElementById('chartLoading').style.display = 'block';
-    document.getElementById('chartContainer').style.display = 'none';
-    
-    // Destroy previous chart if exists
-    if (trendChart) {
-        trendChart.destroy();
-    }
-    
-    // Fetch data
-    const month = '{{ $currentMonth }}';
-    const year = '{{ $currentYear }}';
-    
-    fetch(`/stock/item-history/${itemId}?month=${month}&year=${year}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('chartLoading').style.display = 'none';
-            document.getElementById('chartContainer').style.display = 'block';
-            
-            const ctx = document.getElementById('itemTrendChart').getContext('2d');
-            
-            trendChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [
-                        {
-                            label: 'Stock Level',
-                            data: data.stockLevels,
-                            borderColor: '#0d6efd',
-                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                            borderWidth: 2,
-                            yAxisID: 'y',
-                            fill: true,
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Daily Usage',
-                            data: data.dailyUsage,
-                            borderColor: '#dc3545',
-                            backgroundColor: '#dc3545',
-                            type: 'bar',
-                            yAxisID: 'y1',
-                            barThickness: 5
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y;
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Stock Level'
-                            },
-                            beginAtZero: true
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: {
-                                display: true,
-                                text: 'Usage'
-                            },
-                            beginAtZero: true,
-                            grid: {
-                                drawOnChartArea: false
-                            }
-                        }
-                    }
-                }
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching trend data:', error);
-            document.getElementById('chartLoading').innerHTML = '<p class="text-danger">Error loading data</p>';
-        });
-}
-
 function showLoading() {
     document.getElementById('loadingOverlay').style.display = 'block';
     return true;
@@ -1315,237 +735,153 @@ function confirmRemoval(location) {
         return false;
     }
     
-    const description = document.getElementById('description').value.trim();
-    if (!description) {
-        alert('Please enter a description.');
-        document.getElementById('description').focus();
-        return false;
-    }
-    
-    return confirm(`Remove ${quantity} units of "${itemText}" for ${location}?`);
+    return confirm(`Are you sure you want to remove ${quantity} of "${itemText}" for ${location}?`);
 }
 
-// Auto-focus functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const itemSelect = document.getElementById('item');
-    const quantityInput = document.getElementById('quantity');
-    const descriptionInput = document.getElementById('description');
+let trendChart = null;
+
+function showItemTrend(itemId, itemName) {
+    const modal = new bootstrap.Modal(document.getElementById('trendModal'));
+    document.getElementById('trendModalTitle').textContent = itemName + ' - Monthly Trend';
+    document.getElementById('chartLoading').style.display = 'block';
+    document.getElementById('chartContainer').style.display = 'none';
     
-    if (itemSelect && quantityInput) {
-        itemSelect.addEventListener('change', function() {
-            if (this.value) {
-                quantityInput.focus();
-            }
-        });
-    }
-
-    if (quantityInput && descriptionInput) {
-        quantityInput.addEventListener('blur', function() {
-            if (this.value && this.value > 0) {
-                descriptionInput.focus();
-            }
-        });
-    }
-
-    // Initialize Monthly Demand Chart if data exists
-    @if(isset($demandData) && count($demandData) > 0)
-        // Main Bar Chart - Stock Added vs Removed
-        const demandCtx = document.getElementById('monthlyDemandChart');
-        if (demandCtx) {
-            const demandData = {!! json_encode($demandData) !!};
+    modal.show();
+    
+    fetch(`/api/item-trend/${itemId}?month={{ $currentMonth }}&year={{ $currentYear }}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('chartLoading').style.display = 'none';
+            document.getElementById('chartContainer').style.display = 'block';
             
-            new Chart(demandCtx.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: demandData.map(item => item.name),
-                    datasets: [
-                        {
-                            label: 'Stock Added',
-                            data: demandData.map(item => item.additions),
-                            backgroundColor: 'rgba(40, 167, 69, 0.85)',
-                            borderColor: 'rgba(40, 167, 69, 1)',
-                            borderWidth: 2,
-                            borderRadius: 4,
-                            borderSkipped: false
-                        },
-                        {
-                            label: 'Stock Removed',
-                            data: demandData.map(item => item.removals),
-                            backgroundColor: 'rgba(220, 53, 69, 0.85)',
-                            borderColor: 'rgba(220, 53, 69, 1)',
-                            borderWidth: 2,
-                            borderRadius: 4,
-                            borderSkipped: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { size: 12, weight: 'bold' }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            cornerRadius: 8,
-                            callbacks: {
-                                afterBody: function(context) {
-                                    const idx = context[0].dataIndex;
-                                    const item = demandData[idx];
-                                    const net = item.netChange;
-                                    return [
-                                        '',
-                                        'Net Change: ' + (net >= 0 ? '+' : '') + net.toFixed(1),
-                                        'Unit: ' + item.unit
-                                    ];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                            title: {
-                                display: true,
-                                text: 'Quantity',
-                                font: { size: 12, weight: 'bold' }
-                            },
-                            ticks: { font: { size: 11 } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                autoSkip: false,
-                                maxRotation: 45,
-                                minRotation: 45,
-                                font: { size: 10 }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Location Breakdown Doughnut Chart
-        const locationCtx = document.getElementById('locationBreakdownChart');
-        if (locationCtx) {
-            const locationData = {
-                'Main Kitchen': 0,
-                'Banquet Kitchen': 0,
-                'Banquet Hall': 0,
-                'Restaurant': 0,
-                'Rooms': 0,
-                'Garden': 0,
-                'Other': 0
-            };
+            if (trendChart) {
+                trendChart.destroy();
+            }
             
-            const demandItems = {!! json_encode($demandData) !!};
-            demandItems.forEach(item => {
-                locationData['Main Kitchen'] += item.locationBreakdown.main_kitchen;
-                locationData['Banquet Kitchen'] += item.locationBreakdown.banquet_hall_kitchen;
-                locationData['Banquet Hall'] += item.locationBreakdown.banquet_hall;
-                locationData['Restaurant'] += item.locationBreakdown.restaurant;
-                locationData['Rooms'] += item.locationBreakdown.rooms;
-                locationData['Garden'] += item.locationBreakdown.garden;
-                locationData['Other'] += item.locationBreakdown.other;
-            });
-
-            // Filter out zero values
-            const filteredLabels = [];
-            const filteredData = [];
-            const colors = {
-                'Main Kitchen': '#0d6efd',
-                'Banquet Kitchen': '#6610f2',
-                'Banquet Hall': '#6f42c1',
-                'Restaurant': '#20c997',
-                'Rooms': '#fd7e14',
-                'Garden': '#198754',
-                'Other': '#6c757d'
-            };
-            const filteredColors = [];
-
-            Object.entries(locationData).forEach(([label, value]) => {
-                if (value > 0) {
-                    filteredLabels.push(label);
-                    filteredData.push(value);
-                    filteredColors.push(colors[label]);
-                }
-            });
-
-            new Chart(locationCtx.getContext('2d'), {
-                type: 'doughnut',
+            const ctx = document.getElementById('itemTrendChart').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'line',
                 data: {
-                    labels: filteredLabels,
+                    labels: data.labels,
                     datasets: [{
-                        data: filteredData,
-                        backgroundColor: filteredColors,
-                        borderWidth: 2,
-                        borderColor: '#fff',
-                        hoverOffset: 8
+                        label: 'Stock Level',
+                        data: data.stockLevels,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }, {
+                        label: 'Additions',
+                        data: data.additions,
+                        borderColor: '#198754',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5]
+                    }, {
+                        label: 'Removals',
+                        data: data.removals,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5]
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '60%',
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 12,
-                                font: { size: 10 }
-                            }
-                        },
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading trend data:', error);
+            document.getElementById('chartLoading').innerHTML = '<p class="text-danger">Error loading chart data</p>';
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    @if(isset($demandData) && count($demandData) > 0)
+        const demandCtx = document.getElementById('monthlyDemandChart');
+        if (demandCtx) {
+            const demandData = {!! json_encode($demandData) !!};
+            
+            new Chart(demandCtx, {
+                type: 'bar',
+                data: {
+                    labels: demandData.map(item => item.name),
+                    datasets: [{
+                        label: 'Stock Added',
+                        data: demandData.map(item => item.additions),
+                        backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                        borderColor: 'rgb(25, 135, 84)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }, {
+                        label: 'Stock Removed',
+                        data: demandData.map(item => item.removals),
+                        backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                        borderColor: 'rgb(220, 53, 69)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 10,
-                            cornerRadius: 6,
                             callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return context.label + ': ' + context.parsed.toFixed(1) + ' (' + percentage + '%)';
+                                afterBody: function(context) {
+                                    const item = demandData[context[0].dataIndex];
+                                    return 'Net: ' + (item.netChange >= 0 ? '+' : '') + item.netChange.toFixed(1);
                                 }
                             }
                         }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Quantity' } },
+                        x: { ticks: { maxRotation: 45, minRotation: 45 } }
                     }
                 }
             });
         }
 
-        // Cost Analysis Charts
+        const locationCtx = document.getElementById('locationBreakdownChart');
+        if (locationCtx) {
+            const locationData = { 'Main Kitchen': 0, 'Banquet Kitchen': 0, 'Banquet Hall': 0, 'Restaurant': 0, 'Rooms': 0, 'Garden': 0, 'Other': 0 };
+            const demandItems = {!! json_encode($demandData) !!};
+            demandItems.forEach(item => {
+                const lb = item.locationBreakdown || {};
+                locationData['Main Kitchen'] += lb.main_kitchen || 0;
+                locationData['Banquet Kitchen'] += lb.banquet_hall_kitchen || 0;
+                locationData['Banquet Hall'] += lb.banquet_hall || 0;
+                locationData['Restaurant'] += lb.restaurant || 0;
+                locationData['Rooms'] += lb.rooms || 0;
+                locationData['Garden'] += lb.garden || 0;
+                locationData['Other'] += lb.other || 0;
+            });
+
+            const filteredLabels = [], filteredData = [], filteredColors = [];
+            const colors = { 'Main Kitchen': '#0d6efd', 'Banquet Kitchen': '#6610f2', 'Banquet Hall': '#6f42c1', 'Restaurant': '#20c997', 'Rooms': '#fd7e14', 'Garden': '#198754', 'Other': '#6c757d' };
+            Object.entries(locationData).forEach(([label, value]) => {
+                if (value > 0) { filteredLabels.push(label); filteredData.push(value); filteredColors.push(colors[label]); }
+            });
+
+            new Chart(locationCtx, {
+                type: 'doughnut',
+                data: { labels: filteredLabels, datasets: [{ data: filteredData, backgroundColor: filteredColors, borderWidth: 2, borderColor: '#fff' }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: true, position: 'bottom' } } }
+            });
+        }
+
         const costLocationCtx = document.getElementById('costByLocationChart');
-        const costDistCtx = document.getElementById('costDistributionChart');
-        
         if (costLocationCtx) {
             const demandItems = {!! json_encode($demandData) !!};
-            const locationCostData = {
-                'Main Kitchen': 0,
-                'Banquet Kitchen': 0,
-                'Banquet Hall': 0,
-                'Restaurant': 0,
-                'Rooms': 0,
-                'Garden': 0,
-                'Other': 0
-            };
-            
+            const locationCostData = { 'Main Kitchen': 0, 'Banquet Kitchen': 0, 'Banquet Hall': 0, 'Restaurant': 0, 'Rooms': 0, 'Garden': 0, 'Other': 0 };
             demandItems.forEach(item => {
                 const cost = item.cost_per_unit || 0;
                 const lb = item.locationBreakdown || {};
@@ -1560,87 +896,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const costLabels = Object.keys(locationCostData).filter(k => locationCostData[k] > 0);
             const costValues = costLabels.map(k => locationCostData[k]);
-            const costColors = ['#0d6efd', '#6610f2', '#6f42c1', '#20c997', '#fd7e14', '#198754', '#6c757d'];
 
             new Chart(costLocationCtx, {
                 type: 'bar',
-                data: {
-                    labels: costLabels,
-                    datasets: [{
-                        label: 'Cost (Rs)',
-                        data: costValues,
-                        backgroundColor: costColors.slice(0, costLabels.length),
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Rs ' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return 'Rs ' + value.toLocaleString();
-                                }
-                            }
-                        }
-                    }
-                }
+                data: { labels: costLabels, datasets: [{ label: 'Cost (Rs)', data: costValues, backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#20c997', '#fd7e14', '#198754', '#6c757d'], borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rs ' + v.toLocaleString() } } } }
             });
         }
 
+        const costDistCtx = document.getElementById('costDistributionChart');
         if (costDistCtx) {
             const demandItems = {!! json_encode($demandData) !!};
-            const topCostItems = demandItems
-                .filter(item => (item.cost_per_unit || 0) > 0)
-                .sort((a, b) => (b.cost_removals || 0) - (a.cost_removals || 0))
-                .slice(0, 5);
-            
-            const pieLabels = topCostItems.map(item => item.name || 'Unknown');
-            const pieData = topCostItems.map(item => item.cost_removals || 0);
-            const pieColors = ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0dcaf0'];
-
+            const topCostItems = demandItems.filter(item => (item.cost_per_unit || 0) > 0).sort((a, b) => (b.cost_removals || 0) - (a.cost_removals || 0)).slice(0, 5);
             new Chart(costDistCtx, {
                 type: 'doughnut',
-                data: {
-                    labels: pieLabels,
-                    datasets: [{
-                        data: pieData,
-                        backgroundColor: pieColors,
-                        borderWidth: 2,
-                        borderColor: '#fff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '60%',
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: { usePointStyle: true, padding: 8, font: { size: 9 } }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.label + ': Rs ' + context.parsed.toLocaleString('en-US', {minimumFractionDigits: 2});
-                                }
-                            }
-                        }
-                    }
-                }
+                data: { labels: topCostItems.map(i => i.name), datasets: [{ data: topCostItems.map(i => i.cost_removals || 0), backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0dcaf0'], borderWidth: 2, borderColor: '#fff' }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: true, position: 'bottom' } } }
             });
         }
     @endif

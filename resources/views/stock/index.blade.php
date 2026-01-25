@@ -154,6 +154,116 @@
         </div>
     </div>
 
+    @if($selectedGroup)
+        <!-- Stock Table for Selected Category -->
+        <h4>{{ $selectedGroup->name }}</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 200px; position: sticky; left: 0; background: #f8f9fa; z-index: 20;">Item</th>
+                        @for($i = 1; $i <= 31; $i++)
+                            <th class="text-center" style="min-width: 60px;">{{ $i }}</th>
+                        @endfor
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($selectedGroup->items as $item)
+                        @php
+                            $lastKnownStock = '-';
+                            $prevDateObj = \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->subDay();
+                            $prevDateString = $prevDateObj->toDateString();
+                            if (isset($inventoryData[$item->id][$prevDateString])) {
+                                $lastKnownStock = $inventoryData[$item->id][$prevDateString];
+                            }
+                        @endphp
+                        <tr>
+                            <td style="position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #dee2e6;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">{{ $item->name }}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary ms-2 rounded-circle" 
+                                            onclick="showItemTrend({{ $item->id }}, '{{ addslashes($item->name) }}')"
+                                            title="View Trend Graph"
+                                            style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            @for($i = 1; $i <= 31; $i++)
+                                @php
+                                    $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
+                                    $isFuture = $date > now()->toDateString();
+                                    if (isset($inventoryData[$item->id][$date])) {
+                                        $displayStock = $inventoryData[$item->id][$date];
+                                        $lastKnownStock = $displayStock;
+                                    } else {
+                                        $displayStock = $isFuture ? '-' : $lastKnownStock;
+                                    }
+                                    $logData = $logsGrouped[$item->id][$date] ?? ['add' => 0, 'remove' => 0];
+                                    $additions = $logData['add'];
+                                    $removals = $logData['remove'];
+                                @endphp
+                                <td class="text-center p-1">
+                                    @if(!$isFuture)
+                                        <div class="fw-bold" style="font-size: 0.95rem;">{{ $displayStock }}</div>
+                                        @if($additions > 0)
+                                            <div class="text-success small" style="font-size: 0.75rem; line-height: 1;">+{{ $additions }}</div>
+                                        @endif
+                                        @if($removals > 0)
+                                            <div class="text-danger small" style="font-size: 0.75rem; line-height: 1;">-{{ $removals }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                            @endfor
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Stock Update Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Update Stock</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('stock.update') }}" method="POST" class="mb-4" onsubmit="showLoading()">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="item_stock" class="form-label">Item</label>
+                        <select name="item_id" id="item_stock" class="form-select" required>
+                            <option value="">Select an item</option>
+                            @foreach($selectedGroup->items as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity_stock" class="form-label">Quantity</label>
+                        <input type="number" name="quantity" id="quantity_stock" class="form-control" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description_stock" class="form-label">Description</label>
+                        <input type="text" name="description" id="description_stock" class="form-control" placeholder="Enter a description" required>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" name="action" value="add" class="btn btn-success">Add Stock</button>
+                        <button type="submit" name="action" value="remove_main_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Main Kitchen')">Main Kitchen</button>
+                        <button type="submit" name="action" value="remove_banquet_hall_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall Kitchen')">Banquet Hall Kitchen</button>
+                        <button type="submit" name="action" value="remove_banquet_hall" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall')">Banquet Hall</button>
+                        <button type="submit" name="action" value="remove_restaurant" class="btn btn-danger" onclick="return confirmRemoval('Restaurant')">Restaurant</button>
+                        <button type="submit" name="action" value="remove_rooms" class="btn btn-danger" onclick="return confirmRemoval('Rooms')">Rooms</button>
+                        <button type="submit" name="action" value="remove_garden" class="btn btn-danger" onclick="return confirmRemoval('Garden')">Garden</button>
+                        <button type="submit" name="action" value="remove_other" class="btn btn-danger" onclick="return confirmRemoval('Other')">Other</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @else
+        <div class="alert alert-info">Please select a category to view stock details and update stock</div>
+    @endif
     </div><!-- End Stock Management Tab -->
 
     <!-- Dashboard Tab -->

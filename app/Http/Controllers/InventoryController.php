@@ -29,8 +29,13 @@ class InventoryController extends Controller
         $usageCategory = $request->input('usage_category');
         $demandLimit = $request->input('demand_limit', 10); // Default to 10 items
         
-        // Create Carbon instances for date handling
+        // Dashboard date range parameters (default to current month)
         $currentDate = Carbon::createFromDate($currentYear, $currentMonth, 1);
+        $dashboardStartDate = $request->input('dashboard_start', $currentDate->copy()->startOfMonth()->toDateString());
+        $dashboardEndDate = $request->input('dashboard_end', now()->toDateString());
+        $dashboardCategory = $request->input('dashboard_category', ''); // Empty means all categories
+        
+        // Create Carbon instances for date handling
         
         // Prevent future months from being accessed
         if ($currentDate->isAfter(now())) {
@@ -115,77 +120,103 @@ class InventoryController extends Controller
                 foreach ($item->inventory as $inv) {
                     $inventoryData[$item->id][$inv->stock_date] = $inv->stock_level;
                 }
+            }
+        }
 
-                // Calculate total additions and removals by location for this item
-                $totalAddition = 0;
-                $locationBreakdown = [
-                    'main_kitchen' => 0,
-                    'banquet_hall_kitchen' => 0,
-                    'banquet_hall' => 0,
-                    'restaurant' => 0,
-                    'rooms' => 0,
-                    'garden' => 0,
-                    'other' => 0
-                ];
-                
-                foreach ($monthLogs as $log) {
-                    if ($log->item_id == $item->id) {
-                        if ($log->action === 'add') {
-                            $totalAddition += $log->quantity;
-                        } else {
-                            switch ($log->action) {
-                                case 'remove_main_kitchen':
-                                    $locationBreakdown['main_kitchen'] += $log->quantity;
-                                    break;
-                                case 'remove_banquet_hall_kitchen':
-                                    $locationBreakdown['banquet_hall_kitchen'] += $log->quantity;
-                                    break;
-                                case 'remove_banquet_hall':
-                                    $locationBreakdown['banquet_hall'] += $log->quantity;
-                                    break;
-                                case 'remove_restaurant':
-                                    $locationBreakdown['restaurant'] += $log->quantity;
-                                    break;
-                                case 'remove_rooms':
-                                    $locationBreakdown['rooms'] += $log->quantity;
-                                    break;
-                                case 'remove_garden':
-                                    $locationBreakdown['garden'] += $log->quantity;
-                                    break;
-                                case 'remove_other':
-                                    $locationBreakdown['other'] += $log->quantity;
-                                    break;
-                            }
-                        }
-                    }
-                }
-                
-                $totalRemoval = array_sum($locationBreakdown);
-                $netChange = $totalAddition - $totalRemoval;
-                
-                // Include items that have either additions or removals
-                if ($totalAddition > 0 || $totalRemoval > 0) {
-                    $demandData[] = [
-                        'name' => $item->name,
-                        'unit' => $item->unit ?? 'units',
-                        'additions' => $totalAddition,
-                        'removals' => $totalRemoval,
-                        'netChange' => $netChange,
-                        'locationBreakdown' => $locationBreakdown,
-                        'total' => $totalAddition + $totalRemoval
-                    ];
-                }
-            }
-            
-            // Sort by total activity (highest first) and apply limit
-            usort($demandData, function($a, $b) {
-                return $b['total'] <=> $a['total'];
+        // ============ DASHBOARD DATA (Independent of selected category) ============
+        // Get logs for the dashboard date range (for ALL categories or filtered category)
+        $dashboardLogsQuery = StockLog::with(['item.group'])
+            ->whereDate('created_at', '>=', $dashboardStartDate)
+            ->whereDate('created_at', '<=', $dashboardEndDate);
+        
+        // If dashboard category filter is set, filter by that category
+        if ($dashboardCategory) {
+            $dashboardLogsQuery->whereHas('item', function($q) use ($dashboardCategory) {
+                $q->where('product_group_id', $dashboardCategory);
             });
+        }
+        
+        $dashboardLogs = $dashboardLogsQuery->get();
+        
+        // Build demand data from dashboard logs
+        $itemDemand = [];
+        foreach ($dashboardLogs as $log) {
+            $itemId = $log->item_id;
             
-            // Apply limit (0 or 'all' means show all items)
-            if ($demandLimit && $demandLimit != 'all' && $demandLimit > 0) {
-                $demandData = array_slice($demandData, 0, (int)$demandLimit);
+            if (!isset($itemDemand[$itemId])) {
+                $itemDemand[$itemId] = [
+                    'name' => $log->item->name,
+                    'unit' => $log->item->unit ?? 'units',
+                    'category' => $log->item->group->name ?? 'Unknown',
+                    'additions' => 0,
+                    'locationBreakdown' => [
+                        'main_kitchen' => 0,
+                        'banquet_hall_kitchen' => 0,
+                        'banquet_hall' => 0,
+                        'restaurant' => 0,
+                        'rooms' => 0,
+                        'garden' => 0,
+                        'other' => 0
+                    ]
+                ];
             }
+            
+            if ($log->action === 'add') {
+                $itemDemand[$itemId]['additions'] += $log->quantity;
+            } else {
+                switch ($log->action) {
+                    case 'remove_main_kitchen':
+                        $itemDemand[$itemId]['locationBreakdown']['main_kitchen'] += $log->quantity;
+                        break;
+                    case 'remove_banquet_hall_kitchen':
+                        $itemDemand[$itemId]['locationBreakdown']['banquet_hall_kitchen'] += $log->quantity;
+                        break;
+                    case 'remove_banquet_hall':
+                        $itemDemand[$itemId]['locationBreakdown']['banquet_hall'] += $log->quantity;
+                        break;
+                    case 'remove_restaurant':
+                        $itemDemand[$itemId]['locationBreakdown']['restaurant'] += $log->quantity;
+                        break;
+                    case 'remove_rooms':
+                        $itemDemand[$itemId]['locationBreakdown']['rooms'] += $log->quantity;
+                        break;
+                    case 'remove_garden':
+                        $itemDemand[$itemId]['locationBreakdown']['garden'] += $log->quantity;
+                        break;
+                    case 'remove_other':
+                        $itemDemand[$itemId]['locationBreakdown']['other'] += $log->quantity;
+                        break;
+                }
+            }
+        }
+        
+        // Convert to demandData array format
+        foreach ($itemDemand as $itemId => $data) {
+            $totalRemoval = array_sum($data['locationBreakdown']);
+            $netChange = $data['additions'] - $totalRemoval;
+            
+            if ($data['additions'] > 0 || $totalRemoval > 0) {
+                $demandData[] = [
+                    'name' => $data['name'],
+                    'unit' => $data['unit'],
+                    'category' => $data['category'],
+                    'additions' => $data['additions'],
+                    'removals' => $totalRemoval,
+                    'netChange' => $netChange,
+                    'locationBreakdown' => $data['locationBreakdown'],
+                    'total' => $data['additions'] + $totalRemoval
+                ];
+            }
+        }
+        
+        // Sort by total activity (highest first) and apply limit
+        usort($demandData, function($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
+        
+        // Apply limit (0 or 'all' means show all items)
+        if ($demandLimit && $demandLimit != 'all' && $demandLimit > 0) {
+            $demandData = array_slice($demandData, 0, (int)$demandLimit);
         }
         
         // Get paginated logs for the selected date for display
@@ -243,7 +274,10 @@ class InventoryController extends Controller
             'logsGrouped',
             'inventoryData',
             'demandData',
-            'demandLimit'
+            'demandLimit',
+            'dashboardStartDate',
+            'dashboardEndDate',
+            'dashboardCategory'
         ));
     }
 

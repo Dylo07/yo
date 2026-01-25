@@ -276,54 +276,100 @@
         <!-- Monthly Stock Movement Dashboard -->
         @if(isset($demandData) && count($demandData) > 0)
         <div class="card mt-4 stock-dashboard">
-            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                    <h3 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Stock Movement Dashboard</h3>
-                    <small class="opacity-75">
-                        @if($demandLimit == 'all' || $demandLimit == 0)
-                            All Items
-                        @else
-                            Top {{ $demandLimit }} Most Active Items
-                        @endif
-                        - {{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->format('F Y') }}
-                    </small>
+            <div class="card-header bg-gradient-primary text-white">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                    <div>
+                        <h3 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Stock Movement Dashboard</h3>
+                        <small class="opacity-75">
+                            @if($demandLimit == 'all' || $demandLimit == 0)
+                                All Items
+                            @else
+                                Top {{ $demandLimit }} Most Active Items
+                            @endif
+                            @if($dashboardCategory)
+                                - {{ $groups->find($dashboardCategory)->name ?? 'Selected Category' }}
+                            @else
+                                - All Categories
+                            @endif
+                        </small>
+                    </div>
+                    <div class="dashboard-stats d-flex gap-2">
+                        @php
+                            $totalIn = array_sum(array_column($demandData, 'additions'));
+                            $totalOut = array_sum(array_column($demandData, 'removals'));
+                            $netFlow = $totalIn - $totalOut;
+                        @endphp
+                        <div class="stat-badge bg-success-subtle text-success rounded px-3 py-2">
+                            <small>Total In</small>
+                            <div class="fw-bold">+{{ number_format($totalIn, 1) }}</div>
+                        </div>
+                        <div class="stat-badge bg-danger-subtle text-danger rounded px-3 py-2">
+                            <small>Total Out</small>
+                            <div class="fw-bold">-{{ number_format($totalOut, 1) }}</div>
+                        </div>
+                        <div class="stat-badge {{ $netFlow >= 0 ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning' }} rounded px-3 py-2">
+                            <small>Net Flow</small>
+                            <div class="fw-bold">{{ $netFlow >= 0 ? '+' : '' }}{{ number_format($netFlow, 1) }}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <!-- Items Limit Selector -->
-                    <form action="{{ route('stock.index') }}" method="GET" class="d-flex align-items-center">
-                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                        <input type="hidden" name="month" value="{{ $currentMonth }}">
-                        <input type="hidden" name="year" value="{{ $currentYear }}">
-                        <label class="text-white me-2 small">Show:</label>
-                        <select name="demand_limit" class="form-select form-select-sm" style="width: auto; min-width: 100px;" onchange="this.form.submit()">
+                <!-- Dashboard Filters -->
+                <form action="{{ route('stock.index') }}" method="GET" class="row g-2 align-items-end mt-2">
+                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                    <input type="hidden" name="month" value="{{ $currentMonth }}">
+                    <input type="hidden" name="year" value="{{ $currentYear }}">
+                    <div class="col-auto">
+                        <label class="form-label text-white small mb-1">Start Date</label>
+                        <input type="date" name="dashboard_start" class="form-control form-control-sm" value="{{ $dashboardStartDate }}" max="{{ now()->toDateString() }}">
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label text-white small mb-1">End Date</label>
+                        <input type="date" name="dashboard_end" class="form-control form-control-sm" value="{{ $dashboardEndDate }}" max="{{ now()->toDateString() }}">
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label text-white small mb-1">Category</label>
+                        <select name="dashboard_category" class="form-select form-select-sm">
+                            <option value="">All Categories</option>
+                            @foreach($groups as $group)
+                                <option value="{{ $group->id }}" {{ $dashboardCategory == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label text-white small mb-1">Show</label>
+                        <select name="demand_limit" class="form-select form-select-sm">
                             <option value="10" {{ $demandLimit == 10 ? 'selected' : '' }}>Top 10</option>
                             <option value="25" {{ $demandLimit == 25 ? 'selected' : '' }}>Top 25</option>
                             <option value="50" {{ $demandLimit == 50 ? 'selected' : '' }}>Top 50</option>
                             <option value="all" {{ $demandLimit == 'all' || $demandLimit == 0 ? 'selected' : '' }}>All Items</option>
                         </select>
-                    </form>
-                </div>
-                <div class="dashboard-stats d-flex gap-3">
-                    @php
-                        $totalIn = array_sum(array_column($demandData, 'additions'));
-                        $totalOut = array_sum(array_column($demandData, 'removals'));
-                        $netFlow = $totalIn - $totalOut;
-                    @endphp
-                    <div class="stat-badge bg-success-subtle text-success rounded px-3 py-2">
-                        <small>Total In</small>
-                        <div class="fw-bold">+{{ number_format($totalIn, 1) }}</div>
                     </div>
-                    <div class="stat-badge bg-danger-subtle text-danger rounded px-3 py-2">
-                        <small>Total Out</small>
-                        <div class="fw-bold">-{{ number_format($totalOut, 1) }}</div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-light btn-sm"><i class="fas fa-filter me-1"></i>Apply</button>
                     </div>
-                    <div class="stat-badge {{ $netFlow >= 0 ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning' }} rounded px-3 py-2">
-                        <small>Net Flow</small>
-                        <div class="fw-bold">{{ $netFlow >= 0 ? '+' : '' }}{{ number_format($netFlow, 1) }}</div>
+                    <div class="col-auto">
+                        <a href="{{ route('stock.index', ['category_id' => request('category_id'), 'month' => $currentMonth, 'year' => $currentYear]) }}" class="btn btn-outline-light btn-sm"><i class="fas fa-undo me-1"></i>Reset</a>
                     </div>
-                </div>
+                </form>
             </div>
             <div class="card-body">
+                <!-- Date Range Display -->
+                <div class="alert alert-light border mb-3 py-2">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <span>
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                            <strong>Period:</strong> {{ \Carbon\Carbon::parse($dashboardStartDate)->format('M d, Y') }} 
+                            - {{ \Carbon\Carbon::parse($dashboardEndDate)->format('M d, Y') }}
+                            <span class="text-muted ms-2">({{ \Carbon\Carbon::parse($dashboardStartDate)->diffInDays(\Carbon\Carbon::parse($dashboardEndDate)) + 1 }} days)</span>
+                        </span>
+                        @if($dashboardCategory)
+                            <span class="badge bg-primary">{{ $groups->find($dashboardCategory)->name ?? 'Category' }}</span>
+                        @else
+                            <span class="badge bg-secondary">All Categories</span>
+                        @endif
+                    </div>
+                </div>
+                
                 <div class="row">
                     <!-- Main Chart -->
                     <div class="col-lg-8">

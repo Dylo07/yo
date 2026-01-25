@@ -276,10 +276,32 @@
         <!-- Monthly Stock Movement Dashboard -->
         @if(isset($demandData) && count($demandData) > 0)
         <div class="card mt-4 stock-dashboard">
-            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center flex-wrap">
                 <div>
                     <h3 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Stock Movement Dashboard</h3>
-                    <small class="opacity-75">Top 10 Most Active Items - {{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->format('F Y') }}</small>
+                    <small class="opacity-75">
+                        @if($demandLimit == 'all' || $demandLimit == 0)
+                            All Items
+                        @else
+                            Top {{ $demandLimit }} Most Active Items
+                        @endif
+                        - {{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->format('F Y') }}
+                    </small>
+                </div>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <!-- Items Limit Selector -->
+                    <form action="{{ route('stock.index') }}" method="GET" class="d-flex align-items-center">
+                        <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                        <input type="hidden" name="month" value="{{ $currentMonth }}">
+                        <input type="hidden" name="year" value="{{ $currentYear }}">
+                        <label class="text-white me-2 small">Show:</label>
+                        <select name="demand_limit" class="form-select form-select-sm" style="width: auto; min-width: 100px;" onchange="this.form.submit()">
+                            <option value="10" {{ $demandLimit == 10 ? 'selected' : '' }}>Top 10</option>
+                            <option value="25" {{ $demandLimit == 25 ? 'selected' : '' }}>Top 25</option>
+                            <option value="50" {{ $demandLimit == 50 ? 'selected' : '' }}>Top 50</option>
+                            <option value="all" {{ $demandLimit == 'all' || $demandLimit == 0 ? 'selected' : '' }}>All Items</option>
+                        </select>
+                    </form>
                 </div>
                 <div class="dashboard-stats d-flex gap-3">
                     @php

@@ -27,6 +27,7 @@ class InventoryController extends Controller
         $selectedDate = $request->input('log_date', now()->toDateString());
         $usageDate = $request->input('usage_date', now()->toDateString());
         $usageCategory = $request->input('usage_category');
+        $demandLimit = $request->input('demand_limit', 10); // Default to 10 items
         
         // Create Carbon instances for date handling
         $currentDate = Carbon::createFromDate($currentYear, $currentMonth, 1);
@@ -176,11 +177,15 @@ class InventoryController extends Controller
                 }
             }
             
-            // Sort by total activity (highest first) and take top 10
+            // Sort by total activity (highest first) and apply limit
             usort($demandData, function($a, $b) {
                 return $b['total'] <=> $a['total'];
             });
-            $demandData = array_slice($demandData, 0, 10);
+            
+            // Apply limit (0 or 'all' means show all items)
+            if ($demandLimit && $demandLimit != 'all' && $demandLimit > 0) {
+                $demandData = array_slice($demandData, 0, (int)$demandLimit);
+            }
         }
         
         // Get paginated logs for the selected date for display
@@ -237,7 +242,8 @@ class InventoryController extends Controller
             'usageSummary',
             'logsGrouped',
             'inventoryData',
-            'demandData'
+            'demandData',
+            'demandLimit'
         ));
     }
 

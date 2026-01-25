@@ -147,6 +147,221 @@
         </div>
     </div>
 
+    <!-- Monthly Stock Movement Dashboard -->
+    @if(isset($demandData) && count($demandData) > 0)
+    <div class="card mt-4 stock-dashboard">
+        <div class="card-header bg-gradient-primary text-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                <div>
+                    <h3 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Stock Movement Dashboard</h3>
+                    <small class="opacity-75">
+                        @if($demandLimit == 'all' || $demandLimit == 0)
+                            All Items
+                        @else
+                            Top {{ $demandLimit }} Most Active Items
+                        @endif
+                        @if($dashboardCategory)
+                            - {{ $groups->find($dashboardCategory)->name ?? 'Selected Category' }}
+                        @else
+                            - All Categories
+                        @endif
+                    </small>
+                </div>
+                <div class="dashboard-stats d-flex gap-2">
+                    @php
+                        $totalIn = array_sum(array_column($demandData, 'additions'));
+                        $totalOut = array_sum(array_column($demandData, 'removals'));
+                        $netFlow = $totalIn - $totalOut;
+                    @endphp
+                    <div class="stat-badge bg-success-subtle text-success rounded px-3 py-2">
+                        <small>Total In</small>
+                        <div class="fw-bold">+{{ number_format($totalIn, 1) }}</div>
+                    </div>
+                    <div class="stat-badge bg-danger-subtle text-danger rounded px-3 py-2">
+                        <small>Total Out</small>
+                        <div class="fw-bold">-{{ number_format($totalOut, 1) }}</div>
+                    </div>
+                    <div class="stat-badge {{ $netFlow >= 0 ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning' }} rounded px-3 py-2">
+                        <small>Net Flow</small>
+                        <div class="fw-bold">{{ $netFlow >= 0 ? '+' : '' }}{{ number_format($netFlow, 1) }}</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Dashboard Filters -->
+            <form action="{{ route('stock.index') }}" method="GET" class="row g-2 align-items-end mt-2">
+                <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                <input type="hidden" name="month" value="{{ $currentMonth }}">
+                <input type="hidden" name="year" value="{{ $currentYear }}">
+                <div class="col-auto">
+                    <label class="form-label text-white small mb-1">Start Date</label>
+                    <input type="date" name="dashboard_start" class="form-control form-control-sm" value="{{ $dashboardStartDate }}" max="{{ now()->toDateString() }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label text-white small mb-1">End Date</label>
+                    <input type="date" name="dashboard_end" class="form-control form-control-sm" value="{{ $dashboardEndDate }}" max="{{ now()->toDateString() }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label text-white small mb-1">Category</label>
+                    <select name="dashboard_category" class="form-select form-select-sm">
+                        <option value="">All Categories</option>
+                        @foreach($groups as $group)
+                            <option value="{{ $group->id }}" {{ $dashboardCategory == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label text-white small mb-1">Show</label>
+                    <select name="demand_limit" class="form-select form-select-sm">
+                        <option value="10" {{ $demandLimit == 10 ? 'selected' : '' }}>Top 10</option>
+                        <option value="25" {{ $demandLimit == 25 ? 'selected' : '' }}>Top 25</option>
+                        <option value="50" {{ $demandLimit == 50 ? 'selected' : '' }}>Top 50</option>
+                        <option value="all" {{ $demandLimit == 'all' || $demandLimit == 0 ? 'selected' : '' }}>All Items</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-light btn-sm"><i class="fas fa-filter me-1"></i>Apply</button>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ route('stock.index', ['category_id' => request('category_id'), 'month' => $currentMonth, 'year' => $currentYear]) }}" class="btn btn-outline-light btn-sm"><i class="fas fa-undo me-1"></i>Reset</a>
+                </div>
+            </form>
+        </div>
+        <div class="card-body">
+            <!-- Date Range Display -->
+            <div class="alert alert-light border mb-3 py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <span>
+                        <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                        <strong>Period:</strong> {{ \Carbon\Carbon::parse($dashboardStartDate)->format('M d, Y') }} 
+                        - {{ \Carbon\Carbon::parse($dashboardEndDate)->format('M d, Y') }}
+                        <span class="text-muted ms-2">({{ \Carbon\Carbon::parse($dashboardStartDate)->diffInDays(\Carbon\Carbon::parse($dashboardEndDate)) + 1 }} days)</span>
+                    </span>
+                    @if($dashboardCategory)
+                        <span class="badge bg-primary">{{ $groups->find($dashboardCategory)->name ?? 'Category' }}</span>
+                    @else
+                        <span class="badge bg-secondary">All Categories</span>
+                    @endif
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Main Chart -->
+                <div class="col-lg-8">
+                    <div class="chart-container" style="height: 400px; position: relative;">
+                        <canvas id="monthlyDemandChart"></canvas>
+                    </div>
+                </div>
+                <!-- Location Breakdown Pie Chart -->
+                <div class="col-lg-4">
+                    <h6 class="text-muted mb-3"><i class="fas fa-map-marker-alt me-1"></i>Usage by Location</h6>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="locationBreakdownChart"></canvas>
+                    </div>
+                    <div class="location-legend mt-3">
+                        @php
+                            $locationTotals = [
+                                'Main Kitchen' => 0,
+                                'Banquet Kitchen' => 0,
+                                'Banquet Hall' => 0,
+                                'Restaurant' => 0,
+                                'Rooms' => 0,
+                                'Garden' => 0,
+                                'Other' => 0
+                            ];
+                            foreach ($demandData as $item) {
+                                $locationTotals['Main Kitchen'] += $item['locationBreakdown']['main_kitchen'];
+                                $locationTotals['Banquet Kitchen'] += $item['locationBreakdown']['banquet_hall_kitchen'];
+                                $locationTotals['Banquet Hall'] += $item['locationBreakdown']['banquet_hall'];
+                                $locationTotals['Restaurant'] += $item['locationBreakdown']['restaurant'];
+                                $locationTotals['Rooms'] += $item['locationBreakdown']['rooms'];
+                                $locationTotals['Garden'] += $item['locationBreakdown']['garden'];
+                                $locationTotals['Other'] += $item['locationBreakdown']['other'];
+                            }
+                            $grandTotal = array_sum($locationTotals);
+                        @endphp
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Items Table -->
+            <div class="mt-4">
+                <h6 class="text-muted mb-3"><i class="fas fa-list-alt me-1"></i>Detailed Item Breakdown</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-center">Added</th>
+                                <th class="text-center">Removed</th>
+                                <th class="text-center">Net Change</th>
+                                <th>Top Usage Location</th>
+                                <th class="text-center">Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($demandData as $item)
+                            @php
+                                $maxLocation = '';
+                                $maxValue = 0;
+                                $locationNames = [
+                                    'main_kitchen' => 'Main Kitchen',
+                                    'banquet_hall_kitchen' => 'Banquet Kitchen',
+                                    'banquet_hall' => 'Banquet Hall',
+                                    'restaurant' => 'Restaurant',
+                                    'rooms' => 'Rooms',
+                                    'garden' => 'Garden',
+                                    'other' => 'Other'
+                                ];
+                                foreach ($item['locationBreakdown'] as $loc => $val) {
+                                    if ($val > $maxValue) {
+                                        $maxValue = $val;
+                                        $maxLocation = $locationNames[$loc];
+                                    }
+                                }
+                                $activityPercent = $grandTotal > 0 ? ($item['removals'] / $grandTotal) * 100 : 0;
+                            @endphp
+                            <tr>
+                                <td>
+                                    <strong>{{ $item['name'] }}</strong>
+                                    <small class="text-muted d-block">{{ $item['unit'] }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success-subtle text-success">+{{ number_format($item['additions'], 1) }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-danger-subtle text-danger">-{{ number_format($item['removals'], 1) }}</span>
+                                </td>
+                                <td class="text-center">
+                                    @if($item['netChange'] >= 0)
+                                        <span class="text-success fw-bold"><i class="fas fa-arrow-up"></i> {{ number_format($item['netChange'], 1) }}</span>
+                                    @else
+                                        <span class="text-danger fw-bold"><i class="fas fa-arrow-down"></i> {{ number_format(abs($item['netChange']), 1) }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($maxLocation)
+                                        <span class="badge bg-primary-subtle text-primary">{{ $maxLocation }}</span>
+                                        <small class="text-muted">({{ number_format($maxValue, 1) }})</small>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center" style="width: 120px;">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" style="width: {{ min($activityPercent * 3, 100) }}%"></div>
+                                    </div>
+                                    <small class="text-muted">{{ number_format($activityPercent, 1) }}%</small>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     @if($selectedGroup)
         <!-- Stock Table for Selected Category -->
         <h4>{{ $selectedGroup->name }}</h4>
@@ -272,221 +487,6 @@
                 </form>
             </div>
         </div>
-
-        <!-- Monthly Stock Movement Dashboard -->
-        @if(isset($demandData) && count($demandData) > 0)
-        <div class="card mt-4 stock-dashboard">
-            <div class="card-header bg-gradient-primary text-white">
-                <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
-                    <div>
-                        <h3 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Stock Movement Dashboard</h3>
-                        <small class="opacity-75">
-                            @if($demandLimit == 'all' || $demandLimit == 0)
-                                All Items
-                            @else
-                                Top {{ $demandLimit }} Most Active Items
-                            @endif
-                            @if($dashboardCategory)
-                                - {{ $groups->find($dashboardCategory)->name ?? 'Selected Category' }}
-                            @else
-                                - All Categories
-                            @endif
-                        </small>
-                    </div>
-                    <div class="dashboard-stats d-flex gap-2">
-                        @php
-                            $totalIn = array_sum(array_column($demandData, 'additions'));
-                            $totalOut = array_sum(array_column($demandData, 'removals'));
-                            $netFlow = $totalIn - $totalOut;
-                        @endphp
-                        <div class="stat-badge bg-success-subtle text-success rounded px-3 py-2">
-                            <small>Total In</small>
-                            <div class="fw-bold">+{{ number_format($totalIn, 1) }}</div>
-                        </div>
-                        <div class="stat-badge bg-danger-subtle text-danger rounded px-3 py-2">
-                            <small>Total Out</small>
-                            <div class="fw-bold">-{{ number_format($totalOut, 1) }}</div>
-                        </div>
-                        <div class="stat-badge {{ $netFlow >= 0 ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning' }} rounded px-3 py-2">
-                            <small>Net Flow</small>
-                            <div class="fw-bold">{{ $netFlow >= 0 ? '+' : '' }}{{ number_format($netFlow, 1) }}</div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Dashboard Filters -->
-                <form action="{{ route('stock.index') }}" method="GET" class="row g-2 align-items-end mt-2">
-                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                    <input type="hidden" name="month" value="{{ $currentMonth }}">
-                    <input type="hidden" name="year" value="{{ $currentYear }}">
-                    <div class="col-auto">
-                        <label class="form-label text-white small mb-1">Start Date</label>
-                        <input type="date" name="dashboard_start" class="form-control form-control-sm" value="{{ $dashboardStartDate }}" max="{{ now()->toDateString() }}">
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label text-white small mb-1">End Date</label>
-                        <input type="date" name="dashboard_end" class="form-control form-control-sm" value="{{ $dashboardEndDate }}" max="{{ now()->toDateString() }}">
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label text-white small mb-1">Category</label>
-                        <select name="dashboard_category" class="form-select form-select-sm">
-                            <option value="">All Categories</option>
-                            @foreach($groups as $group)
-                                <option value="{{ $group->id }}" {{ $dashboardCategory == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <label class="form-label text-white small mb-1">Show</label>
-                        <select name="demand_limit" class="form-select form-select-sm">
-                            <option value="10" {{ $demandLimit == 10 ? 'selected' : '' }}>Top 10</option>
-                            <option value="25" {{ $demandLimit == 25 ? 'selected' : '' }}>Top 25</option>
-                            <option value="50" {{ $demandLimit == 50 ? 'selected' : '' }}>Top 50</option>
-                            <option value="all" {{ $demandLimit == 'all' || $demandLimit == 0 ? 'selected' : '' }}>All Items</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-light btn-sm"><i class="fas fa-filter me-1"></i>Apply</button>
-                    </div>
-                    <div class="col-auto">
-                        <a href="{{ route('stock.index', ['category_id' => request('category_id'), 'month' => $currentMonth, 'year' => $currentYear]) }}" class="btn btn-outline-light btn-sm"><i class="fas fa-undo me-1"></i>Reset</a>
-                    </div>
-                </form>
-            </div>
-            <div class="card-body">
-                <!-- Date Range Display -->
-                <div class="alert alert-light border mb-3 py-2">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap">
-                        <span>
-                            <i class="fas fa-calendar-alt me-2 text-primary"></i>
-                            <strong>Period:</strong> {{ \Carbon\Carbon::parse($dashboardStartDate)->format('M d, Y') }} 
-                            - {{ \Carbon\Carbon::parse($dashboardEndDate)->format('M d, Y') }}
-                            <span class="text-muted ms-2">({{ \Carbon\Carbon::parse($dashboardStartDate)->diffInDays(\Carbon\Carbon::parse($dashboardEndDate)) + 1 }} days)</span>
-                        </span>
-                        @if($dashboardCategory)
-                            <span class="badge bg-primary">{{ $groups->find($dashboardCategory)->name ?? 'Category' }}</span>
-                        @else
-                            <span class="badge bg-secondary">All Categories</span>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <!-- Main Chart -->
-                    <div class="col-lg-8">
-                        <div class="chart-container" style="height: 400px; position: relative;">
-                            <canvas id="monthlyDemandChart"></canvas>
-                        </div>
-                    </div>
-                    <!-- Location Breakdown Pie Chart -->
-                    <div class="col-lg-4">
-                        <h6 class="text-muted mb-3"><i class="fas fa-map-marker-alt me-1"></i>Usage by Location</h6>
-                        <div style="height: 250px; position: relative;">
-                            <canvas id="locationBreakdownChart"></canvas>
-                        </div>
-                        <div class="location-legend mt-3">
-                            @php
-                                $locationTotals = [
-                                    'Main Kitchen' => 0,
-                                    'Banquet Kitchen' => 0,
-                                    'Banquet Hall' => 0,
-                                    'Restaurant' => 0,
-                                    'Rooms' => 0,
-                                    'Garden' => 0,
-                                    'Other' => 0
-                                ];
-                                foreach ($demandData as $item) {
-                                    $locationTotals['Main Kitchen'] += $item['locationBreakdown']['main_kitchen'];
-                                    $locationTotals['Banquet Kitchen'] += $item['locationBreakdown']['banquet_hall_kitchen'];
-                                    $locationTotals['Banquet Hall'] += $item['locationBreakdown']['banquet_hall'];
-                                    $locationTotals['Restaurant'] += $item['locationBreakdown']['restaurant'];
-                                    $locationTotals['Rooms'] += $item['locationBreakdown']['rooms'];
-                                    $locationTotals['Garden'] += $item['locationBreakdown']['garden'];
-                                    $locationTotals['Other'] += $item['locationBreakdown']['other'];
-                                }
-                                $grandTotal = array_sum($locationTotals);
-                            @endphp
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Detailed Items Table -->
-                <div class="mt-4">
-                    <h6 class="text-muted mb-3"><i class="fas fa-list-alt me-1"></i>Detailed Item Breakdown</h6>
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Item</th>
-                                    <th class="text-center">Added</th>
-                                    <th class="text-center">Removed</th>
-                                    <th class="text-center">Net Change</th>
-                                    <th>Top Usage Location</th>
-                                    <th class="text-center">Activity</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($demandData as $item)
-                                @php
-                                    $maxLocation = '';
-                                    $maxValue = 0;
-                                    $locationNames = [
-                                        'main_kitchen' => 'Main Kitchen',
-                                        'banquet_hall_kitchen' => 'Banquet Kitchen',
-                                        'banquet_hall' => 'Banquet Hall',
-                                        'restaurant' => 'Restaurant',
-                                        'rooms' => 'Rooms',
-                                        'garden' => 'Garden',
-                                        'other' => 'Other'
-                                    ];
-                                    foreach ($item['locationBreakdown'] as $loc => $val) {
-                                        if ($val > $maxValue) {
-                                            $maxValue = $val;
-                                            $maxLocation = $locationNames[$loc];
-                                        }
-                                    }
-                                    $activityPercent = $grandTotal > 0 ? ($item['removals'] / $grandTotal) * 100 : 0;
-                                @endphp
-                                <tr>
-                                    <td>
-                                        <strong>{{ $item['name'] }}</strong>
-                                        <small class="text-muted d-block">{{ $item['unit'] }}</small>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-success-subtle text-success">+{{ number_format($item['additions'], 1) }}</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-danger-subtle text-danger">-{{ number_format($item['removals'], 1) }}</span>
-                                    </td>
-                                    <td class="text-center">
-                                        @if($item['netChange'] >= 0)
-                                            <span class="text-success fw-bold"><i class="fas fa-arrow-up"></i> {{ number_format($item['netChange'], 1) }}</span>
-                                        @else
-                                            <span class="text-danger fw-bold"><i class="fas fa-arrow-down"></i> {{ number_format(abs($item['netChange']), 1) }}</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($maxLocation)
-                                            <span class="badge bg-primary-subtle text-primary">{{ $maxLocation }}</span>
-                                            <small class="text-muted">({{ number_format($maxValue, 1) }})</small>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center" style="width: 120px;">
-                                        <div class="progress" style="height: 8px;">
-                                            <div class="progress-bar bg-primary" style="width: {{ min($activityPercent * 3, 100) }}%"></div>
-                                        </div>
-                                        <small class="text-muted">{{ number_format($activityPercent, 1) }}%</small>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endif
 
         <!-- Category-wise Usage Report Section -->
         <div class="card mt-4">

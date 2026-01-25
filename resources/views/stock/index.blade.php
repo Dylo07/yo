@@ -362,6 +362,178 @@
     </div>
     @endif
 
+    <!-- Cost Analysis Dashboard -->
+    @if(isset($demandData) && count($demandData) > 0)
+    @php
+        $itemsWithCost = array_filter($demandData, function($item) {
+            return ($item['cost_per_unit'] ?? 0) > 0;
+        });
+        $totalCostIn = array_sum(array_map(function($item) { return $item['cost_additions'] ?? 0; }, $demandData));
+        $totalCostOut = array_sum(array_map(function($item) { return $item['cost_removals'] ?? 0; }, $demandData));
+        $netCostFlow = $totalCostIn - $totalCostOut;
+        $itemsWithoutCost = count($demandData) - count($itemsWithCost);
+    @endphp
+    @if(count($itemsWithCost) > 0)
+    <div class="card mt-4 cost-dashboard">
+        <div class="card-header bg-gradient-warning text-dark">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                <div>
+                    <h3 class="card-title mb-0"><i class="fas fa-rupee-sign me-2"></i>Cost Analysis Dashboard</h3>
+                    <small class="opacity-75">
+                        Financial overview based on item costs
+                        @if($itemsWithoutCost > 0)
+                            <span class="badge bg-secondary ms-2">{{ $itemsWithoutCost }} items without price</span>
+                        @endif
+                    </small>
+                </div>
+                <div class="dashboard-stats d-flex gap-2">
+                    <div class="stat-badge bg-success-subtle text-success rounded px-3 py-2">
+                        <small>Cost In</small>
+                        <div class="fw-bold">Rs {{ number_format($totalCostIn, 2) }}</div>
+                    </div>
+                    <div class="stat-badge bg-danger-subtle text-danger rounded px-3 py-2">
+                        <small>Cost Out</small>
+                        <div class="fw-bold">Rs {{ number_format($totalCostOut, 2) }}</div>
+                    </div>
+                    <div class="stat-badge {{ $netCostFlow >= 0 ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning' }} rounded px-3 py-2">
+                        <small>Net Cost</small>
+                        <div class="fw-bold">{{ $netCostFlow >= 0 ? '+' : '' }}Rs {{ number_format($netCostFlow, 2) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Cost Summary by Location -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <h6 class="text-muted mb-3"><i class="fas fa-chart-bar me-1"></i>Cost by Location (Usage)</h6>
+                    <div class="chart-container" style="height: 300px; position: relative;">
+                        <canvas id="costByLocationChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="text-muted mb-3"><i class="fas fa-chart-pie me-1"></i>Cost Distribution</h6>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="costDistributionChart"></canvas>
+                    </div>
+                    @php
+                        $locationCosts = [
+                            'Main Kitchen' => 0,
+                            'Banquet Kitchen' => 0,
+                            'Banquet Hall' => 0,
+                            'Restaurant' => 0,
+                            'Rooms' => 0,
+                            'Garden' => 0,
+                            'Other' => 0
+                        ];
+                        foreach ($demandData as $item) {
+                            $cost = $item['cost_per_unit'] ?? 0;
+                            $lb = $item['locationBreakdown'] ?? [];
+                            $locationCosts['Main Kitchen'] += ($lb['main_kitchen'] ?? 0) * $cost;
+                            $locationCosts['Banquet Kitchen'] += ($lb['banquet_hall_kitchen'] ?? 0) * $cost;
+                            $locationCosts['Banquet Hall'] += ($lb['banquet_hall'] ?? 0) * $cost;
+                            $locationCosts['Restaurant'] += ($lb['restaurant'] ?? 0) * $cost;
+                            $locationCosts['Rooms'] += ($lb['rooms'] ?? 0) * $cost;
+                            $locationCosts['Garden'] += ($lb['garden'] ?? 0) * $cost;
+                            $locationCosts['Other'] += ($lb['other'] ?? 0) * $cost;
+                        }
+                        $totalLocationCost = array_sum($locationCosts);
+                    @endphp
+                    <div class="mt-3">
+                        @foreach($locationCosts as $location => $cost)
+                            @if($cost > 0)
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small>{{ $location }}</small>
+                                <span class="badge bg-primary-subtle text-primary">Rs {{ number_format($cost, 2) }}</span>
+                            </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Cost Items Table -->
+            <div class="mt-4">
+                <h6 class="text-muted mb-3"><i class="fas fa-money-bill-wave me-1"></i>Top Items by Cost (Usage)</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-end">Unit Cost</th>
+                                <th class="text-center">Qty Added</th>
+                                <th class="text-center">Qty Used</th>
+                                <th class="text-end">Cost Added</th>
+                                <th class="text-end">Cost Used</th>
+                                <th class="text-end">Net Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $sortedByCost = $demandData;
+                                usort($sortedByCost, function($a, $b) {
+                                    return ($b['cost_removals'] ?? 0) <=> ($a['cost_removals'] ?? 0);
+                                });
+                                $topCostItems = array_slice($sortedByCost, 0, 15);
+                            @endphp
+                            @foreach($topCostItems as $item)
+                                @if(($item['cost_per_unit'] ?? 0) > 0)
+                                <tr>
+                                    <td>
+                                        <strong>{{ $item['name'] ?? 'Unknown' }}</strong>
+                                        <small class="text-muted d-block">{{ $item['category'] ?? '' }}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="text-muted">Rs {{ number_format($item['cost_per_unit'] ?? 0, 2) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success">{{ number_format($item['additions'] ?? 0, 1) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger">{{ number_format($item['removals'] ?? 0, 1) }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="text-success">Rs {{ number_format($item['cost_additions'] ?? 0, 2) }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="text-danger">Rs {{ number_format($item['cost_removals'] ?? 0, 2) }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        @php $netCost = ($item['cost_net'] ?? 0); @endphp
+                                        <span class="fw-bold {{ $netCost >= 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ $netCost >= 0 ? '+' : '' }}Rs {{ number_format($netCost, 2) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr class="fw-bold">
+                                <td colspan="4" class="text-end">Totals:</td>
+                                <td class="text-end text-success">Rs {{ number_format($totalCostIn, 2) }}</td>
+                                <td class="text-end text-danger">Rs {{ number_format($totalCostOut, 2) }}</td>
+                                <td class="text-end {{ $netCostFlow >= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ $netCostFlow >= 0 ? '+' : '' }}Rs {{ number_format($netCostFlow, 2) }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            @if($itemsWithoutCost > 0)
+            <div class="alert alert-info mt-3 mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>{{ $itemsWithoutCost }} items</strong> do not have a cost assigned. 
+                Visit <a href="{{ route('kitchen.inventory') }}" class="alert-link">/kitchen/inventory</a> to assign costs.
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+    @endif
+
     @if($selectedGroup)
         <!-- Stock Table for Selected Category -->
         <h4>{{ $selectedGroup->name }}</h4>
@@ -1227,6 +1399,120 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((context.parsed / total) * 100).toFixed(1);
                                     return context.label + ': ' + context.parsed.toFixed(1) + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cost Analysis Charts
+        const costLocationCtx = document.getElementById('costByLocationChart');
+        const costDistCtx = document.getElementById('costDistributionChart');
+        
+        if (costLocationCtx) {
+            const demandItems = {!! json_encode($demandData) !!};
+            const locationCostData = {
+                'Main Kitchen': 0,
+                'Banquet Kitchen': 0,
+                'Banquet Hall': 0,
+                'Restaurant': 0,
+                'Rooms': 0,
+                'Garden': 0,
+                'Other': 0
+            };
+            
+            demandItems.forEach(item => {
+                const cost = item.cost_per_unit || 0;
+                const lb = item.locationBreakdown || {};
+                locationCostData['Main Kitchen'] += (lb.main_kitchen || 0) * cost;
+                locationCostData['Banquet Kitchen'] += (lb.banquet_hall_kitchen || 0) * cost;
+                locationCostData['Banquet Hall'] += (lb.banquet_hall || 0) * cost;
+                locationCostData['Restaurant'] += (lb.restaurant || 0) * cost;
+                locationCostData['Rooms'] += (lb.rooms || 0) * cost;
+                locationCostData['Garden'] += (lb.garden || 0) * cost;
+                locationCostData['Other'] += (lb.other || 0) * cost;
+            });
+
+            const costLabels = Object.keys(locationCostData).filter(k => locationCostData[k] > 0);
+            const costValues = costLabels.map(k => locationCostData[k]);
+            const costColors = ['#0d6efd', '#6610f2', '#6f42c1', '#20c997', '#fd7e14', '#198754', '#6c757d'];
+
+            new Chart(costLocationCtx, {
+                type: 'bar',
+                data: {
+                    labels: costLabels,
+                    datasets: [{
+                        label: 'Cost (Rs)',
+                        data: costValues,
+                        backgroundColor: costColors.slice(0, costLabels.length),
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Rs ' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rs ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (costDistCtx) {
+            const demandItems = {!! json_encode($demandData) !!};
+            const topCostItems = demandItems
+                .filter(item => (item.cost_per_unit || 0) > 0)
+                .sort((a, b) => (b.cost_removals || 0) - (a.cost_removals || 0))
+                .slice(0, 5);
+            
+            const pieLabels = topCostItems.map(item => item.name || 'Unknown');
+            const pieData = topCostItems.map(item => item.cost_removals || 0);
+            const pieColors = ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0dcaf0'];
+
+            new Chart(costDistCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieData,
+                        backgroundColor: pieColors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 8, font: { size: 9 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': Rs ' + context.parsed.toLocaleString('en-US', {minimumFractionDigits: 2});
                                 }
                             }
                         }

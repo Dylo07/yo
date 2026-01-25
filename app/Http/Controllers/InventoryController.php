@@ -145,9 +145,10 @@ class InventoryController extends Controller
             
             if (!isset($itemDemand[$itemId])) {
                 $itemDemand[$itemId] = [
-                    'name' => $log->item->name,
+                    'name' => $log->item->name ?? 'Unknown',
                     'unit' => $log->item->unit ?? 'units',
                     'category' => $log->item->group->name ?? 'Unknown',
+                    'cost_per_unit' => $log->item->cost_per_unit ?? 0,
                     'additions' => 0,
                     'locationBreakdown' => [
                         'main_kitchen' => 0,
@@ -194,17 +195,22 @@ class InventoryController extends Controller
         foreach ($itemDemand as $itemId => $data) {
             $totalRemoval = array_sum($data['locationBreakdown']);
             $netChange = $data['additions'] - $totalRemoval;
+            $costPerUnit = $data['cost_per_unit'] ?? 0;
             
             if ($data['additions'] > 0 || $totalRemoval > 0) {
                 $demandData[] = [
                     'name' => $data['name'],
                     'unit' => $data['unit'],
                     'category' => $data['category'],
+                    'cost_per_unit' => $costPerUnit,
                     'additions' => $data['additions'],
                     'removals' => $totalRemoval,
                     'netChange' => $netChange,
                     'locationBreakdown' => $data['locationBreakdown'],
-                    'total' => $data['additions'] + $totalRemoval
+                    'total' => $data['additions'] + $totalRemoval,
+                    'cost_additions' => $data['additions'] * $costPerUnit,
+                    'cost_removals' => $totalRemoval * $costPerUnit,
+                    'cost_net' => $netChange * $costPerUnit
                 ];
             }
         }

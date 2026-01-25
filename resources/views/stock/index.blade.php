@@ -659,9 +659,19 @@
             @endif
         </div>
     </div>
+    @else
+        <div class="alert alert-warning mt-4">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>No Cost Data Available</h5>
+            <p class="mb-2">None of the items have cost prices assigned. To use the Cost Analysis Dashboard:</p>
+            <ol class="mb-0">
+                <li>Go to <a href="{{ route('kitchen.inventory') }}" class="alert-link">Kitchen Inventory</a></li>
+                <li>Edit each item and set the "Cost Per Unit" value</li>
+                <li>Return here to see cost analysis</li>
+            </ol>
+        </div>
     @endif
     @else
-        <div class="alert alert-info">No cost data available. Items need cost_per_unit assigned in kitchen inventory.</div>
+        <div class="alert alert-info mt-4">No stock movement data available for the selected period.</div>
     @endif
     </div><!-- End Cost Analysis Dashboard Tab -->
 

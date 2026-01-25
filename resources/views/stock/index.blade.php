@@ -232,8 +232,8 @@
                 <form action="{{ route('stock.update') }}" method="POST" class="mb-4" onsubmit="showLoading()">
                     @csrf
                     <div class="mb-3">
-                        <label for="item_stock" class="form-label">Item</label>
-                        <select name="item_id" id="item_stock" class="form-select" required>
+                        <label for="item" class="form-label">Item</label>
+                        <select name="item_id" id="item" class="form-select" required>
                             <option value="">Select an item</option>
                             @foreach($selectedGroup->items as $item)
                                 <option value="{{ $item->id }}">{{ $item->name }}</option>
@@ -241,12 +241,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="quantity_stock" class="form-label">Quantity</label>
-                        <input type="number" name="quantity" id="quantity_stock" class="form-control" step="0.01" min="0.01" required>
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" name="quantity" id="quantity" class="form-control" step="0.01" min="0.01" required>
                     </div>
                     <div class="mb-3">
-                        <label for="description_stock" class="form-label">Description</label>
-                        <input type="text" name="description" id="description_stock" class="form-control" placeholder="Enter a description" required>
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" name="description" id="description" class="form-control" placeholder="Enter a description" required>
                     </div>
                     <div class="d-flex gap-2 flex-wrap">
                         <button type="submit" name="action" value="add" class="btn btn-success">Add Stock</button>

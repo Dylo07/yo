@@ -78,6 +78,71 @@ class InventoryController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         
+        // OPTIMIZATION: Group logs by item_id and date for O(1) access
+        $logsGrouped = [];
+        foreach ($monthLogs as $log) {
+            $date = $log->created_at->format('Y-m-d');
+            $itemId = $log->item_id;
+            
+            if (!isset($logsGrouped[$itemId][$date])) {
+                $logsGrouped[$itemId][$date] = ['add' => 0, 'remove' => 0];
+            }
+            
+            if ($log->action === 'add') {
+                $logsGrouped[$itemId][$date]['add'] += $log->quantity;
+            } else {
+                // Check if action is a removal action
+                if (in_array($log->action, [
+                    'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 
+                    'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
+                ])) {
+                    $logsGrouped[$itemId][$date]['remove'] += $log->quantity;
+                }
+            }
+        }
+
+        // OPTIMIZATION: Transform Inventory to Keyed Array for O(1) Lookup
+        $inventoryData = [];
+        $demandData = []; // Array to hold demand data for the chart
+
+        if ($selectedGroup) {
+            foreach ($selectedGroup->items as $item) {
+                // Initialize item array
+                $inventoryData[$item->id] = [];
+                
+                // Map date -> stock_level
+                foreach ($item->inventory as $inv) {
+                    $inventoryData[$item->id][$inv->stock_date] = $inv->stock_level;
+                }
+
+                // Calculate total demand (removals) for this item in the current month
+                $totalRemoval = 0;
+                // We can use the already grouped logs if they cover the whole month correctly
+                // or iterate through the monthLogs collection for this item
+                foreach ($monthLogs as $log) {
+                    if ($log->item_id == $item->id && in_array($log->action, [
+                        'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 
+                        'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
+                    ])) {
+                        $totalRemoval += $log->quantity;
+                    }
+                }
+                
+                if ($totalRemoval > 0) {
+                    $demandData[] = [
+                        'name' => $item->name,
+                        'total' => $totalRemoval
+                    ];
+                }
+            }
+            
+            // Sort by demand (highest first) and take top 10
+            usort($demandData, function($a, $b) {
+                return $b['total'] <=> $a['total'];
+            });
+            $demandData = array_slice($demandData, 0, 10);
+        }
+        
         // Get paginated logs for the selected date for display
         $logs = StockLog::with(['user', 'item'])
             ->whereDate('created_at', $selectedDate)
@@ -129,7 +194,10 @@ class InventoryController extends Controller
             'selectedGroup', 
             'monthLogs',
             'usageLogs',
-            'usageSummary'
+            'usageSummary',
+            'logsGrouped',
+            'inventoryData',
+            'demandData'
         ));
     }
 
@@ -545,5 +613,69 @@ class InventoryController extends Controller
                 'error' => 'Export failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function getItemStockHistory(Request $request, $itemId)
+    {
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+        
+        $startDate = Carbon::createFromDate($year, $month, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+
+        // Get stock levels for the month
+        $inventory = Inventory::where('item_id', $itemId)
+            ->whereBetween('stock_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->orderBy('stock_date')
+            ->get();
+
+        // Get usage/additions for the month
+        $logs = StockLog::where('item_id', $itemId)
+            ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->orderBy('created_at')
+            ->get();
+
+        // Process data for the chart
+        $labels = [];
+        $stockLevels = [];
+        $dailyUsage = [];
+        
+        // Fill in all days of the month
+        $currentDate = $startDate->copy();
+        while ($currentDate->lte($endDate)) {
+            $dateStr = $currentDate->toDateString();
+            $labels[] = $currentDate->format('d M');
+            
+            // Find stock level for this day
+            $dayStock = $inventory->firstWhere('stock_date', $dateStr);
+            if ($dayStock) {
+                $stockLevels[] = $dayStock->stock_level;
+            } else {
+                // If no record, try to find last known value
+                $lastVal = $stockLevels ? end($stockLevels) : 0;
+                $stockLevels[] = $lastVal;
+            }
+            
+            // Calculate usage for this day
+            $dayLogs = $logs->filter(function($log) use ($dateStr) {
+                return $log->created_at->format('Y-m-d') === $dateStr;
+            });
+            
+            // Sum removals (usage)
+            $usage = $dayLogs->whereIn('action', [
+                'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 
+                'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
+            ])->sum('quantity');
+            
+            $dailyUsage[] = $usage;
+            
+            $currentDate->addDay();
+        }
+
+        return response()->json([
+            'labels' => $labels,
+            'stockLevels' => $stockLevels,
+            'dailyUsage' => $dailyUsage
+        ]);
     }
 }

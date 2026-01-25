@@ -229,6 +229,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Live data updates (New)
     Route::get('/stock/live-data', [InventoryController::class, 'getLiveStockData'])->name('stock.live-data');
+    
+    // Item History for Charts (New)
+    Route::get('/stock/item-history/{itemId}', [InventoryController::class, 'getItemStockHistory'])->name('stock.item-history');
 });
 
 // routes for inventory for physical Items

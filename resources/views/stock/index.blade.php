@@ -151,57 +151,78 @@
         <!-- Stock Table for Selected Category -->
         <h4>{{ $selectedGroup->name }}</h4>
         <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead>
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
                     <tr>
-                        <th>Item</th>
+                        <th style="min-width: 200px; position: sticky; left: 0; background: #f8f9fa; z-index: 20;">Item</th>
                         @for($i = 1; $i <= 31; $i++)
-                            <th>{{ $i }}</th>
+                            <th class="text-center" style="min-width: 60px;">{{ $i }}</th>
                         @endfor
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($selectedGroup->items as $item)
+                        @php
+                            // Determine initial last known stock from previous month if available
+                            $lastKnownStock = '-';
+                            $prevMonthDate = sprintf('%04d-%02d-%02d', 
+                                $currentMonth == 1 ? $currentYear - 1 : $currentYear, 
+                                $currentMonth == 1 ? 12 : $currentMonth - 1, 
+                                \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->subDay()->day
+                            );
+                            
+                            // Check if we have the previous month's data in our pre-loaded set
+                            // (The controller loads current month + last day of prev month)
+                            // We need to construct the date string correctly for the check
+                            $prevDateObj = \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->subDay();
+                            $prevDateString = $prevDateObj->toDateString();
+                            
+                            if (isset($inventoryData[$item->id][$prevDateString])) {
+                                $lastKnownStock = $inventoryData[$item->id][$prevDateString];
+                            }
+                        @endphp
                         <tr>
-                            <td>{{ $item->name }}</td>
+                            <td style="position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #dee2e6;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">{{ $item->name }}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary ms-2 rounded-circle" 
+                                            onclick="showItemTrend({{ $item->id }}, '{{ addslashes($item->name) }}')"
+                                            title="View Trend Graph"
+                                            style="width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                </div>
+                            </td>
                             @for($i = 1; $i <= 31; $i++)
                                 @php
                                     $date = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $i);
-                                    $inventory = $item->inventory->firstWhere('stock_date', $date);
+                                    $isFuture = $date > now()->toDateString();
                                     
-                                    if ($inventory) {
-                                        $displayStock = $inventory->stock_level;
+                                    // 1. Determine Stock Level (O(1) Lookup)
+                                    if (isset($inventoryData[$item->id][$date])) {
+                                        $displayStock = $inventoryData[$item->id][$date];
+                                        $lastKnownStock = $displayStock; // Update tracker
                                     } else {
-                                        $previousInventory = $item->inventory
-                                            ->where('stock_date', '<', $date)
-                                            ->sortByDesc('stock_date')
-                                            ->first();
-                                        
-                                        if ($i === 1 && !$inventory && $previousInventory) {
-                                            $displayStock = $previousInventory->stock_level;
-                                        } else {
-                                            $displayStock = $previousInventory ? $previousInventory->stock_level : '-';
-                                        }
+                                        // Use carried over value if not in future
+                                        $displayStock = $isFuture ? '-' : $lastKnownStock;
                                     }
                                     
-                                    $stockLogs = $monthLogs->where('item_id', $item->id)
-                                        ->filter(function($log) use ($date) {
-                                            return $log->created_at->format('Y-m-d') === $date;
-                                        });
-                                    $additions = $stockLogs->where('action', 'add')->sum('quantity');
-                                    $removals = $stockLogs->whereIn('action', ['remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'])->sum('quantity');
+                                    // 2. Determine Logs (O(1) Lookup)
+                                    $logData = $logsGrouped[$item->id][$date] ?? ['add' => 0, 'remove' => 0];
+                                    $additions = $logData['add'];
+                                    $removals = $logData['remove'];
                                 @endphp
-                                <td>
-                                    @if($date <= now()->toDateString())
-                                        <div>{{ $displayStock }}</div>
-                                        @if($additions)
-                                            <div class="text-success">+{{ $additions }}</div>
+                                <td class="text-center p-1">
+                                    @if(!$isFuture)
+                                        <div class="fw-bold" style="font-size: 0.95rem;">{{ $displayStock }}</div>
+                                        @if($additions > 0)
+                                            <div class="text-success small" style="font-size: 0.75rem; line-height: 1;">+{{ $additions }}</div>
                                         @endif
-                                        @if($removals)
-                                            <div class="text-danger">-{{ $removals }}</div>
+                                        @if($removals > 0)
+                                            <div class="text-danger small" style="font-size: 0.75rem; line-height: 1;">-{{ $removals }}</div>
                                         @endif
                                     @else
-                                        -
+                                        <span class="text-muted">-</span>
                                     @endif
                                 </td>
                             @endfor
@@ -243,24 +264,22 @@
                         <button type="submit" name="action" value="remove_main_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Main Kitchen')">Main Kitchen</button>
                         <button type="submit" name="action" value="remove_banquet_hall_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall Kitchen')">Banquet Hall Kitchen</button>
                         <button type="submit" name="action" value="remove_banquet_hall" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall')">Banquet Hall</button>
-                        <button type="submit" name="action" value="remove_restaurant" class="btn btn-danger" onclick="return confirmRemoval('Restaurant')">Restaurant</button>
-                        <button type="submit" name="action" value="remove_rooms" class="btn btn-danger" onclick="return confirmRemoval('Rooms')">Rooms</button>
-                        <button type="submit" name="action" value="remove_garden" class="btn btn-danger" onclick="return confirmRemoval('Garden')">Garden</button>
-                        <button type="submit" name="action" value="remove_other" class="btn btn-danger" onclick="return confirmRemoval('Other')">Other</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        <!-- Category-wise Usage Report Section -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Category-wise Usage Report</h3>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
-                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
-                    <input type="hidden" name="month" value="{{ $currentMonth }}">
+            <!-- Stock Update Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">Update Stock</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('stock.update') }}" method="POST" class="mb-4" onsubmit="showLoading()">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="item" class="form-label">Item</label>
+                            <select name="item_id" id="item" class="form-select" required>
+                                <option value="">Select an item</option>
+                                @foreach($selectedGroup->items as $item)
+                                    <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                @endforeach
                     <input type="hidden" name="year" value="{{ $currentYear }}">
                     <div class="row">
                         <div class="col-md-3">
@@ -480,6 +499,29 @@
     @endif
 </div>
 
+<!-- Trend Graph Modal -->
+<div class="modal fade" id="trendModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="trendModalTitle">Item Trend</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="chartLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading chart data...</p>
+                </div>
+                <div id="chartContainer" style="display: none; height: 400px;">
+                    <canvas id="itemTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 td {
     padding: 8px !important;
@@ -534,7 +576,124 @@ td div {
 }
 </style>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+let trendChart = null;
+
+function showItemTrend(itemId, itemName) {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('trendModal'));
+    modal.show();
+    
+    // Update title
+    document.getElementById('trendModalTitle').innerText = 'Stock Trend: ' + itemName;
+    
+    // Reset view
+    document.getElementById('chartLoading').style.display = 'block';
+    document.getElementById('chartContainer').style.display = 'none';
+    
+    // Destroy previous chart if exists
+    if (trendChart) {
+        trendChart.destroy();
+    }
+    
+    // Fetch data
+    const month = '{{ $currentMonth }}';
+    const year = '{{ $currentYear }}';
+    
+    fetch(`/stock/item-history/${itemId}?month=${month}&year=${year}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('chartLoading').style.display = 'none';
+            document.getElementById('chartContainer').style.display = 'block';
+            
+            const ctx = document.getElementById('itemTrendChart').getContext('2d');
+            
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Stock Level',
+                            data: data.stockLevels,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            borderWidth: 2,
+                            yAxisID: 'y',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Daily Usage',
+                            data: data.dailyUsage,
+                            borderColor: '#dc3545',
+                            backgroundColor: '#dc3545',
+                            type: 'bar',
+                            yAxisID: 'y1',
+                            barThickness: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Stock Level'
+                            },
+                            beginAtZero: true
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Usage'
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching trend data:', error);
+            document.getElementById('chartLoading').innerHTML = '<p class="text-danger">Error loading data</p>';
+        });
+}
+
 function showLoading() {
     document.getElementById('loadingOverlay').style.display = 'block';
     return true;
@@ -588,6 +747,58 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Initialize Monthly Demand Chart if data exists
+    @if(isset($demandData) && count($demandData) > 0)
+        const demandCtx = document.getElementById('monthlyDemandChart');
+        if (demandCtx) {
+            new Chart(demandCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode(array_column($demandData, 'name')) !!},
+                    datasets: [{
+                        label: 'Total Quantity Used',
+                        data: {!! json_encode(array_column($demandData, 'total')) !!},
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Used: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Quantity'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    @endif
 });
 </script>
 @endsection

@@ -273,15 +273,148 @@
             </div>
         </div>
 
-        <!-- Monthly Demand Summary Section -->
+        <!-- Monthly Stock Movement Dashboard -->
         @if(isset($demandData) && count($demandData) > 0)
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Monthly Demand Summary (Top 10 Items)</h3>
+        <div class="card mt-4 stock-dashboard">
+            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Stock Movement Dashboard</h3>
+                    <small class="opacity-75">Top 10 Most Active Items - {{ \Carbon\Carbon::createFromDate($currentYear, $currentMonth, 1)->format('F Y') }}</small>
+                </div>
+                <div class="dashboard-stats d-flex gap-3">
+                    @php
+                        $totalIn = array_sum(array_column($demandData, 'additions'));
+                        $totalOut = array_sum(array_column($demandData, 'removals'));
+                        $netFlow = $totalIn - $totalOut;
+                    @endphp
+                    <div class="stat-badge bg-success-subtle text-success rounded px-3 py-2">
+                        <small>Total In</small>
+                        <div class="fw-bold">+{{ number_format($totalIn, 1) }}</div>
+                    </div>
+                    <div class="stat-badge bg-danger-subtle text-danger rounded px-3 py-2">
+                        <small>Total Out</small>
+                        <div class="fw-bold">-{{ number_format($totalOut, 1) }}</div>
+                    </div>
+                    <div class="stat-badge {{ $netFlow >= 0 ? 'bg-info-subtle text-info' : 'bg-warning-subtle text-warning' }} rounded px-3 py-2">
+                        <small>Net Flow</small>
+                        <div class="fw-bold">{{ $netFlow >= 0 ? '+' : '' }}{{ number_format($netFlow, 1) }}</div>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
-                <div style="height: 300px;">
-                    <canvas id="monthlyDemandChart"></canvas>
+                <div class="row">
+                    <!-- Main Chart -->
+                    <div class="col-lg-8">
+                        <div class="chart-container" style="height: 400px; position: relative;">
+                            <canvas id="monthlyDemandChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Location Breakdown Pie Chart -->
+                    <div class="col-lg-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-map-marker-alt me-1"></i>Usage by Location</h6>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="locationBreakdownChart"></canvas>
+                        </div>
+                        <div class="location-legend mt-3">
+                            @php
+                                $locationTotals = [
+                                    'Main Kitchen' => 0,
+                                    'Banquet Kitchen' => 0,
+                                    'Banquet Hall' => 0,
+                                    'Restaurant' => 0,
+                                    'Rooms' => 0,
+                                    'Garden' => 0,
+                                    'Other' => 0
+                                ];
+                                foreach ($demandData as $item) {
+                                    $locationTotals['Main Kitchen'] += $item['locationBreakdown']['main_kitchen'];
+                                    $locationTotals['Banquet Kitchen'] += $item['locationBreakdown']['banquet_hall_kitchen'];
+                                    $locationTotals['Banquet Hall'] += $item['locationBreakdown']['banquet_hall'];
+                                    $locationTotals['Restaurant'] += $item['locationBreakdown']['restaurant'];
+                                    $locationTotals['Rooms'] += $item['locationBreakdown']['rooms'];
+                                    $locationTotals['Garden'] += $item['locationBreakdown']['garden'];
+                                    $locationTotals['Other'] += $item['locationBreakdown']['other'];
+                                }
+                                $grandTotal = array_sum($locationTotals);
+                            @endphp
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Items Table -->
+                <div class="mt-4">
+                    <h6 class="text-muted mb-3"><i class="fas fa-list-alt me-1"></i>Detailed Item Breakdown</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-center">Added</th>
+                                    <th class="text-center">Removed</th>
+                                    <th class="text-center">Net Change</th>
+                                    <th>Top Usage Location</th>
+                                    <th class="text-center">Activity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($demandData as $item)
+                                @php
+                                    $maxLocation = '';
+                                    $maxValue = 0;
+                                    $locationNames = [
+                                        'main_kitchen' => 'Main Kitchen',
+                                        'banquet_hall_kitchen' => 'Banquet Kitchen',
+                                        'banquet_hall' => 'Banquet Hall',
+                                        'restaurant' => 'Restaurant',
+                                        'rooms' => 'Rooms',
+                                        'garden' => 'Garden',
+                                        'other' => 'Other'
+                                    ];
+                                    foreach ($item['locationBreakdown'] as $loc => $val) {
+                                        if ($val > $maxValue) {
+                                            $maxValue = $val;
+                                            $maxLocation = $locationNames[$loc];
+                                        }
+                                    }
+                                    $activityPercent = $grandTotal > 0 ? ($item['removals'] / $grandTotal) * 100 : 0;
+                                @endphp
+                                <tr>
+                                    <td>
+                                        <strong>{{ $item['name'] }}</strong>
+                                        <small class="text-muted d-block">{{ $item['unit'] }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success">+{{ number_format($item['additions'], 1) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger">-{{ number_format($item['removals'], 1) }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($item['netChange'] >= 0)
+                                            <span class="text-success fw-bold"><i class="fas fa-arrow-up"></i> {{ number_format($item['netChange'], 1) }}</span>
+                                        @else
+                                            <span class="text-danger fw-bold"><i class="fas fa-arrow-down"></i> {{ number_format(abs($item['netChange']), 1) }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($maxLocation)
+                                            <span class="badge bg-primary-subtle text-primary">{{ $maxLocation }}</span>
+                                            <small class="text-muted">({{ number_format($maxValue, 1) }})</small>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center" style="width: 120px;">
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ min($activityPercent * 3, 100) }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ number_format($activityPercent, 1) }}%</small>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -590,6 +723,93 @@ td div {
     margin-right: 5px;
     margin-bottom: 5px;
 }
+
+/* Stock Dashboard Styles */
+.stock-dashboard .card-header.bg-gradient-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-bottom: none;
+}
+
+.stock-dashboard .stat-badge {
+    min-width: 90px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.stock-dashboard .stat-badge small {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stock-dashboard .stat-badge .fw-bold {
+    font-size: 1.1rem;
+}
+
+.bg-success-subtle {
+    background-color: rgba(40, 167, 69, 0.15) !important;
+}
+
+.bg-danger-subtle {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+}
+
+.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.15) !important;
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+}
+
+.bg-primary-subtle {
+    background-color: rgba(13, 110, 253, 0.15) !important;
+}
+
+.stock-dashboard .table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.stock-dashboard .table td {
+    vertical-align: middle;
+    padding: 0.75rem 0.5rem;
+}
+
+.stock-dashboard .badge {
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+}
+
+.stock-dashboard .progress {
+    background-color: #e9ecef;
+    border-radius: 10px;
+}
+
+.stock-dashboard .progress-bar {
+    border-radius: 10px;
+}
+
+.chart-container {
+    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+@media (max-width: 991px) {
+    .stock-dashboard .dashboard-stats {
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .stock-dashboard .stat-badge {
+        flex: 1;
+        min-width: 80px;
+    }
+}
 </style>
 
 <!-- Chart.js CDN -->
@@ -766,42 +986,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize Monthly Demand Chart if data exists
     @if(isset($demandData) && count($demandData) > 0)
+        // Main Bar Chart - Stock Added vs Removed
         const demandCtx = document.getElementById('monthlyDemandChart');
         if (demandCtx) {
+            const demandData = {!! json_encode($demandData) !!};
+            
             new Chart(demandCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: {!! json_encode(array_column($demandData, 'name')) !!},
+                    labels: demandData.map(item => item.name),
                     datasets: [
                         {
                             label: 'Stock Added',
-                            data: {!! json_encode(array_column($demandData, 'additions')) !!},
-                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            data: demandData.map(item => item.additions),
+                            backgroundColor: 'rgba(40, 167, 69, 0.85)',
                             borderColor: 'rgba(40, 167, 69, 1)',
-                            borderWidth: 1
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            borderSkipped: false
                         },
                         {
                             label: 'Stock Removed',
-                            data: {!! json_encode(array_column($demandData, 'removals')) !!},
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
+                            data: demandData.map(item => item.removals),
+                            backgroundColor: 'rgba(220, 53, 69, 0.85)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            borderSkipped: false
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 12, weight: 'bold' }
+                            }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
                             callbacks: {
-                                label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    return label + ': ' + context.parsed.y;
+                                afterBody: function(context) {
+                                    const idx = context[0].dataIndex;
+                                    const item = demandData[idx];
+                                    const net = item.netChange;
+                                    return [
+                                        '',
+                                        'Net Change: ' + (net >= 0 ? '+' : '') + net.toFixed(1),
+                                        'Unit: ' + item.unit
+                                    ];
                                 }
                             }
                         }
@@ -809,16 +1056,110 @@ document.addEventListener('DOMContentLoaded', function() {
                     scales: {
                         y: {
                             beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
                             title: {
                                 display: true,
-                                text: 'Quantity'
-                            }
+                                text: 'Quantity',
+                                font: { size: 12, weight: 'bold' }
+                            },
+                            ticks: { font: { size: 11 } }
                         },
                         x: {
+                            grid: { display: false },
                             ticks: {
                                 autoSkip: false,
                                 maxRotation: 45,
-                                minRotation: 45
+                                minRotation: 45,
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Location Breakdown Doughnut Chart
+        const locationCtx = document.getElementById('locationBreakdownChart');
+        if (locationCtx) {
+            const locationData = {
+                'Main Kitchen': 0,
+                'Banquet Kitchen': 0,
+                'Banquet Hall': 0,
+                'Restaurant': 0,
+                'Rooms': 0,
+                'Garden': 0,
+                'Other': 0
+            };
+            
+            const demandItems = {!! json_encode($demandData) !!};
+            demandItems.forEach(item => {
+                locationData['Main Kitchen'] += item.locationBreakdown.main_kitchen;
+                locationData['Banquet Kitchen'] += item.locationBreakdown.banquet_hall_kitchen;
+                locationData['Banquet Hall'] += item.locationBreakdown.banquet_hall;
+                locationData['Restaurant'] += item.locationBreakdown.restaurant;
+                locationData['Rooms'] += item.locationBreakdown.rooms;
+                locationData['Garden'] += item.locationBreakdown.garden;
+                locationData['Other'] += item.locationBreakdown.other;
+            });
+
+            // Filter out zero values
+            const filteredLabels = [];
+            const filteredData = [];
+            const colors = {
+                'Main Kitchen': '#0d6efd',
+                'Banquet Kitchen': '#6610f2',
+                'Banquet Hall': '#6f42c1',
+                'Restaurant': '#20c997',
+                'Rooms': '#fd7e14',
+                'Garden': '#198754',
+                'Other': '#6c757d'
+            };
+            const filteredColors = [];
+
+            Object.entries(locationData).forEach(([label, value]) => {
+                if (value > 0) {
+                    filteredLabels.push(label);
+                    filteredData.push(value);
+                    filteredColors.push(colors[label]);
+                }
+            });
+
+            new Chart(locationCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        data: filteredData,
+                        backgroundColor: filteredColors,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 12,
+                                font: { size: 10 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 10,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + context.parsed.toFixed(1) + ' (' + percentage + '%)';
+                                }
                             }
                         }
                     }

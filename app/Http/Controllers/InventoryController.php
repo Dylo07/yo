@@ -115,30 +115,63 @@ class InventoryController extends Controller
                     $inventoryData[$item->id][$inv->stock_date] = $inv->stock_level;
                 }
 
-                // Calculate total additions and removals for this item in the current month
+                // Calculate total additions and removals by location for this item
                 $totalAddition = 0;
-                $totalRemoval = 0;
+                $locationBreakdown = [
+                    'main_kitchen' => 0,
+                    'banquet_hall_kitchen' => 0,
+                    'banquet_hall' => 0,
+                    'restaurant' => 0,
+                    'rooms' => 0,
+                    'garden' => 0,
+                    'other' => 0
+                ];
                 
                 foreach ($monthLogs as $log) {
                     if ($log->item_id == $item->id) {
                         if ($log->action === 'add') {
                             $totalAddition += $log->quantity;
-                        } elseif (in_array($log->action, [
-                            'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 
-                            'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
-                        ])) {
-                            $totalRemoval += $log->quantity;
+                        } else {
+                            switch ($log->action) {
+                                case 'remove_main_kitchen':
+                                    $locationBreakdown['main_kitchen'] += $log->quantity;
+                                    break;
+                                case 'remove_banquet_hall_kitchen':
+                                    $locationBreakdown['banquet_hall_kitchen'] += $log->quantity;
+                                    break;
+                                case 'remove_banquet_hall':
+                                    $locationBreakdown['banquet_hall'] += $log->quantity;
+                                    break;
+                                case 'remove_restaurant':
+                                    $locationBreakdown['restaurant'] += $log->quantity;
+                                    break;
+                                case 'remove_rooms':
+                                    $locationBreakdown['rooms'] += $log->quantity;
+                                    break;
+                                case 'remove_garden':
+                                    $locationBreakdown['garden'] += $log->quantity;
+                                    break;
+                                case 'remove_other':
+                                    $locationBreakdown['other'] += $log->quantity;
+                                    break;
+                            }
                         }
                     }
                 }
+                
+                $totalRemoval = array_sum($locationBreakdown);
+                $netChange = $totalAddition - $totalRemoval;
                 
                 // Include items that have either additions or removals
                 if ($totalAddition > 0 || $totalRemoval > 0) {
                     $demandData[] = [
                         'name' => $item->name,
+                        'unit' => $item->unit ?? 'units',
                         'additions' => $totalAddition,
                         'removals' => $totalRemoval,
-                        'total' => $totalAddition + $totalRemoval // For sorting purposes
+                        'netChange' => $netChange,
+                        'locationBreakdown' => $locationBreakdown,
+                        'total' => $totalAddition + $totalRemoval
                     ];
                 }
             }

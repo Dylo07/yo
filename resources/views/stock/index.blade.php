@@ -508,7 +508,16 @@
                 <div>
                     <h3 class="card-title mb-0"><i class="fas fa-rupee-sign me-2"></i>Cost Analysis Dashboard</h3>
                     <small class="opacity-75">
-                        Financial overview based on item costs
+                        @if($demandLimit == 'all' || $demandLimit == 0)
+                            All Items with Cost
+                        @else
+                            Top {{ $demandLimit }} Most Active Items
+                        @endif
+                        @if($dashboardCategory)
+                            - {{ $groups->find($dashboardCategory)->name ?? 'Selected Category' }}
+                        @else
+                            - All Categories
+                        @endif
                         @if($itemsWithoutCost > 0)
                             <span class="badge bg-secondary ms-2">{{ $itemsWithoutCost }} items without price</span>
                         @endif
@@ -529,18 +538,73 @@
                     </div>
                 </div>
             </div>
+            <!-- Dashboard Filters (same as Stock Movement Dashboard) -->
+            <form action="{{ route('stock.index') }}" method="GET" class="row g-2 align-items-end mt-2">
+                <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                <input type="hidden" name="month" value="{{ $currentMonth }}">
+                <input type="hidden" name="year" value="{{ $currentYear }}">
+                <div class="col-auto">
+                    <label class="form-label text-dark small mb-1">Start Date</label>
+                    <input type="date" name="dashboard_start" class="form-control form-control-sm" value="{{ $dashboardStartDate }}" max="{{ now()->toDateString() }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label text-dark small mb-1">End Date</label>
+                    <input type="date" name="dashboard_end" class="form-control form-control-sm" value="{{ $dashboardEndDate }}" max="{{ now()->toDateString() }}">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label text-dark small mb-1">Category</label>
+                    <select name="dashboard_category" class="form-select form-select-sm">
+                        <option value="">All Categories</option>
+                        @foreach($groups as $group)
+                            <option value="{{ $group->id }}" {{ $dashboardCategory == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label text-dark small mb-1">Show</label>
+                    <select name="demand_limit" class="form-select form-select-sm">
+                        <option value="10" {{ $demandLimit == 10 ? 'selected' : '' }}>Top 10</option>
+                        <option value="25" {{ $demandLimit == 25 ? 'selected' : '' }}>Top 25</option>
+                        <option value="50" {{ $demandLimit == 50 ? 'selected' : '' }}>Top 50</option>
+                        <option value="all" {{ $demandLimit == 'all' || $demandLimit == 0 ? 'selected' : '' }}>All Items</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-dark btn-sm"><i class="fas fa-filter me-1"></i>Apply</button>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ route('stock.index', ['category_id' => request('category_id'), 'month' => $currentMonth, 'year' => $currentYear]) }}" class="btn btn-outline-dark btn-sm"><i class="fas fa-undo me-1"></i>Reset</a>
+                </div>
+            </form>
         </div>
         <div class="card-body">
-            <!-- Cost Summary by Location -->
+            <!-- Date Range Display -->
+            <div class="alert alert-light border mb-3 py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <span>
+                        <i class="fas fa-calendar-alt me-2 text-warning"></i>
+                        <strong>Period:</strong> {{ \Carbon\Carbon::parse($dashboardStartDate)->format('M d, Y') }} 
+                        - {{ \Carbon\Carbon::parse($dashboardEndDate)->format('M d, Y') }}
+                        <span class="text-muted ms-2">({{ \Carbon\Carbon::parse($dashboardStartDate)->diffInDays(\Carbon\Carbon::parse($dashboardEndDate)) + 1 }} days)</span>
+                    </span>
+                    @if($dashboardCategory)
+                        <span class="badge bg-warning text-dark">{{ $groups->find($dashboardCategory)->name ?? 'Category' }}</span>
+                    @else
+                        <span class="badge bg-secondary">All Categories</span>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Cost Charts - Items like Stock Movement Dashboard -->
             <div class="row mb-4">
                 <div class="col-lg-8">
-                    <h6 class="text-muted mb-3"><i class="fas fa-chart-bar me-1"></i>Cost by Location (Usage)</h6>
-                    <div class="chart-container" style="height: 300px; position: relative;">
-                        <canvas id="costByLocationChart"></canvas>
+                    <h6 class="text-muted mb-3"><i class="fas fa-chart-bar me-1"></i>Cost Added vs Cost Used (by Item)</h6>
+                    <div class="chart-container" style="height: 350px; position: relative;">
+                        <canvas id="costByItemChart"></canvas>
                     </div>
                 </div>
                 <div class="col-lg-4">
-                    <h6 class="text-muted mb-3"><i class="fas fa-chart-pie me-1"></i>Cost Distribution</h6>
+                    <h6 class="text-muted mb-3"><i class="fas fa-chart-pie me-1"></i>Cost Distribution (Top Items)</h6>
                     <div style="height: 250px; position: relative;">
                         <canvas id="costDistributionChart"></canvas>
                     </div>
@@ -568,11 +632,12 @@
                         $totalLocationCost = array_sum($locationCosts);
                     @endphp
                     <div class="mt-3">
+                        <h6 class="text-muted mb-2"><i class="fas fa-map-marker-alt me-1"></i>Usage by Location</h6>
                         @foreach($locationCosts as $location => $cost)
                             @if($cost > 0)
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <small>{{ $location }}</small>
-                                <span class="badge bg-primary-subtle text-primary">Rs {{ number_format($cost, 2) }}</span>
+                                <span class="badge bg-warning-subtle text-dark">Rs {{ number_format($cost, 2) }}</span>
                             </div>
                             @endif
                         @endforeach
@@ -885,29 +950,59 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        const costLocationCtx = document.getElementById('costByLocationChart');
-        if (costLocationCtx) {
+        // Cost by Item Chart (like Stock Movement Dashboard)
+        const costByItemCtx = document.getElementById('costByItemChart');
+        if (costByItemCtx) {
             const demandItems = {!! json_encode($demandData) !!};
-            const locationCostData = { 'Main Kitchen': 0, 'Banquet Kitchen': 0, 'Banquet Hall': 0, 'Restaurant': 0, 'Rooms': 0, 'Garden': 0, 'Other': 0 };
-            demandItems.forEach(item => {
-                const cost = item.cost_per_unit || 0;
-                const lb = item.locationBreakdown || {};
-                locationCostData['Main Kitchen'] += (lb.main_kitchen || 0) * cost;
-                locationCostData['Banquet Kitchen'] += (lb.banquet_hall_kitchen || 0) * cost;
-                locationCostData['Banquet Hall'] += (lb.banquet_hall || 0) * cost;
-                locationCostData['Restaurant'] += (lb.restaurant || 0) * cost;
-                locationCostData['Rooms'] += (lb.rooms || 0) * cost;
-                locationCostData['Garden'] += (lb.garden || 0) * cost;
-                locationCostData['Other'] += (lb.other || 0) * cost;
-            });
+            // Filter items with cost and sort by cost_removals
+            const itemsWithCost = demandItems.filter(item => (item.cost_per_unit || 0) > 0)
+                .sort((a, b) => (b.cost_removals || 0) - (a.cost_removals || 0))
+                .slice(0, 10);
 
-            const costLabels = Object.keys(locationCostData).filter(k => locationCostData[k] > 0);
-            const costValues = costLabels.map(k => locationCostData[k]);
-
-            new Chart(costLocationCtx, {
+            new Chart(costByItemCtx, {
                 type: 'bar',
-                data: { labels: costLabels, datasets: [{ label: 'Cost (Rs)', data: costValues, backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#20c997', '#fd7e14', '#198754', '#6c757d'], borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rs ' + v.toLocaleString() } } } }
+                data: {
+                    labels: itemsWithCost.map(item => item.name),
+                    datasets: [{
+                        label: 'Cost Added (Rs)',
+                        data: itemsWithCost.map(item => item.cost_additions || 0),
+                        backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                        borderColor: 'rgb(25, 135, 84)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }, {
+                        label: 'Cost Used (Rs)',
+                        data: itemsWithCost.map(item => item.cost_removals || 0),
+                        backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                        borderColor: 'rgb(220, 53, 69)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const item = itemsWithCost[context[0].dataIndex];
+                                    const netCost = (item.cost_additions || 0) - (item.cost_removals || 0);
+                                    return 'Net: ' + (netCost >= 0 ? '+' : '') + 'Rs ' + netCost.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Cost (Rs)' },
+                            ticks: { callback: v => 'Rs ' + v.toLocaleString() }
+                        },
+                        x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                    }
+                }
             });
         }
 

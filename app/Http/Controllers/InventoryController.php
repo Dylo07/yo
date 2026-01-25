@@ -103,7 +103,7 @@ class InventoryController extends Controller
 
         // OPTIMIZATION: Transform Inventory to Keyed Array for O(1) Lookup
         $inventoryData = [];
-        $demandData = []; // Array to hold demand data for the chart
+        $demandData = []; // Array to hold demand data for the chart (both additions and removals)
 
         if ($selectedGroup) {
             foreach ($selectedGroup->items as $item) {
@@ -115,28 +115,35 @@ class InventoryController extends Controller
                     $inventoryData[$item->id][$inv->stock_date] = $inv->stock_level;
                 }
 
-                // Calculate total demand (removals) for this item in the current month
+                // Calculate total additions and removals for this item in the current month
+                $totalAddition = 0;
                 $totalRemoval = 0;
-                // We can use the already grouped logs if they cover the whole month correctly
-                // or iterate through the monthLogs collection for this item
+                
                 foreach ($monthLogs as $log) {
-                    if ($log->item_id == $item->id && in_array($log->action, [
-                        'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 
-                        'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
-                    ])) {
-                        $totalRemoval += $log->quantity;
+                    if ($log->item_id == $item->id) {
+                        if ($log->action === 'add') {
+                            $totalAddition += $log->quantity;
+                        } elseif (in_array($log->action, [
+                            'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall', 
+                            'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
+                        ])) {
+                            $totalRemoval += $log->quantity;
+                        }
                     }
                 }
                 
-                if ($totalRemoval > 0) {
+                // Include items that have either additions or removals
+                if ($totalAddition > 0 || $totalRemoval > 0) {
                     $demandData[] = [
                         'name' => $item->name,
-                        'total' => $totalRemoval
+                        'additions' => $totalAddition,
+                        'removals' => $totalRemoval,
+                        'total' => $totalAddition + $totalRemoval // For sorting purposes
                     ];
                 }
             }
             
-            // Sort by demand (highest first) and take top 10
+            // Sort by total activity (highest first) and take top 10
             usort($demandData, function($a, $b) {
                 return $b['total'] <=> $a['total'];
             });

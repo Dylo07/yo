@@ -264,22 +264,38 @@
                         <button type="submit" name="action" value="remove_main_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Main Kitchen')">Main Kitchen</button>
                         <button type="submit" name="action" value="remove_banquet_hall_kitchen" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall Kitchen')">Banquet Hall Kitchen</button>
                         <button type="submit" name="action" value="remove_banquet_hall" class="btn btn-danger" onclick="return confirmRemoval('Banquet Hall')">Banquet Hall</button>
+                        <button type="submit" name="action" value="remove_restaurant" class="btn btn-danger" onclick="return confirmRemoval('Restaurant')">Restaurant</button>
+                        <button type="submit" name="action" value="remove_rooms" class="btn btn-danger" onclick="return confirmRemoval('Rooms')">Rooms</button>
+                        <button type="submit" name="action" value="remove_garden" class="btn btn-danger" onclick="return confirmRemoval('Garden')">Garden</button>
+                        <button type="submit" name="action" value="remove_other" class="btn btn-danger" onclick="return confirmRemoval('Other')">Other</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-            <!-- Stock Update Section -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h3 class="card-title">Update Stock</h3>
+        <!-- Monthly Demand Summary Section -->
+        @if(isset($demandData) && count($demandData) > 0)
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Monthly Demand Summary (Top 10 Items)</h3>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="monthlyDemandChart"></canvas>
                 </div>
-                <div class="card-body">
-                    <form action="{{ route('stock.update') }}" method="POST" class="mb-4" onsubmit="showLoading()">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="item" class="form-label">Item</label>
-                            <select name="item_id" id="item" class="form-select" required>
-                                <option value="">Select an item</option>
-                                @foreach($selectedGroup->items as $item)
-                                    <option value="{{ $item->id }}">{{ $item->name }}</option>
-                                @endforeach
+            </div>
+        </div>
+        @endif
+
+        <!-- Category-wise Usage Report Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">Category-wise Usage Report</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('stock.index') }}" method="GET" class="mb-3">
+                    <input type="hidden" name="category_id" value="{{ request('category_id') }}">
+                    <input type="hidden" name="month" value="{{ $currentMonth }}">
                     <input type="hidden" name="year" value="{{ $currentYear }}">
                     <div class="row">
                         <div class="col-md-3">
@@ -756,25 +772,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: 'bar',
                 data: {
                     labels: {!! json_encode(array_column($demandData, 'name')) !!},
-                    datasets: [{
-                        label: 'Total Quantity Used',
-                        data: {!! json_encode(array_column($demandData, 'total')) !!},
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
+                    datasets: [
+                        {
+                            label: 'Stock Added',
+                            data: {!! json_encode(array_column($demandData, 'additions')) !!},
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Stock Removed',
+                            data: {!! json_encode(array_column($demandData, 'removals')) !!},
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top'
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return 'Used: ' + context.parsed.y;
+                                    const label = context.dataset.label || '';
+                                    return label + ': ' + context.parsed.y;
                                 }
                             }
                         }

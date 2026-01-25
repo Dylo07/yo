@@ -654,7 +654,7 @@
             <div class="alert alert-info mt-3 mb-0">
                 <i class="fas fa-info-circle me-2"></i>
                 <strong>{{ $itemsWithoutCost }} items</strong> do not have a cost assigned. 
-                Visit <a href="{{ route('kitchen.inventory') }}" class="alert-link">/kitchen/inventory</a> to assign costs.
+                Visit <a href="/kitchen/inventory" class="alert-link">/kitchen/inventory</a> to assign costs.
             </div>
             @endif
         </div>
@@ -664,7 +664,7 @@
             <h5><i class="fas fa-exclamation-triangle me-2"></i>No Cost Data Available</h5>
             <p class="mb-2">None of the items have cost prices assigned. To use the Cost Analysis Dashboard:</p>
             <ol class="mb-0">
-                <li>Go to <a href="{{ route('kitchen.inventory') }}" class="alert-link">Kitchen Inventory</a></li>
+                <li>Go to <a href="/kitchen/inventory" class="alert-link">Kitchen Inventory</a></li>
                 <li>Edit each item and set the "Cost Per Unit" value</li>
                 <li>Return here to see cost analysis</li>
             </ol>

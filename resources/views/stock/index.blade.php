@@ -916,5 +916,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     @endif
 });
+
+// Re-render charts when tabs are shown (Chart.js needs visible canvas)
+document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function(e) {
+        // Trigger resize on all charts when tab becomes visible
+        if (typeof Chart !== 'undefined') {
+            Chart.instances.forEach(chart => {
+                chart.resize();
+            });
+        }
+    });
+});
 </script>
 @endsection

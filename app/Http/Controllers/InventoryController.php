@@ -148,7 +148,7 @@ class InventoryController extends Controller
                     'name' => $log->item->name ?? 'Unknown',
                     'unit' => $log->item->unit ?? 'units',
                     'category' => $log->item->group->name ?? 'Unknown',
-                    'cost_per_unit' => $log->item->cost_per_unit ?? 0,
+                    'cost_per_unit' => $log->item->kitchen_cost_per_unit ?? 0,
                     'additions' => 0,
                     'locationBreakdown' => [
                         'main_kitchen' => 0,

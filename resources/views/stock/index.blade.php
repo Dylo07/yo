@@ -31,22 +31,29 @@
     <div class="card mb-4">
         <div class="card-body p-0">
             <!-- Tab Navigation -->
-            <ul class="nav nav-tabs border-bottom-0">
-                <li class="nav-item">
-                    <a href="{{ route('stock.index') }}" 
-                       class="nav-link {{ Request::routeIs('stock.index') ? 'active' : '' }}">
+            <ul class="nav nav-tabs border-bottom-0" id="stockPageTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stockPane" type="button" role="tab">
                         Stock Management
-                    </a>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-info fw-bold" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboardPane" type="button" role="tab">
+                        <i class="fas fa-chart-line me-1"></i>Monthly Stock Movement Dashboard
+                    </button>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('categories-products.index') }}" 
-                       class="nav-link {{ Request::routeIs('categories-products.index') ? 'active' : '' }}">
+                    <a href="{{ route('categories-products.index') }}" class="nav-link">
                         Category & Product Management
                     </a>
                 </li>
             </ul>
         </div>
     </div>
+    
+    <div class="tab-content" id="stockPageTabContent">
+    <!-- Stock Management Tab -->
+    <div class="tab-pane fade show active" id="stockPane" role="tabpanel">
 
     <!-- Category Selection Dropdown -->
     <form action="{{ route('stock.index') }}" method="GET" class="mb-4">
@@ -147,6 +154,10 @@
         </div>
     </div>
 
+    </div><!-- End Stock Management Tab -->
+
+    <!-- Dashboard Tab -->
+    <div class="tab-pane fade" id="dashboardPane" role="tabpanel">
     <!-- Monthly Stock Movement Dashboard -->
     @if(isset($demandData) && count($demandData) > 0)
     <div class="card mt-4 stock-dashboard">
@@ -886,6 +897,8 @@
             Please select a category to view stock details
         </div>
     @endif
+    </div><!-- End Dashboard Tab -->
+    </div><!-- End Tab Content -->
 </div>
 
 <!-- Trend Graph Modal -->

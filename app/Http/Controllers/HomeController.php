@@ -212,10 +212,22 @@ class HomeController extends Controller
 
          // Get inventory changes for selected date or default to today
          $selectedInventoryDate = $request->input('inventory_date', Carbon::today()->format('Y-m-d'));
-         $inventoryChanges = StockLog::with(['user', 'item.group'])
-             ->whereDate('created_at', $selectedInventoryDate)
-             ->orderBy('created_at', 'desc')
-             ->get();
+         $selectedInventoryCategory = $request->input('inventory_category', '');
+         
+         $inventoryChangesQuery = StockLog::with(['user', 'item.group'])
+             ->whereDate('created_at', $selectedInventoryDate);
+         
+         // Filter by category if selected
+         if ($selectedInventoryCategory) {
+             $inventoryChangesQuery->whereHas('item', function($query) use ($selectedInventoryCategory) {
+                 $query->where('group_id', $selectedInventoryCategory);
+             });
+         }
+         
+         $inventoryChanges = $inventoryChangesQuery->orderBy('created_at', 'desc')->get();
+         
+         // Get all product groups/categories for the dropdown
+         $inventoryCategories = \App\Models\ProductGroup::orderBy('name')->get();
          
          // Get current stock levels for items with changes today
          $itemIds = $inventoryChanges->pluck('item_id')->unique();
@@ -389,7 +401,9 @@ class HomeController extends Controller
              'poolDate',
              'adultTicketPrice',
              'kidsTicketPrice',
-             'salaryBalances'
+             'salaryBalances',
+             'inventoryCategories',
+             'selectedInventoryCategory'
         ));
      }
 }

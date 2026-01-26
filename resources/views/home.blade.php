@@ -676,14 +676,6 @@
                         name="inventory_date"
                         class="form-control form-control-sm dark-input"
                         value="{{ request('inventory_date', date('Y-m-d')) }}">
-                <select name="inventory_category" class="form-select form-select-sm dark-input" style="min-width: 150px;">
-                    <option value="">All Categories</option>
-                    @foreach($inventoryCategories as $category)
-                        <option value="{{ $category->id }}" {{ $selectedInventoryCategory == $category->id ? 'selected' : '' }}>
-                            {{ $category->name }}
-                        </option>
-                    @endforeach
-                </select>
                 <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
                 <!-- Preserve other request parameters -->
                 @if(request('date'))

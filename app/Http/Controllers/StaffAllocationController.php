@@ -614,6 +614,10 @@ class StaffAllocationController extends Controller
             $currentStock = $currentStockLevels[$log->item_id] ?? 0;
             $isAdd = $log->action === 'add';
             
+            // Calculate cost (handle null cost_per_unit safely)
+            $costPerUnit = $log->item->kitchen_cost_per_unit ?? 0;
+            $itemCost = ($costPerUnit > 0) ? ($log->quantity * $costPerUnit) : 0;
+            
             return [
                 'id' => $log->id,
                 'time' => $log->created_at->format('H:i'),
@@ -625,7 +629,9 @@ class StaffAllocationController extends Controller
                 'current_stock' => $currentStock,
                 'user' => $log->user->name ?? 'Unknown',
                 'description' => $log->description,
-                'type' => $isAdd ? 'added' : 'removed'
+                'type' => $isAdd ? 'added' : 'removed',
+                'cost_per_unit' => $costPerUnit,
+                'cost' => $itemCost
             ];
         });
 

@@ -637,6 +637,24 @@
                     <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
                 </div>
             </div>
+            
+            <!-- Cost Summary -->
+            <div id="inventoryCostSummary" class="p-3 bg-yellow-50 border-t hidden">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="text-center">
+                        <div class="text-xs text-gray-500 mb-1"><i class="fas fa-plus-circle text-emerald-500"></i> Cost Added</div>
+                        <div class="text-sm font-bold text-emerald-600" id="invCostAdded">Rs 0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs text-gray-500 mb-1"><i class="fas fa-minus-circle text-red-500"></i> Cost Used</div>
+                        <div class="text-sm font-bold text-red-600" id="invCostUsed">Rs 0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs text-gray-500 mb-1"><i class="fas fa-calculator"></i> Total Daily Cost</div>
+                        <div class="text-lg font-bold text-red-600" id="invTotalDailyCost">Rs 0</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Water Bottle Summary (Admin Only) -->
@@ -1859,14 +1877,35 @@ async function loadInventoryReport(date = null) {
 
 function renderInventoryList(groupedChanges) {
     const list = document.getElementById('inventoryList');
+    const costSummary = document.getElementById('inventoryCostSummary');
+    
     if (!groupedChanges || groupedChanges.length === 0) {
         list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No inventory changes</div>';
+        costSummary.classList.add('hidden');
         return;
     }
+    
+    let totalCostAdded = 0;
+    let totalCostUsed = 0;
     
     let html = '';
     groupedChanges.forEach((group, index) => {
         const groupId = `inv-group-${index}`;
+        
+        // Calculate category cost
+        let categoryCostUsed = 0;
+        group.items.forEach(log => {
+            const cost = log.cost || 0;
+            if (log.type === 'added') {
+                totalCostAdded += cost;
+            } else {
+                totalCostUsed += cost;
+                categoryCostUsed += cost;
+            }
+        });
+        
+        const costBadge = categoryCostUsed > 0 ? 
+            `<span class="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full ml-1">Rs ${categoryCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : '';
         
         html += `
             <div class="border border-gray-200 rounded-lg overflow-hidden mb-2">
@@ -1875,7 +1914,10 @@ function renderInventoryList(groupedChanges) {
                         <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform" id="${groupId}-icon"></i>
                         <span class="font-bold text-gray-700 text-xs">${group.name}</span>
                     </div>
-                    <span class="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">${group.count}</span>
+                    <div class="flex items-center">
+                        <span class="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">${group.count} items</span>
+                        ${costBadge}
+                    </div>
                 </div>
                 <div id="${groupId}" class="hidden border-t border-gray-200 bg-white">
                     <div class="divide-y divide-gray-100">
@@ -1883,6 +1925,10 @@ function renderInventoryList(groupedChanges) {
                             const isAdded = log.type === 'added';
                             const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
                             const qtyPrefix = isAdded ? '+' : '-';
+                            const itemCost = log.cost || 0;
+                            const costDisplay = itemCost > 0 ? 
+                                `<span class="${isAdded ? 'text-emerald-600' : 'text-red-600'} text-[10px] font-bold">Rs ${itemCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : 
+                                '<span class="text-gray-400 text-[10px]">-</span>';
                             
                             return `
                                 <div class="p-2 hover:bg-gray-50 transition-colors">
@@ -1891,9 +1937,12 @@ function renderInventoryList(groupedChanges) {
                                             <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor} font-bold min-w-[30px] text-center">
                                                 ${qtyPrefix}${Math.abs(log.quantity)}
                                             </span>
-                                            <span class="font-bold text-gray-800 text-xs truncate max-w-[150px]">${log.item_name}</span>
+                                            <span class="font-bold text-gray-800 text-xs truncate max-w-[120px]">${log.item_name}</span>
                                         </div>
-                                        <span class="text-[10px] text-gray-500">${log.time}</span>
+                                        <div class="flex items-center gap-2">
+                                            ${costDisplay}
+                                            <span class="text-[10px] text-gray-500">${log.time}</span>
+                                        </div>
                                     </div>
                                     <div class="flex items-center justify-between text-[10px] text-gray-500 pl-1">
                                         <div class="flex items-center gap-2">
@@ -1917,6 +1966,18 @@ function renderInventoryList(groupedChanges) {
         `;
     });
     list.innerHTML = html;
+    
+    // Update cost summary
+    document.getElementById('invCostAdded').textContent = 'Rs ' + totalCostAdded.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('invCostUsed').textContent = 'Rs ' + totalCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('invTotalDailyCost').textContent = 'Rs ' + totalCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    
+    // Show cost summary if there are any costs
+    if (totalCostAdded > 0 || totalCostUsed > 0) {
+        costSummary.classList.remove('hidden');
+    } else {
+        costSummary.classList.add('hidden');
+    }
 }
 
 function toggleInventoryGroup(groupId) {

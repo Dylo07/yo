@@ -589,69 +589,58 @@
         </div>
 
         <!-- Inventory Changes Report (Admin Only) -->
-        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
-            <div class="p-3 bg-black text-white">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-boxes"></i> Inventory Changes
-                    </h3>
-                    <div class="flex items-center gap-2">
-                        <button onclick="refreshInventoryReport()" class="text-white hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-white/20">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="loadInventoryForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
-                        <i class="fas fa-arrow-left"></i> Yesterday
-                    </button>
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center p-3">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0 me-3"><i class="fas fa-boxes me-2"></i>Inventory Changes</h5>
                     <input type="date" id="inventoryDatePicker" 
-                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50 text-black"
+                        class="form-control form-control-sm bg-secondary text-white border-0"
+                        style="width: auto;"
                         value="{{ date('Y-m-d') }}"
                         onchange="loadInventoryForDate(this.value)">
-                    <button onclick="loadInventoryForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
-                        Today
-                    </button>
+                    <button onclick="loadInventoryForToday()" class="btn btn-sm btn-outline-light">Today</button>
                 </div>
+                <a href="{{ route('stock.index') }}" class="btn btn-sm btn-outline-light">
+                    Manage Inventory
+                </a>
             </div>
-            
-            <!-- Summary Stats -->
-            <div class="grid grid-cols-3 gap-2 p-3 bg-gray-50 border-b">
-                <div class="text-center">
-                    <div class="text-xs text-gray-500 mb-1">Total Changes</div>
-                    <div class="text-lg font-bold text-gray-800" id="invTotalChanges">0</div>
+            <div class="card-body">
+                <!-- Summary Stats -->
+                <div class="row mb-3">
+                    <div class="col-4 text-center">
+                        <div class="small text-muted">Total Changes</div>
+                        <div class="h5 fw-bold" id="invTotalChanges">0</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="small text-muted">Items Added</div>
+                        <div class="h5 fw-bold text-success" id="invItemsAdded">0</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="small text-muted">Items Removed</div>
+                        <div class="h5 fw-bold text-danger" id="invItemsRemoved">0</div>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <div class="text-xs text-gray-500 mb-1">Items Added</div>
-                    <div class="text-lg font-bold text-emerald-600" id="invItemsAdded">0</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-xs text-gray-500 mb-1">Items Removed</div>
-                    <div class="text-lg font-bold text-red-600" id="invItemsRemoved">0</div>
-                </div>
-            </div>
 
-            <!-- Inventory List -->
-            <div class="p-3" style="max-height: 500px; overflow-y: auto;">
-                <div id="inventoryList" class="space-y-2">
-                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                <!-- Inventory List -->
+                <div id="inventoryList">
+                    <div class="text-center py-4 text-muted">Loading...</div>
                 </div>
-            </div>
-            
-            <!-- Cost Summary -->
-            <div id="inventoryCostSummary" class="p-3 bg-yellow-50 border-t hidden">
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="text-center">
-                        <div class="text-xs text-gray-500 mb-1"><i class="fas fa-plus-circle text-emerald-500"></i> Cost Added</div>
-                        <div class="text-sm font-bold text-emerald-600" id="invCostAdded">Rs 0</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-xs text-gray-500 mb-1"><i class="fas fa-minus-circle text-red-500"></i> Cost Used</div>
-                        <div class="text-sm font-bold text-red-600" id="invCostUsed">Rs 0</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-xs text-gray-500 mb-1"><i class="fas fa-calculator"></i> Total Daily Cost</div>
-                        <div class="text-lg font-bold text-red-600" id="invTotalDailyCost">Rs 0</div>
+                
+                <!-- Cost Summary -->
+                <div id="inventoryCostSummary" class="alert alert-warning border mt-3 hidden">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 text-center">
+                            <strong><i class="fas fa-plus-circle text-success me-1"></i>Cost Added:</strong> 
+                            <span class="text-success fw-bold" id="invCostAdded">Rs 0</span>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <strong><i class="fas fa-minus-circle text-danger me-1"></i>Cost Used:</strong> 
+                            <span class="text-danger fw-bold" id="invCostUsed">Rs 0</span>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <strong><i class="fas fa-calculator me-1"></i>Total Daily Cost:</strong> 
+                            <span class="fw-bold text-danger fs-5" id="invTotalDailyCost">Rs 0</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1880,7 +1869,7 @@ function renderInventoryList(groupedChanges) {
     const costSummary = document.getElementById('inventoryCostSummary');
     
     if (!groupedChanges || groupedChanges.length === 0) {
-        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No inventory changes</div>';
+        list.innerHTML = '<div class="text-center text-gray-400 text-xs py-4">No inventory changes</div>';
         costSummary.classList.add('hidden');
         return;
     }
@@ -1888,9 +1877,9 @@ function renderInventoryList(groupedChanges) {
     let totalCostAdded = 0;
     let totalCostUsed = 0;
     
-    let html = '';
+    let html = '<div class="accordion" id="inventoryAccordion">';
     groupedChanges.forEach((group, index) => {
-        const groupId = `inv-group-${index}`;
+        const groupId = `inv_group_${index}`;
         
         // Calculate category cost
         let categoryCostUsed = 0;
@@ -1905,66 +1894,74 @@ function renderInventoryList(groupedChanges) {
         });
         
         const costBadge = categoryCostUsed > 0 ? 
-            `<span class="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full ml-1">Rs ${categoryCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : '';
+            `<span class="badge bg-danger ms-2">Rs ${categoryCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : '';
         
         html += `
-            <div class="border border-gray-200 rounded-lg overflow-hidden mb-2">
-                <div class="flex items-center justify-between p-2 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors" onclick="toggleInventoryGroup('${groupId}')">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-gray-400 text-xs transition-transform" id="${groupId}-icon"></i>
-                        <span class="font-bold text-gray-700 text-xs">${group.name}</span>
-                    </div>
-                    <div class="flex items-center">
-                        <span class="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">${group.count} items</span>
-                        ${costBadge}
-                    </div>
-                </div>
-                <div id="${groupId}" class="hidden border-t border-gray-200 bg-white">
-                    <div class="divide-y divide-gray-100">
-                        ${group.items.map(log => {
-                            const isAdded = log.type === 'added';
-                            const badgeColor = isAdded ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
-                            const qtyPrefix = isAdded ? '+' : '-';
-                            const itemCost = log.cost || 0;
-                            const costDisplay = itemCost > 0 ? 
-                                `<span class="${isAdded ? 'text-emerald-600' : 'text-red-600'} text-[10px] font-bold">Rs ${itemCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : 
-                                '<span class="text-gray-400 text-[10px]">-</span>';
-                            
-                            return `
-                                <div class="p-2 hover:bg-gray-50 transition-colors">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[10px] px-1.5 py-0.5 rounded ${badgeColor} font-bold min-w-[30px] text-center">
-                                                ${qtyPrefix}${Math.abs(log.quantity)}
-                                            </span>
-                                            <span class="font-bold text-gray-800 text-xs truncate max-w-[120px]">${log.item_name}</span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            ${costDisplay}
-                                            <span class="text-[10px] text-gray-500">${log.time}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center justify-between text-[10px] text-gray-500 pl-1">
-                                        <div class="flex items-center gap-2">
-                                            <span><i class="fas fa-map-marker-alt mr-1 text-gray-300"></i>${log.location}</span>
-                                        </div>
-                                        <div class="text-right">
-                                            <span class="text-gray-400">By: ${log.user}</span>
-                                        </div>
-                                    </div>
-                                    ${log.description ? `
-                                        <div class="text-[10px] text-gray-400 mt-1 italic pl-1 border-l-2 border-gray-100 ml-1">
-                                            ${log.description}
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        }).join('')}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading_${groupId}">
+                    <button class="accordion-button collapsed bg-light py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${groupId}" aria-expanded="false">
+                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                            <strong class="small">${group.name}</strong>
+                            <div>
+                                <span class="badge bg-secondary me-1">${group.count} items</span>
+                                ${costBadge}
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse_${groupId}" class="accordion-collapse collapse" data-bs-parent="#inventoryAccordion">
+                    <div class="accordion-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Item</th>
+                                        <th>Action</th>
+                                        <th>Location</th>
+                                        <th>Qty</th>
+                                        <th>Cost</th>
+                                        <th>Stock</th>
+                                        <th>By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${group.items.map(log => {
+                                        const isAdded = log.type === 'added';
+                                        const itemCost = log.cost || 0;
+                                        const costDisplay = itemCost > 0 ? 
+                                            `<span class="${isAdded ? 'text-success' : 'text-danger'}">Rs ${itemCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : 
+                                            '<span class="text-muted">-</span>';
+                                        const locationBadge = getLocationBadge(log.action);
+                                        
+                                        return `
+                                            <tr>
+                                                <td>${log.time}</td>
+                                                <td><strong>${log.item_name}</strong></td>
+                                                <td>
+                                                    ${isAdded ? 
+                                                        '<span class="badge bg-success"><i class="fas fa-plus"></i></span>' : 
+                                                        '<span class="badge bg-danger"><i class="fas fa-minus"></i></span>'}
+                                                </td>
+                                                <td>${locationBadge}</td>
+                                                <td class="${isAdded ? 'text-success' : 'text-danger'} fw-bold">
+                                                    ${isAdded ? '+' : '-'}${Math.abs(log.quantity)}
+                                                </td>
+                                                <td>${costDisplay}</td>
+                                                <td>${log.current_stock}</td>
+                                                <td><small>${log.user}</small></td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
     });
+    html += '</div>';
     list.innerHTML = html;
     
     // Update cost summary
@@ -1972,11 +1969,21 @@ function renderInventoryList(groupedChanges) {
     document.getElementById('invCostUsed').textContent = 'Rs ' + totalCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     document.getElementById('invTotalDailyCost').textContent = 'Rs ' + totalCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     
-    // Show cost summary if there are any costs
-    if (totalCostAdded > 0 || totalCostUsed > 0) {
-        costSummary.classList.remove('hidden');
-    } else {
-        costSummary.classList.add('hidden');
+    // Show cost summary
+    costSummary.classList.remove('hidden');
+}
+
+function getLocationBadge(action) {
+    switch(action) {
+        case 'add': return '<span class="badge bg-success">Stock</span>';
+        case 'remove_main_kitchen': return '<span class="badge bg-primary">Main Kitchen</span>';
+        case 'remove_banquet_hall_kitchen': return '<span class="badge bg-info">Banquet Kitchen</span>';
+        case 'remove_banquet_hall': return '<span class="badge bg-warning text-dark">Banquet Hall</span>';
+        case 'remove_restaurant': return '<span class="badge bg-success">Restaurant</span>';
+        case 'remove_rooms': return '<span class="badge bg-secondary">Rooms</span>';
+        case 'remove_garden': return '<span class="badge bg-dark">Garden</span>';
+        case 'remove_other': return '<span class="badge bg-danger">Other</span>';
+        default: return `<span class="badge bg-light text-dark">${action}</span>`;
     }
 }
 

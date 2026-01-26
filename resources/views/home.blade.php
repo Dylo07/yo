@@ -702,138 +702,12 @@
         </a>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Time</th>
-                        <th>Item</th>
-                        <th>Category</th>
-                        <th>Action</th>
-                        <th>Location</th>
-                        <th>Quantity</th>
-                        <th>Cost</th>
-                        <th>Current Stock</th>
-                        <th>Updated By</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($inventoryChanges as $change)
-                    <tr>
-                        <td>{{ $change->created_at->format('H:i') }}</td>
-                        <td><strong>{{ $change->item ? $change->item->name : 'Unknown Item' }}</strong></td>
-                        <td>{{ ($change->item && $change->item->group) ? $change->item->group->name : 'Unknown Category' }}</td>
-                        <td>
-                            @if($change->action == 'add')
-                                <span class="badge bg-success">
-                                    <i class="fas fa-plus"></i> Added
-                                </span>
-                            @else
-                                <span class="badge bg-danger">
-                                    <i class="fas fa-minus"></i> Removed
-                                </span>
-                            @endif
-                        </td>
-                        <td>
-                            @switch($change->action)
-                                @case('add')
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-warehouse"></i> Stock Addition
-                                    </span>
-                                    @break
-                                @case('remove_main_kitchen')
-                                    <span class="badge bg-primary">
-                                        <i class="fas fa-utensils"></i> Main Kitchen
-                                    </span>
-                                    @break
-                                @case('remove_banquet_hall_kitchen')
-                                    <span class="badge bg-info">
-                                        <i class="fas fa-birthday-cake"></i> Banquet Hall Kitchen
-                                    </span>
-                                    @break
-                                @case('remove_banquet_hall')
-                                    <span class="badge bg-warning text-dark">
-                                        <i class="fas fa-glass-cheers"></i> Banquet Hall
-                                    </span>
-                                    @break
-                                @case('remove_restaurant')
-                                    <span class="badge bg-success">
-                                        <i class="fas fa-concierge-bell"></i> Restaurant
-                                    </span>
-                                    @break
-                                @case('remove_rooms')
-                                    <span class="badge bg-secondary">
-                                        <i class="fas fa-bed"></i> Rooms
-                                    </span>
-                                    @break
-                                @case('remove_garden')
-                                    <span class="badge bg-dark">
-                                        <i class="fas fa-tree"></i> Garden
-                                    </span>
-                                    @break
-                                @case('remove_other')
-                                    <span class="badge bg-danger">
-                                        <i class="fas fa-question"></i> Other
-                                    </span>
-                                    @break
-                                @default
-                                    <span class="badge bg-light text-dark">
-                                        {{ ucfirst(str_replace(['remove_', '_'], ['', ' '], $change->action)) }}
-                                    </span>
-                            @endswitch
-                        </td>
-                        <td class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
-                            <strong>
-                                @if($change->action == 'add')
-                                    +{{ $change->quantity }}
-                                @else
-                                    -{{ $change->quantity }}
-                                @endif
-                            </strong>
-                        </td>
-                        <td>
-                            @php
-                                $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
-                                $itemCost = ($costPerUnit !== null && $costPerUnit > 0) ? ($change->quantity * $costPerUnit) : null;
-                            @endphp
-                            @if($itemCost !== null)
-                                <span class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
-                                    Rs {{ number_format($itemCost, 2) }}
-                                </span>
-                            @else
-                                <span class="text-muted">-</span>
-                            @endif
-                        </td>
-                        <td class="fw-bold">
-                            @if(isset($currentStockLevels[$change->item_id]))
-                                <span class="badge bg-light text-dark">
-                                    {{ $currentStockLevels[$change->item_id] }}
-                                </span>
-                            @else
-                                <span class="text-muted">N/A</span>
-                            @endif
-                        </td>
-                        <td>{{ $change->user ? $change->user->name : 'Unknown User' }}</td>
-                        <td>
-                            <small class="text-muted">{{ $change->description }}</small>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" class="text-center text-muted py-4">
-                            <i class="fas fa-box-open fa-2x mb-3 d-block"></i>
-                            No inventory changes found for {{ \Carbon\Carbon::parse($inventoryDate)->format('M d, Y') }}
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Summary Section -->
-        @if($inventoryChanges->count() > 0)
         @php
+            // Group inventory changes by category
+            $groupedChanges = $inventoryChanges->groupBy(function($change) {
+                return ($change->item && $change->item->group) ? $change->item->group->name : 'Unknown Category';
+            });
+            
             // Calculate total daily cost (only for items with valid cost_per_unit)
             $totalCostAdded = 0;
             $totalCostRemoved = 0;
@@ -849,6 +723,129 @@
                 }
             }
         @endphp
+
+        @if($inventoryChanges->count() > 0)
+        <!-- Collapsible Accordion by Category -->
+        <div class="accordion" id="inventoryAccordion">
+            @foreach($groupedChanges as $categoryName => $changes)
+            @php
+                $categoryId = 'cat_' . Str::slug($categoryName, '_');
+                $categoryCostUsed = 0;
+                foreach($changes as $change) {
+                    $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
+                    if($costPerUnit !== null && $costPerUnit > 0 && $change->action != 'add') {
+                        $categoryCostUsed += $change->quantity * $costPerUnit;
+                    }
+                }
+            @endphp
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading_{{ $categoryId }}">
+                    <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ $categoryId }}" aria-expanded="false" aria-controls="collapse_{{ $categoryId }}">
+                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                            <strong>{{ $categoryName }}</strong>
+                            <div>
+                                <span class="badge bg-secondary me-2">{{ $changes->count() }} items</span>
+                                @if($categoryCostUsed > 0)
+                                <span class="badge bg-danger">Rs {{ number_format($categoryCostUsed, 2) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse_{{ $categoryId }}" class="accordion-collapse collapse" aria-labelledby="heading_{{ $categoryId }}" data-bs-parent="#inventoryAccordion">
+                    <div class="accordion-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Item</th>
+                                        <th>Action</th>
+                                        <th>Location</th>
+                                        <th>Qty</th>
+                                        <th>Cost</th>
+                                        <th>Stock</th>
+                                        <th>By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($changes as $change)
+                                    <tr>
+                                        <td>{{ $change->created_at->format('H:i') }}</td>
+                                        <td><strong>{{ $change->item ? $change->item->name : 'Unknown' }}</strong></td>
+                                        <td>
+                                            @if($change->action == 'add')
+                                                <span class="badge bg-success"><i class="fas fa-plus"></i></span>
+                                            @else
+                                                <span class="badge bg-danger"><i class="fas fa-minus"></i></span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @switch($change->action)
+                                                @case('add')
+                                                    <span class="badge bg-success">Stock</span>
+                                                    @break
+                                                @case('remove_main_kitchen')
+                                                    <span class="badge bg-primary">Main Kitchen</span>
+                                                    @break
+                                                @case('remove_banquet_hall_kitchen')
+                                                    <span class="badge bg-info">Banquet Kitchen</span>
+                                                    @break
+                                                @case('remove_banquet_hall')
+                                                    <span class="badge bg-warning text-dark">Banquet Hall</span>
+                                                    @break
+                                                @case('remove_restaurant')
+                                                    <span class="badge bg-success">Restaurant</span>
+                                                    @break
+                                                @case('remove_rooms')
+                                                    <span class="badge bg-secondary">Rooms</span>
+                                                    @break
+                                                @case('remove_garden')
+                                                    <span class="badge bg-dark">Garden</span>
+                                                    @break
+                                                @case('remove_other')
+                                                    <span class="badge bg-danger">Other</span>
+                                                    @break
+                                                @default
+                                                    <span class="badge bg-light text-dark">{{ ucfirst(str_replace(['remove_', '_'], ['', ' '], $change->action)) }}</span>
+                                            @endswitch
+                                        </td>
+                                        <td class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }} fw-bold">
+                                            {{ $change->action == 'add' ? '+' : '-' }}{{ $change->quantity }}
+                                        </td>
+                                        <td>
+                                            @php
+                                                $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
+                                                $itemCost = ($costPerUnit !== null && $costPerUnit > 0) ? ($change->quantity * $costPerUnit) : null;
+                                            @endphp
+                                            @if($itemCost !== null)
+                                                <span class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
+                                                    Rs {{ number_format($itemCost, 2) }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(isset($currentStockLevels[$change->item_id]))
+                                                {{ $currentStockLevels[$change->item_id] }}
+                                            @else
+                                                <span class="text-muted">N/A</span>
+                                            @endif
+                                        </td>
+                                        <td><small>{{ $change->user ? $change->user->name : 'Unknown' }}</small></td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        <!-- Summary Section -->
         <div class="row mt-3">
             <div class="col-md-12">
                 <div class="alert alert-light border">
@@ -898,6 +895,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+        @else
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-box-open fa-2x mb-3 d-block"></i>
+            No inventory changes found for {{ \Carbon\Carbon::parse($inventoryDate)->format('M d, Y') }}
         </div>
         @endif
     </div>

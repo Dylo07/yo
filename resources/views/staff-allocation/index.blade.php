@@ -1897,20 +1897,21 @@ function renderInventoryList(groupedChanges) {
             `<span class="badge bg-danger ms-2">Rs ${categoryCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : '';
         
         html += `
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading_${groupId}">
-                    <button class="accordion-button collapsed bg-light py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${groupId}" aria-expanded="false">
-                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                            <strong class="small">${group.name}</strong>
-                            <div>
-                                <span class="badge bg-secondary me-1">${group.count} items</span>
-                                ${costBadge}
-                            </div>
-                        </div>
-                    </button>
-                </h2>
-                <div id="collapse_${groupId}" class="accordion-collapse collapse" data-bs-parent="#inventoryAccordion">
-                    <div class="accordion-body p-0">
+            <div class="accordion-item border mb-2 rounded">
+                <div class="accordion-header bg-light p-2 rounded-top d-flex justify-content-between align-items-center" 
+                     style="cursor: pointer;" 
+                     onclick="toggleInvAccordion('${groupId}')">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chevron-right me-2 text-muted" id="icon_${groupId}" style="transition: transform 0.2s;"></i>
+                        <strong class="small">${group.name}</strong>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary me-1">${group.count} items</span>
+                        ${costBadge}
+                    </div>
+                </div>
+                <div id="collapse_${groupId}" class="border-top" style="display: none;">
+                    <div class="p-0">
                         <div class="table-responsive">
                             <table class="table table-hover table-sm mb-0 small">
                                 <thead class="table-light">
@@ -1987,15 +1988,15 @@ function getLocationBadge(action) {
     }
 }
 
-function toggleInventoryGroup(groupId) {
-    const content = document.getElementById(groupId);
-    const icon = document.getElementById(`${groupId}-icon`);
+function toggleInvAccordion(groupId) {
+    const content = document.getElementById('collapse_' + groupId);
+    const icon = document.getElementById('icon_' + groupId);
     
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
         icon.style.transform = 'rotate(90deg)';
     } else {
-        content.classList.add('hidden');
+        content.style.display = 'none';
         icon.style.transform = 'rotate(0deg)';
     }
 }

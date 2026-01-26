@@ -704,6 +704,7 @@
                         <th>Action</th>
                         <th>Location</th>
                         <th>Quantity</th>
+                        <th>Cost</th>
                         <th>Current Stock</th>
                         <th>Updated By</th>
                         <th>Description</th>
@@ -783,6 +784,19 @@
                                 @endif
                             </strong>
                         </td>
+                        <td>
+                            @php
+                                $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
+                                $itemCost = ($costPerUnit !== null && $costPerUnit > 0) ? ($change->quantity * $costPerUnit) : null;
+                            @endphp
+                            @if($itemCost !== null)
+                                <span class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
+                                    Rs {{ number_format($itemCost, 2) }}
+                                </span>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
+                        </td>
                         <td class="fw-bold">
                             @if(isset($currentStockLevels[$change->item_id]))
                                 <span class="badge bg-light text-dark">
@@ -799,7 +813,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-4">
+                        <td colspan="10" class="text-center text-muted py-4">
                             <i class="fas fa-box-open fa-2x mb-3 d-block"></i>
                             No inventory changes found for {{ \Carbon\Carbon::parse($inventoryDate)->format('M d, Y') }}
                         </td>
@@ -811,6 +825,22 @@
         
         <!-- Summary Section -->
         @if($inventoryChanges->count() > 0)
+        @php
+            // Calculate total daily cost (only for items with valid cost_per_unit)
+            $totalCostAdded = 0;
+            $totalCostRemoved = 0;
+            foreach($inventoryChanges as $change) {
+                $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
+                if($costPerUnit !== null && $costPerUnit > 0) {
+                    $itemCost = $change->quantity * $costPerUnit;
+                    if($change->action == 'add') {
+                        $totalCostAdded += $itemCost;
+                    } else {
+                        $totalCostRemoved += $itemCost;
+                    }
+                }
+            }
+        @endphp
         <div class="row mt-3">
             <div class="col-md-12">
                 <div class="alert alert-light border">
@@ -839,6 +869,23 @@
                                 'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall',
                                 'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
                             ])->pluck('action')->unique()->count() }}
+                        </div>
+                    </div>
+                </div>
+                <!-- Total Daily Cost Summary -->
+                <div class="alert alert-warning border mt-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <strong><i class="fas fa-plus-circle text-success me-1"></i>Cost Added:</strong> 
+                            <span class="text-success fw-bold">Rs {{ number_format($totalCostAdded, 2) }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong><i class="fas fa-minus-circle text-danger me-1"></i>Cost Used:</strong> 
+                            <span class="text-danger fw-bold">Rs {{ number_format($totalCostRemoved, 2) }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong><i class="fas fa-calculator me-1"></i>Total Daily Cost (Used):</strong> 
+                            <span class="fw-bold text-danger fs-5">Rs {{ number_format($totalCostRemoved, 2) }}</span>
                         </div>
                     </div>
                 </div>

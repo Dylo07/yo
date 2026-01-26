@@ -671,81 +671,141 @@
     <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
         <div class="d-flex align-items-center flex-wrap gap-2">
             <h5 class="mb-0 me-3">Inventory Changes</h5>
-            <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center flex-wrap gap-2">
-                <input type="date"
-                        name="inventory_date"
-                        class="form-control form-control-sm dark-input"
-                        value="{{ request('inventory_date', date('Y-m-d')) }}">
-                <button type="submit" class="btn btn-sm btn-outline-light">Filter</button>
-                <!-- Preserve other request parameters -->
-                @if(request('date'))
-                    <input type="hidden" name="date" value="{{ request('date') }}">
-                @endif
-                @if(request('period'))
-                    <input type="hidden" name="period" value="{{ request('period') }}">
-                @endif
-                @if(request('month'))
-                    <input type="hidden" name="month" value="{{ request('month') }}">
-                @endif
-            </form>
+            <input type="date" id="homeInventoryDatePicker" 
+                class="form-control form-control-sm dark-input"
+                style="width: auto;"
+                value="{{ date('Y-m-d') }}"
+                onchange="loadHomeInventory(this.value)">
+            <button onclick="loadHomeInventoryToday()" class="btn btn-sm btn-outline-light">Today</button>
         </div>
         <a href="{{ route('stock.index') }}" class="btn btn-sm btn-outline-light">
             Manage Inventory
         </a>
     </div>
     <div class="card-body">
-        @php
-            // Group inventory changes by category
-            $groupedChanges = $inventoryChanges->groupBy(function($change) {
-                return ($change->item && $change->item->group) ? $change->item->group->name : 'Unknown Category';
-            });
-            
-            // Calculate total daily cost (only for items with valid cost_per_unit)
-            $totalCostAdded = 0;
-            $totalCostRemoved = 0;
-            foreach($inventoryChanges as $change) {
-                $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
-                if($costPerUnit !== null && $costPerUnit > 0) {
-                    $itemCost = $change->quantity * $costPerUnit;
-                    if($change->action == 'add') {
-                        $totalCostAdded += $itemCost;
-                    } else {
-                        $totalCostRemoved += $itemCost;
-                    }
-                }
-            }
-        @endphp
+        <!-- Summary Stats -->
+        <div class="row mb-3">
+            <div class="col-4 text-center">
+                <div class="small text-muted">Total Changes</div>
+                <div class="h5 fw-bold" id="homeInvTotalChanges">0</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="small text-muted">Items Added</div>
+                <div class="h5 fw-bold text-success" id="homeInvItemsAdded">0</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="small text-muted">Items Removed</div>
+                <div class="h5 fw-bold text-danger" id="homeInvItemsRemoved">0</div>
+            </div>
+        </div>
 
-        @if($inventoryChanges->count() > 0)
-        <!-- Collapsible Accordion by Category -->
-        <div class="accordion" id="inventoryAccordion">
-            @foreach($groupedChanges as $categoryName => $changes)
-            @php
-                $categoryId = 'cat_' . Str::slug($categoryName, '_');
-                $categoryCostUsed = 0;
-                foreach($changes as $change) {
-                    $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
-                    if($costPerUnit !== null && $costPerUnit > 0 && $change->action != 'add') {
-                        $categoryCostUsed += $change->quantity * $costPerUnit;
-                    }
-                }
-            @endphp
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading_{{ $categoryId }}">
-                    <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ $categoryId }}" aria-expanded="false" aria-controls="collapse_{{ $categoryId }}">
-                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                            <strong>{{ $categoryName }}</strong>
-                            <div>
-                                <span class="badge bg-secondary me-2">{{ $changes->count() }} items</span>
-                                @if($categoryCostUsed > 0)
-                                <span class="badge bg-danger">Rs {{ number_format($categoryCostUsed, 2) }}</span>
-                                @endif
-                            </div>
-                        </div>
-                    </button>
-                </h2>
-                <div id="collapse_{{ $categoryId }}" class="accordion-collapse collapse" aria-labelledby="heading_{{ $categoryId }}" data-bs-parent="#inventoryAccordion">
-                    <div class="accordion-body p-0">
+        <!-- Inventory List -->
+        <div id="homeInventoryList">
+            <div class="text-center py-4 text-muted">Loading...</div>
+        </div>
+        
+        <!-- Cost Summary -->
+        <div id="homeInventoryCostSummary" class="alert alert-warning border mt-3" style="display: none;">
+            <div class="row align-items-center">
+                <div class="col-md-4 text-center">
+                    <strong><i class="fas fa-plus-circle text-success me-1"></i>Cost Added:</strong> 
+                    <span class="text-success fw-bold" id="homeInvCostAdded">Rs 0</span>
+                </div>
+                <div class="col-md-4 text-center">
+                    <strong><i class="fas fa-minus-circle text-danger me-1"></i>Cost Used:</strong> 
+                    <span class="text-danger fw-bold" id="homeInvCostUsed">Rs 0</span>
+                </div>
+                <div class="col-md-4 text-center">
+                    <strong><i class="fas fa-calculator me-1"></i>Total Daily Cost:</strong> 
+                    <span class="fw-bold text-danger fs-5" id="homeInvTotalDailyCost">Rs 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let homeCurrentInventoryDate = '{{ date("Y-m-d") }}';
+
+async function loadHomeInventory(date = null) {
+    if (date) {
+        homeCurrentInventoryDate = date;
+    }
+    
+    const list = document.getElementById('homeInventoryList');
+    list.innerHTML = '<div class="text-center py-4 text-muted">Loading...</div>';
+    
+    try {
+        const url = `/api/duty-roster/inventory-changes?date=${homeCurrentInventoryDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            const summary = data.summary;
+            
+            // Update summary stats
+            document.getElementById('homeInvTotalChanges').textContent = summary.total_changes;
+            document.getElementById('homeInvItemsAdded').textContent = summary.items_added;
+            document.getElementById('homeInvItemsRemoved').textContent = summary.items_removed;
+            
+            // Render inventory list
+            renderHomeInventoryList(data.grouped_changes);
+        }
+    } catch (error) {
+        console.error('Error loading inventory:', error);
+        list.innerHTML = '<div class="text-center text-danger py-4">Error loading data</div>';
+    }
+}
+
+function renderHomeInventoryList(groupedChanges) {
+    const list = document.getElementById('homeInventoryList');
+    const costSummary = document.getElementById('homeInventoryCostSummary');
+    
+    if (!groupedChanges || groupedChanges.length === 0) {
+        list.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-box-open fa-2x mb-3 d-block"></i>No inventory changes found</div>';
+        costSummary.style.display = 'none';
+        return;
+    }
+    
+    let totalCostAdded = 0;
+    let totalCostUsed = 0;
+    
+    let html = '<div class="accordion" id="homeInventoryAccordion">';
+    groupedChanges.forEach((group, index) => {
+        const groupId = `home_inv_group_${index}`;
+        
+        // Calculate category cost
+        let categoryCostUsed = 0;
+        group.items.forEach(log => {
+            const cost = log.cost || 0;
+            if (log.type === 'added') {
+                totalCostAdded += cost;
+            } else {
+                totalCostUsed += cost;
+                categoryCostUsed += cost;
+            }
+        });
+        
+        const costBadge = categoryCostUsed > 0 ? 
+            `<span class="badge bg-danger ms-2">Rs ${categoryCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : '';
+        
+        html += `
+            <div class="accordion-item border mb-2 rounded">
+                <div class="accordion-header bg-light p-2 rounded-top d-flex justify-content-between align-items-center" 
+                     style="cursor: pointer;" 
+                     onclick="toggleHomeInvAccordion('${groupId}')">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chevron-right me-2 text-muted" id="icon_${groupId}" style="transition: transform 0.2s;"></i>
+                        <strong>${group.name}</strong>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary me-1">${group.count} items</span>
+                        ${costBadge}
+                    </div>
+                </div>
+                <div id="collapse_${groupId}" class="border-top" style="display: none;">
+                    <div class="p-0">
                         <div class="table-responsive">
                             <table class="table table-hover table-sm mb-0">
                                 <thead class="table-light">
@@ -761,141 +821,91 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($changes as $change)
-                                    <tr>
-                                        <td>{{ $change->created_at->format('H:i') }}</td>
-                                        <td><strong>{{ $change->item ? $change->item->name : 'Unknown' }}</strong></td>
-                                        <td>
-                                            @if($change->action == 'add')
-                                                <span class="badge bg-success"><i class="fas fa-plus"></i></span>
-                                            @else
-                                                <span class="badge bg-danger"><i class="fas fa-minus"></i></span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @switch($change->action)
-                                                @case('add')
-                                                    <span class="badge bg-success">Stock</span>
-                                                    @break
-                                                @case('remove_main_kitchen')
-                                                    <span class="badge bg-primary">Main Kitchen</span>
-                                                    @break
-                                                @case('remove_banquet_hall_kitchen')
-                                                    <span class="badge bg-info">Banquet Kitchen</span>
-                                                    @break
-                                                @case('remove_banquet_hall')
-                                                    <span class="badge bg-warning text-dark">Banquet Hall</span>
-                                                    @break
-                                                @case('remove_restaurant')
-                                                    <span class="badge bg-success">Restaurant</span>
-                                                    @break
-                                                @case('remove_rooms')
-                                                    <span class="badge bg-secondary">Rooms</span>
-                                                    @break
-                                                @case('remove_garden')
-                                                    <span class="badge bg-dark">Garden</span>
-                                                    @break
-                                                @case('remove_other')
-                                                    <span class="badge bg-danger">Other</span>
-                                                    @break
-                                                @default
-                                                    <span class="badge bg-light text-dark">{{ ucfirst(str_replace(['remove_', '_'], ['', ' '], $change->action)) }}</span>
-                                            @endswitch
-                                        </td>
-                                        <td class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }} fw-bold">
-                                            {{ $change->action == 'add' ? '+' : '-' }}{{ $change->quantity }}
-                                        </td>
-                                        <td>
-                                            @php
-                                                $costPerUnit = $change->item->kitchen_cost_per_unit ?? null;
-                                                $itemCost = ($costPerUnit !== null && $costPerUnit > 0) ? ($change->quantity * $costPerUnit) : null;
-                                            @endphp
-                                            @if($itemCost !== null)
-                                                <span class="{{ $change->action == 'add' ? 'text-success' : 'text-danger' }}">
-                                                    Rs {{ number_format($itemCost, 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(isset($currentStockLevels[$change->item_id]))
-                                                {{ $currentStockLevels[$change->item_id] }}
-                                            @else
-                                                <span class="text-muted">N/A</span>
-                                            @endif
-                                        </td>
-                                        <td><small>{{ $change->user ? $change->user->name : 'Unknown' }}</small></td>
-                                    </tr>
-                                    @endforeach
+                                    ${group.items.map(log => {
+                                        const isAdded = log.type === 'added';
+                                        const itemCost = log.cost || 0;
+                                        const costDisplay = itemCost > 0 ? 
+                                            `<span class="${isAdded ? 'text-success' : 'text-danger'}">Rs ${itemCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>` : 
+                                            '<span class="text-muted">-</span>';
+                                        const locationBadge = getHomeLocationBadge(log.action);
+                                        
+                                        return `
+                                            <tr>
+                                                <td>${log.time}</td>
+                                                <td><strong>${log.item_name}</strong></td>
+                                                <td>
+                                                    ${isAdded ? 
+                                                        '<span class="badge bg-success"><i class="fas fa-plus"></i></span>' : 
+                                                        '<span class="badge bg-danger"><i class="fas fa-minus"></i></span>'}
+                                                </td>
+                                                <td>${locationBadge}</td>
+                                                <td class="${isAdded ? 'text-success' : 'text-danger'} fw-bold">
+                                                    ${isAdded ? '+' : '-'}${Math.abs(log.quantity)}
+                                                </td>
+                                                <td>${costDisplay}</td>
+                                                <td>${log.current_stock}</td>
+                                                <td><small>${log.user}</small></td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
-            @endforeach
-        </div>
+        `;
+    });
+    html += '</div>';
+    list.innerHTML = html;
+    
+    // Update cost summary
+    document.getElementById('homeInvCostAdded').textContent = 'Rs ' + totalCostAdded.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('homeInvCostUsed').textContent = 'Rs ' + totalCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('homeInvTotalDailyCost').textContent = 'Rs ' + totalCostUsed.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    
+    // Show cost summary
+    costSummary.style.display = 'block';
+}
 
-        <!-- Summary Section -->
-        <div class="row mt-3">
-            <div class="col-md-12">
-                <div class="alert alert-light border">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <strong>Total Changes:</strong> {{ $inventoryChanges->count() }}
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Items Added:</strong> 
-                            <span class="text-success">
-                                {{ $inventoryChanges->where('action', 'add')->sum('quantity') }}
-                            </span>
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Items Removed:</strong> 
-                            <span class="text-danger">
-                                {{ $inventoryChanges->whereIn('action', [
-                                    'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall',
-                                    'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
-                                ])->sum('quantity') }}
-                            </span>
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Locations Used:</strong> 
-                            {{ $inventoryChanges->whereIn('action', [
-                                'remove_main_kitchen', 'remove_banquet_hall_kitchen', 'remove_banquet_hall',
-                                'remove_restaurant', 'remove_rooms', 'remove_garden', 'remove_other'
-                            ])->pluck('action')->unique()->count() }}
-                        </div>
-                    </div>
-                </div>
-                <!-- Total Daily Cost Summary -->
-                <div class="alert alert-warning border mt-2">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <strong><i class="fas fa-plus-circle text-success me-1"></i>Cost Added:</strong> 
-                            <span class="text-success fw-bold">Rs {{ number_format($totalCostAdded, 2) }}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong><i class="fas fa-minus-circle text-danger me-1"></i>Cost Used:</strong> 
-                            <span class="text-danger fw-bold">Rs {{ number_format($totalCostRemoved, 2) }}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong><i class="fas fa-calculator me-1"></i>Total Daily Cost (Used):</strong> 
-                            <span class="fw-bold text-danger fs-5">Rs {{ number_format($totalCostRemoved, 2) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @else
-        <div class="text-center text-muted py-4">
-            <i class="fas fa-box-open fa-2x mb-3 d-block"></i>
-            No inventory changes found for {{ \Carbon\Carbon::parse($inventoryDate)->format('M d, Y') }}
-        </div>
-        @endif
-    </div>
-</div>
+function getHomeLocationBadge(action) {
+    switch(action) {
+        case 'add': return '<span class="badge bg-success">Stock</span>';
+        case 'remove_main_kitchen': return '<span class="badge bg-primary">Main Kitchen</span>';
+        case 'remove_banquet_hall_kitchen': return '<span class="badge bg-info">Banquet Kitchen</span>';
+        case 'remove_banquet_hall': return '<span class="badge bg-warning text-dark">Banquet Hall</span>';
+        case 'remove_restaurant': return '<span class="badge bg-success">Restaurant</span>';
+        case 'remove_rooms': return '<span class="badge bg-secondary">Rooms</span>';
+        case 'remove_garden': return '<span class="badge bg-dark">Garden</span>';
+        case 'remove_other': return '<span class="badge bg-danger">Other</span>';
+        default: return `<span class="badge bg-light text-dark">${action}</span>`;
+    }
+}
+
+function toggleHomeInvAccordion(groupId) {
+    const content = document.getElementById('collapse_' + groupId);
+    const icon = document.getElementById('icon_' + groupId);
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(90deg)';
+    } else {
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function loadHomeInventoryToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('homeInventoryDatePicker').value = today;
+    loadHomeInventory(today);
+}
+
+// Load inventory on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadHomeInventory();
+});
+</script>
 
 <style>
 .dark-input {

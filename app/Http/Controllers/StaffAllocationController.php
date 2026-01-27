@@ -978,4 +978,104 @@ class StaffAllocationController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Get owner's personal tasks (My Priority List)
+     */
+    public function getOwnerTasks(Request $request)
+    {
+        $tasks = Task::where('staff_category', 'owner_personal')
+            ->orderBy('is_done', 'asc')
+            ->orderBy('priority_order', 'asc')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'task' => $task->task,
+                    'priority' => $task->priority_order,
+                    'is_done' => (bool) $task->is_done,
+                    'created_at' => $task->created_at->format('M d, H:i'),
+                    'end_date' => $task->end_date,
+                    'is_overdue' => $task->isOverdue(),
+                ];
+            });
+
+        $stats = [
+            'total' => $tasks->count(),
+            'pending' => $tasks->where('is_done', false)->count(),
+            'completed' => $tasks->where('is_done', true)->count(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks,
+            'stats' => $stats
+        ]);
+    }
+
+    /**
+     * Add owner's personal task
+     */
+    public function addOwnerTask(Request $request)
+    {
+        $request->validate([
+            'task' => 'required|string|max:500',
+            'priority' => 'nullable|in:High,Medium,Low',
+        ]);
+
+        $task = Task::create([
+            'user' => auth()->user()->name ?? 'Owner',
+            'date_added' => now()->format('Y-m-d'),
+            'start_date' => now()->format('Y-m-d'),
+            'task' => $request->task,
+            'task_category_id' => 1, // Default category
+            'staff_category' => 'owner_personal',
+            'person_incharge' => 'Owner',
+            'priority_order' => $request->priority ?? 'Medium',
+            'is_done' => false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'task' => [
+                'id' => $task->id,
+                'task' => $task->task,
+                'priority' => $task->priority_order,
+                'is_done' => false,
+                'created_at' => $task->created_at->format('M d, H:i'),
+            ]
+        ]);
+    }
+
+    /**
+     * Toggle owner task completion status
+     */
+    public function toggleOwnerTask(Request $request, $id)
+    {
+        $task = Task::where('id', $id)
+            ->where('staff_category', 'owner_personal')
+            ->firstOrFail();
+
+        $task->update(['is_done' => !$task->is_done]);
+
+        return response()->json([
+            'success' => true,
+            'is_done' => (bool) $task->is_done
+        ]);
+    }
+
+    /**
+     * Delete owner's personal task
+     */
+    public function deleteOwnerTask(Request $request, $id)
+    {
+        $task = Task::where('id', $id)
+            ->where('staff_category', 'owner_personal')
+            ->firstOrFail();
+
+        $task->delete();
+
+        return response()->json(['success' => true]);
+    }
 }

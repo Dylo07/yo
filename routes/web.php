@@ -407,6 +407,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Net Profit/Loss Summary
     Route::get('/api/duty-roster/net-profit', [StaffAllocationController::class, 'getDailyFinancialSummary'])->name('duty.roster.api.net-profit');
+
+    // Owner's Personal Tasks (My Priority List)
+    Route::get('/api/duty-roster/owner-tasks', [StaffAllocationController::class, 'getOwnerTasks'])->name('duty.roster.api.owner-tasks');
+    Route::post('/api/duty-roster/owner-tasks', [StaffAllocationController::class, 'addOwnerTask'])->name('duty.roster.api.owner-tasks.add');
+    Route::post('/api/duty-roster/owner-tasks/{id}/toggle', [StaffAllocationController::class, 'toggleOwnerTask'])->name('duty.roster.api.owner-tasks.toggle');
+    Route::delete('/api/duty-roster/owner-tasks/{id}', [StaffAllocationController::class, 'deleteOwnerTask'])->name('duty.roster.api.owner-tasks.delete');
 });
 
 

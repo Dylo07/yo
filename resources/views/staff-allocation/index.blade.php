@@ -262,6 +262,42 @@
             </div>
         </div>
 
+        <!-- My Priority List (Owner's Personal ToDo) -->
+        @if(Auth::user()->role === 'admin')
+        <div class="border-b border-gray-200" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);">
+            <div class="p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-amber-800 flex items-center gap-2">
+                        <i class="fas fa-thumbtack"></i> My Priority List
+                    </h3>
+                    <div class="flex items-center gap-1">
+                        <span id="ownerTaskCount" class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-medium">0</span>
+                        <button onclick="toggleOwnerTaskList()" class="text-amber-700 hover:text-amber-900 text-xs p-1">
+                            <i id="ownerTaskArrow" class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick Add Input -->
+                <div class="flex gap-1 mb-2">
+                    <input type="text" id="quickTaskInput" placeholder="Add reminder..." 
+                        class="flex-1 px-3 py-1.5 text-xs border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white/80"
+                        onkeypress="if(event.key==='Enter') addQuickTask()">
+                    <button onclick="addQuickTask()" class="px-2 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-lg transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <!-- Task List -->
+                <div id="ownerTaskList" class="space-y-1 max-h-40 overflow-y-auto">
+                    <div class="text-center py-2 text-amber-600 text-xs">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Staff List -->
         <div class="flex-1 overflow-y-auto sidebar-scroll" id="staffList">
             @foreach($staffByCategory as $category => $members)
@@ -4220,6 +4256,206 @@ function updateFunctionStaffList(bookingId) {
             parentSection.classList.add('bg-green-50', 'border-l-4', 'border-green-500');
         }
     }
+}
+
+// ==================== OWNER'S PERSONAL TASKS (MY PRIORITY LIST) ====================
+
+let ownerTaskListVisible = true;
+
+// Load owner tasks on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadOwnerTasks();
+});
+
+// Toggle owner task list visibility
+function toggleOwnerTaskList() {
+    ownerTaskListVisible = !ownerTaskListVisible;
+    const list = document.getElementById('ownerTaskList');
+    const arrow = document.getElementById('ownerTaskArrow');
+    
+    if (ownerTaskListVisible) {
+        list.classList.remove('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        list.classList.add('hidden');
+        arrow.style.transform = 'rotate(-90deg)';
+    }
+}
+
+// Load owner tasks from API
+async function loadOwnerTasks() {
+    try {
+        const response = await fetch('/api/duty-roster/owner-tasks');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderOwnerTasks(data.tasks);
+            document.getElementById('ownerTaskCount').textContent = data.stats.pending;
+        }
+    } catch (error) {
+        console.error('Error loading owner tasks:', error);
+        document.getElementById('ownerTaskList').innerHTML = `
+            <div class="text-center py-2 text-red-500 text-xs">
+                <i class="fas fa-exclamation-circle"></i> Failed to load
+            </div>
+        `;
+    }
+}
+
+// Render owner tasks list
+function renderOwnerTasks(tasks) {
+    const container = document.getElementById('ownerTaskList');
+    
+    if (!tasks || tasks.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-3 text-amber-600 text-xs italic">
+                <i class="fas fa-clipboard-list"></i> No reminders yet
+            </div>
+        `;
+        return;
+    }
+    
+    // Show pending first, then completed
+    const pendingTasks = tasks.filter(t => !t.is_done);
+    const completedTasks = tasks.filter(t => t.is_done).slice(0, 3); // Show max 3 completed
+    
+    let html = '';
+    
+    // Pending tasks
+    pendingTasks.forEach(task => {
+        const priorityColor = task.priority === 'High' ? 'text-red-600' : 
+                             task.priority === 'Low' ? 'text-gray-500' : 'text-amber-700';
+        const overdueClass = task.is_overdue ? 'border-l-2 border-red-500 pl-1' : '';
+        
+        html += `
+            <div class="flex items-start gap-2 p-1.5 bg-white/70 rounded-lg shadow-sm hover:bg-white transition-colors ${overdueClass}" data-task-id="${task.id}">
+                <button onclick="toggleOwnerTaskStatus(${task.id})" class="mt-0.5 w-4 h-4 rounded border-2 border-amber-400 hover:border-amber-600 flex-shrink-0 flex items-center justify-center transition-colors">
+                </button>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-800 leading-tight break-words">${escapeHtml(task.task)}</p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[10px] ${priorityColor} font-medium">${task.priority}</span>
+                        ${task.is_overdue ? '<span class="text-[10px] text-red-500 font-medium">OVERDUE</span>' : ''}
+                    </div>
+                </div>
+                <button onclick="deleteOwnerTask(${task.id})" class="text-gray-400 hover:text-red-500 text-xs flex-shrink-0 opacity-0 hover:opacity-100 transition-opacity" title="Delete">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    // Completed tasks (collapsed)
+    if (completedTasks.length > 0) {
+        html += `<div class="border-t border-amber-200 mt-2 pt-1">`;
+        completedTasks.forEach(task => {
+            html += `
+                <div class="flex items-start gap-2 p-1 opacity-60" data-task-id="${task.id}">
+                    <button onclick="toggleOwnerTaskStatus(${task.id})" class="mt-0.5 w-4 h-4 rounded border-2 border-green-400 bg-green-400 flex-shrink-0 flex items-center justify-center">
+                        <i class="fas fa-check text-white text-[8px]"></i>
+                    </button>
+                    <p class="text-xs text-gray-500 line-through flex-1 break-words">${escapeHtml(task.task)}</p>
+                    <button onclick="deleteOwnerTask(${task.id})" class="text-gray-400 hover:text-red-500 text-xs flex-shrink-0" title="Delete">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    
+    container.innerHTML = html;
+}
+
+// Add quick task
+async function addQuickTask() {
+    const input = document.getElementById('quickTaskInput');
+    const taskText = input.value.trim();
+    
+    if (!taskText) {
+        input.focus();
+        return;
+    }
+    
+    // Disable input while saving
+    input.disabled = true;
+    
+    try {
+        const response = await fetch('/api/duty-roster/owner-tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ task: taskText, priority: 'Medium' }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            input.value = '';
+            loadOwnerTasks(); // Reload the list
+            showNotification('Reminder added!');
+        } else {
+            showNotification('Failed to add reminder', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding task:', error);
+        showNotification('Failed to add reminder', 'error');
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+}
+
+// Toggle task completion status
+async function toggleOwnerTaskStatus(taskId) {
+    try {
+        const response = await fetch(`/api/duty-roster/owner-tasks/${taskId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadOwnerTasks(); // Reload the list
+        }
+    } catch (error) {
+        console.error('Error toggling task:', error);
+    }
+}
+
+// Delete owner task
+async function deleteOwnerTask(taskId) {
+    try {
+        const response = await fetch(`/api/duty-roster/owner-tasks/${taskId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            loadOwnerTasks(); // Reload the list
+            showNotification('Reminder deleted');
+        }
+    } catch (error) {
+        console.error('Error deleting task:', error);
+    }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 </script>
 @endpush

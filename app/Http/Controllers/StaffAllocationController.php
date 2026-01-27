@@ -934,24 +934,18 @@ class StaffAllocationController extends Controller
 
         // 4. Inventory Costs (COGS)
         // Logic: Value of items consumed/removed today
-        // Actions implying consumption: 'menu_consumption', 'waste', 'removed'
-        // If action names in DB are different, general 'removed' logic is safer if type is tracked
-        // Based on StockLog analysis: we look for records that reduce stock
-        // but KitchenItem costs are specific.
+        // Actions: 'add' = stock added, anything else (remove_main_kitchen, remove_banquet_hall, etc.) = stock consumed
 
         $stockLogs = \App\Models\StockLog::with('item')
             ->whereBetween('created_at', [$dateStart, $dateEnd])
             ->get();
 
-        // Filter for removal actions
+        // Filter for removal actions (anything that is NOT 'add')
         $cogs = $stockLogs->filter(function ($log) {
-            // Check for negative quantity or specific removal actions
-            // The StockLog model usually stores positive quantity and separate action
-            $removalActions = ['remove', 'removed', 'waste', 'consumption', 'menu_consumption', 'transfer_out'];
-            return in_array(strtolower($log->action), $removalActions);
+            // All actions except 'add' are consumption/removal
+            return $log->action !== 'add';
         })->sum(function ($log) {
             // Calculate cost: quantity * cost_per_unit
-            // Try to get cost from item (kitchen_cost_per_unit) or fallback
             $costPerUnit = $log->item->kitchen_cost_per_unit ?? 0;
             return $log->quantity * $costPerUnit;
         });

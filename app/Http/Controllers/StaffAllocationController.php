@@ -28,9 +28,9 @@ class StaffAllocationController extends Controller
     public function index()
     {
         // Get staff members who have active staff codes
-        $allStaff = Person::whereHas('staffCode', function($query) {
-                $query->where('is_active', 1);
-            })
+        $allStaff = Person::whereHas('staffCode', function ($query) {
+            $query->where('is_active', 1);
+        })
             ->where('type', 'individual')
             ->with('staffCategory')
             ->get();
@@ -44,7 +44,7 @@ class StaffAllocationController extends Controller
         $staffByCategory = [];
         foreach ($categoryOrder as $category) {
             $categoryKey = $category ?? 'uncategorized';
-            $staffByCategory[$categoryKey] = $allStaff->filter(function($staff) use ($category) {
+            $staffByCategory[$categoryKey] = $allStaff->filter(function ($staff) use ($category) {
                 if ($category === null) {
                     return $staff->staffCategory === null;
                 }
@@ -66,9 +66,9 @@ class StaffAllocationController extends Controller
     public function getStaff()
     {
         // Get staff members who have active staff codes
-        $allStaff = Person::whereHas('staffCode', function($query) {
-                $query->where('is_active', 1);
-            })
+        $allStaff = Person::whereHas('staffCode', function ($query) {
+            $query->where('is_active', 1);
+        })
             ->where('type', 'individual')
             ->with('staffCategory')
             ->get();
@@ -82,12 +82,12 @@ class StaffAllocationController extends Controller
         $staffByCategory = [];
         foreach ($categoryOrder as $category) {
             $categoryKey = $category ?? 'uncategorized';
-            $staffByCategory[$categoryKey] = $allStaff->filter(function($staff) use ($category) {
+            $staffByCategory[$categoryKey] = $allStaff->filter(function ($staff) use ($category) {
                 if ($category === null) {
                     return $staff->staffCategory === null;
                 }
                 return $staff->staffCategory && strtolower($staff->staffCategory->category) === strtolower($category);
-            })->sortBy('name')->values()->map(function($staff) {
+            })->sortBy('name')->values()->map(function ($staff) {
                 return [
                     'id' => $staff->id,
                     'name' => $staff->name,
@@ -99,7 +99,7 @@ class StaffAllocationController extends Controller
         }
 
         // Remove empty categories
-        $staffByCategory = array_filter($staffByCategory, function($staff) {
+        $staffByCategory = array_filter($staffByCategory, function ($staff) {
             return count($staff) > 0;
         });
 
@@ -119,13 +119,13 @@ class StaffAllocationController extends Controller
     public function getStaffOnLeave(Request $request)
     {
         $date = $request->query('date', Carbon::today()->format('Y-m-d'));
-        
+
         $staffOnLeave = LeaveRequest::with('person')
             ->where('status', 'approved')
             ->where('start_date', '<=', $date)
             ->where('end_date', '>=', $date)
             ->get()
-            ->map(function($leave) {
+            ->map(function ($leave) {
                 return [
                     'person_id' => $leave->person_id,
                     'person_name' => $leave->person ? $leave->person->name : 'Unknown',
@@ -202,7 +202,7 @@ class StaffAllocationController extends Controller
         $allocations = StaffAllocation::where('allocation_date', $date)
             ->with('person')
             ->get()
-            ->map(function($allocation) {
+            ->map(function ($allocation) {
                 return [
                     'person_id' => $allocation->person_id,
                     'person_name' => $allocation->person ? $allocation->person->name : 'Unknown',
@@ -290,7 +290,7 @@ class StaffAllocationController extends Controller
     public function getFunctionAssignments(Request $request)
     {
         $bookingId = $request->query('booking_id');
-        
+
         if (!$bookingId) {
             return response()->json(['error' => 'booking_id is required'], 400);
         }
@@ -298,7 +298,7 @@ class StaffAllocationController extends Controller
         $assignments = FunctionAssignment::where('booking_id', $bookingId)
             ->with('person')
             ->get()
-            ->map(function($assignment) {
+            ->map(function ($assignment) {
                 return [
                     'person_id' => $assignment->person_id,
                     'person_name' => $assignment->person ? $assignment->person->name : 'Unknown',
@@ -318,13 +318,13 @@ class StaffAllocationController extends Controller
     public function getAllFunctionAssignments(Request $request)
     {
         $date = $request->query('date', Carbon::today()->format('Y-m-d'));
-        
+
         // Get all function assignments and group by booking_id
         $assignments = FunctionAssignment::with('person')
             ->get()
             ->groupBy('booking_id')
-            ->map(function($group) {
-                return $group->map(function($assignment) {
+            ->map(function ($group) {
+                return $group->map(function ($assignment) {
                     return [
                         'person_id' => $assignment->person_id,
                         'person_name' => $assignment->person ? $assignment->person->name : 'Unknown',
@@ -344,26 +344,26 @@ class StaffAllocationController extends Controller
     public function assignTasks(Request $request)
     {
         $date = $request->query('date', Carbon::today()->format('Y-m-d'));
-        
+
         // Get staff allocations for this date
         $allocations = StaffAllocation::where('allocation_date', $date)
             ->with('person')
             ->get();
-        
+
         // Get function assignments for this date
         $functionAssignments = FunctionAssignment::with(['person', 'booking'])
             ->get()
             ->groupBy('booking_id');
-        
+
         // Get staff on leave for this date
         $staffOnLeave = LeaveRequest::where('status', 'approved')
-            ->where(function($query) use ($date) {
+            ->where(function ($query) use ($date) {
                 $query->whereDate('start_date', '<=', $date)
-                      ->whereDate('end_date', '>=', $date);
+                    ->whereDate('end_date', '>=', $date);
             })
             ->with('person')
             ->get();
-        
+
         return view('staff-allocation.assign-tasks', compact('date', 'allocations', 'functionAssignments', 'staffOnLeave'));
     }
 
@@ -373,11 +373,11 @@ class StaffAllocationController extends Controller
     public function getTasks(Request $request)
     {
         $date = $request->query('date', Carbon::today()->format('Y-m-d'));
-        
+
         $tasks = Task::where('start_date', $date)
             ->with('assignedPerson')
             ->get()
-            ->map(function($task) {
+            ->map(function ($task) {
                 return [
                     'id' => $task->id,
                     'person_id' => $task->assigned_to,
@@ -385,7 +385,7 @@ class StaffAllocationController extends Controller
                     'task' => $task->task,
                 ];
             });
-        
+
         return response()->json(['tasks' => $tasks]);
     }
 
@@ -399,7 +399,7 @@ class StaffAllocationController extends Controller
             'task' => 'required|string',
             'date' => 'required|date',
         ]);
-        
+
         $task = Task::create([
             'user' => auth()->user()->name,
             'date_added' => Carbon::today(),
@@ -412,7 +412,7 @@ class StaffAllocationController extends Controller
             'priority_order' => 'Medium',
             'is_done' => false,
         ]);
-        
+
         return response()->json([
             'success' => true,
             'task' => [
@@ -430,7 +430,7 @@ class StaffAllocationController extends Controller
     {
         $task = Task::findOrFail($id);
         $task->delete();
-        
+
         return response()->json(['success' => true]);
     }
 
@@ -440,7 +440,7 @@ class StaffAllocationController extends Controller
     public function getTodayBills(Request $request)
     {
         $date = $request->input('date', date('Y-m-d'));
-        
+
         $dateStart = Carbon::parse($date)->startOfDay();
         $dateEnd = Carbon::parse($date)->endOfDay();
 
@@ -451,7 +451,7 @@ class StaffAllocationController extends Controller
             ->get();
 
         // total_recieved is service charge only, so total = total_price + total_recieved
-        $totalSale = $sales->sum(function($sale) {
+        $totalSale = $sales->sum(function ($sale) {
             return $sale->total_price + ($sale->total_recieved ?? 0);
         });
         $serviceCharge = $sales->sum('total_recieved');
@@ -513,7 +513,7 @@ class StaffAllocationController extends Controller
     public function getDailyCosts(Request $request)
     {
         $date = $request->input('date', date('Y-m-d'));
-        
+
         $dateStart = Carbon::parse($date)->startOfDay();
         $dateEnd = Carbon::parse($date)->endOfDay();
 
@@ -534,7 +534,7 @@ class StaffAllocationController extends Controller
                     'name' => $costs->first()->group->name ?? 'N/A',
                     'total' => $costs->sum('amount'),
                     'count' => $costs->count(),
-                    'items' => $costs->map(function($cost) {
+                    'items' => $costs->map(function ($cost) {
                         return [
                             'id' => $cost->id,
                             'person' => $cost->person->name ?? 'N/A',
@@ -546,13 +546,13 @@ class StaffAllocationController extends Controller
                     })->values()
                 ];
             })
-            ->sortByDesc(function($category) {
+            ->sortByDesc(function ($category) {
                 return $category['total'];
             })
             ->values();
 
         // Get recent costs (last 10)
-        $recentCosts = $costs->take(10)->map(function($cost) {
+        $recentCosts = $costs->take(10)->map(function ($cost) {
             return [
                 'id' => $cost->id,
                 'category' => $cost->group->name ?? 'N/A',
@@ -582,24 +582,24 @@ class StaffAllocationController extends Controller
     public function getDailyInventoryChanges(Request $request)
     {
         $date = $request->input('date', date('Y-m-d'));
-        
+
         $inventoryChanges = StockLog::with(['user', 'item.group'])
             ->whereDate('created_at', $date)
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         // Get current stock levels for items with changes today
         $itemIds = $inventoryChanges->pluck('item_id')->unique();
         $currentDate = Carbon::today()->format('Y-m-d');
         $currentStockLevels = [];
-        
+
         if ($itemIds->count() > 0) {
             $inventoryRecords = Inventory::whereIn('item_id', $itemIds)
                 ->where('stock_date', '<=', $currentDate)
                 ->orderBy('stock_date', 'desc')
                 ->get()
                 ->groupBy('item_id');
-            
+
             foreach ($itemIds as $itemId) {
                 if (isset($inventoryRecords[$itemId]) && $inventoryRecords[$itemId]->count() > 0) {
                     $currentStockLevels[$itemId] = $inventoryRecords[$itemId]->first()->stock_level;
@@ -610,14 +610,14 @@ class StaffAllocationController extends Controller
         }
 
         // Format data for frontend
-        $formattedChanges = $inventoryChanges->map(function($log) use ($currentStockLevels) {
+        $formattedChanges = $inventoryChanges->map(function ($log) use ($currentStockLevels) {
             $currentStock = $currentStockLevels[$log->item_id] ?? 0;
             $isAdd = $log->action === 'add';
-            
+
             // Calculate cost (handle null cost_per_unit safely)
             $costPerUnit = $log->item->kitchen_cost_per_unit ?? 0;
             $itemCost = ($costPerUnit > 0) ? ($log->quantity * $costPerUnit) : 0;
-            
+
             return [
                 'id' => $log->id,
                 'time' => $log->created_at->format('H:i'),
@@ -641,7 +641,7 @@ class StaffAllocationController extends Controller
         $itemsRemoved = $formattedChanges->where('type', 'removed')->count();
 
         // Group by category for frontend
-        $groupedChanges = $formattedChanges->groupBy('category')->map(function($items, $category) {
+        $groupedChanges = $formattedChanges->groupBy('category')->map(function ($items, $category) {
             return [
                 'name' => $category,
                 'count' => $items->count(),
@@ -671,21 +671,21 @@ class StaffAllocationController extends Controller
     {
         $date = $request->input('date', date('Y-m-d'));
         $waterBottleMenuId = 2817;
-        
+
         $waterBottleHistory = InStock::where('menu_id', $waterBottleMenuId)
             ->whereDate('created_at', $date)
             ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         $waterBottle = Menu::find($waterBottleMenuId);
         $currentStock = $waterBottle ? $waterBottle->stock : 0;
-        
+
         $issued = abs($waterBottleHistory->where('stock', '<', 0)->sum('stock'));
         $added = $waterBottleHistory->where('stock', '>', 0)->sum('stock');
         $netChange = $added - $issued;
 
-        $history = $waterBottleHistory->map(function($record) {
+        $history = $waterBottleHistory->map(function ($record) {
             return [
                 'id' => $record->id,
                 'time' => $record->created_at->format('H:i'),
@@ -722,10 +722,10 @@ class StaffAllocationController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $formattedOrders = $activeOrders->map(function($sale) {
+        $formattedOrders = $activeOrders->map(function ($sale) {
             $itemCount = $sale->saleDetails->sum('quantity');
             $lastUpdated = $sale->updated_at->diffForHumans();
-            
+
             return [
                 'id' => $sale->id,
                 'table_name' => $sale->table_name,
@@ -736,7 +736,7 @@ class StaffAllocationController extends Controller
                 'created_at' => $sale->created_at->format('Y-m-d H:i'),
                 'updated_at' => $sale->updated_at->format('Y-m-d H:i'),
                 'last_updated' => $lastUpdated,
-                'items' => $sale->saleDetails->map(function($detail) {
+                'items' => $sale->saleDetails->map(function ($detail) {
                     return [
                         'menu_name' => $detail->menu_name,
                         'quantity' => $detail->quantity,
@@ -750,7 +750,7 @@ class StaffAllocationController extends Controller
 
         $totalOrders = $activeOrders->count();
         $totalAmount = $activeOrders->sum('total_price');
-        $totalItems = $activeOrders->sum(function($sale) {
+        $totalItems = $activeOrders->sum(function ($sale) {
             return $sale->saleDetails->sum('quantity');
         });
 
@@ -763,6 +763,224 @@ class StaffAllocationController extends Controller
                     'total_amount' => $totalAmount,
                     'total_items' => $totalItems
                 ]
+            ]
+        ]);
+    }
+
+    /**
+     * Get daily attendance summary for a specific date
+     */
+    public function getDailyAttendanceSummary(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+
+        // Get all active staff members
+        $allStaff = Person::whereHas('staffCode', function ($query) {
+            $query->where('is_active', 1);
+        })
+            ->where('type', 'individual')
+            ->with('staffCategory')
+            ->get();
+
+        $totalStaff = $allStaff->count();
+
+        // Get attendance records for this date
+        $attendances = \App\Models\ManualAttendance::whereDate('attendance_date', $date)
+            ->with('person.staffCategory')
+            ->get()
+            ->keyBy('person_id');
+
+        // Get staff on leave for this date
+        $leaveRequests = LeaveRequest::where('status', 'approved')
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->with('person')
+            ->get();
+
+        $staffOnLeaveIds = $leaveRequests->pluck('person_id')->toArray();
+
+        // Calculate counts
+        $presentCount = $attendances->where('status', 'present')->count();
+        $halfDayCount = $attendances->where('status', 'half')->count();
+        $absentCount = $attendances->where('status', 'absent')->count();
+        $onLeaveCount = count($staffOnLeaveIds);
+
+        // Staff who haven't been marked yet (excluding those on leave)
+        $markedStaffIds = $attendances->pluck('person_id')->toArray();
+        $notMarkedCount = $allStaff->filter(function ($staff) use ($markedStaffIds, $staffOnLeaveIds) {
+            return !in_array($staff->id, $markedStaffIds) && !in_array($staff->id, $staffOnLeaveIds);
+        })->count();
+
+        // Calculate attendance rate (present + 0.5*half) / (total - on leave)
+        $workingStaff = $totalStaff - $onLeaveCount;
+        $attendanceRate = $workingStaff > 0
+            ? round(($presentCount + ($halfDayCount * 0.5)) / $workingStaff * 100, 1)
+            : 0;
+
+        // Group by category for breakdown
+        $categoryBreakdown = [];
+        $categoryTypes = CategoryType::getActiveCategories();
+
+        foreach ($categoryTypes as $category) {
+            $categoryStaff = $allStaff->filter(function ($staff) use ($category) {
+                return $staff->staffCategory && strtolower($staff->staffCategory->category) === strtolower($category->slug);
+            });
+
+            $categoryTotal = $categoryStaff->count();
+            if ($categoryTotal === 0)
+                continue;
+
+            $categoryAttendances = $attendances->filter(function ($att) use ($categoryStaff) {
+                return $categoryStaff->contains('id', $att->person_id);
+            });
+
+            $categoryBreakdown[] = [
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'total' => $categoryTotal,
+                'present' => $categoryAttendances->where('status', 'present')->count(),
+                'half' => $categoryAttendances->where('status', 'half')->count(),
+                'absent' => $categoryAttendances->where('status', 'absent')->count(),
+            ];
+        }
+
+        // Get detailed list of staff on leave
+        $staffOnLeave = $leaveRequests->map(function ($leave) {
+            return [
+                'person_id' => $leave->person_id,
+                'person_name' => $leave->person ? $leave->person->name : 'Unknown',
+                'leave_type' => $leave->leave_type,
+                'reason' => $leave->reason,
+            ];
+        });
+
+        // Get list of absent staff
+        $absentStaff = $attendances->where('status', 'absent')->map(function ($att) {
+            return [
+                'person_id' => $att->person_id,
+                'person_name' => $att->person ? $att->person->name : 'Unknown',
+                'category' => $att->person && $att->person->staffCategory
+                    ? $att->person->staffCategory->category
+                    : 'uncategorized',
+                'remarks' => $att->remarks,
+            ];
+        })->values();
+
+        // Get list of not marked staff (for quick marking)
+        $notMarkedStaff = $allStaff->filter(function ($staff) use ($markedStaffIds, $staffOnLeaveIds) {
+            return !in_array($staff->id, $markedStaffIds) && !in_array($staff->id, $staffOnLeaveIds);
+        })->map(function ($staff) {
+            return [
+                'person_id' => $staff->id,
+                'person_name' => $staff->name,
+                'category' => $staff->staffCategory ? $staff->staffCategory->category : 'uncategorized',
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'date' => $date,
+                'total_staff' => $totalStaff,
+                'present' => $presentCount,
+                'half_day' => $halfDayCount,
+                'absent' => $absentCount,
+                'on_leave' => $onLeaveCount,
+                'not_marked' => $notMarkedCount,
+                'attendance_rate' => $attendanceRate,
+                'category_breakdown' => $categoryBreakdown,
+                'staff_on_leave' => $staffOnLeave,
+                'absent_staff' => $absentStaff,
+                'not_marked_staff' => $notMarkedStaff,
+            ]
+        ]);
+    }
+
+    /**
+     * Get daily financial summary (Net Profit/Loss)
+     */
+    public function getDailyFinancialSummary(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
+
+        // 1. Income (Sales + Service Charge)
+        $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
+            ->where('sale_status', 'paid')
+            ->get();
+
+        $totalSales = $sales->sum('total_price');
+        $totalServiceCharge = $sales->sum('total_recieved'); // Service charge stored here
+        $totalIncome = $totalSales + $totalServiceCharge;
+
+        // 2. Expenses (Daily Costs excluding MD withdrawals)
+        // MD person_id is 4 (Owner Withdrawals)
+        $expenses = Cost::whereBetween('cost_date', [$dateStart, $dateEnd])
+            ->where('person_id', '!=', 4)
+            ->sum('amount');
+
+        // 3. Staff Costs (Daily Salary Estimate)
+        // Logic: Sum of (Basic Salary / 30) for all active staff
+        $activeStaff = Person::whereHas('staffCode', function ($query) {
+            $query->where('is_active', 1);
+        })
+            ->whereNotNull('basic_salary')
+            ->get();
+
+        $dailyStaffCost = $activeStaff->sum(function ($staff) {
+            return $staff->basic_salary > 0 ? ($staff->basic_salary / 30) : 0;
+        });
+
+        // 4. Inventory Costs (COGS)
+        // Logic: Value of items consumed/removed today
+        // Actions implying consumption: 'menu_consumption', 'waste', 'removed'
+        // If action names in DB are different, general 'removed' logic is safer if type is tracked
+        // Based on StockLog analysis: we look for records that reduce stock
+        // but KitchenItem costs are specific.
+
+        $stockLogs = \App\Models\StockLog::with('item')
+            ->whereBetween('created_at', [$dateStart, $dateEnd])
+            ->get();
+
+        // Filter for removal actions
+        $cogs = $stockLogs->filter(function ($log) {
+            // Check for negative quantity or specific removal actions
+            // The StockLog model usually stores positive quantity and separate action
+            $removalActions = ['remove', 'removed', 'waste', 'consumption', 'menu_consumption', 'transfer_out'];
+            return in_array(strtolower($log->action), $removalActions);
+        })->sum(function ($log) {
+            // Calculate cost: quantity * cost_per_unit
+            // Try to get cost from item (kitchen_cost_per_unit) or fallback
+            $costPerUnit = $log->item->kitchen_cost_per_unit ?? 0;
+            return $log->quantity * $costPerUnit;
+        });
+
+        // Calculate Net Profit
+        $totalExpenses = $expenses + $dailyStaffCost + $cogs;
+        $netProfit = $totalIncome - $totalExpenses;
+
+        $status = $netProfit >= 0 ? 'profit' : 'loss';
+        $margin = $totalIncome > 0 ? ($netProfit / $totalIncome) * 100 : 0;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'date' => $date,
+                'income' => [
+                    'total' => $totalIncome,
+                    'sales' => $totalSales,
+                    'service_charge' => $totalServiceCharge
+                ],
+                'expenses' => [
+                    'total' => $totalExpenses,
+                    'operational' => $expenses,
+                    'staff_cost' => $dailyStaffCost,
+                    'cogs' => $cogs
+                ],
+                'net_profit' => $netProfit,
+                'profit_margin' => round($margin, 1),
+                'status' => $status
             ]
         ]);
     }

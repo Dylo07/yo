@@ -415,6 +415,116 @@
             </div>
         </div>
 
+        <!-- Attendance Summary Widget -->
+        <div class="mb-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-gradient-to-r from-violet-600 to-purple-600">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-user-check"></i> Staff Attendance Summary
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshAttendanceSummary()" class="text-white hover:text-purple-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <a href="{{ route('attendance.manual.index') }}" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                            <i class="fas fa-external-link-alt"></i> Mark Attendance
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-6 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Staff</div>
+                    <div class="text-lg font-bold text-gray-800" id="attTotalStaff">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Present</div>
+                    <div class="text-lg font-bold text-green-600" id="attPresent">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Half Day</div>
+                    <div class="text-lg font-bold text-yellow-600" id="attHalfDay">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Absent</div>
+                    <div class="text-lg font-bold text-red-600" id="attAbsent">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">On Leave</div>
+                    <div class="text-lg font-bold text-blue-600" id="attOnLeave">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Attendance Rate</div>
+                    <div class="text-lg font-bold text-purple-600" id="attRate">0%</div>
+                </div>
+            </div>
+
+            <!-- Attendance Progress Bar -->
+            <div class="px-3 py-2 border-b">
+                <div class="flex items-center gap-2 text-xs mb-1">
+                    <span class="text-gray-500">Attendance Overview:</span>
+                    <span id="attNotMarkedBadge" class="hidden bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                        <i class="fas fa-exclamation-circle"></i> <span id="attNotMarkedCount">0</span> not marked
+                    </span>
+                </div>
+                <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
+                    <div id="attProgressPresent" class="h-full bg-green-500 transition-all" style="width: 0%"></div>
+                    <div id="attProgressHalf" class="h-full bg-yellow-500 transition-all" style="width: 0%"></div>
+                    <div id="attProgressAbsent" class="h-full bg-red-500 transition-all" style="width: 0%"></div>
+                    <div id="attProgressLeave" class="h-full bg-blue-500 transition-all" style="width: 0%"></div>
+                    <div id="attProgressNotMarked" class="h-full bg-gray-400 transition-all" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-xs mt-1 text-gray-500">
+                    <div class="flex items-center gap-3">
+                        <span><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Present</span>
+                        <span><span class="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1"></span>Half</span>
+                        <span><span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-1"></span>Absent</span>
+                        <span><span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Leave</span>
+                        <span><span class="inline-block w-2 h-2 rounded-full bg-gray-400 mr-1"></span>Not Marked</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown (Collapsible) -->
+            <div class="p-3">
+                <button onclick="toggleAttendanceBreakdown()" class="flex items-center justify-between w-full text-left text-xs font-semibold text-gray-600 mb-2">
+                    <span><i class="fas fa-chart-pie mr-1"></i> Department Breakdown</span>
+                    <i id="attBreakdownArrow" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+                </button>
+                <div id="attCategoryBreakdown" class="hidden space-y-2 max-h-48 overflow-y-auto">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Absent & On Leave Staff (Collapsible) -->
+            <div class="p-3 border-t bg-gray-50">
+                <button onclick="toggleAbsentStaffList()" class="flex items-center justify-between w-full text-left text-xs font-semibold text-gray-600 mb-2">
+                    <span><i class="fas fa-user-times mr-1 text-red-500"></i> Absent & On Leave Details</span>
+                    <i id="absentListArrow" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+                </button>
+                <div id="absentStaffList" class="hidden">
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Absent Staff -->
+                        <div class="bg-red-50 rounded-lg p-2">
+                            <p class="text-xs font-medium text-red-700 mb-1"><i class="fas fa-times-circle mr-1"></i> Absent Today</p>
+                            <div id="attAbsentList" class="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                <p class="text-gray-400">No absent staff</p>
+                            </div>
+                        </div>
+                        <!-- On Leave Staff -->
+                        <div class="bg-blue-50 rounded-lg p-2">
+                            <p class="text-xs font-medium text-blue-700 mb-1"><i class="fas fa-calendar-minus mr-1"></i> On Leave Today</p>
+                            <div id="attOnLeaveList" class="text-xs space-y-1 max-h-32 overflow-y-auto">
+                                <p class="text-gray-400">No staff on leave</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Map Container -->
         <div class="map-container bg-white rounded-xl shadow-lg border border-gray-200 p-6" id="mapContainer">
             <!-- Sections will be rendered here -->
@@ -422,6 +532,64 @@
 
         <!-- Today's Bills Report (Admin Only) -->
         @if(Auth::user()->role === 'admin')
+        
+        <!-- Net Profit/Loss Today Card -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-gradient-to-r from-indigo-900 to-slate-800 text-white">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-chart-line text-yellow-400"></i> Net Profit/Loss Today
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span id="nplStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300">CALCULATING</span>
+                        <button onclick="refreshNetProfitSummary()" class="text-white hover:text-indigo-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Net Result</div>
+                        <div class="text-3xl font-extrabold flex items-baseline gap-2" id="nplTargetValue">
+                            Rs 0.00
+                        </div>
+                        <div class="text-xs font-medium mt-1" id="nplMarginContainer">
+                            Margin: <span id="nplMarginValue" class="text-gray-600">0%</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-gray-500 mb-1">Status</div>
+                        <div id="nplStatusIcon" class="text-4xl text-gray-300">
+                            <i class="fas fa-circle-notch fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Financial Breakdown -->
+                <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border-t pt-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span> Income</span>
+                        <span class="font-bold text-gray-800" id="nplIncome">Rs 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span> Expenses ( No MD )</span>
+                        <span class="font-bold text-gray-800" id="nplExpenses">Rs 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block mr-1"></span> Staff Costs</span>
+                        <span class="font-bold text-gray-800" id="nplStaffCost">Rs 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block mr-1"></span> Inventory COGS</span>
+                        <span class="font-bold text-gray-800" id="nplCogs">Rs 0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
             <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-600">
                 <div class="flex items-center justify-between mb-2">
@@ -2249,6 +2417,244 @@ function refreshActiveOrders() {
     loadActiveOrders();
 }
 
+// ============ ATTENDANCE SUMMARY ============
+let currentAttendanceDate = '{{ date("Y-m-d") }}';
+
+async function loadAttendanceSummary(date = null) {
+    if (date) {
+        currentAttendanceDate = date;
+    }
+    
+    try {
+        const url = `/api/duty-roster/attendance-summary?date=${currentAttendanceDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            const data = result.data;
+            
+            // Update key metrics
+            document.getElementById('attTotalStaff').textContent = data.total_staff;
+            document.getElementById('attPresent').textContent = data.present;
+            document.getElementById('attHalfDay').textContent = data.half_day;
+            document.getElementById('attAbsent').textContent = data.absent;
+            document.getElementById('attOnLeave').textContent = data.on_leave;
+            document.getElementById('attRate').textContent = data.attendance_rate + '%';
+            
+            // Update progress bar
+            const total = data.total_staff;
+            if (total > 0) {
+                const presentPercent = (data.present / total) * 100;
+                const halfPercent = (data.half_day / total) * 100;
+                const absentPercent = (data.absent / total) * 100;
+                const leavePercent = (data.on_leave / total) * 100;
+                const notMarkedPercent = (data.not_marked / total) * 100;
+                
+                document.getElementById('attProgressPresent').style.width = presentPercent + '%';
+                document.getElementById('attProgressHalf').style.width = halfPercent + '%';
+                document.getElementById('attProgressAbsent').style.width = absentPercent + '%';
+                document.getElementById('attProgressLeave').style.width = leavePercent + '%';
+                document.getElementById('attProgressNotMarked').style.width = notMarkedPercent + '%';
+            }
+            
+            // Update not marked badge
+            const notMarkedBadge = document.getElementById('attNotMarkedBadge');
+            const notMarkedCount = document.getElementById('attNotMarkedCount');
+            if (data.not_marked > 0) {
+                notMarkedBadge.classList.remove('hidden');
+                notMarkedCount.textContent = data.not_marked;
+            } else {
+                notMarkedBadge.classList.add('hidden');
+            }
+            
+            // Render category breakdown
+            renderAttendanceCategoryBreakdown(data.category_breakdown);
+            
+            // Render absent and on leave lists
+            renderAbsentStaffList(data.absent_staff);
+            renderOnLeaveStaffList(data.staff_on_leave);
+        }
+    } catch (error) {
+        console.error('Error loading attendance summary:', error);
+    }
+}
+
+function renderAttendanceCategoryBreakdown(categories) {
+    const container = document.getElementById('attCategoryBreakdown');
+    if (!categories || categories.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-400 text-xs py-2">No category data</div>';
+        return;
+    }
+    
+    let html = '';
+    categories.forEach(cat => {
+        const total = cat.total;
+        const presentWidth = total > 0 ? (cat.present / total) * 100 : 0;
+        const halfWidth = total > 0 ? (cat.half / total) * 100 : 0;
+        const absentWidth = total > 0 ? (cat.absent / total) * 100 : 0;
+        const notMarkedWidth = 100 - presentWidth - halfWidth - absentWidth;
+        
+        html += `
+            <div class="bg-gray-50 rounded-lg p-2">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-gray-700">${cat.name}</span>
+                    <span class="text-xs text-gray-500">${cat.present}/${cat.total}</span>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                    <div class="h-full bg-green-500" style="width: ${presentWidth}%"></div>
+                    <div class="h-full bg-yellow-500" style="width: ${halfWidth}%"></div>
+                    <div class="h-full bg-red-500" style="width: ${absentWidth}%"></div>
+                    <div class="h-full bg-gray-400" style="width: ${notMarkedWidth}%"></div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function renderAbsentStaffList(absentStaff) {
+    const container = document.getElementById('attAbsentList');
+    if (!absentStaff || absentStaff.length === 0) {
+        container.innerHTML = '<p class="text-gray-400">No absent staff</p>';
+        return;
+    }
+    
+    let html = '';
+    absentStaff.forEach(staff => {
+        const category = staff.category ? staff.category.replace('_', ' ') : 'N/A';
+        html += `
+            <div class="flex items-center justify-between py-1 border-b border-red-100 last:border-0">
+                <span class="font-medium text-red-800">${staff.person_name}</span>
+                <span class="text-red-500 capitalize">${category}</span>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function renderOnLeaveStaffList(staffOnLeave) {
+    const container = document.getElementById('attOnLeaveList');
+    if (!staffOnLeave || staffOnLeave.length === 0) {
+        container.innerHTML = '<p class="text-gray-400">No staff on leave</p>';
+        return;
+    }
+    
+    let html = '';
+    staffOnLeave.forEach(staff => {
+        const leaveType = staff.leave_type ? staff.leave_type.replace('_', ' ') : 'Leave';
+        html += `
+            <div class="flex items-center justify-between py-1 border-b border-blue-100 last:border-0">
+                <span class="font-medium text-blue-800">${staff.person_name}</span>
+                <span class="text-blue-500 capitalize">${leaveType}</span>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function toggleAttendanceBreakdown() {
+    const content = document.getElementById('attCategoryBreakdown');
+    const arrow = document.getElementById('attBreakdownArrow');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        content.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+function toggleAbsentStaffList() {
+    const content = document.getElementById('absentStaffList');
+    const arrow = document.getElementById('absentListArrow');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        content.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+function refreshAttendanceSummary() {
+    loadAttendanceSummary();
+}
+
+// ============ NET PROFIT/LOSS SUMMARY ============
+let currentProfitDate = '{{ date("Y-m-d") }}';
+
+async function loadNetProfitSummary(date = null) {
+    if (date) {
+        currentProfitDate = date;
+    }
+
+    try {
+        const url = `/api/duty-roster/net-profit?date=${currentProfitDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success) {
+            updateNetProfitUI(result.data);
+        }
+    } catch (error) {
+        console.error('Error loading net profit summary:', error);
+        document.getElementById('nplStatusBadge').textContent = 'ERROR';
+        document.getElementById('nplStatusBadge').className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800';
+    }
+}
+
+function updateNetProfitUI(data) {
+    // 1. Update Key Figures
+    const netProfit = parseFloat(data.net_profit);
+    const income = parseFloat(data.income.total);
+    
+    // Format Currency
+    const formatCurrency = (amount) => {
+        return 'Rs ' + amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    };
+
+    document.getElementById('nplTargetValue').textContent = formatCurrency(netProfit);
+    document.getElementById('nplMarginValue').textContent = data.profit_margin + '%';
+    
+    // Breakdown
+    document.getElementById('nplIncome').textContent = formatCurrency(data.income.total);
+    document.getElementById('nplExpenses').textContent = formatCurrency(data.expenses.operational);
+    document.getElementById('nplStaffCost').textContent = formatCurrency(data.expenses.staff_cost);
+    document.getElementById('nplCogs').textContent = formatCurrency(data.expenses.cogs);
+
+    // 2. Update Status Styling
+    const statusBadge = document.getElementById('nplStatusBadge');
+    const statusIcon = document.getElementById('nplStatusIcon');
+    const targetValue = document.getElementById('nplTargetValue');
+    const marginContainer = document.getElementById('nplMarginContainer');
+
+    if (netProfit >= 0) {
+        // PROFIT STATE
+        statusBadge.textContent = 'PROFIT';
+        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
+        
+        targetValue.className = 'text-3xl font-extrabold flex items-baseline gap-2 text-emerald-600';
+        marginContainer.className = 'text-xs font-medium mt-1 text-emerald-600';
+        
+        statusIcon.innerHTML = '<i class="fas fa-arrow-trend-up text-emerald-500"></i>';
+    } else {
+        // LOSS STATE
+        statusBadge.textContent = 'LOSS';
+        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800';
+        
+        targetValue.className = 'text-3xl font-extrabold flex items-baseline gap-2 text-red-600';
+        marginContainer.className = 'text-xs font-medium mt-1 text-red-600';
+        
+        statusIcon.innerHTML = '<i class="fas fa-arrow-trend-down text-red-500"></i>';
+    }
+}
+
+function refreshNetProfitSummary() {
+    loadNetProfitSummary();
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -2297,7 +2703,20 @@ document.addEventListener('DOMContentLoaded', function() {
     loadActiveOrders();
     // Refresh active orders every 2 minutes (more frequent for real-time updates)
     setInterval(loadActiveOrders, 120000);
+    
+    // Load attendance summary
+    loadAttendanceSummary();
+    // Refresh attendance summary every 5 minutes
+    setInterval(loadAttendanceSummary, 300000);
+    
+    // Load Net Profit Summary (Admin Only - check performed by API)
+    // We can call it safely; if not admin, API returns error or empty, but UI is protected by Blade if check
+    if (document.getElementById('nplTargetValue')) {
+        loadNetProfitSummary();
+        setInterval(loadNetProfitSummary, 300000);
+    }
 });
+
 
 function renderSections() {
     const container = document.getElementById('mapContainer');

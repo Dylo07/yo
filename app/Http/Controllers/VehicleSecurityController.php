@@ -190,19 +190,18 @@ class VehicleSecurityController extends Controller
         $dateEnd = Carbon::parse($date)->endOfDay();
 
         // Get vehicles currently on property (checked in but not checked out)
-        // These could have been checked in on any previous day
         $vehiclesOnProperty = VehicleSecurity::whereNull('checkout_time')
             ->where('is_note', false)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get vehicles checked out today
+        // Get vehicles checked out on the selected date
         $vehiclesCheckedOutToday = VehicleSecurity::whereBetween('checkout_time', [$dateStart, $dateEnd])
             ->where('is_note', false)
             ->orderBy('checkout_time', 'desc')
             ->get();
 
-        // Get vehicles checked in today (for reference)
+        // Get vehicles checked in on the selected date (for reference)
         $vehiclesCheckedInToday = VehicleSecurity::whereBetween('created_at', [$dateStart, $dateEnd])
             ->where('is_note', false)
             ->orderBy('created_at', 'desc')
@@ -224,12 +223,13 @@ class VehicleSecurityController extends Controller
             return $v->is_temp_out;
         })->count();
 
-        // Group by matter (purpose) - show vehicles currently on property
-        $byMatter = $vehiclesOnProperty->groupBy('matter')->map(function($group, $key) {
+        // Group by matter (purpose) - show ALL relevant vehicles (on property + checked out today)
+        $byMatter = $allRelevantVehicles->groupBy('matter')->map(function($group, $key) {
             return [
                 'name' => $key ?: 'General',
                 'count' => $group->count(),
                 'vehicles' => $group->map(function($v) {
+                    $isCheckedOut = !is_null($v->checkout_time);
                     return [
                         'id' => $v->id,
                         'vehicle_number' => $v->vehicle_number,
@@ -240,7 +240,8 @@ class VehicleSecurityController extends Controller
                         'kids_pool_count' => $v->kids_pool_count,
                         'team' => $v->team,
                         'check_in' => $v->created_at->format('M d, H:i'),
-                        'status' => $v->is_temp_out ? 'Temp Out' : 'On Property'
+                        'check_out' => $isCheckedOut ? $v->checkout_time->format('M d, H:i') : null,
+                        'status' => $isCheckedOut ? 'Checked Out' : ($v->is_temp_out ? 'Temp Out' : 'On Property')
                     ];
                 })->values()
             ];

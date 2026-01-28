@@ -1990,7 +1990,8 @@ function renderVehiclesByPurpose(matters) {
                                         <div class="text-[10px] text-gray-600 mb-1">${vehicle.description}</div>
                                     ` : ''}
                                     <div class="flex flex-wrap gap-2 text-[10px] text-gray-500">
-                                        <span><i class="fas fa-clock mr-1"></i>${vehicle.time}</span>
+                                        <span><i class="fas fa-sign-in-alt mr-1"></i>In: ${vehicle.check_in || vehicle.time}</span>
+                                        ${vehicle.check_out ? `<span><i class="fas fa-sign-out-alt mr-1"></i>Out: ${vehicle.check_out}</span>` : ''}
                                         ${(() => {
                                             let rooms = [];
                                             if (Array.isArray(vehicle.room_numbers)) {

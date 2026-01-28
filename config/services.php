@@ -31,4 +31,16 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Internal API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | API key for external integrations (e.g., sobalanka.com)
+    |
+    */
+    'api' => [
+        'key' => env('API_SECRET_KEY'),
+    ],
+
 ];

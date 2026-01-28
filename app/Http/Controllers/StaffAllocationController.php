@@ -17,6 +17,7 @@ use App\Models\StockLog;
 use App\Models\Inventory;
 use App\Models\InStock;
 use App\Models\Menu;
+use App\Models\GatePass;
 use Carbon\Carbon;
 use DB;
 
@@ -1077,5 +1078,69 @@ class StaffAllocationController extends Controller
         $task->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get staff currently out on gate pass
+     */
+    public function getStaffOut(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
+
+        // Get all gate passes for the day
+        $gatePasses = GatePass::with('person')
+            ->whereBetween('exit_time', [$dateStart, $dateEnd])
+            ->orderBy('exit_time', 'desc')
+            ->get();
+
+        // Currently out (active/approved, not returned)
+        $currentlyOut = $gatePasses->filter(function ($pass) {
+            return in_array($pass->status, ['active', 'approved']) && !$pass->actual_return;
+        });
+
+        // Returned today
+        $returned = $gatePasses->filter(function ($pass) {
+            return $pass->actual_return || $pass->status === 'returned';
+        });
+
+        // Overdue (expected return passed but not returned)
+        $overdue = $currentlyOut->filter(function ($pass) {
+            return $pass->is_overdue;
+        });
+
+        // Format the data
+        $formattedPasses = $gatePasses->map(function ($pass) {
+            $isOut = in_array($pass->status, ['active', 'approved']) && !$pass->actual_return;
+            $isOverdue = $pass->is_overdue;
+            
+            return [
+                'id' => $pass->id,
+                'staff_name' => $pass->person->name ?? 'Unknown',
+                'purpose' => $pass->formatted_purpose,
+                'destination' => $pass->destination,
+                'exit_time' => $pass->exit_time ? $pass->exit_time->format('H:i') : null,
+                'expected_return' => $pass->expected_return ? $pass->expected_return->format('H:i') : null,
+                'actual_return' => $pass->actual_return ? $pass->actual_return->format('H:i') : null,
+                'duration' => $pass->formatted_duration,
+                'status' => $pass->status,
+                'is_out' => $isOut,
+                'is_overdue' => $isOverdue,
+                'contact' => $pass->contact_number,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'stats' => [
+                'total_today' => $gatePasses->count(),
+                'currently_out' => $currentlyOut->count(),
+                'returned' => $returned->count(),
+                'overdue' => $overdue->count(),
+            ],
+            'passes' => $formattedPasses,
+        ]);
     }
 }

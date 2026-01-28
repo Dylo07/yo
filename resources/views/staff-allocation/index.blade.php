@@ -943,6 +943,61 @@
                 </div>
             </div>
         </div>
+
+        <!-- Staff Out (Gate Pass) Summary -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="p-3 bg-gradient-to-r from-rose-600 to-pink-600">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-door-open"></i> Staff Out (Gate Pass)
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshStaffOut()" class="text-white hover:text-rose-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadStaffOutForYesterday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i> Yesterday
+                    </button>
+                    <input type="date" id="staffOutDatePicker" 
+                        class="text-xs px-3 py-1.5 rounded border-0 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        value="{{ date('Y-m-d') }}"
+                        onchange="loadStaffOutForDate(this.value)">
+                    <button onclick="loadStaffOutForToday()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded">
+                        Today
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-4 gap-2 p-3 bg-gray-50 border-b">
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Total Today</div>
+                    <div class="text-lg font-bold text-gray-700" id="staffOutTotal">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Currently Out</div>
+                    <div class="text-lg font-bold text-rose-600" id="staffOutCurrently">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Returned</div>
+                    <div class="text-lg font-bold text-green-600" id="staffOutReturned">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-gray-500 mb-1">Overdue</div>
+                    <div class="text-lg font-bold text-red-600" id="staffOutOverdue">0</div>
+                </div>
+            </div>
+
+            <!-- Staff Out List -->
+            <div class="p-3" style="max-height: 400px; overflow-y: auto;">
+                <div id="staffOutList" class="space-y-2">
+                    <div class="text-center py-2 text-gray-400 text-xs">Loading...</div>
+                </div>
+            </div>
+        </div>
         @endif
     </div>
 
@@ -2751,6 +2806,11 @@ document.addEventListener('DOMContentLoaded', function() {
         loadNetProfitSummary();
         setInterval(loadNetProfitSummary, 300000);
     }
+    
+    // Load Staff Out (Gate Pass) summary
+    loadStaffOut();
+    // Refresh every 3 minutes
+    setInterval(loadStaffOut, 180000);
 });
 
 
@@ -4456,6 +4516,113 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ==================== STAFF OUT (GATE PASS) SUMMARY ====================
+
+async function loadStaffOut() {
+    const date = document.getElementById('staffOutDatePicker')?.value || new Date().toISOString().split('T')[0];
+    await loadStaffOutForDate(date);
+}
+
+async function loadStaffOutForDate(date) {
+    try {
+        const response = await fetch(`/api/duty-roster/staff-out?date=${date}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update stats
+            document.getElementById('staffOutTotal').textContent = data.stats.total_today;
+            document.getElementById('staffOutCurrently').textContent = data.stats.currently_out;
+            document.getElementById('staffOutReturned').textContent = data.stats.returned;
+            document.getElementById('staffOutOverdue').textContent = data.stats.overdue;
+            
+            // Render list
+            renderStaffOutList(data.passes);
+        }
+    } catch (error) {
+        console.error('Error loading staff out data:', error);
+        document.getElementById('staffOutList').innerHTML = '<div class="text-center text-red-500 text-xs py-2">Error loading data</div>';
+    }
+}
+
+function renderStaffOutList(passes) {
+    const list = document.getElementById('staffOutList');
+    
+    if (!passes || passes.length === 0) {
+        list.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs"><i class="fas fa-check-circle text-green-500 mr-1"></i> No gate passes for this day</div>';
+        return;
+    }
+    
+    // Sort: currently out first (with overdue at top), then returned
+    const sorted = [...passes].sort((a, b) => {
+        if (a.is_out && !b.is_out) return -1;
+        if (!a.is_out && b.is_out) return 1;
+        if (a.is_overdue && !b.is_overdue) return -1;
+        if (!a.is_overdue && b.is_overdue) return 1;
+        return 0;
+    });
+    
+    let html = '';
+    
+    sorted.forEach(pass => {
+        let statusBadge = '';
+        let borderClass = '';
+        let bgClass = 'bg-white';
+        
+        if (pass.is_out) {
+            if (pass.is_overdue) {
+                statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 animate-pulse"><i class="fas fa-exclamation-triangle mr-1"></i>OVERDUE</span>';
+                borderClass = 'border-l-4 border-red-500';
+                bgClass = 'bg-red-50';
+            } else {
+                statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700"><i class="fas fa-walking mr-1"></i>OUT</span>';
+                borderClass = 'border-l-4 border-rose-500';
+                bgClass = 'bg-rose-50';
+            }
+        } else {
+            statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700"><i class="fas fa-check mr-1"></i>Returned</span>';
+            borderClass = '';
+            bgClass = 'bg-gray-50';
+        }
+        
+        html += `
+            <div class="p-2 rounded-lg ${bgClass} ${borderClass} shadow-sm">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-semibold text-sm text-gray-800">${escapeHtml(pass.staff_name)}</span>
+                    ${statusBadge}
+                </div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-600">
+                    <div><i class="fas fa-tag text-gray-400 mr-1"></i>${escapeHtml(pass.purpose)}</div>
+                    <div><i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>${escapeHtml(pass.destination || 'N/A')}</div>
+                    <div><i class="fas fa-sign-out-alt text-rose-400 mr-1"></i>Out: ${pass.exit_time || '-'}</div>
+                    <div><i class="fas fa-clock text-amber-400 mr-1"></i>Expected: ${pass.expected_return || '-'}</div>
+                    ${pass.actual_return ? `<div class="col-span-2"><i class="fas fa-sign-in-alt text-green-400 mr-1"></i>Returned: ${pass.actual_return}</div>` : ''}
+                </div>
+                ${pass.contact ? `<div class="mt-1 text-xs text-gray-500"><i class="fas fa-phone text-gray-400 mr-1"></i>${pass.contact}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    list.innerHTML = html;
+}
+
+function refreshStaffOut() {
+    loadStaffOut();
+}
+
+function loadStaffOutForToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('staffOutDatePicker').value = today;
+    loadStaffOutForDate(today);
+}
+
+function loadStaffOutForYesterday() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    document.getElementById('staffOutDatePicker').value = yesterdayStr;
+    loadStaffOutForDate(yesterdayStr);
 }
 </script>
 @endpush

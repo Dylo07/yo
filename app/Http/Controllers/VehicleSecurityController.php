@@ -189,28 +189,43 @@ class VehicleSecurityController extends Controller
         $dateStart = Carbon::parse($date)->startOfDay();
         $dateEnd = Carbon::parse($date)->endOfDay();
 
-        // Get all vehicles for the date
-        $vehicles = VehicleSecurity::whereBetween('created_at', [$dateStart, $dateEnd])
+        // Get vehicles currently on property (checked in but not checked out)
+        // These could have been checked in on any previous day
+        $vehiclesOnProperty = VehicleSecurity::whereNull('checkout_time')
+            ->where('is_note', false)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalVehicles = $vehicles->count();
+        // Get vehicles checked out today
+        $vehiclesCheckedOutToday = VehicleSecurity::whereBetween('checkout_time', [$dateStart, $dateEnd])
+            ->where('is_note', false)
+            ->orderBy('checkout_time', 'desc')
+            ->get();
+
+        // Get vehicles checked in today (for reference)
+        $vehiclesCheckedInToday = VehicleSecurity::whereBetween('created_at', [$dateStart, $dateEnd])
+            ->where('is_note', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Combine for display: currently on property + checked out today
+        $allRelevantVehicles = $vehiclesOnProperty->merge($vehiclesCheckedOutToday)->unique('id');
+
+        $totalVehicles = $allRelevantVehicles->count();
         
         // Count by status
-        $checkedIn = $vehicles->filter(function($v) {
-            return is_null($v->checkout_time) && !$v->is_note;
+        $checkedIn = $vehiclesOnProperty->filter(function($v) {
+            return !$v->is_temp_out;
         })->count();
         
-        $checkedOut = $vehicles->filter(function($v) {
-            return !is_null($v->checkout_time) && !$v->is_note;
-        })->count();
+        $checkedOut = $vehiclesCheckedOutToday->count();
         
-        $tempOut = $vehicles->filter(function($v) {
-            return is_null($v->checkout_time) && $v->is_temp_out && !$v->is_note;
+        $tempOut = $vehiclesOnProperty->filter(function($v) {
+            return $v->is_temp_out;
         })->count();
 
-        // Group by matter (purpose)
-        $byMatter = $vehicles->groupBy('matter')->map(function($group, $key) {
+        // Group by matter (purpose) - show vehicles currently on property
+        $byMatter = $vehiclesOnProperty->groupBy('matter')->map(function($group, $key) {
             return [
                 'name' => $key ?: 'General',
                 'count' => $group->count(),
@@ -224,21 +239,21 @@ class VehicleSecurityController extends Controller
                         'adult_pool_count' => $v->adult_pool_count,
                         'kids_pool_count' => $v->kids_pool_count,
                         'team' => $v->team,
-                        'time' => $v->created_at->format('H:i'),
-                        'status' => $v->is_note ? 'Note' : ($v->checkout_time ? 'Checked Out' : ($v->is_temp_out ? 'Temp Out' : 'On Property'))
+                        'check_in' => $v->created_at->format('M d, H:i'),
+                        'status' => $v->is_temp_out ? 'Temp Out' : 'On Property'
                     ];
                 })->values()
             ];
         })->sortByDesc('count')->values();
 
-        // Pool usage for the day
+        // Pool usage - from vehicles currently on property
         $poolUsage = [
-            'adults' => $vehicles->sum('adult_pool_count'),
-            'kids' => $vehicles->sum('kids_pool_count')
+            'adults' => $vehiclesOnProperty->sum('adult_pool_count'),
+            'kids' => $vehiclesOnProperty->sum('kids_pool_count')
         ];
 
-        // Room occupancy
-        $roomsUsed = $vehicles->filter(function($v) {
+        // Room occupancy - from vehicles currently on property
+        $roomsUsed = $vehiclesOnProperty->filter(function($v) {
             return !empty($v->room_numbers);
         })->pluck('room_numbers')->flatten()->unique()->values();
 
@@ -249,6 +264,8 @@ class VehicleSecurityController extends Controller
                 'checked_in' => $checkedIn,
                 'checked_out' => $checkedOut,
                 'temp_out' => $tempOut,
+                'on_property' => $vehiclesOnProperty->count(),
+                'checked_in_today' => $vehiclesCheckedInToday->count(),
                 'by_matter' => $byMatter,
                 'pool_usage' => $poolUsage,
                 'rooms_used' => $roomsUsed,

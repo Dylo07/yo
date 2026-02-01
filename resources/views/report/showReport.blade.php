@@ -62,9 +62,9 @@
                     <th>Menu</th>
                     <th>Quantity</th>
                     <th>Price</th>
-                    <th> Price</th>
-                    <th>Service Charge</th>
-                    <th>Total Price</th>
+                    <th>Total</th>
+                    <th>Updated Time</th>
+                    <th></th>
                   </tr>
                 
                   @foreach($sale->saleDetails as $saleDetail)
@@ -75,7 +75,8 @@
                       <td>{{$saleDetail->quantity}}</td>
                       <td>{{$saleDetail->menu_price}}</td>
                       <td>{{$saleDetail->menu_price * $saleDetail->quantity}}</td>
-                      <td colspan="2"></td>
+                      <td>{{$saleDetail->created_at ? $saleDetail->created_at->format('d/m/Y H:i:s') : 'N/A'}}</td>
+                      <td></td>
                     </tr>
                   @endforeach
                 @endforeach

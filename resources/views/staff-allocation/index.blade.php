@@ -1756,13 +1756,26 @@ function renderRecentBills(bills) {
         if (bill.sale_details && bill.sale_details.length > 0) {
             bill.sale_details.forEach(item => {
                 const itemTotal = parseFloat(item.menu_price) * parseInt(item.quantity);
+                // Format the updated time for each item
+                const itemUpdatedTime = item.created_at ? new Date(item.created_at).toLocaleString('en-GB', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: false 
+                }).replace(',', '') : 'N/A';
                 itemsHtml += `
                     <div class="flex justify-between items-center text-[11px] text-gray-600 py-1 border-b border-gray-100 last:border-0">
-                        <div class="flex items-center gap-2">
-                            <span class="font-medium text-gray-800">${item.menu_name}</span>
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="font-medium text-gray-800 truncate">${item.menu_name}</span>
                             <span class="text-gray-400 text-[10px]">× ${item.quantity}</span>
                         </div>
-                        <span class="font-medium">Rs ${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <span class="text-[10px] text-blue-600" title="Updated Time"><i class="fas fa-clock mr-1"></i>${itemUpdatedTime}</span>
+                            <span class="font-medium">Rs ${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        </div>
                     </div>
                 `;
             });

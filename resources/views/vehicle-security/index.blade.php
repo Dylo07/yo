@@ -1359,6 +1359,13 @@ function addVehicle(event) {
     const form = event.target;
     const formData = new FormData(form);
     
+    // Disable submit buttons to prevent double submission
+    const submitButtons = form.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+    });
+    
     // Handle room numbers
     const selectedRooms = [];
     form.querySelectorAll('input[name="room_numbers[]"]:checked').forEach(checkbox => {
@@ -1382,15 +1389,26 @@ function addVehicle(event) {
     .then(response => response.json())
     .then(data => {
         if(data.success) {
-            const newRow = createVehicleRow(data.vehicle);
-            document.querySelector('#vehicleTableBody').insertAdjacentHTML('afterbegin', newRow);
-            form.reset();
-            document.getElementById('roomSection').style.display = 'none';
-            document.getElementById('poolSection').style.display = 'none';
-            showAlert(data.message);
+            // Show success message and reload page
+            alert('✅ Vehicle entry saved successfully!');
+            window.location.reload();
+        } else {
+            // Re-enable buttons on error
+            submitButtons.forEach(btn => {
+                btn.disabled = false;
+            });
+            form.querySelector('button[type="submit"]:not([name="is_note"])').innerHTML = '<i class="fas fa-save mr-2"></i> Save Entry';
+            form.querySelector('button[name="is_note"]').innerHTML = '<i class="fas fa-sticky-note mr-2"></i> Save as Note';
+            showAlert(data.message || 'Error saving entry', 'danger');
         }
     })
     .catch(error => {
+        // Re-enable buttons on error
+        submitButtons.forEach(btn => {
+            btn.disabled = false;
+        });
+        form.querySelector('button[type="submit"]:not([name="is_note"])').innerHTML = '<i class="fas fa-save mr-2"></i> Save Entry';
+        form.querySelector('button[name="is_note"]').innerHTML = '<i class="fas fa-sticky-note mr-2"></i> Save as Note';
         showAlert('Error creating entry', 'danger');
         console.error('Error:', error);
     });

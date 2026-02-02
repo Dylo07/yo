@@ -359,42 +359,56 @@
                 @endif
             </div>
             <div class="vehicle-card-matter mt-1">
-                <span class="badge badge-light text-dark px-3 py-2" style="font-size: 14px;">{{ $vehicle->matter }}</span>
+                <span class="text-dark" style="font-size: 14px;">{{ $vehicle->matter }}</span>
             </div>
         </div>
         <div class="vehicle-card-body">
-            <!-- Time Details Section - Clear and Prominent -->
-            <div class="time-details-section mb-3 p-3 bg-light rounded">
-                <div class="row">
-                    <div class="col-6">
-                        <div class="time-block">
-                            <div class="time-label text-muted small"><i class="fas fa-calendar-alt mr-1"></i> DATE</div>
-                            <div class="time-value font-weight-bold" style="font-size: 16px;">{{ $vehicle->created_at->format('d M Y') }}</div>
-                        </div>
+            <!-- Time Details Section - Matching User's Design -->
+            <div class="time-details-section mb-3 p-2 bg-light rounded">
+                <!-- Row 1: Date + In Time & Date + Out Time & Date -->
+                <div class="row mb-2">
+                    <div class="col-3">
+                        <div class="text-muted small"><i class="fas fa-calendar-alt mr-1"></i> DATE</div>
+                        <div class="font-weight-bold" style="font-size: 14px;">{{ $vehicle->created_at->format('d M Y') }}</div>
                     </div>
-                    <div class="col-6 text-right">
-                        <div class="time-block">
-                            <div class="time-label text-muted small"><i class="fas fa-sign-in-alt mr-1"></i> IN TIME</div>
-                            <div class="time-value font-weight-bold text-success" style="font-size: 18px;">{{ $vehicle->created_at->format('h:i A') }}</div>
-                        </div>
+                    <div class="col-4 text-center" style="background: #fff3cd; border-radius: 5px; padding: 5px;">
+                        <div class="font-weight-bold text-dark" style="font-size: 11px;">In Time & Date</div>
+                        <div style="font-size: 12px;">{{ $vehicle->created_at->format('jS F, Y') }}</div>
+                        <div class="font-weight-bold" style="font-size: 14px;">{{ $vehicle->created_at->format('h:i A') }}</div>
                     </div>
-                </div>
-                @if($vehicle->checkout_time)
-                <div class="row mt-2 pt-2 border-top">
-                    <div class="col-6">
-                        <div class="time-block">
-                            <div class="time-label text-muted small"><i class="fas fa-sign-out-alt mr-1"></i> OUT TIME</div>
-                            <div class="time-value font-weight-bold text-danger" style="font-size: 18px;">{{ $vehicle->checkout_time->format('h:i A') }}</div>
-                        </div>
-                    </div>
-                    <div class="col-6 text-right">
-                        <div class="time-block">
-                            <div class="time-label text-muted small"><i class="fas fa-hourglass-half mr-1"></i> DURATION</div>
-                            <div class="time-value font-weight-bold text-primary" style="font-size: 16px;">{{ number_format($vehicle->created_at->diffInMinutes($vehicle->checkout_time) / 60, 1) }} hrs</div>
-                        </div>
+                    <div class="col-5 text-center" style="background: #fff3cd; border-radius: 5px; padding: 5px;">
+                        <div class="font-weight-bold text-dark" style="font-size: 11px;">Out Time & Date</div>
+                        @if($vehicle->checkout_time)
+                            <div style="font-size: 12px;">{{ $vehicle->checkout_time->format('jS F, Y') }}</div>
+                            <div class="font-weight-bold" style="font-size: 14px;">{{ $vehicle->checkout_time->format('h:i A') }}</div>
+                        @else
+                            <div class="text-muted" style="font-size: 12px;">Not Check out yet</div>
+                        @endif
                     </div>
                 </div>
-                @endif
+                <!-- Row 2: OUT TIME, IN TIME, DURATION -->
+                <div class="row pt-2 border-top">
+                    <div class="col-4">
+                        <div class="text-muted small"><i class="fas fa-sign-out-alt mr-1"></i> OUT TIME</div>
+                        @if($vehicle->checkout_time)
+                            <div class="font-weight-bold text-success" style="font-size: 15px;">{{ $vehicle->checkout_time->format('h:i A') }}</div>
+                        @else
+                            <div class="text-muted">--:-- --</div>
+                        @endif
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="text-muted small"><i class="fas fa-sign-in-alt mr-1"></i> IN TIME</div>
+                        <div class="font-weight-bold text-primary" style="font-size: 15px;">{{ $vehicle->created_at->format('h:i A') }}</div>
+                    </div>
+                    <div class="col-4 text-right">
+                        <div class="text-muted small"><i class="fas fa-hourglass-half mr-1"></i> DURATION</div>
+                        @if($vehicle->checkout_time)
+                            <div class="font-weight-bold text-info" style="font-size: 15px;">{{ number_format($vehicle->created_at->diffInMinutes($vehicle->checkout_time) / 60, 1) }} hrs</div>
+                        @else
+                            <div class="text-muted">--</div>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <div class="vehicle-card-info">

@@ -48,6 +48,7 @@ class VehicleSecurity extends Model
             'Room Only',
             'Restaurant ',
 
+            'Meat Items',
             'Chemicals',
             
             'Staff Transport',

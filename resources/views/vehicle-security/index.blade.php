@@ -467,6 +467,114 @@
    </div>
 </div>
 
+<!-- Mobile Card View (Hidden on Desktop) -->
+<div class="mobile-vehicle-cards" id="mobileVehicleCards">
+    @foreach($vehicles as $vehicle)
+    <div class="vehicle-card {{ $vehicle->checkout_time ? 'status-checked-out' : ($vehicle->is_temp_out ? 'status-temp-out' : 'status-on-property') }} {{ $vehicle->team ? 'team-'.str_replace(' ', '', $vehicle->team) : '' }}" 
+         data-vehicle-id="{{ $vehicle->id }}">
+        <div class="vehicle-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="vehicle-card-number">{{ $vehicle->vehicle_number }}</div>
+                @if($vehicle->checkout_time)
+                    <span class="badge badge-secondary"><i class="fas fa-check"></i> OUT</span>
+                @elseif($vehicle->is_temp_out)
+                    <span class="badge badge-info"><i class="fas fa-clock"></i> TEMP</span>
+                @else
+                    <span class="badge badge-success"><i class="fas fa-car"></i> IN</span>
+                @endif
+            </div>
+            <div class="vehicle-card-time">
+                <i class="far fa-clock"></i> {{ $vehicle->created_at->format('H:i') }} - {{ $vehicle->matter }}
+            </div>
+        </div>
+        <div class="vehicle-card-body">
+            <div class="vehicle-card-info">
+                @if($vehicle->room_numbers)
+                    @foreach(json_decode($vehicle->room_numbers) as $room)
+                        <span class="badge badge-primary"><i class="fas fa-bed"></i> {{ $room }}</span>
+                    @endforeach
+                @endif
+                @if($vehicle->adult_pool_count || $vehicle->kids_pool_count)
+                    <span class="badge badge-info"><i class="fas fa-swimming-pool"></i> {{ $vehicle->adult_pool_count }}/{{ $vehicle->kids_pool_count }}</span>
+                @endif
+                @if($vehicle->team)
+                    <span class="badge badge-warning">{{ $vehicle->team }}</span>
+                @endif
+            </div>
+            @if($vehicle->description)
+                <p class="text-muted small mb-0">{{ $vehicle->description }}</p>
+            @endif
+            @if($vehicle->checkout_time)
+                <div class="text-success small mt-2">
+                    <i class="fas fa-sign-out-alt"></i> Checked out: {{ $vehicle->checkout_time->format('H:i') }}
+                    <span class="ml-2">({{ number_format($vehicle->created_at->diffInMinutes($vehicle->checkout_time) / 60, 1) }} hrs)</span>
+                </div>
+            @endif
+        </div>
+        @if(!$vehicle->is_note && !$vehicle->checkout_time)
+        <div class="vehicle-card-actions">
+            <button type="button" class="btn btn-primary" onclick="editVehicle({{ $vehicle->id }})">
+                <i class="fas fa-edit"></i>
+            </button>
+            @if(!$vehicle->is_temp_out)
+                <button type="button" class="btn btn-info" onclick="tempCheckout({{ $vehicle->id }})">
+                    <i class="fas fa-clock"></i> Temp
+                </button>
+            @else
+                <button type="button" class="btn btn-success" onclick="tempCheckin({{ $vehicle->id }})">
+                    <i class="fas fa-undo"></i> Back
+                </button>
+            @endif
+            <form action="{{ route('vehicle-security.checkout', $vehicle->id) }}" method="POST" style="flex:2;" onsubmit="checkoutVehicleMobile(event, {{ $vehicle->id }})">
+                @csrf
+                <button type="submit" class="btn btn-checkout w-100">
+                    <i class="fas fa-sign-out-alt"></i> CHECK OUT
+                </button>
+            </form>
+        </div>
+        @endif
+    </div>
+    @endforeach
+</div>
+
+<!-- Floating Action Button for Quick Add -->
+<button class="fab-add-vehicle" onclick="scrollToForm()" title="Add New Vehicle">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- Quick Entry Modal for Mobile -->
+<div class="modal fade quick-entry-modal" id="quickEntryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-car mr-2"></i>Quick Vehicle Entry</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="quickEntryForm" onsubmit="quickAddVehicle(event)">
+                    @csrf
+                    <div class="form-group">
+                        <label class="font-weight-bold">Vehicle Number</label>
+                        <input type="text" name="vehicle_number" class="form-control" placeholder="Enter vehicle #" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Purpose</label>
+                        <select name="matter" class="form-control" required>
+                            <option value="">Select...</option>
+                            @foreach($matterOptions as $option)
+                                <option value="{{ $option }}">{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block btn-submit">
+                        <i class="fas fa-check mr-2"></i>Add Vehicle
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
    <div class="modal-dialog modal-lg">
@@ -846,6 +954,266 @@
         height: 50px;
         font-size: 18px;
     }
+}
+
+/* ============================================
+   MOBILE-FIRST RESPONSIVE DESIGN FOR TABLETS
+   ============================================ */
+
+/* Hide table on mobile, show cards */
+@media (max-width: 992px) {
+    .table-responsive {
+        display: none !important;
+    }
+    
+    .mobile-vehicle-cards {
+        display: block !important;
+    }
+    
+    /* Larger touch targets */
+    .btn {
+        min-height: 54px;
+        font-size: 16px;
+        padding: 14px 20px;
+    }
+    
+    /* Full-width form fields */
+    .card-body .row > [class*="col-"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    /* Larger input fields for touch */
+    .form-control, .form-control-lg {
+        height: 56px;
+        font-size: 18px;
+        padding: 12px 16px;
+    }
+    
+    select.form-control {
+        height: 56px;
+        font-size: 18px;
+    }
+    
+    textarea.form-control {
+        height: auto;
+        min-height: 80px;
+    }
+    
+    /* Larger room selection cards */
+    .room-selection-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+    }
+    
+    .room-card-body {
+        padding: 16px 12px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    /* Dashboard stats - 2 columns on tablet */
+    .dashboard-summary .col-md-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-circle {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    /* Quick filters - scrollable horizontal */
+    .bg-white.rounded-lg .d-flex.flex-wrap {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .bg-white.rounded-lg .d-flex.flex-wrap .btn {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    
+    /* Sticky header for filters */
+    .card-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+}
+
+/* Extra mobile optimizations */
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    
+    .card-body {
+        padding: 12px;
+    }
+    
+    /* Stack dashboard cards */
+    .dashboard-summary .row {
+        margin: 0 -4px;
+    }
+    
+    .dashboard-summary .col-md-4 {
+        padding: 0 4px;
+    }
+    
+    /* Larger vehicle number input */
+    input[name="vehicle_number"] {
+        font-size: 24px !important;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+}
+
+/* Mobile Vehicle Card Styles */
+.mobile-vehicle-cards {
+    display: none;
+}
+
+.vehicle-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 12px;
+    overflow: hidden;
+    border-left: 4px solid #6c757d;
+}
+
+.vehicle-card.status-on-property {
+    border-left-color: #28a745;
+}
+
+.vehicle-card.status-temp-out {
+    border-left-color: #17a2b8;
+}
+
+.vehicle-card.status-checked-out {
+    border-left-color: #6c757d;
+    opacity: 0.7;
+}
+
+.vehicle-card-header {
+    padding: 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.vehicle-card-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a237e;
+    letter-spacing: 1px;
+}
+
+.vehicle-card-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.vehicle-card-body {
+    padding: 16px;
+}
+
+.vehicle-card-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.vehicle-card-info .badge {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.vehicle-card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.vehicle-card-actions .btn {
+    flex: 1;
+    min-height: 56px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.vehicle-card-actions .btn-checkout {
+    background: linear-gradient(45deg, #dc3545, #c82333) !important;
+    flex: 2;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Floating Action Button for Quick Add */
+.fab-add-vehicle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    font-size: 28px;
+    z-index: 1000;
+    display: none;
+}
+
+@media (max-width: 992px) {
+    .fab-add-vehicle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+.fab-add-vehicle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.5);
+}
+
+/* Quick Entry Modal for Mobile */
+.quick-entry-modal .modal-body {
+    padding: 24px;
+}
+
+.quick-entry-modal input[name="vehicle_number"] {
+    font-size: 28px;
+    height: 70px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: bold;
+}
+
+.quick-entry-modal select {
+    height: 56px;
+    font-size: 18px;
+}
+
+.quick-entry-modal .btn-submit {
+    height: 64px;
+    font-size: 20px;
+    font-weight: 600;
 }
 
 /* Animation */
@@ -1392,7 +1760,219 @@ document.addEventListener('DOMContentLoaded', function() {
     if(document.getElementById('showPool').checked) {
         document.getElementById('poolOptionCard').closest('.card').classList.add('active');
     }
+    
+    // Auto-focus on vehicle number input for quick entry
+    const vehicleInput = document.querySelector('input[name="vehicle_number"]');
+    if(vehicleInput && window.innerWidth <= 992) {
+        // On mobile, don't auto-focus to prevent keyboard popup
+    } else if(vehicleInput) {
+        vehicleInput.focus();
+    }
 });
+
+// ============================================
+// MOBILE-SPECIFIC FUNCTIONS
+// ============================================
+
+// Scroll to form when FAB is clicked
+function scrollToForm() {
+    const form = document.getElementById('vehicleEntryForm');
+    if(form) {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Focus on vehicle number input after scroll
+        setTimeout(() => {
+            const input = form.querySelector('input[name="vehicle_number"]');
+            if(input) input.focus();
+        }, 500);
+    }
+}
+
+// Quick add vehicle from modal
+function quickAddVehicle(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    formData.set('room_numbers', JSON.stringify([]));
+    
+    fetch('{{ route("vehicle-security.store") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            // Add to table
+            const newRow = createVehicleRow(data.vehicle);
+            document.querySelector('#vehicleTableBody').insertAdjacentHTML('afterbegin', newRow);
+            
+            // Add to mobile cards
+            const newCard = createVehicleCard(data.vehicle);
+            document.querySelector('#mobileVehicleCards').insertAdjacentHTML('afterbegin', newCard);
+            
+            // Reset form and close modal
+            form.reset();
+            $('#quickEntryModal').modal('hide');
+            showAlert(data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('Error creating entry', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+// Checkout vehicle from mobile card
+function checkoutVehicleMobile(event, id) {
+    event.preventDefault();
+    const form = event.target;
+    
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            // Update table row
+            const row = document.querySelector(`tr[data-vehicle-id="${id}"]`);
+            if(row) {
+                row.classList.add('checked-out-row');
+                row.querySelector('.checkout-cell').innerHTML = `
+                    <span class="checkout-badge">
+                        ${data.checkout_time}
+                        <br>
+                        <small class="duration-badge">Duration: ${data.duration_hours} hours</small>
+                    </span>
+                `;
+                row.querySelector('.actions-cell').innerHTML = `
+                    <span class="checkout-status-badge">
+                        <i class="fas fa-check-circle"></i> Checked Out
+                    </span>
+                `;
+            }
+            
+            // Update mobile card
+            const card = document.querySelector(`.vehicle-card[data-vehicle-id="${id}"]`);
+            if(card) {
+                card.classList.remove('status-on-property', 'status-temp-out');
+                card.classList.add('status-checked-out');
+                
+                // Update header badge
+                const headerBadge = card.querySelector('.vehicle-card-header .badge');
+                if(headerBadge) {
+                    headerBadge.className = 'badge badge-secondary';
+                    headerBadge.innerHTML = '<i class="fas fa-check"></i> OUT';
+                }
+                
+                // Add checkout info to body
+                const cardBody = card.querySelector('.vehicle-card-body');
+                if(cardBody) {
+                    cardBody.innerHTML += `
+                        <div class="text-success small mt-2">
+                            <i class="fas fa-sign-out-alt"></i> Checked out: ${data.checkout_time}
+                            <span class="ml-2">(${data.duration_hours} hrs)</span>
+                        </div>
+                    `;
+                }
+                
+                // Remove action buttons
+                const actions = card.querySelector('.vehicle-card-actions');
+                if(actions) actions.remove();
+            }
+            
+            showAlert('Vehicle checked out successfully');
+        }
+    })
+    .catch(error => {
+        showAlert('Error checking out vehicle', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+// Create mobile card HTML for new vehicle
+function createVehicleCard(vehicle) {
+    const date = new Date(vehicle.created_at);
+    const formattedTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    
+    let roomBadges = '';
+    if(vehicle.room_numbers) {
+        const rooms = JSON.parse(vehicle.room_numbers);
+        roomBadges = rooms.map(room => `<span class="badge badge-primary"><i class="fas fa-bed"></i> ${room}</span>`).join('');
+    }
+    
+    let poolBadge = '';
+    if(vehicle.adult_pool_count || vehicle.kids_pool_count) {
+        poolBadge = `<span class="badge badge-info"><i class="fas fa-swimming-pool"></i> ${vehicle.adult_pool_count}/${vehicle.kids_pool_count}</span>`;
+    }
+    
+    return `
+        <div class="vehicle-card status-on-property" data-vehicle-id="${vehicle.id}">
+            <div class="vehicle-card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="vehicle-card-number">${vehicle.vehicle_number}</div>
+                    <span class="badge badge-success"><i class="fas fa-car"></i> IN</span>
+                </div>
+                <div class="vehicle-card-time">
+                    <i class="far fa-clock"></i> ${formattedTime} - ${vehicle.matter}
+                </div>
+            </div>
+            <div class="vehicle-card-body">
+                <div class="vehicle-card-info">
+                    ${roomBadges}
+                    ${poolBadge}
+                </div>
+                ${vehicle.description ? `<p class="text-muted small mb-0">${vehicle.description}</p>` : ''}
+            </div>
+            <div class="vehicle-card-actions">
+                <button type="button" class="btn btn-primary" onclick="editVehicle(${vehicle.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-info" onclick="tempCheckout(${vehicle.id})">
+                    <i class="fas fa-clock"></i> Temp
+                </button>
+                <form action="/vehicle-security/${vehicle.id}/checkout" method="POST" style="flex:2;" onsubmit="checkoutVehicleMobile(event, ${vehicle.id})">
+                    <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+                    <button type="submit" class="btn btn-checkout w-100">
+                        <i class="fas fa-sign-out-alt"></i> CHECK OUT
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+// Mobile search function - searches both table and cards
+function quickSearchVehicleMobile(searchTerm) {
+    searchTerm = searchTerm.toLowerCase();
+    
+    // Search table rows
+    const rows = document.querySelectorAll('#vehicleTableBody tr');
+    rows.forEach(row => {
+        const vehicleNumber = row.querySelector('.vehicle-number')?.textContent.toLowerCase() || '';
+        const matter = row.querySelector('.matter')?.textContent.toLowerCase() || '';
+        row.style.display = (vehicleNumber.includes(searchTerm) || matter.includes(searchTerm)) ? '' : 'none';
+    });
+    
+    // Search mobile cards
+    const cards = document.querySelectorAll('.vehicle-card');
+    cards.forEach(card => {
+        const vehicleNumber = card.querySelector('.vehicle-card-number')?.textContent.toLowerCase() || '';
+        const matter = card.querySelector('.vehicle-card-time')?.textContent.toLowerCase() || '';
+        card.style.display = (vehicleNumber.includes(searchTerm) || matter.includes(searchTerm)) ? '' : 'none';
+    });
+}
+
+// Override quick search to work on both views
+const originalQuickSearch = quickSearchVehicle;
+quickSearchVehicle = function(searchTerm) {
+    originalQuickSearch(searchTerm);
+    quickSearchVehicleMobile(searchTerm);
+};
 </script>
 @endsection
 

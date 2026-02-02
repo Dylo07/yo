@@ -18,131 +18,6 @@
                </div>
            @endif
 
-           <!-- Dashboard Summary Section -->
-<div class="dashboard-summary mb-4">
-    <div class="row">
-        <!-- Vehicles Card -->
-        <div class="col-md-4">
-            <div class="card dashboard-card h-100 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-car-side mr-2"></i> Vehicles Today</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-primary mb-2">{{ $stats['checkedIn'] }}</div>
-                            <div class="stat-label">On Property</div>
-                        </div>
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-info mb-2">{{ $stats['tempOut'] }}</div>
-                            <div class="stat-label">Temp Out</div>
-                        </div>
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-success mb-2">{{ $stats['checkedOut'] }}</div>
-                            <div class="stat-label">Checked Out</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Room Status Card -->
-        <div class="col-md-4">
-            <div class="card dashboard-card h-100 shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-bed mr-2"></i> Room Status</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-around">
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-danger mb-2">{{ $stats['occupiedRooms'] }}</div>
-                            <div class="stat-label">Occupied</div>
-                        </div>
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-success mb-2">{{ $stats['availableRooms'] }}</div>
-                            <div class="stat-label">Available</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Pool Usage Card -->
-        <div class="col-md-4">
-            <div class="card dashboard-card h-100 shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-swimming-pool mr-2"></i> Pool Usage</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-primary mb-2">{{ $stats['poolUsage']['adults'] }}</div>
-                            <div class="stat-label">Adults</div>
-                        </div>
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-warning mb-2">{{ $stats['poolUsage']['kids'] }}</div>
-                            <div class="stat-label">Kids</div>
-                        </div>
-                        <div class="text-center px-2">
-                            <div class="stat-circle bg-info mb-2">{{ $stats['poolUsage']['adults'] + $stats['poolUsage']['kids'] }}</div>
-                            <div class="stat-label">Total</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-                   
-                   
-           <!-- Quick Filters Section -->
-           <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
-               <h4 class="font-weight-bold mb-3">
-                   <i class="fas fa-filter mr-2"></i>Quick Filters
-               </h4>
-               
-               <div class="d-flex flex-wrap gap-2 mb-3">
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'all']) }}" 
-                      class="btn {{ $selectedFilter == 'all' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-car mr-1"></i> All Vehicles
-                   </a>
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'in']) }}" 
-                      class="btn {{ $selectedFilter == 'in' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-parking mr-1"></i> On Property
-                   </a>
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'out']) }}" 
-                      class="btn {{ $selectedFilter == 'out' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-sign-out-alt mr-1"></i> Checked Out
-                   </a>
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'temp']) }}" 
-                      class="btn {{ $selectedFilter == 'temp' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-clock mr-1"></i> Temp Out
-                   </a>
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'today']) }}" 
-                      class="btn {{ $selectedFilter == 'today' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-calendar-day mr-1"></i> Today Only
-                   </a>
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'room']) }}" 
-                      class="btn {{ $selectedFilter == 'room' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-bed mr-1"></i> With Room
-                   </a>
-                   <a href="{{ route('vehicle-security.index', ['filter' => 'pool']) }}" 
-                      class="btn {{ $selectedFilter == 'pool' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
-                       <i class="fas fa-swimming-pool mr-1"></i> Pool Access
-                   </a>
-               </div>
-               
-               <!-- Quick Search for Vehicle Number -->
-               <div class="input-group">
-                   <div class="input-group-prepend">
-                       <span class="input-group-text bg-primary text-white">
-                           <i class="fas fa-search"></i>
-                       </span>
-                   </div>
-                   <input type="text" id="quickSearch" class="form-control form-control-lg" 
-                          placeholder="Quick search by vehicle #" 
-                          onkeyup="quickSearchVehicle(this.value)">
-               </div>
-           </div>
-
            <!-- Simplified Entry Form -->
            <div class="card mb-4 bg-light shadow-sm">
                <div class="card-header bg-white">
@@ -535,6 +410,131 @@
         @endif
     </div>
     @endforeach
+</div>
+
+<!-- Dashboard Summary Section -->
+<div class="dashboard-summary mb-4 mt-4">
+    <div class="row">
+        <!-- Vehicles Card -->
+        <div class="col-md-4">
+            <div class="card dashboard-card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-car-side mr-2"></i> Vehicles Today</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-primary mb-2">{{ $stats['checkedIn'] }}</div>
+                            <div class="stat-label">On Property</div>
+                        </div>
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-info mb-2">{{ $stats['tempOut'] }}</div>
+                            <div class="stat-label">Temp Out</div>
+                        </div>
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-success mb-2">{{ $stats['checkedOut'] }}</div>
+                            <div class="stat-label">Checked Out</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Room Status Card -->
+        <div class="col-md-4">
+            <div class="card dashboard-card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-bed mr-2"></i> Room Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-around">
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-danger mb-2">{{ $stats['occupiedRooms'] }}</div>
+                            <div class="stat-label">Occupied</div>
+                        </div>
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-success mb-2">{{ $stats['availableRooms'] }}</div>
+                            <div class="stat-label">Available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Pool Usage Card -->
+        <div class="col-md-4">
+            <div class="card dashboard-card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-swimming-pool mr-2"></i> Pool Usage</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-primary mb-2">{{ $stats['poolUsage']['adults'] }}</div>
+                            <div class="stat-label">Adults</div>
+                        </div>
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-warning mb-2">{{ $stats['poolUsage']['kids'] }}</div>
+                            <div class="stat-label">Kids</div>
+                        </div>
+                        <div class="text-center px-2">
+                            <div class="stat-circle bg-info mb-2">{{ $stats['poolUsage']['adults'] + $stats['poolUsage']['kids'] }}</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Filters Section -->
+<div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+    <h4 class="font-weight-bold mb-3">
+        <i class="fas fa-filter mr-2"></i>Quick Filters
+    </h4>
+    
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a href="{{ route('vehicle-security.index', ['filter' => 'all']) }}" 
+           class="btn {{ $selectedFilter == 'all' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-car mr-1"></i> All Vehicles
+        </a>
+        <a href="{{ route('vehicle-security.index', ['filter' => 'in']) }}" 
+           class="btn {{ $selectedFilter == 'in' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-parking mr-1"></i> On Property
+        </a>
+        <a href="{{ route('vehicle-security.index', ['filter' => 'out']) }}" 
+           class="btn {{ $selectedFilter == 'out' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-sign-out-alt mr-1"></i> Checked Out
+        </a>
+        <a href="{{ route('vehicle-security.index', ['filter' => 'temp']) }}" 
+           class="btn {{ $selectedFilter == 'temp' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-clock mr-1"></i> Temp Out
+        </a>
+        <a href="{{ route('vehicle-security.index', ['filter' => 'today']) }}" 
+           class="btn {{ $selectedFilter == 'today' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-calendar-day mr-1"></i> Today Only
+        </a>
+        <a href="{{ route('vehicle-security.index', ['filter' => 'room']) }}" 
+           class="btn {{ $selectedFilter == 'room' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-bed mr-1"></i> With Room
+        </a>
+        <a href="{{ route('vehicle-security.index', ['filter' => 'pool']) }}" 
+           class="btn {{ $selectedFilter == 'pool' ? 'btn-primary' : 'btn-light' }} mr-2 mb-2">
+            <i class="fas fa-swimming-pool mr-1"></i> Pool Access
+        </a>
+    </div>
+    
+    <!-- Quick Search for Vehicle Number -->
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text bg-primary text-white">
+                <i class="fas fa-search"></i>
+            </span>
+        </div>
+        <input type="text" id="quickSearch" class="form-control form-control-lg" 
+               placeholder="Quick search by vehicle #" 
+               onkeyup="quickSearchVehicle(this.value)">
+    </div>
 </div>
 
 <!-- Floating Action Button for Quick Add -->

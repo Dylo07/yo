@@ -8,7 +8,7 @@
                         <i class="fas fa-user text-primary fa-lg"></i>
                     </div>
                     <div>
-                        <h5 class="mb-1 fw-bold">{{ $lead->customer_name ?? 'Unknown Guest' }}</h5>
+                        <h5 class="mb-1 fw-bold">{{ $lead->customer_name ?? 'නොදන්නා අමුත්තා' }}</h5>
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i>{{ $lead->inquiry_date->diffForHumans() }}
                             @if($lead->source)
@@ -29,10 +29,10 @@
                 </a>
                 <div class="mt-2 d-flex justify-content-center gap-2">
                     <a href="{{ $lead->whatsapp_link }}" target="_blank" class="btn btn-success btn-sm px-3">
-                        <i class="fab fa-whatsapp me-1"></i> WhatsApp
+                        <i class="fab fa-whatsapp me-1"></i> වට්ස්ඇප්
                     </a>
                     <a href="tel:{{ $lead->country_code }}{{ $lead->phone_number }}" class="btn btn-outline-primary btn-sm px-3">
-                        <i class="fas fa-phone me-1"></i> Call
+                        <i class="fas fa-phone me-1"></i> ඇමතුම
                     </a>
                 </div>
             </div>
@@ -65,13 +65,24 @@
                     <form action="{{ url('/leads/' . $lead->id . '/update-status') }}" method="POST">
                         @csrf
                         <select name="status" class="form-select form-select-sm fw-bold" style="min-width: 180px;" onchange="this.form.submit()">
-                            <option value="need_to_contact" {{ $lead->status->value == 'need_to_contact' ? 'selected' : '' }}>📞 Need To Contact</option>
-                            <option value="not_respond" {{ $lead->status->value == 'not_respond' ? 'selected' : '' }}>❌ Not Respond</option>
-                            <option value="called_send_details" {{ $lead->status->value == 'called_send_details' ? 'selected' : '' }}>📧 Called & Sent</option>
-                            <option value="booked" {{ $lead->status->value == 'booked' ? 'selected' : '' }}>✅ Booked</option>
-                            <option value="loss" {{ $lead->status->value == 'loss' ? 'selected' : '' }}>🚫 Loss</option>
+                            <option value="need_to_contact" {{ $lead->status->value == 'need_to_contact' ? 'selected' : '' }}>📞 සම්බන්ධ වීමට</option>
+                            <option value="not_respond" {{ $lead->status->value == 'not_respond' ? 'selected' : '' }}>❌ පිළිතුරු නැත</option>
+                            <option value="called_send_details" {{ $lead->status->value == 'called_send_details' ? 'selected' : '' }}>📧 ඇමතූ සහ යැව්වා</option>
+                            <option value="booked" {{ $lead->status->value == 'booked' ? 'selected' : '' }}>✅ වෙන්කළා</option>
+                            <option value="loss" {{ $lead->status->value == 'loss' ? 'selected' : '' }}>🚫 අහිමි</option>
                         </select>
                     </form>
+
+                    <!-- Admin Delete Button -->
+                    @if(auth()->user() && auth()->user()->checkAdmin())
+                    <form action="{{ url('/leads/' . $lead->id) }}" method="POST" class="mt-2" onsubmit="return confirm('ඔබට මෙම විමසීම මකා දැමීමට අවශ්‍යද? / Are you sure you want to delete this inquiry?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="fas fa-trash me-1"></i> මකන්න / Delete
+                        </button>
+                    </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -103,9 +114,9 @@
                 <form action="{{ url('/leads/' . $lead->id . '/add-note') }}" method="POST" class="d-flex gap-2">
                     @csrf
                     <input type="text" name="note" class="form-control form-control-sm" 
-                           placeholder="Add a quick note... (e.g., Called, no answer)" required>
+                           placeholder="සටහනක් එකතු කරන්න... (උදා: ඇමතුවා, පිළිතුරු නැත)" required>
                     <button type="submit" class="btn btn-outline-primary btn-sm px-3">
-                        <i class="fas fa-plus"></i> Add
+                        <i class="fas fa-plus"></i> එකතු
                     </button>
                 </form>
             </div>
@@ -113,7 +124,7 @@
             <!-- Recent Notes -->
             @if($lead->notes && $lead->notes->count() > 0)
             <div class="mt-3">
-                <small class="text-muted fw-bold"><i class="fas fa-history me-1"></i> Recent Updates:</small>
+                <small class="text-muted fw-bold"><i class="fas fa-history me-1"></i> මෑත යාවත්කාලීන / Recent Updates:</small>
                 <div class="mt-2" style="max-height: 120px; overflow-y: auto;">
                     @foreach($lead->notes->take(3) as $note)
                     <div class="d-flex align-items-start mb-2 ps-2 border-start border-2 border-primary">

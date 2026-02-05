@@ -89,7 +89,7 @@
                             style="background: white; border-left: 5px solid #ff9800; color: #333;">
                         <span class="d-flex align-items-center w-100">
                             <i class="fas fa-phone-alt me-3 text-warning"></i>
-                            <span class="flex-grow-1">Need To Contact</span>
+                            <span class="flex-grow-1">සම්බන්ධ වීමට / Need To Contact</span>
                             <span class="badge bg-warning text-dark rounded-pill">{{ $leadsByStatus['need_to_contact']->count() }}</span>
                         </span>
                     </button>
@@ -101,7 +101,7 @@
                         @empty
                             <div class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                <p class="mb-0">No new inquiries</p>
+                                <p class="mb-0">නව විමසීම් නැත / No new inquiries</p>
                             </div>
                         @endforelse
                     </div>
@@ -116,7 +116,7 @@
                             style="background: white; border-left: 5px solid #6c757d; color: #333;">
                         <span class="d-flex align-items-center w-100">
                             <i class="fas fa-phone-slash me-3 text-secondary"></i>
-                            <span class="flex-grow-1">Not Respond</span>
+                            <span class="flex-grow-1">පිළිතුරු නැත / Not Respond</span>
                             <span class="badge bg-secondary rounded-pill">{{ $leadsByStatus['not_respond']->count() }}</span>
                         </span>
                     </button>
@@ -128,7 +128,7 @@
                         @empty
                             <div class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                <p class="mb-0">No leads in this category</p>
+                                <p class="mb-0">මෙම කාණ්ඩයේ විමසීම් නැත / No leads in this category</p>
                             </div>
                         @endforelse
                     </div>
@@ -143,7 +143,7 @@
                             style="background: white; border-left: 5px solid #0d6efd; color: #333;">
                         <span class="d-flex align-items-center w-100">
                             <i class="fas fa-paper-plane me-3 text-primary"></i>
-                            <span class="flex-grow-1">Called & Send Details</span>
+                            <span class="flex-grow-1">ඇමතූ සහ යැව්වා / Called & Sent</span>
                             <span class="badge bg-primary rounded-pill">{{ $leadsByStatus['called_send_details']->count() }}</span>
                         </span>
                     </button>
@@ -155,7 +155,7 @@
                         @empty
                             <div class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                <p class="mb-0">No leads in this category</p>
+                                <p class="mb-0">මෙම කාණ්ඩයේ විමසීම් නැත / No leads in this category</p>
                             </div>
                         @endforelse
                     </div>
@@ -170,7 +170,7 @@
                             style="background: white; border-left: 5px solid #198754; color: #333;">
                         <span class="d-flex align-items-center w-100">
                             <i class="fas fa-check-circle me-3 text-success"></i>
-                            <span class="flex-grow-1">Booked</span>
+                            <span class="flex-grow-1">වෙන්කළා / Booked</span>
                             <span class="badge bg-success rounded-pill">{{ $leadsByStatus['booked']->count() }}</span>
                         </span>
                     </button>
@@ -182,7 +182,7 @@
                         @empty
                             <div class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                <p class="mb-0">No booked leads</p>
+                                <p class="mb-0">වෙන්කළා විමසීම් නැත / No booked leads</p>
                             </div>
                         @endforelse
                     </div>
@@ -197,7 +197,7 @@
                             style="background: white; border-left: 5px solid #dc3545; color: #333;">
                         <span class="d-flex align-items-center w-100">
                             <i class="fas fa-times-circle me-3 text-danger"></i>
-                            <span class="flex-grow-1">Loss</span>
+                            <span class="flex-grow-1">අහිමි / Loss</span>
                             <span class="badge bg-danger rounded-pill">{{ $leadsByStatus['loss']->count() }}</span>
                         </span>
                     </button>
@@ -209,7 +209,7 @@
                         @empty
                             <div class="text-center py-5 text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                <p class="mb-0">No lost leads</p>
+                                <p class="mb-0">අහිමි විමසීම් නැත / No lost leads</p>
                             </div>
                         @endforelse
                     </div>

@@ -225,7 +225,7 @@
             <div class="card border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, #00695c, #004d40);">
                 <div class="card-body text-white text-center py-4">
                     <h2 class="fw-bold mb-1">Customer Feedback</h2>
-                    <p class="mb-0 opacity-75">පාරිභෝගික ප්‍රතිපෝෂණ</p>
+                    <p class="mb-0 opacity-75">Customer Reviews</p>
                 </div>
             </div>
 
@@ -237,7 +237,7 @@
                             <i class="fas fa-phone-volume fa-lg mb-1"></i>
                             <h2 class="fw-bold mb-0">{{ $feedbacksByStatus['pending']->count() }}</h2>
                             <small class="fw-bold">NEED FEEDBACK</small>
-                            <div style="font-size: 10px;">ප්‍රතිපෝෂණ ගත යුතුයි</div>
+                            <div style="font-size: 10px;">Need to Call</div>
                         </div>
                     </div>
                 </div>
@@ -273,7 +273,7 @@
                                 style="background: white; border-left: 5px solid #ff9800; color: #333;">
                             <span class="d-flex align-items-center w-100">
                                 <i class="fas fa-phone-volume me-3 text-warning"></i>
-                                <span class="flex-grow-1">ප්‍රතිපෝෂණ ගත යුතුයි / Need Feedback</span>
+                                <span class="flex-grow-1">Need Feedback</span>
                                 <span class="badge bg-warning text-dark rounded-pill">{{ $feedbacksByStatus['pending']->count() }}</span>
                             </span>
                         </button>
@@ -285,7 +285,7 @@
                             @empty
                                 <div class="text-center py-5 text-muted">
                                     <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                    <p class="mb-0">ප්‍රතිපෝෂණ ගත යුතු අය නැත / No pending feedback</p>
+                                    <p class="mb-0">No pending feedback</p>
                                 </div>
                             @endforelse
                         </div>
@@ -300,7 +300,7 @@
                                 style="background: white; border-left: 5px solid #4caf50; color: #333;">
                             <span class="d-flex align-items-center w-100">
                                 <i class="fas fa-check-circle me-3 text-success"></i>
-                                <span class="flex-grow-1">ප්‍රතිපෝෂණ ලබාගත්තා / Feedback Taken</span>
+                                <span class="flex-grow-1">Feedback Taken</span>
                                 <span class="badge bg-success rounded-pill">{{ $feedbacksByStatus['completed']->count() }}</span>
                             </span>
                         </button>
@@ -312,7 +312,7 @@
                             @empty
                                 <div class="text-center py-5 text-muted">
                                     <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                                    <p class="mb-0">ප්‍රතිපෝෂණ ලබාගත් අය නැත / No completed feedback</p>
+                                    <p class="mb-0">No completed feedback</p>
                                 </div>
                             @endforelse
                         </div>
@@ -750,7 +750,7 @@ document.querySelectorAll('.star-icon').forEach(star => {
                 <div class="modal-header bg-info text-white py-3">
                     <h4 class="modal-title">
                         <i class="fas fa-plus-circle me-2"></i>Add Feedback Entry
-                        <small class="d-block" style="font-size: 14px;">ප්‍රතිපෝෂණ ඇතුළත් කිරීම එකතු කරන්න</small>
+                        <small class="d-block" style="font-size: 14px;">Add Feedback Entry</small>
                     </h4>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -808,7 +808,7 @@ document.querySelectorAll('.star-icon').forEach(star => {
                 <div class="modal-header bg-primary text-white py-3">
                     <h4 class="modal-title">
                         <i class="fas fa-star me-2"></i>Record Feedback
-                        <small class="d-block" style="font-size: 14px;">ප්‍රතිපෝෂණ සටහන් කරන්න</small>
+                        <small class="d-block" style="font-size: 14px;">Record Feedback</small>
                     </h4>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -832,7 +832,7 @@ document.querySelectorAll('.star-icon').forEach(star => {
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">
-                            <i class="fas fa-comment text-info me-1"></i> Feedback Notes / ප්‍රතිපෝෂණ සටහන්
+                            <i class="fas fa-comment text-info me-1"></i> Feedback Notes
                         </label>
                         <textarea name="feedback_notes" class="form-control" rows="3" placeholder="What did the customer say? / පාරිභෝගිකයා කුමක් කීවේද?"></textarea>
                     </div>

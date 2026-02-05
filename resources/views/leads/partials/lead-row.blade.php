@@ -8,7 +8,7 @@
                         <i class="fas fa-user text-primary fa-lg"></i>
                     </div>
                     <div>
-                        <h5 class="mb-1 fw-bold">{{ $lead->customer_name ?? 'නොදන්නා අමුත්තා' }}</h5>
+                        <h5 class="mb-1 fw-bold">{{ $lead->customer_name ?? 'Unknown Guest' }}</h5>
                         <small class="text-muted">
                             <i class="fas fa-clock me-1"></i>{{ $lead->inquiry_date->diffForHumans() }}
                             @if($lead->source)

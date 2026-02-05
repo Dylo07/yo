@@ -44,7 +44,7 @@
                         <!-- Record Feedback Button -->
                         <button type="button" class="btn btn-primary btn-lg mb-2" 
                                 onclick="openRecordFeedbackModal({{ $feedback->id }}, '{{ $feedback->customer_name }}', '{{ $feedback->formatted_phone }}')">
-                            <i class="fas fa-star me-1"></i> ප්‍රතිපෝෂණ ගන්න / Take Feedback
+                            <i class="fas fa-star me-1"></i> Take Feedback
                         </button>
                     @else
                         <!-- Show Rating -->
@@ -70,11 +70,11 @@
                     <!-- Admin Delete Button -->
                     @if(auth()->user() && auth()->user()->checkAdmin())
                     <form action="{{ route('feedback.destroy', $feedback) }}" method="POST" class="mt-2" 
-                          onsubmit="return confirm('ඔබට මෙම ප්‍රතිපෝෂණය මකා දැමීමට අවශ්‍යද? / Are you sure you want to delete this?');">
+                          onsubmit="return confirm('Are you sure you want to delete this?');">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-outline-danger btn-sm">
-                            <i class="fas fa-trash me-1"></i> මකන්න / Delete
+                            <i class="fas fa-trash me-1"></i> Delete
                         </button>
                     </form>
                     @endif

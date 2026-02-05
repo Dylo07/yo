@@ -562,7 +562,8 @@ class LeadController extends Controller
             ->get();
 
         foreach ($completedBookings as $booking) {
-            $exists = CustomerFeedback::where('booking_id', $booking->id)->exists();
+            // Check including soft-deleted entries so we don't re-import deleted ones
+            $exists = CustomerFeedback::withTrashed()->where('booking_id', $booking->id)->exists();
 
             if (!$exists) {
                 CustomerFeedback::create([

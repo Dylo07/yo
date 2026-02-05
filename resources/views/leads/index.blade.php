@@ -713,31 +713,45 @@ function openRecordFeedbackModal(feedbackId, customerName, phone) {
     document.getElementById('modal_customer_name').textContent = customerName;
     document.getElementById('modal_phone').textContent = phone;
     
-    // Reset stars
-    document.querySelectorAll('.star-icon').forEach(star => {
+    // Reset stars in the modal
+    const modal = document.getElementById('recordFeedbackModal');
+    modal.querySelectorAll('.star-icon').forEach(star => {
         star.classList.remove('active');
         star.classList.add('text-muted');
+        star.style.color = '#6c757d';
     });
-    document.querySelectorAll('input[name="rating"]').forEach(input => input.checked = false);
+    modal.querySelectorAll('input[name="rating"]').forEach(input => input.checked = false);
     
-    new bootstrap.Modal(document.getElementById('recordFeedbackModal')).show();
+    new bootstrap.Modal(modal).show();
 }
 
-// Star rating interaction
-document.querySelectorAll('.star-icon').forEach(star => {
-    star.addEventListener('click', function() {
-        const rating = this.dataset.rating;
-        document.querySelectorAll('.star-icon').forEach((s, index) => {
+// Star rating interaction - using event delegation for better reliability
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('star-icon')) {
+        const clickedStar = e.target;
+        const rating = parseInt(clickedStar.dataset.rating);
+        const modal = document.getElementById('recordFeedbackModal');
+        const stars = modal.querySelectorAll('.star-icon');
+        
+        // Update visual state of all stars
+        stars.forEach((star, index) => {
             if (index < rating) {
-                s.classList.remove('text-muted');
-                s.classList.add('active');
+                star.classList.remove('text-muted');
+                star.classList.add('active');
+                star.style.color = '#ffc107';
             } else {
-                s.classList.add('text-muted');
-                s.classList.remove('active');
+                star.classList.add('text-muted');
+                star.classList.remove('active');
+                star.style.color = '#6c757d';
             }
         });
-        document.querySelector(`input[name="rating"][value="${rating}"]`).checked = true;
-    });
+        
+        // Check the corresponding radio button
+        const radioBtn = modal.querySelector(`input[name="rating"][value="${rating}"]`);
+        if (radioBtn) {
+            radioBtn.checked = true;
+        }
+    }
 });
 </script>
 

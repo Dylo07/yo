@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <circle cx="32" cy="32" r="30" fill="#1a1a2e" stroke="#16213e" stroke-width="2"/>
+  <g fill="#ffffff">
+    <!-- People icons -->
+    <circle cx="20" cy="22" r="5"/>
+    <path d="M12 35c0-4.4 3.6-8 8-8s8 3.6 8 8v2H12v-2z"/>
+    <circle cx="44" cy="22" r="5"/>
+    <path d="M36 35c0-4.4 3.6-8 8-8s8 3.6 8 8v2H36v-2z"/>
+    <!-- Connection lines -->
+    <path d="M25 30h14" stroke="#ffffff" stroke-width="2" stroke-dasharray="3,2"/>
+    <!-- Phone/Message icons -->
+    <rect x="18" y="42" width="12" height="8" rx="1" fill="#4ade80"/>
+    <rect x="34" y="42" width="12" height="8" rx="1" fill="#60a5fa"/>
+    <!-- WhatsApp symbol -->
+    <path d="M24 46c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" fill="#1a1a2e"/>
+    <!-- Message symbol -->
+    <path d="M38 45h4M38 48h6" stroke="#1a1a2e" stroke-width="1"/>
+  </g>
+</svg>

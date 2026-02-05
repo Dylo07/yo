@@ -860,3 +860,28 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/welfare-fund/add', [App\Http\Controllers\WelfareFundController::class, 'add'])->name('welfare-fund.add');
     Route::post('/welfare-fund/deduct', [App\Http\Controllers\WelfareFundController::class, 'deduct'])->name('welfare-fund.deduct');
 });
+
+// Lead Management (Mini-CRM) Routes
+Route::middleware(['auth'])->prefix('leads')->name('leads.')->group(function () {
+    // Main CRUD
+    Route::get('/', [App\Http\Controllers\LeadController::class, 'index'])->name('index');
+    Route::post('/', [App\Http\Controllers\LeadController::class, 'store'])->name('store');
+    Route::get('/{lead}', [App\Http\Controllers\LeadController::class, 'show'])->name('show');
+    Route::put('/{lead}', [App\Http\Controllers\LeadController::class, 'update'])->name('update');
+    Route::delete('/{lead}', [App\Http\Controllers\LeadController::class, 'destroy'])->name('destroy');
+    
+    // Quick add (minimal form)
+    Route::post('/quick-add', [App\Http\Controllers\LeadController::class, 'quickAdd'])->name('quick-add');
+    
+    // Status & Actions
+    Route::post('/{lead}/update-status', [App\Http\Controllers\LeadController::class, 'updateStatus'])->name('update-status');
+    Route::post('/{lead}/add-note', [App\Http\Controllers\LeadController::class, 'addNote'])->name('add-note');
+    Route::post('/{lead}/record-call', [App\Http\Controllers\LeadController::class, 'recordCall'])->name('record-call');
+    Route::post('/{lead}/assign', [App\Http\Controllers\LeadController::class, 'assign'])->name('assign');
+    Route::post('/{lead}/schedule-followup', [App\Http\Controllers\LeadController::class, 'scheduleFollowUp'])->name('schedule-followup');
+    Route::post('/{lead}/convert', [App\Http\Controllers\LeadController::class, 'convertToBooking'])->name('convert');
+    
+    // API endpoints
+    Route::get('/api/stats', [App\Http\Controllers\LeadController::class, 'getStats'])->name('api.stats');
+    Route::get('/api/calendar', [App\Http\Controllers\LeadController::class, 'getCalendarData'])->name('api.calendar');
+});

@@ -88,7 +88,7 @@ class CustomerFeedbackController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return redirect()->route('feedback.index')->with('success', 'Feedback entry added successfully!');
+        return redirect()->route('leads.index')->with('success', 'Feedback entry added successfully!');
     }
 
     /**
@@ -107,7 +107,7 @@ class CustomerFeedbackController extends Controller
             auth()->id()
         );
 
-        return redirect()->route('feedback.index')->with('success', 'Feedback recorded successfully!');
+        return redirect()->route('leads.index')->with('success', 'Feedback recorded successfully!');
     }
 
     /**
@@ -116,6 +116,6 @@ class CustomerFeedbackController extends Controller
     public function destroy(CustomerFeedback $feedback)
     {
         $feedback->delete();
-        return redirect()->route('feedback.index')->with('success', 'Feedback entry deleted!');
+        return redirect()->route('leads.index')->with('success', 'Feedback entry deleted!');
     }
 }

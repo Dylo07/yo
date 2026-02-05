@@ -3,72 +3,6 @@
 @section('content')
 <div class="container-fluid px-3">
     
-    <!-- SIMPLE HEADER with BIG ADD BUTTON -->
-    <div class="d-flex justify-content-between align-items-center mb-4 py-3">
-        <h4 class="mb-0">
-            <i class="fas fa-users text-primary"></i> 
-            <strong>Inquiries</strong>
-            <small class="text-muted d-block" style="font-size: 14px;">විමසීම් / Guest Inquiries</small>
-        </h4>
-        <button class="btn btn-success btn-lg px-4 py-3" data-bs-toggle="modal" data-bs-target="#addLeadModal">
-            <i class="fas fa-plus fa-lg me-2"></i> 
-            <span class="fw-bold">ADD NEW</span>
-            <small class="d-block">අලුත් එකක් එකතු කරන්න</small>
-        </button>
-    </div>
-
-    <!-- BIG STAT CARDS - Easy to understand -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <a href="{{ route('leads.index', ['filter' => 'need_to_contact']) }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
-                    <div class="card-body text-white text-center py-4">
-                        <i class="fas fa-phone-alt fa-2x mb-2"></i>
-                        <h1 class="display-4 fw-bold mb-0">{{ $stats['pending_calls'] }}</h1>
-                        <div class="fw-bold">NEED TO CONTACT</div>
-                        <small>සම්බන්ධ වීමට</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="{{ route('leads.index', ['filter' => 'today']) }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #2196f3, #1976d2);">
-                    <div class="card-body text-white text-center py-4">
-                        <i class="fas fa-calendar-day fa-2x mb-2"></i>
-                        <h1 class="display-4 fw-bold mb-0">{{ $stats['total_today'] }}</h1>
-                        <div class="fw-bold">TODAY</div>
-                        <small>අද</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="{{ route('leads.index', ['filter' => 'overdue']) }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f44336, #d32f2f);">
-                    <div class="card-body text-white text-center py-4">
-                        <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-                        <h1 class="display-4 fw-bold mb-0">{{ $stats['overdue'] }}</h1>
-                        <div class="fw-bold">LATE!</div>
-                        <small>ප්‍රමාදයි</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-6 col-md-3">
-            <a href="{{ route('leads.index', ['filter' => 'booked']) }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4caf50, #388e3c);">
-                    <div class="card-body text-white text-center py-4">
-                        <i class="fas fa-check-circle fa-2x mb-2"></i>
-                        <h1 class="display-4 fw-bold mb-0">{{ $stats['won_this_month'] }}</h1>
-                        <div class="fw-bold">BOOKED</div>
-                        <small>වෙන්කළා</small>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
     <!-- Alerts -->
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show fs-5">
@@ -77,9 +11,73 @@
         </div>
     @endif
 
-    <!-- ACCORDION STYLE CATEGORIES -->
-    <div class="accordion-container">
-        <div class="accordion" id="leadsAccordion">
+    <!-- TWO COLUMN LAYOUT -->
+    <div class="row">
+        <!-- LEFT COLUMN: INQUIRIES -->
+        <div class="col-lg-6 mb-4">
+            <!-- Inquiries Header -->
+            <div class="card border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, #37474f, #263238);">
+                <div class="card-body text-white text-center py-4">
+                    <h2 class="fw-bold mb-1">Inquiries</h2>
+                    <p class="mb-0 opacity-75">විමසීම් / Guest Inquiries</p>
+                </div>
+            </div>
+
+            <!-- Inquiries Stats -->
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
+                        <div class="card-body text-white text-center py-3">
+                            <i class="fas fa-phone-alt fa-lg mb-1"></i>
+                            <h2 class="fw-bold mb-0">{{ $stats['pending_calls'] }}</h2>
+                            <small class="fw-bold">NEED TO CONTACT</small>
+                            <div style="font-size: 10px;">සම්බන්ධ වීමට</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #2196f3, #1976d2);">
+                        <div class="card-body text-white text-center py-3">
+                            <i class="fas fa-calendar-day fa-lg mb-1"></i>
+                            <h2 class="fw-bold mb-0">{{ $stats['total_today'] }}</h2>
+                            <small class="fw-bold">TODAY</small>
+                            <div style="font-size: 10px;">අද</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f44336, #d32f2f);">
+                        <div class="card-body text-white text-center py-3">
+                            <i class="fas fa-exclamation-circle fa-lg mb-1"></i>
+                            <h2 class="fw-bold mb-0">{{ $stats['overdue'] }}</h2>
+                            <small class="fw-bold">LATE!</small>
+                            <div style="font-size: 10px;">ප්‍රමාදයි</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4caf50, #388e3c);">
+                        <div class="card-body text-white text-center py-3">
+                            <i class="fas fa-check-circle fa-lg mb-1"></i>
+                            <h2 class="fw-bold mb-0">{{ $stats['won_this_month'] }}</h2>
+                            <small class="fw-bold">BOOKED</small>
+                            <div style="font-size: 10px;">වෙන්කළා</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add New Inquiry Button -->
+            <div class="mb-3">
+                <button class="btn btn-success btn-lg w-100 py-3" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+                    <i class="fas fa-plus fa-lg me-2"></i> 
+                    <span class="fw-bold">ADD NEW INQUIRY</span>
+                    <small class="d-block">අලුත් විමසීමක් එකතු කරන්න</small>
+                </button>
+            </div>
+
+            <!-- Inquiries Accordion -->
+            <div class="accordion" id="leadsAccordion">
             
             <!-- Need To Contact -->
             <div class="accordion-item mb-3 shadow-sm border-0 rounded overflow-hidden">
@@ -215,8 +213,113 @@
                     </div>
                 </div>
             </div>
-
         </div>
+        <!-- END LEFT COLUMN -->
+
+        <!-- RIGHT COLUMN: CUSTOMER FEEDBACK -->
+        <div class="col-lg-6 mb-4">
+            <!-- Feedback Header -->
+            <div class="card border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, #00695c, #004d40);">
+                <div class="card-body text-white text-center py-4">
+                    <h2 class="fw-bold mb-1">Customer Feedback</h2>
+                    <p class="mb-0 opacity-75">පාරිභෝගික ප්‍රතිපෝෂණ</p>
+                </div>
+            </div>
+
+            <!-- Feedback Stats -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
+                        <div class="card-body text-white text-center py-3">
+                            <i class="fas fa-phone-volume fa-lg mb-1"></i>
+                            <h2 class="fw-bold mb-0">{{ $feedbacksByStatus['pending']->count() }}</h2>
+                            <small class="fw-bold">NEED FEEDBACK</small>
+                            <div style="font-size: 10px;">ප්‍රතිපෝෂණ ගත යුතුයි</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4caf50, #388e3c);">
+                        <div class="card-body text-white text-center py-3">
+                            <i class="fas fa-check-circle fa-lg mb-1"></i>
+                            <h2 class="fw-bold mb-0">{{ $feedbacksByStatus['completed']->count() }}</h2>
+                            <small class="fw-bold">COMPLETED</small>
+                            <div style="font-size: 10px;">ලබාගත්තා</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Feedback Manually Button -->
+            <div class="mb-3">
+                <button class="btn btn-info btn-lg w-100 py-3 text-white" data-bs-toggle="modal" data-bs-target="#addFeedbackModal">
+                    <i class="fas fa-plus fa-lg me-2"></i> 
+                    <span class="fw-bold">ADD MANUALLY</span>
+                    <small class="d-block">අතින් එකතු කරන්න</small>
+                </button>
+            </div>
+
+            <!-- Feedback Accordion -->
+            <div class="accordion" id="feedbackAccordion">
+                
+                <!-- Need to Take Feedback -->
+                <div class="accordion-item mb-3 shadow-sm border-0 rounded overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button py-3 px-4 fw-bold" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse_feedback_pending"
+                                style="background: white; border-left: 5px solid #ff9800; color: #333;">
+                            <span class="d-flex align-items-center w-100">
+                                <i class="fas fa-phone-volume me-3 text-warning"></i>
+                                <span class="flex-grow-1">ප්‍රතිපෝෂණ ගත යුතුයි / Need Feedback</span>
+                                <span class="badge bg-warning text-dark rounded-pill">{{ $feedbacksByStatus['pending']->count() }}</span>
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="collapse_feedback_pending" class="accordion-collapse collapse show" data-bs-parent="#feedbackAccordion">
+                        <div class="accordion-body p-0 bg-white">
+                            @forelse($feedbacksByStatus['pending'] as $feedback)
+                                @include('feedback.partials.feedback-row', ['feedback' => $feedback])
+                            @empty
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
+                                    <p class="mb-0">ප්‍රතිපෝෂණ ගත යුතු අය නැත / No pending feedback</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feedback Taken -->
+                <div class="accordion-item mb-3 shadow-sm border-0 rounded overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed py-3 px-4 fw-bold" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse_feedback_completed"
+                                style="background: white; border-left: 5px solid #4caf50; color: #333;">
+                            <span class="d-flex align-items-center w-100">
+                                <i class="fas fa-check-circle me-3 text-success"></i>
+                                <span class="flex-grow-1">ප්‍රතිපෝෂණ ලබාගත්තා / Feedback Taken</span>
+                                <span class="badge bg-success rounded-pill">{{ $feedbacksByStatus['completed']->count() }}</span>
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="collapse_feedback_completed" class="accordion-collapse collapse" data-bs-parent="#feedbackAccordion">
+                        <div class="accordion-body p-0 bg-white">
+                            @forelse($feedbacksByStatus['completed'] as $feedback)
+                                @include('feedback.partials.feedback-row', ['feedback' => $feedback])
+                            @empty
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
+                                    <p class="mb-0">ප්‍රතිපෝෂණ ලබාගත් අය නැත / No completed feedback</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!-- END RIGHT COLUMN -->
+
     </div>
 </div>
 
@@ -600,5 +703,157 @@ document.getElementById('actionForm').addEventListener('submit', function(e) {
     this.action = '/leads/' + leadId + '/update-status';
     // Let the form submit normally (no preventDefault)
 });
+
+// Feedback Modal Functions
+function openRecordFeedbackModal(feedbackId, customerName, phone) {
+    document.getElementById('recordFeedbackForm').action = '/feedback/' + feedbackId + '/complete';
+    document.getElementById('modal_customer_name').textContent = customerName;
+    document.getElementById('modal_phone').textContent = phone;
+    
+    // Reset stars
+    document.querySelectorAll('.star-icon').forEach(star => {
+        star.classList.remove('active');
+        star.classList.add('text-muted');
+    });
+    document.querySelectorAll('input[name="rating"]').forEach(input => input.checked = false);
+    
+    new bootstrap.Modal(document.getElementById('recordFeedbackModal')).show();
+}
+
+// Star rating interaction
+document.querySelectorAll('.star-icon').forEach(star => {
+    star.addEventListener('click', function() {
+        const rating = this.dataset.rating;
+        document.querySelectorAll('.star-icon').forEach((s, index) => {
+            if (index < rating) {
+                s.classList.remove('text-muted');
+                s.classList.add('active');
+            } else {
+                s.classList.add('text-muted');
+                s.classList.remove('active');
+            }
+        });
+        document.querySelector(`input[name="rating"][value="${rating}"]`).checked = true;
+    });
+});
 </script>
+
+<!-- ============ ADD FEEDBACK MODAL ============ -->
+<div class="modal fade" id="addFeedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('feedback.store') }}" method="POST">
+                @csrf
+                <div class="modal-header bg-info text-white py-3">
+                    <h4 class="modal-title">
+                        <i class="fas fa-plus-circle me-2"></i>Add Feedback Entry
+                        <small class="d-block" style="font-size: 14px;">ප්‍රතිපෝෂණ ඇතුළත් කිරීම එකතු කරන්න</small>
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-user text-primary me-1"></i> Customer Name / පාරිභෝගික නම
+                        </label>
+                        <input type="text" name="customer_name" class="form-control form-control-lg" placeholder="Enter customer name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-phone text-success me-1"></i> Phone Number / දුරකථන අංකය <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" name="contact_number" class="form-control form-control-lg" placeholder="0771234567" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-calendar-check text-info me-1"></i> Function Type / උත්සව වර්ගය
+                        </label>
+                        <select name="function_type" class="form-select form-select-lg">
+                            <option value="">Select / තෝරන්න</option>
+                            <option value="Wedding">Wedding / මංගල උත්සවය</option>
+                            <option value="Birthday">Birthday / උපන්දින සාදය</option>
+                            <option value="Corporate">Corporate / ආයතනික</option>
+                            <option value="Room Stay">Room Stay / කාමර නවාතැන</option>
+                            <option value="Day Out">Day Out / දවසේ සංචාරය</option>
+                            <option value="Other">Other / වෙනත්</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-calendar text-warning me-1"></i> Function Date / උත්සව දිනය <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="function_date" class="form-control form-control-lg" value="{{ date('Y-m-d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel / අවලංගු</button>
+                    <button type="submit" class="btn btn-info btn-lg text-white">
+                        <i class="fas fa-plus me-1"></i> Add / එකතු කරන්න
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============ RECORD FEEDBACK MODAL ============ -->
+<div class="modal fade" id="recordFeedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="recordFeedbackForm" method="POST">
+                @csrf
+                <div class="modal-header bg-primary text-white py-3">
+                    <h4 class="modal-title">
+                        <i class="fas fa-star me-2"></i>Record Feedback
+                        <small class="d-block" style="font-size: 14px;">ප්‍රතිපෝෂණ සටහන් කරන්න</small>
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        <strong>Customer:</strong> <span id="modal_customer_name"></span><br>
+                        <strong>Phone:</strong> <span id="modal_phone"></span>
+                    </p>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-star text-warning me-1"></i> Rating / ශ්‍රේණිගත කිරීම <span class="text-danger">*</span>
+                        </label>
+                        <div class="star-rating d-flex gap-2 justify-content-center py-3">
+                            @for($i = 1; $i <= 5; $i++)
+                            <label class="star-label">
+                                <input type="radio" name="rating" value="{{ $i }}" class="d-none" required>
+                                <i class="fas fa-star fa-3x text-muted star-icon" data-rating="{{ $i }}"></i>
+                            </label>
+                            @endfor
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-comment text-info me-1"></i> Feedback Notes / ප්‍රතිපෝෂණ සටහන්
+                        </label>
+                        <textarea name="feedback_notes" class="form-control" rows="3" placeholder="What did the customer say? / පාරිභෝගිකයා කුමක් කීවේද?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel / අවලංගු</button>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-check me-1"></i> Save / සුරකින්න
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.star-icon {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.star-icon:hover,
+.star-icon.active {
+    color: #ffc107 !important;
+    transform: scale(1.1);
+}
+</style>
 @endsection

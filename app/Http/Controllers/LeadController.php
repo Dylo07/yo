@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\LeadNote;
 use App\Models\User;
 use App\Models\Booking;
+use App\Models\CustomerFeedback;
 use App\Enums\LeadStatus;
 use App\Enums\LeadSource;
 use App\Enums\LostReason;
@@ -117,9 +118,23 @@ class LeadController extends Controller
             'loss' => Lead::with(['assignee', 'notes' => fn($q) => $q->latest('created_at')->with('user')])->where('status', LeadStatus::Loss)->orderBy('created_at', 'desc')->get(),
         ];
 
+        // Import completed bookings for feedback and get feedback data
+        $this->importCompletedBookingsForFeedback();
+        $feedbacksByStatus = [
+            'pending' => CustomerFeedback::with(['booking', 'feedbackTakenByUser', 'createdByUser'])
+                ->where('status', 'pending')
+                ->orderBy('function_date', 'desc')
+                ->get(),
+            'completed' => CustomerFeedback::with(['booking', 'feedbackTakenByUser', 'createdByUser'])
+                ->where('status', 'completed')
+                ->orderBy('feedback_taken_at', 'desc')
+                ->get(),
+        ];
+
         return view('leads.index', [
             'leads' => $leads,
             'leadsByStatus' => $leadsByStatus,
+            'feedbacksByStatus' => $feedbacksByStatus,
             'stats' => $stats,
             'users' => $users,
             'sources' => LeadSource::toArray(),
@@ -530,5 +545,36 @@ class LeadController extends Controller
             'message' => 'Lead added!',
             'lead' => $lead,
         ]);
+    }
+
+    /**
+     * Import completed bookings as pending feedback entries.
+     * Only imports bookings that ended from today going back 5 days.
+     */
+    private function importCompletedBookingsForFeedback()
+    {
+        $today = Carbon::today();
+        $startDate = $today->copy()->subDays(5);
+
+        $completedBookings = Booking::whereDate('end', '>=', $startDate)
+            ->whereDate('end', '<=', $today)
+            ->whereNotNull('contact_number')
+            ->get();
+
+        foreach ($completedBookings as $booking) {
+            $exists = CustomerFeedback::where('booking_id', $booking->id)->exists();
+
+            if (!$exists) {
+                CustomerFeedback::create([
+                    'booking_id' => $booking->id,
+                    'customer_name' => $booking->name ?? 'Unknown',
+                    'contact_number' => $booking->contact_number,
+                    'function_type' => $booking->function_type,
+                    'function_date' => $booking->end ?? $booking->start,
+                    'status' => 'pending',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+        }
     }
 }

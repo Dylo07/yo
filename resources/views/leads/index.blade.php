@@ -213,6 +213,9 @@
                     </div>
                 </div>
             </div>
+
+            </div>
+            <!-- Close Inquiries Accordion -->
         </div>
         <!-- END LEFT COLUMN -->
 

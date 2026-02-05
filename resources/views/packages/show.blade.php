@@ -41,12 +41,18 @@
                                 <h5>Description</h5>
                                 <p>{{ $package->description }}</p>
                             </div>
-                            @if($package->menu_items)
+                            @if($package->menu_items && count($package->menu_items) > 0)
                             <div class="mb-4">
                                 <h5>Menu Items</h5>
                                 <ul class="list-group">
                                     @foreach($package->menu_items as $item)
-                                        <li class="list-group-item">{{ $item }}</li>
+                                        <li class="list-group-item">
+                                            @if(is_array($item) && isset($item['topic']))
+                                                <strong>{{ $item['topic'] }}:</strong> {{ $item['description'] ?? '' }}
+                                            @else
+                                                {{ $item }}
+                                            @endif
+                                        </li>
                                     @endforeach
                                 </ul>
                             </div>

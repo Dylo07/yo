@@ -23,17 +23,28 @@ class PackageController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'menu_items' => 'nullable|string',
+            'menu_topics' => 'nullable|array',
+            'menu_topics.*' => 'nullable|string|max:255',
+            'menu_descriptions' => 'nullable|array',
+            'menu_descriptions.*' => 'nullable|string',
             'additional_info' => 'nullable|string',
             'image' => 'nullable|image|max:2048'
         ]);
 
-        // Convert menu items from textarea to array
-        if (!empty($validated['menu_items'])) {
-            $validated['menu_items'] = array_filter(
-                explode("\n", str_replace("\r", "", $validated['menu_items']))
-            );
+        // Convert menu items from topic/description arrays to structured array
+        $menuItems = [];
+        if (!empty($request->menu_topics)) {
+            foreach ($request->menu_topics as $index => $topic) {
+                $description = $request->menu_descriptions[$index] ?? '';
+                if (!empty($topic) || !empty($description)) {
+                    $menuItems[] = [
+                        'topic' => trim($topic ?? ''),
+                        'description' => trim($description ?? '')
+                    ];
+                }
+            }
         }
+        $validated['menu_items'] = !empty($menuItems) ? $menuItems : null;
 
         // Convert additional info from textarea to array
         if (!empty($validated['additional_info'])) {
@@ -76,17 +87,28 @@ class PackageController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'menu_items' => 'nullable|string',
+            'menu_topics' => 'nullable|array',
+            'menu_topics.*' => 'nullable|string|max:255',
+            'menu_descriptions' => 'nullable|array',
+            'menu_descriptions.*' => 'nullable|string',
             'additional_info' => 'nullable|string',
             'image' => 'nullable|image|max:2048'
         ]);
 
-        // Convert menu items from textarea to array
-        if (!empty($validated['menu_items'])) {
-            $validated['menu_items'] = array_filter(
-                explode("\n", str_replace("\r", "", $validated['menu_items']))
-            );
+        // Convert menu items from topic/description arrays to structured array
+        $menuItems = [];
+        if (!empty($request->menu_topics)) {
+            foreach ($request->menu_topics as $index => $topic) {
+                $description = $request->menu_descriptions[$index] ?? '';
+                if (!empty($topic) || !empty($description)) {
+                    $menuItems[] = [
+                        'topic' => trim($topic ?? ''),
+                        'description' => trim($description ?? '')
+                    ];
+                }
+            }
         }
+        $validated['menu_items'] = !empty($menuItems) ? $menuItems : null;
 
         // Convert additional info from textarea to array
         if (!empty($validated['additional_info'])) {

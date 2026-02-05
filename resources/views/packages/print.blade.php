@@ -106,12 +106,18 @@
         <div>{{ $package->description }}</div>
     </div>
 
-    @if($package->menu_items)
+    @if($package->menu_items && count($package->menu_items) > 0)
     <div class="menu-items">
         <div class="section-title">Menu Items</div>
         <ul>
             @foreach($package->menu_items as $item)
-                <li>{{ $item }}</li>
+                <li>
+                    @if(is_array($item) && isset($item['topic']))
+                        <strong>{{ $item['topic'] }}:</strong> {{ $item['description'] ?? '' }}
+                    @else
+                        {{ $item }}
+                    @endif
+                </li>
             @endforeach
         </ul>
     </div>

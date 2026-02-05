@@ -178,12 +178,28 @@
                             <label class="form-label">Package Image</label>
                             <input type="file" name="image" class="form-control" accept="image/*">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Menu Items (Optional)</label>
-                            <textarea name="menu_items" class="form-control" rows="4" 
-                                    placeholder="Enter each item on a new line"></textarea>
+                            <div id="menuItemsContainer">
+                                <div class="menu-item-row mb-2 row">
+                                    <div class="col-md-4">
+                                        <input type="text" name="menu_topics[]" class="form-control" placeholder="Topic (e.g., Welcome Drink)">
+                                    </div>
+                                    <div class="col-md-7">
+                                        <input type="text" name="menu_descriptions[]" class="form-control" placeholder="Description (e.g., Orange Juice, Lime Juice)">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-menu-item" style="display:none;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="addMenuItemBtn">
+                                <i class="fas fa-plus me-1"></i> Add Menu Item
+                            </button>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Additional Information (Optional)</label>
                             <textarea name="additional_info" class="form-control" rows="4" 
                                     placeholder="Enter in key: value format&#10;Example:&#10;Duration: 3 hours&#10;Max Guests: 10"></textarea>
@@ -246,6 +262,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    }
+
+    // Dynamic Menu Items functionality
+    const menuItemsContainer = document.getElementById('menuItemsContainer');
+    const addMenuItemBtn = document.getElementById('addMenuItemBtn');
+    
+    if (addMenuItemBtn && menuItemsContainer) {
+        addMenuItemBtn.addEventListener('click', function() {
+            const newRow = document.createElement('div');
+            newRow.className = 'menu-item-row mb-2 row';
+            newRow.innerHTML = `
+                <div class="col-md-4">
+                    <input type="text" name="menu_topics[]" class="form-control" placeholder="Topic (e.g., Welcome Drink)">
+                </div>
+                <div class="col-md-7">
+                    <input type="text" name="menu_descriptions[]" class="form-control" placeholder="Description (e.g., Orange Juice, Lime Juice)">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-menu-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            menuItemsContainer.appendChild(newRow);
+            updateRemoveButtons();
+        });
+
+        menuItemsContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-menu-item')) {
+                e.target.closest('.menu-item-row').remove();
+                updateRemoveButtons();
+            }
+        });
+
+        function updateRemoveButtons() {
+            const rows = menuItemsContainer.querySelectorAll('.menu-item-row');
+            rows.forEach((row, index) => {
+                const removeBtn = row.querySelector('.remove-menu-item');
+                if (removeBtn) {
+                    removeBtn.style.display = rows.length > 1 ? 'block' : 'none';
+                }
+            });
+        }
     }
 });
 </script>

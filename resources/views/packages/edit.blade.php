@@ -71,15 +71,51 @@
                         <small class="text-muted">Leave empty to keep current image</small>
                     </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-12 mb-3">
                         <label class="form-label">Menu Items (Optional)</label>
-                        <textarea name="menu_items" 
-                                  class="form-control" 
-                                  rows="4" 
-                                  placeholder="Enter each item on a new line">{{ $package->menu_items_as_string }}</textarea>
+                        <div id="editMenuItemsContainer">
+                            @if($package->menu_items && is_array($package->menu_items) && count($package->menu_items) > 0)
+                                @foreach($package->menu_items as $index => $item)
+                                    <div class="menu-item-row mb-2 row">
+                                        <div class="col-md-4">
+                                            <input type="text" name="menu_topics[]" class="form-control" 
+                                                   placeholder="Topic (e.g., Welcome Drink)"
+                                                   value="{{ is_array($item) ? ($item['topic'] ?? '') : '' }}">
+                                        </div>
+                                        <div class="col-md-7">
+                                            <input type="text" name="menu_descriptions[]" class="form-control" 
+                                                   placeholder="Description (e.g., Orange Juice, Lime Juice)"
+                                                   value="{{ is_array($item) ? ($item['description'] ?? '') : $item }}">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <button type="button" class="btn btn-danger btn-sm remove-menu-item" style="{{ count($package->menu_items) > 1 ? '' : 'display:none;' }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="menu-item-row mb-2 row">
+                                    <div class="col-md-4">
+                                        <input type="text" name="menu_topics[]" class="form-control" placeholder="Topic (e.g., Welcome Drink)">
+                                    </div>
+                                    <div class="col-md-7">
+                                        <input type="text" name="menu_descriptions[]" class="form-control" placeholder="Description (e.g., Orange Juice, Lime Juice)">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-menu-item" style="display:none;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="editAddMenuItemBtn">
+                            <i class="fas fa-plus me-1"></i> Add Menu Item
+                        </button>
                     </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-12 mb-3">
                         <label class="form-label">Additional Information (Optional)</label>
                         <textarea name="additional_info" 
                                   class="form-control" 
@@ -131,6 +167,52 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
     });
+
+    // Dynamic Menu Items functionality for Edit page
+    const editMenuItemsContainer = document.getElementById('editMenuItemsContainer');
+    const editAddMenuItemBtn = document.getElementById('editAddMenuItemBtn');
+    
+    if (editAddMenuItemBtn && editMenuItemsContainer) {
+        editAddMenuItemBtn.addEventListener('click', function() {
+            const newRow = document.createElement('div');
+            newRow.className = 'menu-item-row mb-2 row';
+            newRow.innerHTML = `
+                <div class="col-md-4">
+                    <input type="text" name="menu_topics[]" class="form-control" placeholder="Topic (e.g., Welcome Drink)">
+                </div>
+                <div class="col-md-7">
+                    <input type="text" name="menu_descriptions[]" class="form-control" placeholder="Description (e.g., Orange Juice, Lime Juice)">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-menu-item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            editMenuItemsContainer.appendChild(newRow);
+            updateEditRemoveButtons();
+        });
+
+        editMenuItemsContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-menu-item')) {
+                e.target.closest('.menu-item-row').remove();
+                updateEditRemoveButtons();
+            }
+        });
+
+        function updateEditRemoveButtons() {
+            const rows = editMenuItemsContainer.querySelectorAll('.menu-item-row');
+            rows.forEach((row, index) => {
+                const removeBtn = row.querySelector('.remove-menu-item');
+                if (removeBtn) {
+                    removeBtn.style.display = rows.length > 1 ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // Initialize remove buttons visibility
+        updateEditRemoveButtons();
+    }
 });
 </script>
 @endpush

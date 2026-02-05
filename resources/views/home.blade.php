@@ -69,6 +69,7 @@
                             ['url' => '/welfare-fund', 'title' => 'Welfare Fund', 'icon' => 'welfare'],
                             ['url' => '/duty-roster', 'title' => 'Duty Roster', 'icon' => 'room'],
                             ['url' => '/leads', 'title' => 'Lead Management (CRM)', 'icon' => 'crm'],
+                            ['url' => '/feedback', 'title' => 'Customer Feedback', 'icon' => 'feedback'],
                             ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))
                                 <div class="col-lg-4 col-md-6">

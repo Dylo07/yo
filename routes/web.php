@@ -885,3 +885,11 @@ Route::middleware(['auth'])->prefix('leads')->name('leads.')->group(function () 
     Route::get('/api/stats', [App\Http\Controllers\LeadController::class, 'getStats'])->name('api.stats');
     Route::get('/api/calendar', [App\Http\Controllers\LeadController::class, 'getCalendarData'])->name('api.calendar');
 });
+
+// Customer Feedback Routes
+Route::middleware(['auth'])->prefix('feedback')->name('feedback.')->group(function () {
+    Route::get('/', [App\Http\Controllers\CustomerFeedbackController::class, 'index'])->name('index');
+    Route::post('/', [App\Http\Controllers\CustomerFeedbackController::class, 'store'])->name('store');
+    Route::post('/{feedback}/complete', [App\Http\Controllers\CustomerFeedbackController::class, 'markCompleted'])->name('complete');
+    Route::delete('/{feedback}', [App\Http\Controllers\CustomerFeedbackController::class, 'destroy'])->name('destroy');
+});

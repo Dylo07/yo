@@ -90,8 +90,9 @@
                         <div class="mt-4 mb-4 p-3 bg-light rounded border">
                             <h5><i class="fas fa-file-import me-2"></i>Import Menu from Package</h5>
                             <p class="text-muted small">Select a package to quickly populate the menu fields below.</p>
-                            <div class="row g-3">
-                                <div class="col-md-6">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-5">
+                                    <label class="form-label">Select Package</label>
                                     <select id="packageSelect" class="form-select">
                                         <option value="">-- Select a Package --</option>
                                         @foreach($packages->groupBy('category.name') as $categoryName => $categoryPackages)
@@ -108,21 +109,35 @@
                                     </select>
                                 </div>
                                 <div class="col-md-3">
-                                    <select id="targetMealField" class="form-select">
-                                        <option value="lunch">Import to Lunch</option>
-                                        <option value="dinner">Import to Dinner</option>
-                                        <option value="breakfast">Import to Breakfast</option>
-                                        <option value="bed_tea">Import to Bed Tea</option>
-                                        <option value="morning_snack">Import to Morning Snack</option>
-                                        <option value="evening_snack">Import to Evening Snack</option>
-                                        <option value="bites">Import to Bites</option>
+                                    <label class="form-label">Import Mode</label>
+                                    <select id="importMode" class="form-select">
+                                        <option value="smart">🪄 Smart Import (Auto-distribute)</option>
+                                        <option value="single">📥 Import to Single Field</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2" id="targetFieldContainer" style="display: none;">
+                                    <label class="form-label">Target Field</label>
+                                    <select id="targetMealField" class="form-select">
+                                        <option value="lunch">Lunch</option>
+                                        <option value="dinner">Dinner</option>
+                                        <option value="breakfast">Breakfast</option>
+                                        <option value="bed_tea">Bed Tea</option>
+                                        <option value="morning_snack">Morning Snack</option>
+                                        <option value="evening_snack">Evening Snack</option>
+                                        <option value="bites">Bites</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <button type="button" id="importPackageBtn" class="btn btn-success w-100">
-                                        <i class="fas fa-download me-1"></i> Import Menu
+                                        <i class="fas fa-download me-1"></i> Import
                                     </button>
                                 </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted" id="importModeHelp">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Smart Import:</strong> Automatically distributes items to Breakfast, Lunch, Dinner, Evening Snack, etc. based on topic names.
+                                </small>
                             </div>
                         </div>
                         @endif
@@ -263,8 +278,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const importBtn = document.getElementById('importPackageBtn');
     const packageSelect = document.getElementById('packageSelect');
     const targetMealField = document.getElementById('targetMealField');
+    const importMode = document.getElementById('importMode');
+    const targetFieldContainer = document.getElementById('targetFieldContainer');
+    const importModeHelp = document.getElementById('importModeHelp');
     
-    if (importBtn && packageSelect && targetMealField) {
+    // Toggle target field visibility based on import mode
+    if (importMode && targetFieldContainer) {
+        importMode.addEventListener('change', function() {
+            if (this.value === 'single') {
+                targetFieldContainer.style.display = 'block';
+                importModeHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i><strong>Single Field:</strong> All menu items will be imported to the selected field.';
+            } else {
+                targetFieldContainer.style.display = 'none';
+                importModeHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i><strong>Smart Import:</strong> Automatically distributes items to Breakfast, Lunch, Dinner, Evening Snack, etc. based on topic names.';
+            }
+        });
+    }
+    
+    // Keyword mapping for smart import
+    const mealKeywords = {
+        'bed_tea': ['bed tea', 'tea'],
+        'breakfast': ['breakfast', 'morning meal'],
+        'morning_snack': ['morning snack', 'mid morning'],
+        'lunch': ['lunch', 'main dish', 'main dishes', 'rice', 'noodle', 'curry', 'chicken', 'fish', 'vegetable', 'vegetables', 'condiment', 'condiments', 'welcome drink', 'salad', 'soup'],
+        'evening_snack': ['evening snack', 'evening snacks', 'snack', 'snacks', 'tea time', 'dessert', 'desserts', 'sweet', 'cake'],
+        'dinner': ['dinner', 'supper'],
+        'bites': ['bites', 'appetizer', 'appetizers', 'starter', 'starters', 'beverage', 'beverages', 'drink', 'drinks']
+    };
+    
+    function detectMealCategory(topic) {
+        const lowerTopic = topic.toLowerCase();
+        
+        // Check each meal category for keyword matches
+        for (const [meal, keywords] of Object.entries(mealKeywords)) {
+            for (const keyword of keywords) {
+                if (lowerTopic.includes(keyword)) {
+                    return meal;
+                }
+            }
+        }
+        
+        // Default to lunch if no match found
+        return 'lunch';
+    }
+    
+    function highlightField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.style.backgroundColor = '#d4edda';
+            setTimeout(function() {
+                field.style.backgroundColor = '';
+            }, 2000);
+        }
+    }
+    
+    if (importBtn && packageSelect) {
         importBtn.addEventListener('click', function() {
             const selectedOption = packageSelect.options[packageSelect.selectedIndex];
             
@@ -275,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const menuData = selectedOption.getAttribute('data-menu');
             const packageName = selectedOption.getAttribute('data-name');
-            const targetField = targetMealField.value;
+            const mode = importMode ? importMode.value : 'smart';
             
             if (!menuData || menuData === 'null') {
                 alert('This package has no menu items.');
@@ -284,43 +352,92 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 const menuItems = JSON.parse(menuData);
-                let menuText = '';
                 
-                if (Array.isArray(menuItems)) {
-                    menuItems.forEach(function(item) {
-                        if (typeof item === 'object' && item.topic) {
-                            // New format: {topic: "...", description: "..."}
-                            menuText += item.topic + ': ' + (item.description || '') + '\n';
-                        } else if (typeof item === 'string') {
-                            // Old format: simple string
-                            menuText += item + '\n';
-                        }
-                    });
-                }
-                
-                // Get the target textarea
-                const targetTextarea = document.getElementById(targetField);
-                if (targetTextarea) {
-                    // Ask if user wants to replace or append
-                    if (targetTextarea.value.trim() !== '') {
-                        if (confirm('The ' + targetField.replace('_', ' ') + ' field already has content. Do you want to replace it?\n\nClick OK to replace, Cancel to append.')) {
-                            targetTextarea.value = menuText.trim();
-                        } else {
-                            targetTextarea.value = targetTextarea.value + '\n\n--- ' + packageName + ' ---\n' + menuText.trim();
-                        }
-                    } else {
-                        targetTextarea.value = menuText.trim();
+                if (mode === 'smart') {
+                    // Smart Import: distribute items based on topic keywords
+                    const categorizedItems = {
+                        'bed_tea': [],
+                        'breakfast': [],
+                        'morning_snack': [],
+                        'lunch': [],
+                        'evening_snack': [],
+                        'dinner': [],
+                        'bites': []
+                    };
+                    
+                    if (Array.isArray(menuItems)) {
+                        menuItems.forEach(function(item) {
+                            let topic = '';
+                            let description = '';
+                            
+                            if (typeof item === 'object' && item.topic) {
+                                topic = item.topic;
+                                description = item.description || '';
+                            } else if (typeof item === 'string') {
+                                topic = item;
+                            }
+                            
+                            const category = detectMealCategory(topic);
+                            const itemText = description ? topic + ': ' + description : topic;
+                            categorizedItems[category].push(itemText);
+                        });
                     }
                     
-                    // Highlight the field briefly
-                    targetTextarea.style.backgroundColor = '#d4edda';
-                    setTimeout(function() {
-                        targetTextarea.style.backgroundColor = '';
-                    }, 1500);
+                    // Populate each field
+                    let fieldsUpdated = [];
+                    for (const [fieldId, items] of Object.entries(categorizedItems)) {
+                        if (items.length > 0) {
+                            const textarea = document.getElementById(fieldId);
+                            if (textarea) {
+                                const newContent = items.join('\n');
+                                if (textarea.value.trim() !== '') {
+                                    textarea.value = textarea.value + '\n\n--- ' + packageName + ' ---\n' + newContent;
+                                } else {
+                                    textarea.value = newContent;
+                                }
+                                highlightField(fieldId);
+                                fieldsUpdated.push(fieldId.replace('_', ' '));
+                            }
+                        }
+                    }
                     
-                    // Scroll to the field
-                    targetTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    targetTextarea.focus();
+                    if (fieldsUpdated.length > 0) {
+                        alert('Menu imported successfully!\n\nUpdated fields: ' + fieldsUpdated.join(', '));
+                    } else {
+                        alert('No items were imported. The package may be empty.');
+                    }
+                    
+                } else {
+                    // Single Field Import
+                    const targetField = targetMealField.value;
+                    let menuText = '';
+                    
+                    if (Array.isArray(menuItems)) {
+                        menuItems.forEach(function(item) {
+                            if (typeof item === 'object' && item.topic) {
+                                menuText += item.topic + ': ' + (item.description || '') + '\n';
+                            } else if (typeof item === 'string') {
+                                menuText += item + '\n';
+                            }
+                        });
+                    }
+                    
+                    const targetTextarea = document.getElementById(targetField);
+                    if (targetTextarea) {
+                        if (targetTextarea.value.trim() !== '') {
+                            if (confirm('The ' + targetField.replace('_', ' ') + ' field already has content. Do you want to replace it?\n\nClick OK to replace, Cancel to append.')) {
+                                targetTextarea.value = menuText.trim();
+                            } else {
+                                targetTextarea.value = targetTextarea.value + '\n\n--- ' + packageName + ' ---\n' + menuText.trim();
+                            }
+                        } else {
+                            targetTextarea.value = menuText.trim();
+                        }
+                        
+                        highlightField(targetField);
+                        targetTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetTextarea.focus();
+                    }
                 }
             } catch (e) {
                 console.error('Error parsing menu data:', e);

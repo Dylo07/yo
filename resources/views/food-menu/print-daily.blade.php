@@ -40,64 +40,64 @@
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            padding-bottom: 5mm;
-            border-bottom: 3px solid #2c3e50;
-            margin-bottom: 5mm;
+            align-items: center;
+            padding-bottom: 3mm;
+            border-bottom: 2px solid #2c3e50;
+            margin-bottom: 3mm;
         }
         
         .logo-section {
             display: flex;
             align-items: center;
-            gap: 4mm;
+            gap: 2mm;
         }
         
         .logo-icon {
-            width: 15mm;
-            height: 15mm;
+            width: 10mm;
+            height: 10mm;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 3mm;
+            border-radius: 2mm;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 20pt;
+            font-size: 14pt;
             font-weight: bold;
         }
         
         .title-section h1 {
-            font-size: 18pt;
+            font-size: 14pt;
             color: #2c3e50;
-            margin-bottom: 1mm;
+            margin-bottom: 0;
         }
         
         .title-section .subtitle {
-            font-size: 10pt;
+            font-size: 8pt;
             color: #7f8c8d;
         }
         
         .date-badge {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 3mm 5mm;
+            padding: 2mm 3mm;
             border-radius: 2mm;
             text-align: center;
         }
         
         .date-badge .day {
-            font-size: 24pt;
+            font-size: 16pt;
             font-weight: bold;
             line-height: 1;
         }
         
         .date-badge .month {
-            font-size: 10pt;
+            font-size: 8pt;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
         
         .date-badge .year {
-            font-size: 9pt;
+            font-size: 7pt;
             opacity: 0.9;
         }
         

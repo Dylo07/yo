@@ -142,6 +142,36 @@
             line-height: 1.2;
         }
         
+        /* Details Bar */
+        .details-bar {
+            display: flex;
+            gap: 3mm;
+            margin-bottom: 4mm;
+            font-size: 8pt;
+        }
+        
+        .detail-item {
+            flex: 1;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 2mm;
+            padding: 2mm 3mm;
+        }
+        
+        .detail-item .detail-label {
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-size: 7pt;
+            margin-bottom: 1mm;
+        }
+        
+        .detail-item .detail-value {
+            color: #2c3e50;
+            font-size: 8pt;
+            line-height: 1.2;
+        }
+        
         /* Menu Grid */
         .menu-section-title {
             font-size: 12pt;
@@ -347,6 +377,24 @@
                 <div class="value rooms">{{ is_array($booking->room_numbers) ? implode(', ', $booking->room_numbers) : $booking->room_numbers }}</div>
             </div>
         </div>
+        
+        <!-- Details Bar -->
+        @if($booking->bites_details || $booking->other_details || $booking->name)
+        <div class="details-bar">
+            <div class="detail-item">
+                <div class="detail-label">Bites Details</div>
+                <div class="detail-value">{{ $booking->bites_details ?: 'N/A' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Other Details</div>
+                <div class="detail-value">{{ $booking->other_details ?: 'N/A' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Description</div>
+                <div class="detail-value">{{ $booking->name ?: 'N/A' }}</div>
+            </div>
+        </div>
+        @endif
         
         @if($booking->function_type == 'Wedding')
         <!-- ========== WEDDING MENU ========== -->

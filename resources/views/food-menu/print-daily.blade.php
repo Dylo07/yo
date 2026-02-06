@@ -202,8 +202,8 @@
         <div class="info-row">
             <span><strong>Function:</strong> {{ $booking->function_type }}</span>
             <span><strong>Guests:</strong> {{ $booking->guest_count }}</span>
-            <span><strong>Check In:</strong> {{ $booking->start->format('h:i A') }}</span>
-            <span><strong>Check Out:</strong> {{ $booking->end ? $booking->end->format('h:i A') : 'N/A' }}</span>
+            <span><strong>Check In:</strong> {{ $booking->start->format('M j, Y h:i A') }}</span>
+            <span><strong>Check Out:</strong> {{ $booking->end ? $booking->end->format('M j, Y h:i A') : 'N/A' }}</span>
             <span><strong>Rooms:</strong> {{ is_array($booking->room_numbers) ? implode(', ', $booking->room_numbers) : $booking->room_numbers }}</span>
         </div>
         

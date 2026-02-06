@@ -18,8 +18,8 @@
         
         body {
             font-family: Arial, sans-serif;
-            font-size: 10pt;
-            line-height: 1.2;
+            font-size: 11pt;
+            line-height: 1.3;
             color: #000;
             background: #fff;
         }
@@ -41,12 +41,12 @@
         }
         
         .header h1 {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: bold;
         }
         
         .header .date {
-            font-size: 12pt;
+            font-size: 14pt;
             font-weight: bold;
         }
         
@@ -64,7 +64,7 @@
             flex-wrap: wrap;
             gap: 2mm;
             margin-bottom: 2mm;
-            font-size: 9pt;
+            font-size: 10pt;
             border: 1px solid #000;
             padding: 2mm;
         }
@@ -82,7 +82,7 @@
             display: flex;
             gap: 3mm;
             margin-bottom: 3mm;
-            font-size: 9pt;
+            font-size: 10pt;
             border: 1px solid #999;
             padding: 2mm;
             background: #f5f5f5;
@@ -107,40 +107,41 @@
         .menu-table th {
             background: #333;
             color: #fff;
-            padding: 2mm;
+            padding: 3mm;
             text-align: left;
-            font-size: 10pt;
+            font-size: 12pt;
         }
         
         .menu-table td {
             border: 1px solid #999;
-            padding: 2mm;
+            padding: 3mm;
             vertical-align: top;
         }
         
         .menu-table .num {
-            width: 8mm;
+            width: 10mm;
             text-align: center;
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 12pt;
             background: #eee;
         }
         
         .menu-table .name {
-            width: 32mm;
+            width: 35mm;
             font-weight: bold;
+            font-size: 11pt;
             background: #f9f9f9;
         }
         
         .menu-table .time {
-            width: 18mm;
+            width: 20mm;
             text-align: center;
-            font-size: 9pt;
+            font-size: 10pt;
         }
         
         .menu-table .content {
-            font-size: 10pt;
-            line-height: 1.3;
+            font-size: 11pt;
+            line-height: 1.4;
         }
         
         /* Footer */

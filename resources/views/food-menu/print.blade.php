@@ -137,6 +137,11 @@
             font-size: 13pt;
         }
         
+        .info-item .value.rooms {
+            font-size: 8pt;
+            line-height: 1.2;
+        }
+        
         /* Menu Grid */
         .menu-section-title {
             font-size: 12pt;
@@ -339,7 +344,7 @@
             </div>
             <div class="info-item">
                 <div class="label">Rooms</div>
-                <div class="value">{{ is_array($booking->room_numbers) ? implode(', ', $booking->room_numbers) : $booking->room_numbers }}</div>
+                <div class="value rooms">{{ is_array($booking->room_numbers) ? implode(', ', $booking->room_numbers) : $booking->room_numbers }}</div>
             </div>
         </div>
         

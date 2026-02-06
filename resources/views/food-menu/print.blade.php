@@ -184,7 +184,7 @@
         
         .meals-grid {
             display: grid;
-            grid-template-rows: repeat(6, 1fr);
+            grid-template-rows: repeat(9, 1fr);
             height: 100%;
         }
         
@@ -275,112 +275,118 @@
             <!-- All Meals (Reorganized Layout) -->
             <div class="section">
                 <div class="meals-grid">
-                    <!-- Bed Tea (New) -->
+                    <!-- 1. Welcome Drink -->
                     <div class="meal-block">
                         <div class="meal-header">
-                            <span class="circle-number" style="background-color: #10b981;">1</span>
-                            Bed Tea
-                            @if($menu->bed_tea_time)
-                                <span class="meal-time">{{ $menu->getFormattedTime('bed_tea_time') }}</span>
-                            @endif
+                            <span class="circle-number" style="background-color: #06b6d4;">1</span>
+                            Welcome Drink
                         </div>
-                        @if($menu->shouldShowMeal('bed_tea'))
-                            <div class="meal-content">
-                                {{ $menu->bed_tea ?? 'No bed tea menu specified' }}
-                            </div>
-                        @else
-                            <div class="not-included">Not included</div>
-                        @endif
+                        <div class="meal-content">
+                            {{ $menu->welcome_drink ?? '-' }}
+                        </div>
                     </div>
                     
-                    <!-- Breakfast -->
+                    <!-- 2. Evening Snack -->
                     <div class="meal-block">
                         <div class="meal-header">
-                            <span class="circle-number" style="background-color: #ec4899;">5</span>
-                            Breakfast
-                            @if($menu->breakfast_time)
-                                <span class="meal-time">{{ $menu->getFormattedTime('breakfast_time') }}</span>
-                            @endif
-                        </div>
-                        @if($menu->shouldShowMeal('breakfast'))
-                            <div class="meal-content">
-                                {{ $menu->breakfast ?? 'No breakfast menu specified' }}
-                            </div>
-                        @else
-                            <div class="not-included">Not included</div>
-                        @endif
-                    </div>
-                    
-                    <!-- Morning Snack (New) -->
-                    <div class="meal-block">
-                        <div class="meal-header">
-                            <span class="circle-number" style="background-color: #f97316;">3</span>
-                            Morning Snack
-                            @if($menu->morning_snack_time)
-                                <span class="meal-time">{{ $menu->getFormattedTime('morning_snack_time') }}</span>
-                            @endif
-                        </div>
-                        @if($menu->shouldShowMeal('morning_snack'))
-                            <div class="meal-content">
-                                {{ $menu->morning_snack ?? 'No morning snack menu specified' }}
-                            </div>
-                        @else
-                            <div class="not-included">Not included</div>
-                        @endif
-                    </div>
-                    
-                    <!-- Lunch -->
-                    <div class="meal-block">
-                        <div class="meal-header">
-                            <span class="circle-number" style="background-color: #3b82f6;">6</span>
-                            Lunch
-                            @if($menu->lunch_time)
-                                <span class="meal-time">{{ $menu->getFormattedTime('lunch_time') }}</span>
-                            @endif
-                        </div>
-                        @if($menu->shouldShowMeal('lunch'))
-                            <div class="meal-content">
-                                {{ $menu->lunch ?? 'No lunch menu specified' }}
-                            </div>
-                        @else
-                            <div class="not-included">Not included</div>
-                        @endif
-                    </div>
-                    
-                    <!-- Evening Snack -->
-                    <div class="meal-block">
-                        <div class="meal-header">
-                            <span class="circle-number" style="background-color: #8b5cf6;">7</span>
+                            <span class="circle-number" style="background-color: #8b5cf6;">2</span>
                             Evening Snack
                             @if($menu->evening_snack_time)
                                 <span class="meal-time">{{ $menu->getFormattedTime('evening_snack_time') }}</span>
                             @endif
                         </div>
-                        @if($menu->shouldShowMeal('evening_snack'))
-                            <div class="meal-content">
-                                {{ $menu->evening_snack ?? 'No evening snack menu specified' }}
-                            </div>
-                        @else
-                            <div class="not-included">Not included</div>
-                        @endif
+                        <div class="meal-content">
+                            {{ $menu->evening_snack ?? '-' }}
+                        </div>
                     </div>
                     
-                    <!-- Dinner -->
+                    <!-- 3. Dinner -->
                     <div class="meal-block">
                         <div class="meal-header">
-                            <span class="circle-number" style="background-color: #eab308;">8</span>
+                            <span class="circle-number" style="background-color: #eab308;">3</span>
                             Dinner
                             @if($menu->dinner_time)
                                 <span class="meal-time">{{ $menu->getFormattedTime('dinner_time') }}</span>
                             @endif
                         </div>
-                        @if($menu->shouldShowMeal('dinner'))
-                            <div class="meal-content">
-                                {{ $menu->dinner ?? 'No dinner menu specified' }}
-                            </div>
-                        @else
-                            <div class="not-included">Not included</div>
-                        @endif
+                        <div class="meal-content">
+                            {{ $menu->dinner ?? '-' }}
+                        </div>
+                    </div>
+                    
+                    <!-- 4. Dessert (after Dinner) -->
+                    <div class="meal-block">
+                        <div class="meal-header">
+                            <span class="circle-number" style="background-color: #f472b6;">4</span>
+                            Dessert (Dinner)
+                        </div>
+                        <div class="meal-content">
+                            {{ $menu->dessert_after_dinner ?? '-' }}
+                        </div>
+                    </div>
+                    
+                    <!-- 5. Bed Tea -->
+                    <div class="meal-block">
+                        <div class="meal-header">
+                            <span class="circle-number" style="background-color: #10b981;">5</span>
+                            Bed Tea
+                            @if($menu->bed_tea_time)
+                                <span class="meal-time">{{ $menu->getFormattedTime('bed_tea_time') }}</span>
+                            @endif
+                        </div>
+                        <div class="meal-content">
+                            {{ $menu->bed_tea ?? '-' }}
+                        </div>
+                    </div>
+                    
+                    <!-- 6. Breakfast -->
+                    <div class="meal-block">
+                        <div class="meal-header">
+                            <span class="circle-number" style="background-color: #ec4899;">6</span>
+                            Breakfast
+                            @if($menu->breakfast_time)
+                                <span class="meal-time">{{ $menu->getFormattedTime('breakfast_time') }}</span>
+                            @endif
+                        </div>
+                        <div class="meal-content">
+                            {{ $menu->breakfast ?? '-' }}
+                        </div>
+                    </div>
+                    
+                    <!-- 7. Dessert (after Breakfast) -->
+                    <div class="meal-block">
+                        <div class="meal-header">
+                            <span class="circle-number" style="background-color: #f472b6;">7</span>
+                            Dessert (Breakfast)
+                        </div>
+                        <div class="meal-content">
+                            {{ $menu->dessert_after_breakfast ?? '-' }}
+                        </div>
+                    </div>
+                    
+                    <!-- 8. Lunch -->
+                    <div class="meal-block">
+                        <div class="meal-header">
+                            <span class="circle-number" style="background-color: #3b82f6;">8</span>
+                            Lunch
+                            @if($menu->lunch_time)
+                                <span class="meal-time">{{ $menu->getFormattedTime('lunch_time') }}</span>
+                            @endif
+                        </div>
+                        <div class="meal-content">
+                            {{ $menu->lunch ?? '-' }}
+                        </div>
+                    </div>
+                    
+                    <!-- 9. Dessert (after Lunch) -->
+                    <div class="meal-block">
+                        <div class="meal-header">
+                            <span class="circle-number" style="background-color: #f472b6;">9</span>
+                            Dessert (Lunch)
+                        </div>
+                        <div class="meal-content">
+                            {{ $menu->dessert_after_lunch ?? '-' }}
+                        </div>
                     </div>
                 </div>
             </div>

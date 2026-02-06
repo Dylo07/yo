@@ -144,12 +144,121 @@
                         
                         <!-- Menu Form -->
                         <div class="mt-4">
-                            <h5>Food Menu</h5>
+                            <h5>Food Menu @if($selectedBooking->function_type == 'Wedding')<span class="badge bg-pink">Wedding Menu</span>@endif</h5>
                             <form action="{{ route('food-menu.save') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="booking_id" value="{{ $selectedBooking->id }}">
                                 <input type="hidden" name="date" value="{{ $date }}">
                                 
+                                @if($selectedBooking->function_type == 'Wedding')
+                                <!-- ========== WEDDING MENU FIELDS ========== -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_welcome_drink" class="form-label">Welcome Drink</label>
+                                            <textarea name="wedding_welcome_drink" id="wedding_welcome_drink" class="form-control" rows="2">{{ $menu->wedding_welcome_drink ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_appetizer" class="form-label">Appetizer</label>
+                                            <textarea name="wedding_appetizer" id="wedding_appetizer" class="form-control" rows="2">{{ $menu->wedding_appetizer ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_shooters" class="form-label">Shooters</label>
+                                            <textarea name="wedding_shooters" id="wedding_shooters" class="form-control" rows="2">{{ $menu->wedding_shooters ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_salad_bar" class="form-label">Salad Bar</label>
+                                            <textarea name="wedding_salad_bar" id="wedding_salad_bar" class="form-control" rows="2">{{ $menu->wedding_salad_bar ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_salad_dressing" class="form-label">Salad Dressing</label>
+                                            <textarea name="wedding_salad_dressing" id="wedding_salad_dressing" class="form-control" rows="2">{{ $menu->wedding_salad_dressing ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_soup" class="form-label">Soup</label>
+                                            <textarea name="wedding_soup" id="wedding_soup" class="form-control" rows="2">{{ $menu->wedding_soup ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_bread_corner" class="form-label">Bread Corner</label>
+                                            <textarea name="wedding_bread_corner" id="wedding_bread_corner" class="form-control" rows="2">{{ $menu->wedding_bread_corner ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_rice_noodle" class="form-label">Rice & Noodle</label>
+                                            <textarea name="wedding_rice_noodle" id="wedding_rice_noodle" class="form-control" rows="2">{{ $menu->wedding_rice_noodle ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_meat_items" class="form-label">Meat Items</label>
+                                            <textarea name="wedding_meat_items" id="wedding_meat_items" class="form-control" rows="2">{{ $menu->wedding_meat_items ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_seafood_items" class="form-label">Seafood Items</label>
+                                            <textarea name="wedding_seafood_items" id="wedding_seafood_items" class="form-control" rows="2">{{ $menu->wedding_seafood_items ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_vegetables" class="form-label">Vegetables</label>
+                                            <textarea name="wedding_vegetables" id="wedding_vegetables" class="form-control" rows="2">{{ $menu->wedding_vegetables ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_condiments" class="form-label">Condiments</label>
+                                            <textarea name="wedding_condiments" id="wedding_condiments" class="form-control" rows="2">{{ $menu->wedding_condiments ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_desserts" class="form-label">Desserts</label>
+                                            <textarea name="wedding_desserts" id="wedding_desserts" class="form-control" rows="2">{{ $menu->wedding_desserts ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="wedding_beverages" class="form-label">Beverages</label>
+                                            <textarea name="wedding_beverages" id="wedding_beverages" class="form-control" rows="2">{{ $menu->wedding_beverages ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                @else
+                                <!-- ========== REGULAR MENU FIELDS ========== -->
                                 <!-- 1. Welcome Drink -->
                                 <div class="mb-3">
                                     <label for="welcome_drink" class="form-label">Welcome Drink</label>
@@ -248,6 +357,7 @@
                                     <label for="dessert_after_lunch" class="form-label">Dessert (after Lunch)</label>
                                     <textarea name="dessert_after_lunch" id="dessert_after_lunch" class="form-control" rows="2">{{ $menu->dessert_after_lunch ?? '' }}</textarea>
                                 </div>
+                                @endif
                                 
                                 <div class="d-flex">
                                     <button type="submit" class="btn btn-success">Save Menu</button>
@@ -287,7 +397,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Exact topic mapping for smart import (matches your package menu structure)
+    // Check if this is a Wedding booking
+    const isWedding = {{ isset($selectedBooking) && $selectedBooking->function_type == 'Wedding' ? 'true' : 'false' }};
+    
+    // Wedding topic mapping
+    const weddingTopicMapping = {
+        'welcome drink': 'wedding_welcome_drink',
+        'appetizer': 'wedding_appetizer',
+        'shooters': 'wedding_shooters',
+        'salad bar': 'wedding_salad_bar',
+        'salad dressing': 'wedding_salad_dressing',
+        'soup': 'wedding_soup',
+        'bread corner': 'wedding_bread_corner',
+        'rice & noodle': 'wedding_rice_noodle',
+        'rice and noodle': 'wedding_rice_noodle',
+        'meat items': 'wedding_meat_items',
+        'seafood items': 'wedding_seafood_items',
+        'vegetables': 'wedding_vegetables',
+        'condiments': 'wedding_condiments',
+        'desserts': 'wedding_desserts',
+        'dessert': 'wedding_desserts',
+        'beverages': 'wedding_beverages'
+    };
+    
+    // Regular topic mapping for smart import
     const exactTopicMapping = {
         'welcome drink': 'welcome_drink',
         'evening snack': 'evening_snack',
@@ -307,7 +440,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function detectMealCategory(topic, previousCategory) {
         const lowerTopic = topic.toLowerCase().trim();
         
-        // Check for exact match first
+        // For Wedding bookings, use wedding mapping
+        if (isWedding) {
+            for (const [keyword, field] of Object.entries(weddingTopicMapping)) {
+                if (lowerTopic === keyword || lowerTopic.startsWith(keyword)) {
+                    return { field: field, isDessert: false };
+                }
+            }
+            // Default to wedding_welcome_drink if no match
+            return { field: 'wedding_welcome_drink', isDessert: false };
+        }
+        
+        // Check for exact match first (regular bookings)
         for (const [keyword, meal] of Object.entries(exactTopicMapping)) {
             if (lowerTopic === keyword || lowerTopic.startsWith(keyword)) {
                 return { field: meal, isDessert: false };
@@ -357,17 +501,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (mode === 'smart') {
                     // Smart Import: distribute items based on topic keywords
-                    const categorizedItems = {
-                        'welcome_drink': [],
-                        'evening_snack': [],
-                        'dinner': [],
-                        'dessert_after_dinner': [],
-                        'bed_tea': [],
-                        'breakfast': [],
-                        'dessert_after_breakfast': [],
-                        'lunch': [],
-                        'dessert_after_lunch': []
-                    };
+                    let categorizedItems;
+                    
+                    if (isWedding) {
+                        // Wedding menu fields
+                        categorizedItems = {
+                            'wedding_welcome_drink': [],
+                            'wedding_appetizer': [],
+                            'wedding_shooters': [],
+                            'wedding_salad_bar': [],
+                            'wedding_salad_dressing': [],
+                            'wedding_soup': [],
+                            'wedding_bread_corner': [],
+                            'wedding_rice_noodle': [],
+                            'wedding_meat_items': [],
+                            'wedding_seafood_items': [],
+                            'wedding_vegetables': [],
+                            'wedding_condiments': [],
+                            'wedding_desserts': [],
+                            'wedding_beverages': []
+                        };
+                    } else {
+                        // Regular menu fields
+                        categorizedItems = {
+                            'welcome_drink': [],
+                            'evening_snack': [],
+                            'dinner': [],
+                            'dessert_after_dinner': [],
+                            'bed_tea': [],
+                            'breakfast': [],
+                            'dessert_after_breakfast': [],
+                            'lunch': [],
+                            'dessert_after_lunch': []
+                        };
+                    }
                     
                     if (Array.isArray(menuItems)) {
                         let previousMeal = 'lunch'; // Track previous meal for Dessert handling

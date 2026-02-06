@@ -36,7 +36,22 @@ class FoodMenu extends Model
         'dessert_after_lunch',
         'bites',
         'bites_time',
-        'created_by'
+        'created_by',
+        // Wedding-specific fields
+        'wedding_welcome_drink',
+        'wedding_appetizer',
+        'wedding_shooters',
+        'wedding_salad_bar',
+        'wedding_salad_dressing',
+        'wedding_soup',
+        'wedding_bread_corner',
+        'wedding_rice_noodle',
+        'wedding_meat_items',
+        'wedding_seafood_items',
+        'wedding_vegetables',
+        'wedding_condiments',
+        'wedding_desserts',
+        'wedding_beverages'
     ];
 
     /**

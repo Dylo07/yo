@@ -80,6 +80,7 @@ class FoodMenuController extends Controller
             $validated = $request->validate([
                 'booking_id' => 'required|integer',
                 'date' => 'required|date',
+                // Regular menu fields
                 'welcome_drink' => 'nullable|string',
                 'evening_snack' => 'nullable|string',
                 'evening_snack_time' => 'nullable|string',
@@ -97,7 +98,22 @@ class FoodMenuController extends Controller
                 'lunch_time' => 'nullable|string',
                 'dessert_after_lunch' => 'nullable|string',
                 'bites' => 'nullable|string',
-                'bites_time' => 'nullable|string'
+                'bites_time' => 'nullable|string',
+                // Wedding-specific fields
+                'wedding_welcome_drink' => 'nullable|string',
+                'wedding_appetizer' => 'nullable|string',
+                'wedding_shooters' => 'nullable|string',
+                'wedding_salad_bar' => 'nullable|string',
+                'wedding_salad_dressing' => 'nullable|string',
+                'wedding_soup' => 'nullable|string',
+                'wedding_bread_corner' => 'nullable|string',
+                'wedding_rice_noodle' => 'nullable|string',
+                'wedding_meat_items' => 'nullable|string',
+                'wedding_seafood_items' => 'nullable|string',
+                'wedding_vegetables' => 'nullable|string',
+                'wedding_condiments' => 'nullable|string',
+                'wedding_desserts' => 'nullable|string',
+                'wedding_beverages' => 'nullable|string'
             ]);
             
             // Format times if provided
@@ -136,6 +152,20 @@ class FoodMenuController extends Controller
                     'dessert_after_lunch' => $validated['dessert_after_lunch'] ?? null,
                     'bites' => $validated['bites'] ?? null,
                     'bites_time' => $validated['bites_time'],
+                    'wedding_welcome_drink' => $validated['wedding_welcome_drink'] ?? null,
+                    'wedding_appetizer' => $validated['wedding_appetizer'] ?? null,
+                    'wedding_shooters' => $validated['wedding_shooters'] ?? null,
+                    'wedding_salad_bar' => $validated['wedding_salad_bar'] ?? null,
+                    'wedding_salad_dressing' => $validated['wedding_salad_dressing'] ?? null,
+                    'wedding_soup' => $validated['wedding_soup'] ?? null,
+                    'wedding_bread_corner' => $validated['wedding_bread_corner'] ?? null,
+                    'wedding_rice_noodle' => $validated['wedding_rice_noodle'] ?? null,
+                    'wedding_meat_items' => $validated['wedding_meat_items'] ?? null,
+                    'wedding_seafood_items' => $validated['wedding_seafood_items'] ?? null,
+                    'wedding_vegetables' => $validated['wedding_vegetables'] ?? null,
+                    'wedding_condiments' => $validated['wedding_condiments'] ?? null,
+                    'wedding_desserts' => $validated['wedding_desserts'] ?? null,
+                    'wedding_beverages' => $validated['wedding_beverages'] ?? null,
                     'created_by' => auth()->id()
                 ]
             );

@@ -295,27 +295,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Keyword mapping for smart import
-    const mealKeywords = {
-        'bed_tea': ['bed tea', 'tea'],
-        'breakfast': ['breakfast', 'morning meal'],
-        'morning_snack': ['morning snack', 'mid morning'],
-        'lunch': ['lunch', 'main dish', 'main dishes', 'rice', 'noodle', 'curry', 'chicken', 'fish', 'vegetable', 'vegetables', 'condiment', 'condiments', 'welcome drink', 'salad', 'soup'],
-        'evening_snack': ['evening snack', 'evening snacks', 'snack', 'snacks', 'tea time', 'dessert', 'desserts', 'sweet', 'cake'],
-        'dinner': ['dinner', 'supper'],
-        'bites': ['bites', 'appetizer', 'appetizers', 'starter', 'starters', 'beverage', 'beverages', 'drink', 'drinks']
+    // Exact topic mapping for smart import (matches your package menu structure)
+    const exactTopicMapping = {
+        'welcome drink': 'lunch',
+        'evening snack': 'evening_snack',
+        'dinner': 'dinner',
+        'bed tea': 'bed_tea',
+        'breakfast': 'breakfast',
+        'lunch': 'lunch',
+        'morning snack': 'morning_snack',
+        'bites': 'bites'
     };
     
-    function detectMealCategory(topic) {
-        const lowerTopic = topic.toLowerCase();
+    function detectMealCategory(topic, previousCategory) {
+        const lowerTopic = topic.toLowerCase().trim();
         
-        // Check each meal category for keyword matches
-        for (const [meal, keywords] of Object.entries(mealKeywords)) {
-            for (const keyword of keywords) {
-                if (lowerTopic.includes(keyword)) {
-                    return meal;
-                }
+        // Check for exact match first
+        for (const [keyword, meal] of Object.entries(exactTopicMapping)) {
+            if (lowerTopic === keyword || lowerTopic.startsWith(keyword)) {
+                return meal;
             }
+        }
+        
+        // Handle "Dessert" - append to the previous meal category
+        if (lowerTopic === 'dessert' || lowerTopic.startsWith('dessert')) {
+            // Dessert follows the previous meal, so return the previous category
+            return previousCategory || 'lunch';
         }
         
         // Default to lunch if no match found
@@ -366,6 +371,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     
                     if (Array.isArray(menuItems)) {
+                        let previousCategory = 'lunch'; // Track previous category for Dessert handling
+                        
                         menuItems.forEach(function(item) {
                             let topic = '';
                             let description = '';
@@ -377,9 +384,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                 topic = item;
                             }
                             
-                            const category = detectMealCategory(topic);
+                            const category = detectMealCategory(topic, previousCategory);
                             const itemText = description ? topic + ': ' + description : topic;
                             categorizedItems[category].push(itemText);
+                            
+                            // Update previous category (but not for dessert, so desserts chain correctly)
+                            const lowerTopic = topic.toLowerCase().trim();
+                            if (!lowerTopic.startsWith('dessert')) {
+                                previousCategory = category;
+                            }
                         });
                     }
                     

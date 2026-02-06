@@ -18,20 +18,24 @@ class FoodMenu extends Model
     protected $fillable = [
         'booking_id',
         'date',
-        'bed_tea',
-        'bed_tea_time',
-        'breakfast',
-        'breakfast_time',
-        'morning_snack',
-        'morning_snack_time',
-        'lunch',
-        'lunch_time',
+        'welcome_drink',
         'evening_snack',
         'evening_snack_time',
         'dinner',
         'dinner_time',
-        'bites',           // New field
-        'bites_time',      // New field
+        'dessert_after_dinner',
+        'bed_tea',
+        'bed_tea_time',
+        'breakfast',
+        'breakfast_time',
+        'dessert_after_breakfast',
+        'morning_snack',
+        'morning_snack_time',
+        'lunch',
+        'lunch_time',
+        'dessert_after_lunch',
+        'bites',
+        'bites_time',
         'created_by'
     ];
 

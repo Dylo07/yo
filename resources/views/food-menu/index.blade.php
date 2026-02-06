@@ -85,6 +85,48 @@
                             <p><strong>End:</strong> {{ $selectedBooking->end ? $selectedBooking->end->format('Y-m-d g:i A') : 'N/A' }}</p>
                         </div>
                         
+                        <!-- Import from Package Section -->
+                        @if(isset($packages) && $packages->count() > 0)
+                        <div class="mt-4 mb-4 p-3 bg-light rounded border">
+                            <h5><i class="fas fa-file-import me-2"></i>Import Menu from Package</h5>
+                            <p class="text-muted small">Select a package to quickly populate the menu fields below.</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <select id="packageSelect" class="form-select">
+                                        <option value="">-- Select a Package --</option>
+                                        @foreach($packages->groupBy('category.name') as $categoryName => $categoryPackages)
+                                            <optgroup label="{{ $categoryName ?: 'Uncategorized' }}">
+                                                @foreach($categoryPackages as $package)
+                                                    <option value="{{ $package->id }}" 
+                                                            data-menu="{{ json_encode($package->menu_items) }}"
+                                                            data-name="{{ $package->name }}">
+                                                        {{ $package->name }} - Rs. {{ number_format($package->price, 2) }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="targetMealField" class="form-select">
+                                        <option value="lunch">Import to Lunch</option>
+                                        <option value="dinner">Import to Dinner</option>
+                                        <option value="breakfast">Import to Breakfast</option>
+                                        <option value="bed_tea">Import to Bed Tea</option>
+                                        <option value="morning_snack">Import to Morning Snack</option>
+                                        <option value="evening_snack">Import to Evening Snack</option>
+                                        <option value="bites">Import to Bites</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" id="importPackageBtn" class="btn btn-success w-100">
+                                        <i class="fas fa-download me-1"></i> Import Menu
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                        
                         <!-- Menu Form -->
                         <div class="mt-4">
                             <h5>Food Menu</h5>
@@ -214,3 +256,78 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const importBtn = document.getElementById('importPackageBtn');
+    const packageSelect = document.getElementById('packageSelect');
+    const targetMealField = document.getElementById('targetMealField');
+    
+    if (importBtn && packageSelect && targetMealField) {
+        importBtn.addEventListener('click', function() {
+            const selectedOption = packageSelect.options[packageSelect.selectedIndex];
+            
+            if (!selectedOption.value) {
+                alert('Please select a package first.');
+                return;
+            }
+            
+            const menuData = selectedOption.getAttribute('data-menu');
+            const packageName = selectedOption.getAttribute('data-name');
+            const targetField = targetMealField.value;
+            
+            if (!menuData || menuData === 'null') {
+                alert('This package has no menu items.');
+                return;
+            }
+            
+            try {
+                const menuItems = JSON.parse(menuData);
+                let menuText = '';
+                
+                if (Array.isArray(menuItems)) {
+                    menuItems.forEach(function(item) {
+                        if (typeof item === 'object' && item.topic) {
+                            // New format: {topic: "...", description: "..."}
+                            menuText += item.topic + ': ' + (item.description || '') + '\n';
+                        } else if (typeof item === 'string') {
+                            // Old format: simple string
+                            menuText += item + '\n';
+                        }
+                    });
+                }
+                
+                // Get the target textarea
+                const targetTextarea = document.getElementById(targetField);
+                if (targetTextarea) {
+                    // Ask if user wants to replace or append
+                    if (targetTextarea.value.trim() !== '') {
+                        if (confirm('The ' + targetField.replace('_', ' ') + ' field already has content. Do you want to replace it?\n\nClick OK to replace, Cancel to append.')) {
+                            targetTextarea.value = menuText.trim();
+                        } else {
+                            targetTextarea.value = targetTextarea.value + '\n\n--- ' + packageName + ' ---\n' + menuText.trim();
+                        }
+                    } else {
+                        targetTextarea.value = menuText.trim();
+                    }
+                    
+                    // Highlight the field briefly
+                    targetTextarea.style.backgroundColor = '#d4edda';
+                    setTimeout(function() {
+                        targetTextarea.style.backgroundColor = '';
+                    }, 1500);
+                    
+                    // Scroll to the field
+                    targetTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetTextarea.focus();
+                }
+            } catch (e) {
+                console.error('Error parsing menu data:', e);
+                alert('Error importing menu. Please try again.');
+            }
+        });
+    }
+});
+</script>
+@endpush

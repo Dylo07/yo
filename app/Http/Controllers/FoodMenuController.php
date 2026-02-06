@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\FoodMenu;
+use App\Models\Package;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -58,11 +59,15 @@ class FoodMenuController extends Controller
             }
         }
         
+        // Get all packages with their menu items for import feature
+        $packages = Package::with('category')->get();
+        
         return view('food-menu.index', [
             'bookings' => $bookings,
             'selectedBooking' => $selectedBooking,
             'menu' => $menu,
-            'date' => $date
+            'date' => $date,
+            'packages' => $packages
         ]);
     }
 

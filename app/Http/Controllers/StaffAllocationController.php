@@ -1233,47 +1233,72 @@ class StaffAllocationController extends Controller
      */
     public function getHousekeepingStatus(Request $request)
     {
-        $rooms = Room::with(['checklistItems'])->get();
+        $rooms = Room::all();
 
         $roomStatuses = $rooms->map(function ($room) {
-            $totalItems = $room->checklistItems->count();
-            $checkedItems = $room->checklistItems->where('pivot.is_checked', true)->count();
-
-            if ($totalItems === 0) {
-                $status = 'no_checklist';
-            } elseif ($room->daily_checked) {
-                $status = 'clean';
-            } elseif ($checkedItems > 0 && $checkedItems < $totalItems) {
-                $status = 'in_progress';
-            } else {
-                $status = 'dirty';
-            }
-
+            $status = $room->housekeeping_status ?? 'available';
             return [
                 'id' => $room->id,
                 'name' => $room->name,
-                'is_booked' => $room->is_booked,
-                'daily_checked' => $room->daily_checked,
                 'status' => $status,
-                'checklist_total' => $totalItems,
-                'checklist_done' => $checkedItems,
             ];
         });
 
-        $clean = $roomStatuses->where('status', 'clean')->count();
-        $dirty = $roomStatuses->where('status', 'dirty')->count();
-        $inProgress = $roomStatuses->where('status', 'in_progress')->count();
+        $available = $roomStatuses->where('status', 'available')->count();
+        $occupied = $roomStatuses->where('status', 'occupied')->count();
+        $needsCleaning = $roomStatuses->where('status', 'needs_cleaning')->count();
 
         return response()->json([
             'success' => true,
             'rooms' => $roomStatuses,
             'stats' => [
                 'total' => $rooms->count(),
-                'clean' => $clean,
-                'dirty' => $dirty,
-                'in_progress' => $inProgress,
+                'available' => $available,
+                'occupied' => $occupied,
+                'needs_cleaning' => $needsCleaning,
             ],
         ]);
+    }
+
+    /**
+     * Cycle room housekeeping status: available -> occupied -> needs_cleaning -> available
+     */
+    public function cycleRoomStatus(Request $request)
+    {
+        try {
+            $room = Room::findOrFail($request->input('room_id'));
+            $currentStatus = $room->housekeeping_status ?? 'available';
+
+            $cycle = [
+                'available' => 'occupied',
+                'occupied' => 'needs_cleaning',
+                'needs_cleaning' => 'available',
+            ];
+
+            $newStatus = $cycle[$currentStatus] ?? 'available';
+            $room->housekeeping_status = $newStatus;
+            $room->save();
+
+            // Return updated stats
+            $allRooms = Room::all();
+            $available = $allRooms->where('housekeeping_status', 'available')->count() + $allRooms->whereNull('housekeeping_status')->count();
+            $occupied = $allRooms->where('housekeeping_status', 'occupied')->count();
+            $needsCleaning = $allRooms->where('housekeeping_status', 'needs_cleaning')->count();
+
+            return response()->json([
+                'success' => true,
+                'room_id' => $room->id,
+                'new_status' => $newStatus,
+                'stats' => [
+                    'total' => $allRooms->count(),
+                    'available' => $available,
+                    'occupied' => $occupied,
+                    'needs_cleaning' => $needsCleaning,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -1441,8 +1466,9 @@ class StaffAllocationController extends Controller
 
         // Housekeeping summary
         $totalRooms = Room::count();
-        $cleanRooms = Room::where('daily_checked', true)->count();
-        $dirtyRooms = $totalRooms - $cleanRooms;
+        $availableRooms = Room::where('housekeeping_status', 'available')->orWhereNull('housekeeping_status')->count();
+        $occupiedRooms = Room::where('housekeeping_status', 'occupied')->count();
+        $needsCleaningRooms = Room::where('housekeeping_status', 'needs_cleaning')->count();
 
         // Inventory warnings from /stock system
         $today = Carbon::today()->toDateString();
@@ -1499,8 +1525,9 @@ class StaffAllocationController extends Controller
                 'arrivals' => $arrivalsCount,
                 'departures' => $departuresCount,
                 'in_house' => $inHouseCount,
-                'rooms_clean' => $cleanRooms,
-                'rooms_dirty' => $dirtyRooms,
+                'rooms_available' => $availableRooms,
+                'rooms_occupied' => $occupiedRooms,
+                'rooms_dirty' => $needsCleaningRooms,
                 'rooms_total' => $totalRooms,
                 'inventory_low' => $lowStockCount,
                 'inventory_out' => $outOfStockCount,

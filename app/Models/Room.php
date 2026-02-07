@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
-    protected $fillable = ['name', 'daily_checked', 'is_booked'];
+    protected $fillable = ['name', 'daily_checked', 'is_booked', 'housekeeping_status'];
     
     protected $casts = [
         'daily_checked' => 'boolean',

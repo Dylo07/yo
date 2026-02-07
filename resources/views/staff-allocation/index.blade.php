@@ -459,7 +459,7 @@
                 </div>
                 <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('housekeepingWidget')">
                     <div class="text-red-400 text-base font-bold" id="ccDirtyRooms">-</div>
-                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Dirty Rooms</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Needs Clean</div>
                 </div>
                 <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('todayTasksWidget')">
                     <div class="text-violet-400 text-base font-bold" id="ccTasksDue">-</div>
@@ -528,16 +528,16 @@
                         <div class="text-lg font-bold text-gray-700" id="hkTotal">0</div>
                     </div>
                     <div class="text-center bg-green-50 rounded-lg p-2">
-                        <div class="text-xs text-green-600">Clean</div>
-                        <div class="text-lg font-bold text-green-600" id="hkClean">0</div>
-                    </div>
-                    <div class="text-center bg-red-50 rounded-lg p-2">
-                        <div class="text-xs text-red-600">Dirty</div>
-                        <div class="text-lg font-bold text-red-600" id="hkDirty">0</div>
+                        <div class="text-xs text-green-600">Available</div>
+                        <div class="text-lg font-bold text-green-600" id="hkAvailable">0</div>
                     </div>
                     <div class="text-center bg-yellow-50 rounded-lg p-2">
-                        <div class="text-xs text-yellow-600">In Progress</div>
-                        <div class="text-lg font-bold text-yellow-600" id="hkInProgress">0</div>
+                        <div class="text-xs text-yellow-600">Occupied</div>
+                        <div class="text-lg font-bold text-yellow-600" id="hkOccupied">0</div>
+                    </div>
+                    <div class="text-center bg-red-50 rounded-lg p-2">
+                        <div class="text-xs text-red-600">Needs Cleaning</div>
+                        <div class="text-lg font-bold text-red-600" id="hkNeedsCleaning">0</div>
                     </div>
                 </div>
                 <!-- Room Grid -->
@@ -5066,14 +5066,31 @@ async function loadHousekeepingStatus() {
         const response = await fetch('/api/duty-roster/housekeeping-status');
         const data = await response.json();
         if (data.success) {
-            document.getElementById('hkTotal').textContent = data.stats.total;
-            document.getElementById('hkClean').textContent = data.stats.clean;
-            document.getElementById('hkDirty').textContent = data.stats.dirty;
-            document.getElementById('hkInProgress').textContent = data.stats.in_progress;
+            updateHousekeepingStats(data.stats);
             renderHousekeepingGrid(data.rooms);
         }
     } catch (error) {
         console.error('Error loading housekeeping status:', error);
+    }
+}
+
+function updateHousekeepingStats(stats) {
+    document.getElementById('hkTotal').textContent = stats.total;
+    document.getElementById('hkAvailable').textContent = stats.available;
+    document.getElementById('hkOccupied').textContent = stats.occupied;
+    document.getElementById('hkNeedsCleaning').textContent = stats.needs_cleaning;
+}
+
+function getRoomStatusStyle(status) {
+    switch (status) {
+        case 'available':
+            return { bg: 'bg-green-100', text: 'text-green-700', icon: 'fa-check-circle', border: 'border-green-300', label: 'Available' };
+        case 'occupied':
+            return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'fa-user', border: 'border-yellow-300', label: 'Occupied' };
+        case 'needs_cleaning':
+            return { bg: 'bg-red-100', text: 'text-red-700', icon: 'fa-broom', border: 'border-red-300', label: 'Needs Cleaning' };
+        default:
+            return { bg: 'bg-green-100', text: 'text-green-700', icon: 'fa-check-circle', border: 'border-green-300', label: 'Available' };
     }
 }
 
@@ -5084,28 +5101,41 @@ function renderHousekeepingGrid(rooms) {
         return;
     }
     container.innerHTML = rooms.map(room => {
-        let bgColor, textColor, icon, borderColor;
-        switch (room.status) {
-            case 'clean':
-                bgColor = 'bg-green-100'; textColor = 'text-green-700'; icon = 'fa-check-circle'; borderColor = 'border-green-300';
-                break;
-            case 'dirty':
-                bgColor = 'bg-red-100'; textColor = 'text-red-700'; icon = 'fa-exclamation-circle'; borderColor = 'border-red-300';
-                break;
-            case 'in_progress':
-                bgColor = 'bg-yellow-100'; textColor = 'text-yellow-700'; icon = 'fa-spinner'; borderColor = 'border-yellow-300';
-                break;
-            default:
-                bgColor = 'bg-gray-100'; textColor = 'text-gray-500'; icon = 'fa-minus-circle'; borderColor = 'border-gray-200';
-        }
-        const bookedBadge = room.is_booked ? '<span class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" title="Booked"></span>' : '';
+        const s = getRoomStatusStyle(room.status);
         return `
-            <div class="relative ${bgColor} ${textColor} border ${borderColor} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px]" title="${room.name}: ${room.status} (${room.checklist_done}/${room.checklist_total} checked)">
-                ${bookedBadge}
-                <i class="fas ${icon} text-[8px]"></i> ${room.name}
+            <div class="relative ${s.bg} ${s.text} border ${s.border} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px] cursor-pointer select-none hover:opacity-80 active:scale-95 transition-all"
+                 title="${room.name}: ${s.label} (click to change)"
+                 onclick="cycleRoomStatus(${room.id})"
+                 id="hk-room-${room.id}">
+                <i class="fas ${s.icon} text-[8px]"></i> ${room.name}
             </div>
         `;
     }).join('');
+}
+
+async function cycleRoomStatus(roomId) {
+    const el = document.getElementById('hk-room-' + roomId);
+    if (!el) return;
+    el.style.opacity = '0.5';
+    try {
+        const response = await fetch('/api/duty-roster/cycle-room-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify({ room_id: roomId })
+        });
+        const data = await response.json();
+        if (data.success) {
+            const s = getRoomStatusStyle(data.new_status);
+            el.className = `relative ${s.bg} ${s.text} border ${s.border} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px] cursor-pointer select-none hover:opacity-80 active:scale-95 transition-all`;
+            el.title = el.textContent.trim().split(' ').pop() + ': ' + s.label + ' (click to change)';
+            const roomName = el.textContent.trim();
+            el.innerHTML = `<i class="fas ${s.icon} text-[8px]"></i> ${roomName}`;
+            updateHousekeepingStats(data.stats);
+        }
+    } catch (error) {
+        console.error('Error cycling room status:', error);
+    }
+    el.style.opacity = '1';
 }
 
 function refreshHousekeeping() {

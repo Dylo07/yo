@@ -327,7 +327,7 @@
                             <span class="assigned-count" data-category="{{ $category }}">0</span>/{{ $members->count() }}
                         </span>
                     </button>
-                    <div class="px-3 pb-3 space-y-2 category-content" id="content-{{ $category }}">
+                    <div class="px-3 pb-3 space-y-2 category-content" id="content-{{ $category }}" style="display: none;">
                         @foreach($members as $member)
                         <div class="staff-card relative flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300"
                             draggable="true"
@@ -404,35 +404,187 @@
         </div>
     </div>
 
-    <!-- Map Area -->
+    <!-- MIDDLE COLUMN: Live Status / Command Center -->
     <div class="flex-1 p-4 overflow-auto" style="background-color: #f8fafc;">
-        <!-- Compact Header -->
-        <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
-            <div class="flex items-center gap-3">
-                <h1 class="text-lg font-bold text-gray-800">Hotel Floor Plan</h1>
-                <!-- Date Selection -->
-                <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg shadow-sm border text-xs">
-                    <i class="fas fa-calendar-alt text-blue-500"></i>
-                    <button onclick="goToPreviousDay()" class="text-gray-600 hover:text-gray-800 font-medium px-1.5 py-0.5 rounded hover:bg-gray-100">←</button>
-                    <input type="date" id="allocationDate" 
-                        class="border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium text-xs w-28"
-                        value="{{ date('Y-m-d') }}"
-                        onchange="handleDateChange(this.value)">
-                    <button onclick="goToToday()" class="text-blue-600 hover:text-blue-800 font-medium px-1.5 py-0.5 rounded hover:bg-blue-50">Today</button>
-                    <button onclick="goToTomorrow()" class="text-green-600 hover:text-green-800 font-medium px-1.5 py-0.5 rounded hover:bg-green-50">Tomorrow</button>
-                    <button onclick="goToNextDay()" class="text-gray-600 hover:text-gray-800 font-medium px-1.5 py-0.5 rounded hover:bg-gray-100">→</button>
+        <!-- Command Center Header -->
+        <div class="mb-3 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-xl p-4 shadow-lg">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center shadow-inner">
+                        <i class="fas fa-satellite-dish text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white tracking-wide">Daily Operations Command Center</h1>
+                        <p class="text-slate-400 text-xs">Real-time hotel operations at a glance</p>
+                    </div>
+                    <!-- Date Selection -->
+                    <div class="flex items-center gap-1 bg-white/10 backdrop-blur px-2 py-1 rounded-lg text-xs ml-2">
+                        <i class="fas fa-calendar-alt text-amber-400"></i>
+                        <button onclick="goToPreviousDay()" class="text-gray-300 hover:text-white font-medium px-1.5 py-0.5 rounded hover:bg-white/10">←</button>
+                        <input type="date" id="allocationDate" 
+                            class="border-0 focus:outline-none focus:ring-0 text-white font-medium text-xs w-28 bg-transparent"
+                            value="{{ date('Y-m-d') }}"
+                            onchange="handleDateChange(this.value)">
+                        <button onclick="goToToday()" class="text-amber-400 hover:text-amber-300 font-medium px-1.5 py-0.5 rounded hover:bg-white/10">Today</button>
+                        <button onclick="goToTomorrow()" class="text-emerald-400 hover:text-emerald-300 font-medium px-1.5 py-0.5 rounded hover:bg-white/10">Tomorrow</button>
+                        <button onclick="goToNextDay()" class="text-gray-300 hover:text-white font-medium px-1.5 py-0.5 rounded hover:bg-white/10">→</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearAllAssignments()" class="px-2 py-1.5 bg-red-500/80 hover:bg-red-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
+                        <i class="fas fa-trash-alt"></i> Clear
+                    </button>
+                    <button onclick="printRoster()" class="px-2 py-1.5 bg-indigo-500/80 hover:bg-indigo-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <a href="{{ route('duty.roster.assign.tasks') }}?date={{ date('Y-m-d') }}" id="assignTasksBtn" class="px-2 py-1.5 bg-yellow-500/80 hover:bg-yellow-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print text-decoration-none">
+                        <i class="fas fa-tasks"></i> Tasks
+                    </a>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="clearAllAssignments()" class="px-2 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
-                    <i class="fas fa-trash-alt"></i> Clear
-                </button>
-                <button onclick="printRoster()" class="px-2 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print">
-                    <i class="fas fa-print"></i> Print
-                </button>
-                <a href="{{ route('duty.roster.assign.tasks') }}?date={{ date('Y-m-d') }}" id="assignTasksBtn" class="px-2 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1 no-print text-decoration-none">
-                    <i class="fas fa-tasks"></i> Tasks
-                </a>
+
+            <!-- Quick Stats Bar - Row 1 -->
+            <div class="grid grid-cols-8 gap-1.5 mt-3">
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('arrivalsWidget')">
+                    <div class="text-emerald-400 text-base font-bold" id="ccArrivals">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Arrivals</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('arrivalsWidget')">
+                    <div class="text-orange-400 text-base font-bold" id="ccDepartures">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Departures</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('arrivalsWidget')">
+                    <div class="text-cyan-400 text-base font-bold" id="ccInHouse">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">In-House</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('housekeepingWidget')">
+                    <div class="text-red-400 text-base font-bold" id="ccDirtyRooms">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Dirty Rooms</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="scrollToWidget('todayTasksWidget')">
+                    <div class="text-violet-400 text-base font-bold" id="ccTasksDue">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Tasks Due</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="document.getElementById('inventoryWarningsWidget')?.scrollIntoView({behavior:'smooth'})">
+                    <div class="text-yellow-400 text-base font-bold" id="ccLowStock">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Low Stock</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="document.getElementById('crmLeadsWidget')?.scrollIntoView({behavior:'smooth'})">
+                    <div class="text-blue-400 text-base font-bold" id="ccPendingLeads">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">CRM Leads</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-lg p-1.5 text-center cursor-pointer hover:bg-white/20 transition" onclick="document.getElementById('feedbackWidget')?.scrollIntoView({behavior:'smooth'})">
+                    <div class="text-pink-400 text-base font-bold" id="ccFeedback">-</div>
+                    <div class="text-slate-400 text-[9px] uppercase tracking-wider">Feedback</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arrivals & Departures Widget -->
+        <div class="mb-4 grid grid-cols-2 gap-3" id="arrivalsWidget">
+            <!-- Arrivals -->
+            <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div class="p-2.5 bg-gradient-to-r from-emerald-600 to-green-600 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-plane-arrival"></i> Arrivals Today
+                    </h3>
+                    <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-medium" id="arrivalsCount">0</span>
+                </div>
+                <div class="p-2 max-h-48 overflow-y-auto" id="arrivalsList">
+                    <div class="text-center py-3 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+            <!-- Departures -->
+            <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div class="p-2.5 bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-plane-departure"></i> Departures Today
+                    </h3>
+                    <span class="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-medium" id="departuresCount">0</span>
+                </div>
+                <div class="p-2 max-h-48 overflow-y-auto" id="departuresList">
+                    <div class="text-center py-3 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Housekeeping Status Widget -->
+        <div class="mb-4 bg-white rounded-lg shadow-sm border overflow-hidden" id="housekeepingWidget">
+            <div class="p-2.5 bg-gradient-to-r from-pink-600 to-rose-600 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-broom"></i> Housekeeping Status
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="refreshHousekeeping()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-2">
+                <!-- Housekeeping Stats -->
+                <div class="grid grid-cols-4 gap-2 mb-2">
+                    <div class="text-center bg-gray-50 rounded-lg p-2">
+                        <div class="text-xs text-gray-500">Total</div>
+                        <div class="text-lg font-bold text-gray-700" id="hkTotal">0</div>
+                    </div>
+                    <div class="text-center bg-green-50 rounded-lg p-2">
+                        <div class="text-xs text-green-600">Clean</div>
+                        <div class="text-lg font-bold text-green-600" id="hkClean">0</div>
+                    </div>
+                    <div class="text-center bg-red-50 rounded-lg p-2">
+                        <div class="text-xs text-red-600">Dirty</div>
+                        <div class="text-lg font-bold text-red-600" id="hkDirty">0</div>
+                    </div>
+                    <div class="text-center bg-yellow-50 rounded-lg p-2">
+                        <div class="text-xs text-yellow-600">In Progress</div>
+                        <div class="text-lg font-bold text-yellow-600" id="hkInProgress">0</div>
+                    </div>
+                </div>
+                <!-- Room Grid -->
+                <div id="hkRoomGrid" class="flex flex-wrap gap-1.5">
+                    <div class="text-center py-2 text-gray-400 text-xs w-full"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Tasks Widget -->
+        <div class="mb-4 bg-white rounded-lg shadow-sm border overflow-hidden" id="todayTasksWidget">
+            <div class="p-2.5 bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-between cursor-pointer" onclick="toggleWidgetBody('todayTasksBody')">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-clipboard-list"></i> Today's Tasks
+                </h3>
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-medium" id="tasksDueCount">0</span>
+                        <span class="text-[10px] text-purple-200">due</span>
+                        <span class="text-[10px] bg-red-500/80 text-white px-1.5 py-0.5 rounded-full font-medium" id="tasksOverdueCount">0</span>
+                        <span class="text-[10px] text-purple-200">overdue</span>
+                    </div>
+                    <i class="fas fa-chevron-down text-white/60 text-xs transition-transform" id="todayTasksBodyIcon"></i>
+                </div>
+            </div>
+            <div id="todayTasksBody">
+                <div class="p-2 grid grid-cols-4 gap-2 bg-purple-50 border-b">
+                    <div class="text-center">
+                        <div class="text-xs font-bold text-violet-700" id="taskStatDue">0</div>
+                        <div class="text-[9px] text-violet-500">Due Today</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs font-bold text-red-600" id="taskStatOverdue">0</div>
+                        <div class="text-[9px] text-red-500">Overdue</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs font-bold text-green-600" id="taskStatCompleted">0</div>
+                        <div class="text-[9px] text-green-500">Done Today</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs font-bold text-gray-600" id="taskStatPending">0</div>
+                        <div class="text-[9px] text-gray-500">Total Pending</div>
+                    </div>
+                </div>
+                <div class="p-2 max-h-56 overflow-y-auto" id="todayTasksList">
+                    <div class="text-center py-3 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading tasks...</div>
+                </div>
             </div>
         </div>
 
@@ -1001,27 +1153,155 @@
         @endif
     </div>
 
-    <!-- Bookings Sidebar (Right) -->
-    <div class="w-80 bg-white border-l border-gray-200 flex flex-col shadow-lg">
+    <!-- RIGHT COLUMN: Alerts & Intelligence -->
+    <div class="w-96 bg-white border-l border-gray-200 flex flex-col shadow-lg">
         <!-- Quick Navigation Buttons -->
         <div class="flex">
-            <a href="/room-visualizer" class="flex-1 py-3 text-center text-white font-bold text-sm" style="background: #f97316;">
-                Room<br>Availability
+            <a href="/room-visualizer" class="flex-1 py-2 text-center text-white font-bold text-xs" style="background: #f97316;">
+                <i class="fas fa-bed"></i> Rooms
             </a>
-            <a href="/calendar" class="flex-1 py-3 text-center text-white font-bold text-sm" style="background: #ea580c;">
-                Booking<br>Calendar
+            <a href="/calendar" class="flex-1 py-2 text-center text-white font-bold text-xs" style="background: #ea580c;">
+                <i class="fas fa-calendar"></i> Calendar
+            </a>
+            <a href="/leads" class="flex-1 py-2 text-center text-white font-bold text-xs" style="background: #2563eb;">
+                <i class="fas fa-headset"></i> CRM
             </a>
         </div>
-        <!-- Header -->
-        <div class="p-4 border-b border-gray-200" style="background: linear-gradient(to right, #059669, #047857);">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-calendar-check"></i> <span id="bookingsDateTitle">Today's Bookings</span>
-                </h2>
-                <span id="currentTimeDisplay" class="text-white text-sm font-medium bg-white/20 px-2 py-1 rounded"></span>
+
+        <!-- Alerts Header -->
+        <div class="p-3 border-b border-gray-200" style="background: linear-gradient(to right, #dc2626, #b91c1c);">
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fas fa-bell"></i> Alerts & Intelligence
+            </h2>
+            <p class="text-red-200 text-xs mt-0.5">Items requiring immediate attention</p>
+        </div>
+
+        <!-- Scrollable Alerts Area -->
+        <div class="flex-1 overflow-y-auto sidebar-scroll">
+
+            <!-- Inventory Warnings Widget -->
+            <div class="border-b border-gray-200" id="inventoryWarningsWidget">
+                <div class="p-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 flex items-center justify-between cursor-pointer" onclick="toggleWidgetBody('inventoryBody')">
+                    <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i> Inventory Warnings
+                    </h3>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-medium" id="invWarningCount">0</span>
+                        <button onclick="event.stopPropagation(); refreshInventoryWarnings()" class="text-white hover:text-yellow-200 text-xs px-1 py-0.5 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <i class="fas fa-chevron-down text-white/60 text-xs transition-transform" id="inventoryBodyIcon"></i>
+                    </div>
+                </div>
+                <div class="p-2 max-h-52 overflow-y-auto" id="inventoryBody">
+                    <div class="text-center py-2 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
             </div>
-            <p class="text-green-100 text-sm mt-1">Rooms with active bookings</p>
-        </div>
+
+            <!-- CRM Leads Widget -->
+            <div class="border-b border-gray-200" id="crmLeadsWidget">
+                <div class="p-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between cursor-pointer" onclick="toggleWidgetBody('crmBody')">
+                    <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-headset"></i> Pending CRM Leads
+                    </h3>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-medium" id="crmLeadCount">0</span>
+                        <button onclick="event.stopPropagation(); refreshPendingLeads()" class="text-white hover:text-blue-200 text-xs px-1 py-0.5 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <i class="fas fa-chevron-down text-white/60 text-xs transition-transform" id="crmBodyIcon"></i>
+                    </div>
+                </div>
+                <div id="crmBody">
+                    <!-- CRM Quick Stats -->
+                    <div class="grid grid-cols-4 gap-1 p-2 bg-blue-50 border-b text-center">
+                        <div>
+                            <div class="text-xs font-bold text-blue-700" id="crmTodayNew">0</div>
+                            <div class="text-[9px] text-blue-500">New Today</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-amber-600" id="crmPendingCalls">0</div>
+                            <div class="text-[9px] text-amber-500">Pending</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-red-600" id="crmOverdue">0</div>
+                            <div class="text-[9px] text-red-500">Overdue</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-green-600" id="crmConversion">0%</div>
+                            <div class="text-[9px] text-green-500">Conv. Rate</div>
+                        </div>
+                    </div>
+                    <div class="p-2 max-h-52 overflow-y-auto" id="crmLeadsList">
+                        <div class="text-center py-2 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Tickets Widget -->
+            <div class="border-b border-gray-200" id="maintenanceWidget">
+                <div class="p-2.5 bg-gradient-to-r from-rose-700 to-red-600 flex items-center justify-between cursor-pointer" onclick="toggleWidgetBody('maintenanceBody')">
+                    <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-tools"></i> Maintenance & Damage
+                    </h3>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-medium" id="maintenanceCount">0</span>
+                        <button onclick="event.stopPropagation(); refreshMaintenanceTickets()" class="text-white hover:text-rose-200 text-xs px-1 py-0.5 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <i class="fas fa-chevron-down text-white/60 text-xs transition-transform" id="maintenanceBodyIcon"></i>
+                    </div>
+                </div>
+                <div class="p-2 max-h-52 overflow-y-auto" id="maintenanceBody">
+                    <div class="text-center py-2 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+            </div>
+
+            <!-- Customer Feedback Widget -->
+            <div class="border-b border-gray-200" id="feedbackWidget">
+                <div class="p-2.5 bg-gradient-to-r from-pink-600 to-fuchsia-600 flex items-center justify-between cursor-pointer" onclick="toggleWidgetBody('feedbackBody')">
+                    <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-comment-dots"></i> Pending Feedback
+                    </h3>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded-full font-medium" id="feedbackCount">0</span>
+                        <button onclick="event.stopPropagation(); refreshPendingFeedback()" class="text-white hover:text-pink-200 text-xs px-1 py-0.5 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <i class="fas fa-chevron-down text-white/60 text-xs transition-transform" id="feedbackBodyIcon"></i>
+                    </div>
+                </div>
+                <div class="p-2" id="feedbackBody">
+                    <div class="grid grid-cols-2 gap-1 mb-2 bg-pink-50 rounded p-1.5 text-center">
+                        <div>
+                            <div class="text-xs font-bold text-pink-700" id="fbPending">0</div>
+                            <div class="text-[9px] text-pink-500">Pending Calls</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-green-600" id="fbCompletedToday">0</div>
+                            <div class="text-[9px] text-green-500">Done Today</div>
+                        </div>
+                    </div>
+                    <div class="max-h-48 overflow-y-auto" id="feedbackList">
+                        <div class="text-center py-2 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="px-3 py-2 bg-gray-100 border-b">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider"><i class="fas fa-calendar-check mr-1"></i> Bookings & Room Status</p>
+            </div>
+
+            <!-- Bookings Section Header -->
+            <div class="p-3 border-b border-gray-200" style="background: linear-gradient(to right, #059669, #047857);">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-calendar-check"></i> <span id="bookingsDateTitle">Today's Bookings</span>
+                    </h2>
+                    <span id="currentTimeDisplay" class="text-white text-xs font-medium bg-white/20 px-2 py-0.5 rounded"></span>
+                </div>
+            </div>
         <!-- Time Slider -->
         <div class="px-3 py-3 bg-gray-50 border-b border-gray-200">
             <div class="flex items-center justify-between mb-2">
@@ -1069,15 +1349,17 @@
         </div>
 
         <!-- Bookings List -->
-        <div class="flex-1 overflow-y-auto sidebar-scroll p-3" id="bookingsList">
+        <div class="p-3" id="bookingsList">
             <div class="text-center py-8 text-gray-400">
                 <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                 <p class="text-sm">Loading bookings...</p>
             </div>
         </div>
 
+        </div><!-- end scrollable alerts area -->
+
         <!-- Footer Stats -->
-        <div class="p-4 border-t border-gray-200 bg-gray-50">
+        <div class="p-3 border-t border-gray-200 bg-gray-50">
             <div class="text-xs text-gray-500 space-y-1">
                 <div class="flex justify-between">
                     <span>Total Bookings:</span>
@@ -2825,6 +3107,39 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStaffOut();
     // Refresh every 3 minutes
     setInterval(loadStaffOut, 180000);
+
+    // ===== COMMAND CENTER WIDGETS =====
+    // Load Command Center summary (quick stats bar)
+    loadCommandCenterData();
+    setInterval(loadCommandCenterData, 120000);
+
+    // Load Arrivals & Departures
+    loadArrivalsAndDepartures();
+    setInterval(loadArrivalsAndDepartures, 300000);
+
+    // Load Housekeeping Status
+    loadHousekeepingStatus();
+    setInterval(loadHousekeepingStatus, 300000);
+
+    // Load Inventory Warnings (right sidebar)
+    loadInventoryWarnings();
+    setInterval(loadInventoryWarnings, 300000);
+
+    // Load Pending CRM Leads (right sidebar)
+    loadPendingLeads();
+    setInterval(loadPendingLeads, 300000);
+
+    // Load Maintenance Tickets (right sidebar)
+    loadMaintenanceTickets();
+    setInterval(loadMaintenanceTickets, 300000);
+
+    // Load Pending Customer Feedback (right sidebar)
+    loadPendingFeedback();
+    setInterval(loadPendingFeedback, 300000);
+
+    // Load Today's Tasks (middle column)
+    loadTodayTasks();
+    setInterval(loadTodayTasks, 300000);
 });
 
 
@@ -3565,6 +3880,11 @@ function handleDateChange(date) {
             bookingsTitle.textContent = `Bookings - ${shortDate}`;
         }
     }
+    
+    // Refresh Command Center widgets for new date
+    loadCommandCenterData();
+    loadArrivalsAndDepartures();
+    loadTodayTasks();
     
     // Show notification
     showNotification(`Viewing allocations for: ${formattedDate}`);
@@ -4637,6 +4957,459 @@ function loadStaffOutForYesterday() {
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     document.getElementById('staffOutDatePicker').value = yesterdayStr;
     loadStaffOutForDate(yesterdayStr);
+}
+
+// ==================== COMMAND CENTER WIDGETS ====================
+
+// Helper: scroll to a widget by ID
+function scrollToWidget(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===== 1. Command Center Quick Stats =====
+async function loadCommandCenterData() {
+    try {
+        const date = document.getElementById('allocationDate')?.value || new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/duty-roster/command-center?date=${date}`);
+        const data = await response.json();
+        if (data.success) {
+            const s = data.summary;
+            document.getElementById('ccArrivals').textContent = s.arrivals;
+            document.getElementById('ccDepartures').textContent = s.departures;
+            document.getElementById('ccInHouse').textContent = s.in_house;
+            document.getElementById('ccDirtyRooms').textContent = s.rooms_dirty;
+            document.getElementById('ccTasksDue').textContent = (s.tasks_due_today || 0) + (s.tasks_overdue || 0);
+            document.getElementById('ccLowStock').textContent = s.inventory_low + s.inventory_out;
+            document.getElementById('ccPendingLeads').textContent = s.leads_pending;
+            document.getElementById('ccFeedback').textContent = s.feedback_pending || 0;
+
+            // Pulse animation on critical items
+            if (s.rooms_dirty > 0) document.getElementById('ccDirtyRooms').classList.add('animate-pulse');
+            if (s.inventory_out > 0) document.getElementById('ccLowStock').classList.add('animate-pulse');
+            if (s.leads_overdue > 0) document.getElementById('ccPendingLeads').classList.add('animate-pulse');
+            if (s.tasks_overdue > 0) document.getElementById('ccTasksDue').classList.add('animate-pulse');
+            if (s.feedback_pending > 0) document.getElementById('ccFeedback').classList.add('animate-pulse');
+        }
+    } catch (error) {
+        console.error('Error loading command center data:', error);
+    }
+}
+
+// ===== 2. Arrivals & Departures =====
+async function loadArrivalsAndDepartures() {
+    try {
+        const date = document.getElementById('allocationDate')?.value || new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/duty-roster/arrivals-departures?date=${date}`);
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('arrivalsCount').textContent = data.stats.arrivals_count;
+            document.getElementById('departuresCount').textContent = data.stats.departures_count;
+            renderArrivalsList(data.arrivals);
+            renderDeparturesList(data.departures);
+        }
+    } catch (error) {
+        console.error('Error loading arrivals/departures:', error);
+    }
+}
+
+function renderArrivalsList(arrivals) {
+    const container = document.getElementById('arrivalsList');
+    if (arrivals.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-gray-400 text-xs"><i class="fas fa-check-circle text-green-400"></i> No arrivals today</div>';
+        return;
+    }
+    container.innerHTML = arrivals.map(a => `
+        <div class="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg mb-1.5 border border-emerald-100 hover:bg-emerald-100 transition cursor-pointer" onclick="window.location='/calendar'">
+            <div class="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                ${(a.name || 'G').charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 truncate">${a.name || 'Guest'}</p>
+                <div class="flex items-center gap-2 text-[10px] text-gray-500">
+                    <span><i class="fas fa-clock text-emerald-500"></i> ${a.check_in || 'TBD'}</span>
+                    <span><i class="fas fa-door-open"></i> ${a.room_count} room(s)</span>
+                    ${a.guest_count ? `<span><i class="fas fa-users"></i> ${a.guest_count}</span>` : ''}
+                </div>
+            </div>
+            ${a.function_type ? `<span class="text-[9px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded font-medium">${a.function_type}</span>` : ''}
+        </div>
+    `).join('');
+}
+
+function renderDeparturesList(departures) {
+    const container = document.getElementById('departuresList');
+    if (departures.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-gray-400 text-xs"><i class="fas fa-check-circle text-green-400"></i> No departures today</div>';
+        return;
+    }
+    container.innerHTML = departures.map(d => `
+        <div class="flex items-center gap-2 p-2 bg-orange-50 rounded-lg mb-1.5 border border-orange-100 hover:bg-orange-100 transition cursor-pointer" onclick="window.location='/calendar'">
+            <div class="w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                ${(d.name || 'G').charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 truncate">${d.name || 'Guest'}</p>
+                <div class="flex items-center gap-2 text-[10px] text-gray-500">
+                    <span><i class="fas fa-clock text-orange-500"></i> ${d.check_out || 'TBD'}</span>
+                    <span><i class="fas fa-door-closed"></i> ${d.room_count} room(s)</span>
+                    ${d.contact_number ? `<span><i class="fas fa-phone"></i> ${d.contact_number}</span>` : ''}
+                </div>
+            </div>
+            ${d.function_type ? `<span class="text-[9px] bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded font-medium">${d.function_type}</span>` : ''}
+        </div>
+    `).join('');
+}
+
+// ===== 3. Housekeeping Status =====
+async function loadHousekeepingStatus() {
+    try {
+        const response = await fetch('/api/duty-roster/housekeeping-status');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('hkTotal').textContent = data.stats.total;
+            document.getElementById('hkClean').textContent = data.stats.clean;
+            document.getElementById('hkDirty').textContent = data.stats.dirty;
+            document.getElementById('hkInProgress').textContent = data.stats.in_progress;
+            renderHousekeepingGrid(data.rooms);
+        }
+    } catch (error) {
+        console.error('Error loading housekeeping status:', error);
+    }
+}
+
+function renderHousekeepingGrid(rooms) {
+    const container = document.getElementById('hkRoomGrid');
+    if (rooms.length === 0) {
+        container.innerHTML = '<div class="text-center py-2 text-gray-400 text-xs w-full">No rooms found</div>';
+        return;
+    }
+    container.innerHTML = rooms.map(room => {
+        let bgColor, textColor, icon, borderColor;
+        switch (room.status) {
+            case 'clean':
+                bgColor = 'bg-green-100'; textColor = 'text-green-700'; icon = 'fa-check-circle'; borderColor = 'border-green-300';
+                break;
+            case 'dirty':
+                bgColor = 'bg-red-100'; textColor = 'text-red-700'; icon = 'fa-exclamation-circle'; borderColor = 'border-red-300';
+                break;
+            case 'in_progress':
+                bgColor = 'bg-yellow-100'; textColor = 'text-yellow-700'; icon = 'fa-spinner'; borderColor = 'border-yellow-300';
+                break;
+            default:
+                bgColor = 'bg-gray-100'; textColor = 'text-gray-500'; icon = 'fa-minus-circle'; borderColor = 'border-gray-200';
+        }
+        const bookedBadge = room.is_booked ? '<span class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" title="Booked"></span>' : '';
+        return `
+            <div class="relative ${bgColor} ${textColor} border ${borderColor} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px]" title="${room.name}: ${room.status} (${room.checklist_done}/${room.checklist_total} checked)">
+                ${bookedBadge}
+                <i class="fas ${icon} text-[8px]"></i> ${room.name}
+            </div>
+        `;
+    }).join('');
+}
+
+function refreshHousekeeping() {
+    loadHousekeepingStatus();
+}
+
+// ===== 4. Inventory Warnings =====
+async function loadInventoryWarnings() {
+    try {
+        const response = await fetch('/api/duty-roster/inventory-warnings');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('invWarningCount').textContent = data.stats.total_warnings;
+            renderInventoryWarnings(data.items, data.stats);
+        }
+    } catch (error) {
+        console.error('Error loading inventory warnings:', error);
+    }
+}
+
+function renderInventoryWarnings(items, stats) {
+    const container = document.getElementById('inventoryBody');
+    if (items.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-xs"><i class="fas fa-check-circle text-green-500"></i> <span class="text-green-600 font-medium">All stock levels OK</span></div>';
+        return;
+    }
+    let html = '';
+    if (stats.out_of_stock > 0) {
+        html += `<div class="text-[10px] font-bold text-red-600 mb-1 flex items-center gap-1"><i class="fas fa-times-circle"></i> OUT OF STOCK (${stats.out_of_stock})</div>`;
+    }
+    html += items.map(item => {
+        const isOut = item.status === 'Out of Stock';
+        const bgClass = isOut ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200';
+        const iconClass = isOut ? 'text-red-500 fa-times-circle' : 'text-amber-500 fa-exclamation-triangle';
+        const stockVal = parseFloat(item.current_stock);
+        return `
+            <div class="flex items-center gap-2 p-1.5 ${bgClass} border rounded mb-1 cursor-pointer hover:opacity-80" onclick="window.open('/stock','_blank')">
+                <i class="fas ${iconClass} text-xs flex-shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-semibold text-gray-800 truncate">${item.name}</p>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <span class="text-[9px] text-gray-400">${item.category}</span>
+                        <span class="ml-auto text-[9px] font-bold ${isOut ? 'text-red-600' : 'text-amber-600'}">${stockVal.toFixed(1)} remaining</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    container.innerHTML = html;
+}
+
+function refreshInventoryWarnings() {
+    loadInventoryWarnings();
+}
+
+// ===== 5. Pending CRM Leads =====
+async function loadPendingLeads() {
+    try {
+        const response = await fetch('/api/duty-roster/pending-leads');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('crmLeadCount').textContent = data.stats.pending_calls;
+            document.getElementById('crmTodayNew').textContent = data.today_new;
+            document.getElementById('crmPendingCalls').textContent = data.stats.pending_calls;
+            document.getElementById('crmOverdue').textContent = data.stats.overdue;
+            document.getElementById('crmConversion').textContent = data.stats.conversion_rate + '%';
+            renderPendingLeads(data.leads);
+        }
+    } catch (error) {
+        console.error('Error loading pending leads:', error);
+    }
+}
+
+function renderPendingLeads(leads) {
+    const container = document.getElementById('crmLeadsList');
+    if (leads.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-xs"><i class="fas fa-check-circle text-green-500"></i> <span class="text-green-600 font-medium">No pending leads</span></div>';
+        return;
+    }
+    container.innerHTML = leads.map(lead => {
+        const overdueClass = lead.is_overdue ? 'border-red-300 bg-red-50' : 'border-blue-100 bg-blue-50';
+        const overdueBadge = lead.is_overdue ? '<span class="text-[8px] bg-red-500 text-white px-1 py-0.5 rounded font-bold animate-pulse">OVERDUE</span>' : '';
+        return `
+            <div class="flex items-center gap-2 p-1.5 ${overdueClass} border rounded mb-1">
+                <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
+                    ${(lead.customer_name || 'L').charAt(0).toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1">
+                        <p class="text-[11px] font-semibold text-gray-800 truncate">${lead.customer_name}</p>
+                        ${overdueBadge}
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] text-gray-500">
+                        <span class="badge-${lead.status_color}" style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--bs-${lead.status_color}, #6c757d);color:white;">${lead.status}</span>
+                        ${lead.check_in ? `<span>${lead.check_in} - ${lead.check_out || '?'}</span>` : ''}
+                        ${lead.days_since_contact > 0 ? `<span class="text-gray-400">${lead.days_since_contact}d ago</span>` : ''}
+                    </div>
+                </div>
+                ${lead.whatsapp_link ? `<a href="${lead.whatsapp_link}" target="_blank" class="text-green-500 hover:text-green-700 flex-shrink-0" title="WhatsApp"><i class="fab fa-whatsapp text-sm"></i></a>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function refreshPendingLeads() {
+    loadPendingLeads();
+}
+
+// ===== 6. Maintenance Tickets =====
+async function loadMaintenanceTickets() {
+    try {
+        const response = await fetch('/api/duty-roster/maintenance-tickets');
+        const data = await response.json();
+        if (data.success) {
+            const totalCount = data.stats.total_damages + data.stats.pending_tasks;
+            document.getElementById('maintenanceCount').textContent = totalCount;
+            renderMaintenanceTickets(data.damages, data.tasks);
+        }
+    } catch (error) {
+        console.error('Error loading maintenance tickets:', error);
+    }
+}
+
+function renderMaintenanceTickets(damages, tasks) {
+    const container = document.getElementById('maintenanceBody');
+    if (damages.length === 0 && tasks.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-xs"><i class="fas fa-check-circle text-green-500"></i> <span class="text-green-600 font-medium">No pending issues</span></div>';
+        return;
+    }
+    let html = '';
+
+    // Pending maintenance tasks
+    if (tasks.length > 0) {
+        html += '<div class="text-[10px] font-bold text-rose-700 mb-1 flex items-center gap-1"><i class="fas fa-wrench"></i> PENDING TASKS</div>';
+        html += tasks.map(task => {
+            const priorityColors = { 'High': 'bg-red-100 text-red-700 border-red-200', 'Medium': 'bg-amber-100 text-amber-700 border-amber-200', 'Low': 'bg-blue-100 text-blue-700 border-blue-200' };
+            const pClass = priorityColors[task.priority] || priorityColors['Medium'];
+            const overdueIcon = task.is_overdue ? '<i class="fas fa-exclamation-triangle text-red-500 text-[9px] animate-pulse"></i>' : '';
+            return `
+                <div class="flex items-start gap-2 p-1.5 bg-gray-50 border border-gray-200 rounded mb-1">
+                    <span class="text-[8px] px-1 py-0.5 rounded border font-bold mt-0.5 ${pClass}">${task.priority || 'Med'}</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] text-gray-800 leading-tight">${task.task}</p>
+                        <div class="flex items-center gap-2 text-[9px] text-gray-400 mt-0.5">
+                            <span><i class="fas fa-user"></i> ${task.assigned_to}</span>
+                            ${overdueIcon}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Recent damage reports
+    if (damages.length > 0) {
+        html += '<div class="text-[10px] font-bold text-rose-700 mb-1 mt-2 flex items-center gap-1"><i class="fas fa-hammer"></i> RECENT DAMAGE REPORTS</div>';
+        html += damages.map(d => `
+            <div class="flex items-start gap-2 p-1.5 bg-rose-50 border border-rose-200 rounded mb-1">
+                <i class="fas fa-exclamation-circle text-rose-500 text-xs mt-0.5 flex-shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-semibold text-gray-800">${d.item_name}</p>
+                    <div class="flex items-center gap-2 text-[9px] text-gray-500">
+                        <span>${d.type || 'Damage'}</span>
+                        <span>Qty: ${d.quantity}</span>
+                        ${d.total_cost > 0 ? `<span class="text-red-600 font-medium">Rs ${parseFloat(d.total_cost).toLocaleString()}</span>` : ''}
+                        <span class="text-gray-400">${d.days_ago === 0 ? 'Today' : d.days_ago + 'd ago'}</span>
+                    </div>
+                    ${d.notes ? `<p class="text-[9px] text-gray-400 mt-0.5 truncate">${d.notes}</p>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    container.innerHTML = html;
+}
+
+function refreshMaintenanceTickets() {
+    loadMaintenanceTickets();
+}
+
+// ==================== COLLAPSIBLE WIDGET TOGGLE ====================
+function toggleWidgetBody(bodyId) {
+    const body = document.getElementById(bodyId);
+    const icon = document.getElementById(bodyId + 'Icon');
+    if (!body) return;
+    if (body.style.display === 'none') {
+        body.style.display = '';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    } else {
+        body.style.display = 'none';
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+    }
+}
+
+// ==================== PENDING CUSTOMER FEEDBACK ====================
+async function loadPendingFeedback() {
+    try {
+        const response = await fetch('/api/duty-roster/pending-feedback');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('feedbackCount').textContent = data.stats.pending;
+            document.getElementById('fbPending').textContent = data.stats.pending;
+            document.getElementById('fbCompletedToday').textContent = data.stats.completed_today;
+            renderPendingFeedback(data.feedbacks);
+        }
+    } catch (error) {
+        console.error('Error loading pending feedback:', error);
+    }
+}
+
+function renderPendingFeedback(feedbacks) {
+    const container = document.getElementById('feedbackList');
+    if (feedbacks.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-xs"><i class="fas fa-check-circle text-green-500"></i> <span class="text-green-600 font-medium">All feedback collected!</span></div>';
+        return;
+    }
+    container.innerHTML = feedbacks.map(fb => {
+        const urgency = fb.days_ago > 3 ? 'border-red-300 bg-red-50' : fb.days_ago > 1 ? 'border-amber-200 bg-amber-50' : 'border-pink-100 bg-pink-50';
+        const urgencyBadge = fb.days_ago > 3 ? '<span class="text-[8px] bg-red-500 text-white px-1 py-0.5 rounded font-bold">URGENT</span>' : '';
+        return `
+            <div class="flex items-center gap-2 p-1.5 ${urgency} border rounded mb-1">
+                <div class="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
+                    ${(fb.customer_name || 'C').charAt(0).toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1">
+                        <p class="text-[11px] font-semibold text-gray-800 truncate">${fb.customer_name}</p>
+                        ${urgencyBadge}
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] text-gray-500">
+                        ${fb.function_type ? `<span>${fb.function_type}</span>` : ''}
+                        ${fb.function_date ? `<span>${fb.function_date}</span>` : ''}
+                        ${fb.days_ago !== null ? `<span class="text-gray-400">${fb.days_ago === 0 ? 'Today' : fb.days_ago + 'd ago'}</span>` : ''}
+                    </div>
+                </div>
+                ${fb.whatsapp_link ? `<a href="${fb.whatsapp_link}" target="_blank" onclick="event.stopPropagation()" class="text-green-500 hover:text-green-700 flex-shrink-0" title="WhatsApp"><i class="fab fa-whatsapp text-sm"></i></a>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function refreshPendingFeedback() {
+    loadPendingFeedback();
+}
+
+// ==================== TODAY'S TASKS ====================
+async function loadTodayTasks() {
+    try {
+        const date = document.getElementById('allocationDate')?.value || new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/duty-roster/today-tasks?date=${date}`);
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('tasksDueCount').textContent = data.stats.due_today;
+            document.getElementById('tasksOverdueCount').textContent = data.stats.overdue;
+            document.getElementById('taskStatDue').textContent = data.stats.due_today;
+            document.getElementById('taskStatOverdue').textContent = data.stats.overdue;
+            document.getElementById('taskStatCompleted').textContent = data.stats.completed_today;
+            document.getElementById('taskStatPending').textContent = data.stats.total_pending;
+            renderTodayTasks(data.due_today, data.overdue);
+        }
+    } catch (error) {
+        console.error('Error loading today tasks:', error);
+    }
+}
+
+function renderTodayTasks(dueToday, overdue) {
+    const container = document.getElementById('todayTasksList');
+    if (dueToday.length === 0 && overdue.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-xs"><i class="fas fa-check-circle text-green-500"></i> <span class="text-green-600 font-medium">All tasks completed!</span></div>';
+        return;
+    }
+    let html = '';
+
+    if (overdue.length > 0) {
+        html += '<div class="text-[10px] font-bold text-red-600 mb-1 flex items-center gap-1"><i class="fas fa-exclamation-triangle"></i> OVERDUE</div>';
+        html += overdue.map(t => renderTaskCard(t, true)).join('');
+    }
+
+    if (dueToday.length > 0) {
+        html += '<div class="text-[10px] font-bold text-violet-700 mb-1 mt-1.5 flex items-center gap-1"><i class="fas fa-calendar-day"></i> DUE TODAY</div>';
+        html += dueToday.map(t => renderTaskCard(t, false)).join('');
+    }
+
+    container.innerHTML = html;
+}
+
+function renderTaskCard(task, isOverdue) {
+    const priorityColors = { 'High': 'bg-red-100 text-red-700 border-red-200', 'Medium': 'bg-amber-100 text-amber-700 border-amber-200', 'Low': 'bg-blue-100 text-blue-700 border-blue-200' };
+    const pClass = priorityColors[task.priority] || priorityColors['Medium'];
+    const borderClass = isOverdue ? 'border-red-200 bg-red-50' : 'border-violet-100 bg-violet-50';
+    const daysText = task.days_overdue ? `<span class="text-red-500 text-[9px] font-bold">${task.days_overdue}d overdue</span>` : '';
+    return `
+        <div class="flex items-start gap-2 p-1.5 ${borderClass} border rounded mb-1">
+            <span class="text-[8px] px-1 py-0.5 rounded border font-bold mt-0.5 ${pClass} flex-shrink-0">${task.priority || 'Med'}</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-[11px] text-gray-800 leading-tight">${task.task}</p>
+                <div class="flex items-center gap-2 text-[9px] text-gray-400 mt-0.5">
+                    <span><i class="fas fa-user"></i> ${task.assigned_to}</span>
+                    ${task.category ? `<span class="text-gray-300">|</span><span>${task.category}</span>` : ''}
+                    ${daysText}
+                </div>
+            </div>
+        </div>
+    `;
 }
 </script>
 @endpush

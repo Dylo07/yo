@@ -18,6 +18,13 @@ use App\Models\Inventory;
 use App\Models\InStock;
 use App\Models\Menu;
 use App\Models\GatePass;
+use App\Models\Booking;
+use App\Models\Room;
+use App\Models\Item;
+use App\Models\Lead;
+use App\Models\DamageItem;
+use App\Models\ProductGroup;
+use App\Models\CustomerFeedback;
 use Carbon\Carbon;
 use DB;
 
@@ -1142,5 +1149,483 @@ class StaffAllocationController extends Controller
             ],
             'passes' => $formattedPasses,
         ]);
+    }
+
+    /**
+     * Dashboard Widget: Today's Arrivals & Departures
+     */
+    public function getArrivalsAndDepartures(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
+
+        // Arrivals: bookings whose start date is today
+        $arrivals = Booking::whereDate('start', $date)
+            ->orderBy('start', 'asc')
+            ->get()
+            ->map(function ($booking) {
+                $rooms = is_array($booking->room_numbers) ? $booking->room_numbers : json_decode($booking->room_numbers, true) ?? [];
+                return [
+                    'id' => $booking->id,
+                    'name' => $booking->name,
+                    'function_type' => $booking->function_type,
+                    'contact_number' => $booking->contact_number,
+                    'check_in' => $booking->start ? $booking->start->format('h:i A') : null,
+                    'check_out' => $booking->end ? $booking->end->format('h:i A') : null,
+                    'rooms' => $rooms,
+                    'room_count' => count($rooms),
+                    'guest_count' => $booking->guest_count,
+                ];
+            });
+
+        // Departures: bookings whose end date is today
+        $departures = Booking::whereDate('end', $date)
+            ->orderBy('end', 'asc')
+            ->get()
+            ->map(function ($booking) {
+                $rooms = is_array($booking->room_numbers) ? $booking->room_numbers : json_decode($booking->room_numbers, true) ?? [];
+                return [
+                    'id' => $booking->id,
+                    'name' => $booking->name,
+                    'function_type' => $booking->function_type,
+                    'contact_number' => $booking->contact_number,
+                    'check_in' => $booking->start ? $booking->start->format('h:i A') : null,
+                    'check_out' => $booking->end ? $booking->end->format('h:i A') : null,
+                    'rooms' => $rooms,
+                    'room_count' => count($rooms),
+                    'guest_count' => $booking->guest_count,
+                ];
+            });
+
+        // In-house: bookings that span across today (started before, ending after)
+        $inHouse = Booking::where('start', '<', $dateStart)
+            ->where('end', '>', $dateEnd)
+            ->get()
+            ->map(function ($booking) {
+                $rooms = is_array($booking->room_numbers) ? $booking->room_numbers : json_decode($booking->room_numbers, true) ?? [];
+                return [
+                    'id' => $booking->id,
+                    'name' => $booking->name,
+                    'function_type' => $booking->function_type,
+                    'rooms' => $rooms,
+                    'room_count' => count($rooms),
+                    'guest_count' => $booking->guest_count,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'arrivals' => $arrivals,
+            'departures' => $departures,
+            'in_house' => $inHouse,
+            'stats' => [
+                'arrivals_count' => $arrivals->count(),
+                'departures_count' => $departures->count(),
+                'in_house_count' => $inHouse->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard Widget: Housekeeping Status
+     */
+    public function getHousekeepingStatus(Request $request)
+    {
+        $rooms = Room::with(['checklistItems'])->get();
+
+        $roomStatuses = $rooms->map(function ($room) {
+            $totalItems = $room->checklistItems->count();
+            $checkedItems = $room->checklistItems->where('pivot.is_checked', true)->count();
+
+            if ($totalItems === 0) {
+                $status = 'no_checklist';
+            } elseif ($room->daily_checked) {
+                $status = 'clean';
+            } elseif ($checkedItems > 0 && $checkedItems < $totalItems) {
+                $status = 'in_progress';
+            } else {
+                $status = 'dirty';
+            }
+
+            return [
+                'id' => $room->id,
+                'name' => $room->name,
+                'is_booked' => $room->is_booked,
+                'daily_checked' => $room->daily_checked,
+                'status' => $status,
+                'checklist_total' => $totalItems,
+                'checklist_done' => $checkedItems,
+            ];
+        });
+
+        $clean = $roomStatuses->where('status', 'clean')->count();
+        $dirty = $roomStatuses->where('status', 'dirty')->count();
+        $inProgress = $roomStatuses->where('status', 'in_progress')->count();
+
+        return response()->json([
+            'success' => true,
+            'rooms' => $roomStatuses,
+            'stats' => [
+                'total' => $rooms->count(),
+                'clean' => $clean,
+                'dirty' => $dirty,
+                'in_progress' => $inProgress,
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard Widget: Inventory Warnings from /stock system
+     */
+    public function getInventoryWarnings(Request $request)
+    {
+        $today = Carbon::today()->toDateString();
+
+        // Get the latest inventory record for each item (today or most recent before today)
+        $items = Item::with(['group'])->get()
+            ->map(function ($item) use ($today) {
+                // Get today's inventory or the most recent one
+                $inventory = Inventory::where('item_id', $item->id)
+                    ->where('stock_date', '<=', $today)
+                    ->orderBy('stock_date', 'desc')
+                    ->first();
+
+                $stockLevel = $inventory ? $inventory->stock_level : null;
+
+                // Skip items with no inventory records at all
+                if ($stockLevel === null) {
+                    return null;
+                }
+
+                // Determine status based on stock level
+                if ($stockLevel <= 0) {
+                    $status = 'Out of Stock';
+                } elseif ($stockLevel <= 5) {
+                    $status = 'Low Stock';
+                } else {
+                    return null; // Not a warning item
+                }
+
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'current_stock' => $stockLevel,
+                    'category' => $item->group->name ?? 'Uncategorized',
+                    'status' => $status,
+                ];
+            })
+            ->filter()
+            ->sortBy('current_stock')
+            ->values();
+
+        $outOfStock = $items->where('status', 'Out of Stock')->count();
+        $lowStock = $items->where('status', 'Low Stock')->count();
+
+        return response()->json([
+            'success' => true,
+            'items' => $items,
+            'stats' => [
+                'total_warnings' => $items->count(),
+                'out_of_stock' => $outOfStock,
+                'low_stock' => $lowStock,
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard Widget: Pending CRM Leads
+     */
+    public function getPendingLeads(Request $request)
+    {
+        $stats = Lead::getStats();
+
+        // Leads needing immediate action (need to contact + overdue follow-ups)
+        $urgentLeads = Lead::pendingForCall()
+            ->orderBy('next_follow_up_at', 'asc')
+            ->limit(10)
+            ->get()
+            ->map(function ($lead) {
+                return [
+                    'id' => $lead->id,
+                    'customer_name' => $lead->customer_name,
+                    'phone_number' => $lead->formatted_phone,
+                    'whatsapp_link' => $lead->whatsapp_link,
+                    'source' => $lead->source?->label() ?? 'Unknown',
+                    'status' => $lead->status?->label() ?? 'Unknown',
+                    'status_color' => $lead->status?->badgeColor() ?? 'secondary',
+                    'check_in' => $lead->check_in ? $lead->check_in->format('M d') : null,
+                    'check_out' => $lead->check_out ? $lead->check_out->format('M d') : null,
+                    'is_overdue' => $lead->is_overdue,
+                    'next_follow_up' => $lead->next_follow_up_at ? $lead->next_follow_up_at->format('M d, h:i A') : null,
+                    'days_since_contact' => $lead->days_since_contact,
+                ];
+            });
+
+        // Today's new leads
+        $todayLeads = Lead::today()->count();
+
+        return response()->json([
+            'success' => true,
+            'leads' => $urgentLeads,
+            'stats' => $stats,
+            'today_new' => $todayLeads,
+        ]);
+    }
+
+    /**
+     * Dashboard Widget: Maintenance / Damage Tickets
+     */
+    public function getMaintenanceTickets(Request $request)
+    {
+        // Get recent damage items (last 30 days, unresolved)
+        $recentDamages = DamageItem::where('reported_date', '>=', Carbon::now()->subDays(30))
+            ->orderBy('reported_date', 'desc')
+            ->limit(15)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'item_name' => $item->item_name,
+                    'quantity' => $item->quantity,
+                    'type' => $item->type,
+                    'notes' => $item->notes,
+                    'total_cost' => $item->total_cost,
+                    'reported_date' => $item->reported_date ? $item->reported_date->format('M d, Y') : null,
+                    'days_ago' => $item->reported_date ? $item->reported_date->diffInDays(Carbon::today()) : null,
+                ];
+            });
+
+        // Pending maintenance tasks
+        $maintenanceTasks = Task::where('is_done', false)
+            ->where(function ($q) {
+                $q->where('staff_category', 'maintenance')
+                  ->orWhere('person_incharge', 'like', '%maintenance%');
+            })
+            ->orderBy('priority_order', 'asc')
+            ->limit(10)
+            ->get()
+            ->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'task' => $task->task,
+                    'priority' => $task->priority_order,
+                    'is_overdue' => $task->isOverdue(),
+                    'due_date' => $task->end_date,
+                    'assigned_to' => $task->assignedPerson ? $task->assignedPerson->name : ($task->person_incharge ?? 'Unassigned'),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'damages' => $recentDamages,
+            'tasks' => $maintenanceTasks,
+            'stats' => [
+                'total_damages' => $recentDamages->count(),
+                'pending_tasks' => $maintenanceTasks->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard: Combined Command Center data (single call for initial load)
+     */
+    public function getCommandCenterData(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+
+        // Arrivals count
+        $arrivalsCount = Booking::whereDate('start', $date)->count();
+        $departuresCount = Booking::whereDate('end', $date)->count();
+
+        // Housekeeping summary
+        $totalRooms = Room::count();
+        $cleanRooms = Room::where('daily_checked', true)->count();
+        $dirtyRooms = $totalRooms - $cleanRooms;
+
+        // Inventory warnings from /stock system
+        $today = Carbon::today()->toDateString();
+        $lowStockCount = 0;
+        $outOfStockCount = 0;
+        $allItems = Item::all();
+        foreach ($allItems as $item) {
+            $inv = Inventory::where('item_id', $item->id)
+                ->where('stock_date', '<=', $today)
+                ->orderBy('stock_date', 'desc')
+                ->first();
+            if ($inv) {
+                if ($inv->stock_level <= 0) {
+                    $outOfStockCount++;
+                } elseif ($inv->stock_level <= 5) {
+                    $lowStockCount++;
+                }
+            }
+        }
+
+        // CRM Leads
+        $pendingLeads = Lead::pendingForCall()->count();
+        $overdueLeads = Lead::overdue()->count();
+        $todayNewLeads = Lead::today()->count();
+
+        // Maintenance
+        $pendingMaintenance = Task::where('is_done', false)
+            ->where(function ($q) {
+                $q->where('staff_category', 'maintenance')
+                  ->orWhere('person_incharge', 'like', '%maintenance%');
+            })
+            ->count();
+
+        $recentDamages = DamageItem::where('reported_date', '>=', Carbon::now()->subDays(7))->count();
+
+        // In-house guests (bookings spanning today)
+        $dateStart = Carbon::parse($date)->startOfDay();
+        $dateEnd = Carbon::parse($date)->endOfDay();
+        $inHouseCount = Booking::where('start', '<', $dateStart)
+            ->where('end', '>', $dateEnd)
+            ->count();
+
+        // Tasks summary
+        $tasksDueToday = Task::where('is_done', false)->whereDate('end_date', $date)->count();
+        $tasksOverdue = Task::where('is_done', false)->whereNotNull('end_date')->whereDate('end_date', '<', $date)->count();
+
+        // Pending customer feedback
+        $feedbackPending = CustomerFeedback::pending()->count();
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'summary' => [
+                'arrivals' => $arrivalsCount,
+                'departures' => $departuresCount,
+                'in_house' => $inHouseCount,
+                'rooms_clean' => $cleanRooms,
+                'rooms_dirty' => $dirtyRooms,
+                'rooms_total' => $totalRooms,
+                'inventory_low' => $lowStockCount,
+                'inventory_out' => $outOfStockCount,
+                'leads_pending' => $pendingLeads,
+                'leads_overdue' => $overdueLeads,
+                'leads_today' => $todayNewLeads,
+                'maintenance_pending' => $pendingMaintenance,
+                'damages_recent' => $recentDamages,
+                'tasks_due_today' => $tasksDueToday,
+                'tasks_overdue' => $tasksOverdue,
+                'feedback_pending' => $feedbackPending,
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard Widget: Pending Customer Feedback
+     */
+    public function getPendingFeedback(Request $request)
+    {
+        $feedbacks = CustomerFeedback::pending()
+            ->orderBy('function_date', 'desc')
+            ->limit(15)
+            ->get()
+            ->map(function ($fb) {
+                return [
+                    'id' => $fb->id,
+                    'customer_name' => $fb->customer_name,
+                    'contact_number' => $fb->contact_number,
+                    'formatted_phone' => $fb->formatted_phone,
+                    'whatsapp_link' => $fb->whatsapp_link,
+                    'function_type' => $fb->function_type,
+                    'function_date' => $fb->function_date ? $fb->function_date->format('M d') : null,
+                    'days_ago' => $fb->function_date ? $fb->function_date->diffInDays(Carbon::today()) : null,
+                ];
+            });
+
+        $totalPending = CustomerFeedback::pending()->count();
+        $completedToday = CustomerFeedback::completed()
+            ->whereDate('feedback_taken_at', Carbon::today())
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'feedbacks' => $feedbacks,
+            'stats' => [
+                'pending' => $totalPending,
+                'completed_today' => $completedToday,
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard Widget: Today's Tasks Summary (all categories)
+     */
+    public function getTodayTasks(Request $request)
+    {
+        try {
+            $date = $request->input('date', date('Y-m-d'));
+
+            // Tasks due today
+            $dueToday = Task::where('is_done', false)
+                ->whereDate('end_date', $date)
+                ->with('assignedPerson')
+                ->get()
+                ->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'task' => $task->task,
+                        'priority' => $task->priority_order ?? 'Medium',
+                        'category' => $task->staff_category,
+                        'assigned_to' => $task->assignedPerson ? $task->assignedPerson->name : ($task->person_incharge ?? 'Unassigned'),
+                        'is_overdue' => false,
+                    ];
+                });
+
+            // Overdue tasks
+            $overdue = Task::where('is_done', false)
+                ->whereNotNull('end_date')
+                ->whereDate('end_date', '<', $date)
+                ->with('assignedPerson')
+                ->orderBy('end_date', 'asc')
+                ->limit(10)
+                ->get()
+                ->map(function ($task) use ($date) {
+                    return [
+                        'id' => $task->id,
+                        'task' => $task->task,
+                        'priority' => $task->priority_order ?? 'Medium',
+                        'category' => $task->staff_category,
+                        'assigned_to' => $task->assignedPerson ? $task->assignedPerson->name : ($task->person_incharge ?? 'Unassigned'),
+                        'is_overdue' => true,
+                        'due_date' => $task->end_date,
+                        'days_overdue' => Carbon::parse($task->end_date)->diffInDays(Carbon::parse($date)),
+                    ];
+                });
+
+            // Completed today
+            $completedToday = Task::where('is_done', true)
+                ->whereDate('updated_at', $date)
+                ->count();
+
+            // Total pending
+            $totalPending = Task::where('is_done', false)->count();
+
+            return response()->json([
+                'success' => true,
+                'date' => $date,
+                'due_today' => $dueToday,
+                'overdue' => $overdue,
+                'stats' => [
+                    'due_today' => $dueToday->count(),
+                    'overdue' => $overdue->count(),
+                    'completed_today' => $completedToday,
+                    'total_pending' => $totalPending,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'due_today' => [],
+                'overdue' => [],
+                'stats' => ['due_today' => 0, 'overdue' => 0, 'completed_today' => 0, 'total_pending' => 0],
+            ]);
+        }
     }
 }

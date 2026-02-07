@@ -416,6 +416,16 @@ Route::middleware(['auth'])->group(function () {
 
     // Staff Out (Gate Pass) Summary
     Route::get('/api/duty-roster/staff-out', [StaffAllocationController::class, 'getStaffOut'])->name('duty.roster.api.staff-out');
+
+    // Command Center Dashboard Widgets
+    Route::get('/api/duty-roster/command-center', [StaffAllocationController::class, 'getCommandCenterData'])->name('duty.roster.api.command-center');
+    Route::get('/api/duty-roster/arrivals-departures', [StaffAllocationController::class, 'getArrivalsAndDepartures'])->name('duty.roster.api.arrivals-departures');
+    Route::get('/api/duty-roster/housekeeping-status', [StaffAllocationController::class, 'getHousekeepingStatus'])->name('duty.roster.api.housekeeping-status');
+    Route::get('/api/duty-roster/inventory-warnings', [StaffAllocationController::class, 'getInventoryWarnings'])->name('duty.roster.api.inventory-warnings');
+    Route::get('/api/duty-roster/pending-leads', [StaffAllocationController::class, 'getPendingLeads'])->name('duty.roster.api.pending-leads');
+    Route::get('/api/duty-roster/maintenance-tickets', [StaffAllocationController::class, 'getMaintenanceTickets'])->name('duty.roster.api.maintenance-tickets');
+    Route::get('/api/duty-roster/pending-feedback', [StaffAllocationController::class, 'getPendingFeedback'])->name('duty.roster.api.pending-feedback');
+    Route::get('/api/duty-roster/today-tasks', [StaffAllocationController::class, 'getTodayTasks'])->name('duty.roster.api.today-tasks');
 });
 
 

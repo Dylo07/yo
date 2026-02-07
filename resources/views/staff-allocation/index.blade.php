@@ -1288,6 +1288,43 @@
                 </div>
             </div>
 
+            <!-- Online Users Widget (Admin Only) -->
+            @if(Auth::user()->role === 'admin')
+            <div class="border-b border-gray-200" id="onlineUsersWidget">
+                <div class="p-2.5 bg-gradient-to-r from-slate-700 to-gray-800 flex items-center justify-between cursor-pointer" onclick="toggleWidgetBody('onlineUsersBody')">
+                    <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-users-cog"></i> User Activity
+                    </h3>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] bg-green-500/30 text-green-300 px-1.5 py-0.5 rounded-full font-medium" id="onlineUserCount">0 online</span>
+                        <button onclick="event.stopPropagation(); loadOnlineUsers()" class="text-white hover:text-gray-300 text-xs px-1 py-0.5 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <i class="fas fa-chevron-down text-white/60 text-xs transition-transform" id="onlineUsersBodyIcon"></i>
+                    </div>
+                </div>
+                <div id="onlineUsersBody">
+                    <div class="grid grid-cols-3 gap-1 p-2 bg-slate-50 border-b text-center">
+                        <div>
+                            <div class="text-xs font-bold text-green-600" id="usOnline">0</div>
+                            <div class="text-[9px] text-green-500">Online</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-yellow-600" id="usIdle">0</div>
+                            <div class="text-[9px] text-yellow-500">Idle</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-gray-400" id="usOffline">0</div>
+                            <div class="text-[9px] text-gray-400">Offline</div>
+                        </div>
+                    </div>
+                    <div class="p-2 max-h-60 overflow-y-auto" id="onlineUsersList">
+                        <div class="text-center py-2 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Divider -->
             <div class="px-3 py-2 bg-gray-100 border-b">
                 <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider"><i class="fas fa-calendar-check mr-1"></i> Bookings & Room Status</p>
@@ -3140,6 +3177,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load Today's Tasks (middle column)
     loadTodayTasks();
     setInterval(loadTodayTasks, 300000);
+
+    // Load Online Users (admin only - API checks permission)
+    if (document.getElementById('onlineUsersWidget')) {
+        loadOnlineUsers();
+        setInterval(loadOnlineUsers, 60000);
+    }
 });
 
 
@@ -5440,6 +5483,68 @@ function renderTaskCard(task, isOverdue) {
             </div>
         </div>
     `;
+}
+
+// ==================== ONLINE USERS (ADMIN ONLY) ====================
+async function loadOnlineUsers() {
+    try {
+        const response = await fetch('/api/duty-roster/online-users');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('usOnline').textContent = data.stats.online;
+            document.getElementById('usIdle').textContent = data.stats.idle;
+            document.getElementById('usOffline').textContent = data.stats.offline;
+            document.getElementById('onlineUserCount').textContent = data.stats.online + ' online';
+            renderOnlineUsers(data.users);
+        }
+    } catch (error) {
+        console.error('Error loading online users:', error);
+    }
+}
+
+function renderOnlineUsers(users) {
+    const container = document.getElementById('onlineUsersList');
+    if (users.length === 0) {
+        container.innerHTML = '<div class="text-center py-3 text-xs text-gray-400">No users found</div>';
+        return;
+    }
+    container.innerHTML = users.map(user => {
+        let statusDot, statusBg, statusText;
+        if (user.is_online) {
+            statusDot = 'bg-green-500'; statusBg = 'bg-green-50 border-green-200'; statusText = 'Online';
+        } else if (user.is_idle) {
+            statusDot = 'bg-yellow-500'; statusBg = 'bg-yellow-50 border-yellow-200'; statusText = 'Idle';
+        } else {
+            statusDot = 'bg-gray-300'; statusBg = 'bg-gray-50 border-gray-200'; statusText = 'Offline';
+        }
+        const roleBadge = user.role === 'admin'
+            ? '<span class="text-[8px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-bold">ADMIN</span>'
+            : '<span class="text-[8px] bg-blue-100 text-blue-600 px-1 py-0.5 rounded font-bold">' + (user.role || 'user').toUpperCase() + '</span>';
+        const pageName = user.last_page ? '/' + user.last_page : '';
+        const pageLabel = pageName.length > 25 ? pageName.substring(0, 25) + '...' : pageName;
+
+        return `
+            <div class="flex items-center gap-2 p-1.5 ${statusBg} border rounded mb-1">
+                <div class="relative flex-shrink-0">
+                    <div class="w-7 h-7 bg-slate-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                        ${user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${statusDot} rounded-full border-2 border-white"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1">
+                        <p class="text-[11px] font-semibold text-gray-800 truncate">${user.name}</p>
+                        ${roleBadge}
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[9px] text-gray-400">
+                        <span>${statusText} · ${user.last_seen_human}</span>
+                    </div>
+                    ${user.is_online && pageLabel ? `<div class="text-[8px] text-gray-400 truncate mt-0.5"><i class="fas fa-eye text-[7px]"></i> ${pageLabel}</div>` : ''}
+                </div>
+                ${user.last_ip ? `<span class="text-[8px] text-gray-300 flex-shrink-0" title="IP: ${user.last_ip}"><i class="fas fa-wifi"></i></span>` : ''}
+            </div>
+        `;
+    }).join('');
 }
 </script>
 @endpush

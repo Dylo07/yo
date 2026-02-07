@@ -1655,4 +1655,55 @@ class StaffAllocationController extends Controller
             ]);
         }
     }
+
+    /**
+     * Dashboard Widget: Online Users & Activity (Admin Only)
+     */
+    public function getOnlineUsers(Request $request)
+    {
+        try {
+            if (!auth()->user() || !auth()->user()->checkAdmin()) {
+                return response()->json(['success' => false, 'error' => 'Unauthorized'], 403);
+            }
+
+            $users = User::select('id', 'name', 'role', 'email', 'last_seen_at', 'last_page', 'last_ip')
+                ->orderByDesc('last_seen_at')
+                ->get()
+                ->map(function ($user) {
+                    $lastSeen = $user->last_seen_at ? Carbon::parse($user->last_seen_at) : null;
+                    $isOnline = $lastSeen && $lastSeen->diffInMinutes(Carbon::now()) < 5;
+                    $isIdle = $lastSeen && !$isOnline && $lastSeen->diffInMinutes(Carbon::now()) < 15;
+
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'role' => $user->role,
+                        'email' => $user->email,
+                        'is_online' => $isOnline,
+                        'is_idle' => $isIdle,
+                        'last_seen_at' => $lastSeen ? $lastSeen->toDateTimeString() : null,
+                        'last_seen_human' => $lastSeen ? $lastSeen->diffForHumans() : 'Never',
+                        'last_page' => $user->last_page,
+                        'last_ip' => $user->last_ip,
+                    ];
+                });
+
+            $online = $users->where('is_online', true)->count();
+            $idle = $users->where('is_idle', true)->count();
+            $offline = $users->count() - $online - $idle;
+
+            return response()->json([
+                'success' => true,
+                'users' => $users,
+                'stats' => [
+                    'total' => $users->count(),
+                    'online' => $online,
+                    'idle' => $idle,
+                    'offline' => $offline,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
 }

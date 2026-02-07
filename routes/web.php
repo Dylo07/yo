@@ -427,6 +427,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/duty-roster/pending-feedback', [StaffAllocationController::class, 'getPendingFeedback'])->name('duty.roster.api.pending-feedback');
     Route::get('/api/duty-roster/today-tasks', [StaffAllocationController::class, 'getTodayTasks'])->name('duty.roster.api.today-tasks');
     Route::post('/api/duty-roster/cycle-room-status', [StaffAllocationController::class, 'cycleRoomStatus'])->name('duty.roster.api.cycle-room-status');
+    Route::get('/api/duty-roster/online-users', [StaffAllocationController::class, 'getOnlineUsers'])->name('duty.roster.api.online-users');
 });
 
 

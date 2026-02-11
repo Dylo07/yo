@@ -26,6 +26,7 @@ use App\Models\DamageItem;
 use App\Models\ProductGroup;
 use App\Models\CustomerFeedback;
 use App\Models\User;
+use App\Models\DailySalesSummary;
 use Carbon\Carbon;
 use DB;
 
@@ -986,6 +987,151 @@ class StaffAllocationController extends Controller
                 'status' => $status
             ]
         ]);
+    }
+
+    /**
+     * Get monthly financial summary (Profit/Loss) using DailySalesSummary for income
+     * Income = Cash Payment + Card Payment + Bank Payment from daily_sales_summaries
+     */
+    public function getMonthlyFinancialSummary(Request $request)
+    {
+        try {
+            $month = $request->input('month', date('m'));
+            $year = $request->input('year', date('Y'));
+
+            $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $endOfMonth = $startOfMonth->copy()->endOfMonth()->endOfDay();
+            $daysInMonth = $startOfMonth->daysInMonth;
+            $today = Carbon::today();
+
+            // ---- INCOME from daily_sales_summaries (Cash + Card + Bank) ----
+            $dailySummaries = DailySalesSummary::whereBetween('date', [
+                $startOfMonth->format('Y-m-d'),
+                $endOfMonth->format('Y-m-d')
+            ])->get();
+
+            // Group by date
+            $incomeByDate = $dailySummaries->groupBy(function ($item) {
+                return Carbon::parse($item->date)->format('Y-m-d');
+            })->map(function ($dayItems) {
+                return [
+                    'cash' => $dayItems->sum('cash_payment'),
+                    'card' => $dayItems->sum('card_payment'),
+                    'bank' => $dayItems->sum('bank_payment'),
+                    'total' => $dayItems->sum('cash_payment') + $dayItems->sum('card_payment') + $dayItems->sum('bank_payment'),
+                    'bills_count' => $dayItems->count(),
+                ];
+            });
+
+            $totalCash = $dailySummaries->sum('cash_payment');
+            $totalCard = $dailySummaries->sum('card_payment');
+            $totalBank = $dailySummaries->sum('bank_payment');
+            $totalIncome = $totalCash + $totalCard + $totalBank;
+
+            // ---- EXPENSES (Costs excluding MD withdrawals) ----
+            $totalOperational = Cost::whereBetween('cost_date', [$startOfMonth, $endOfMonth])
+                ->where('person_id', '!=', 4)
+                ->sum('amount');
+
+            // Expenses by date
+            $expensesByDate = Cost::whereBetween('cost_date', [$startOfMonth, $endOfMonth])
+                ->where('person_id', '!=', 4)
+                ->selectRaw('DATE(cost_date) as date, SUM(amount) as total')
+                ->groupBy('date')
+                ->pluck('total', 'date');
+
+            // ---- STAFF COSTS (Daily salary estimate * days elapsed) ----
+            $activeStaff = Person::whereHas('staffCode', function ($query) {
+                $query->where('is_active', 1);
+            })->whereNotNull('basic_salary')->get();
+
+            $dailyStaffCost = $activeStaff->sum(function ($staff) {
+                return $staff->basic_salary > 0 ? ($staff->basic_salary / 30) : 0;
+            });
+
+            // Calculate days elapsed in this month (up to today or end of month)
+            $lastDay = $endOfMonth->lt($today) ? $daysInMonth : $today->day;
+            $totalStaffCost = $dailyStaffCost * $lastDay;
+
+            // ---- INVENTORY COGS ----
+            $stockLogs = StockLog::with('item')
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->get();
+
+            $totalCogs = $stockLogs->filter(function ($log) {
+                return $log->action !== 'add';
+            })->sum(function ($log) {
+                $costPerUnit = $log->item->kitchen_cost_per_unit ?? 0;
+                return $log->quantity * $costPerUnit;
+            });
+
+            // COGS by date
+            $cogsByDate = $stockLogs->filter(function ($log) {
+                return $log->action !== 'add';
+            })->groupBy(function ($log) {
+                return $log->created_at->format('Y-m-d');
+            })->map(function ($dayLogs) {
+                return $dayLogs->sum(function ($log) {
+                    $costPerUnit = $log->item->kitchen_cost_per_unit ?? 0;
+                    return $log->quantity * $costPerUnit;
+                });
+            });
+
+            // ---- CALCULATE TOTALS ----
+            $totalExpenses = $totalOperational + $totalStaffCost + $totalCogs;
+            $netProfit = $totalIncome - $totalExpenses;
+            $status = $netProfit >= 0 ? 'profit' : 'loss';
+            $margin = $totalIncome > 0 ? ($netProfit / $totalIncome) * 100 : 0;
+
+            // ---- BUILD DAILY BREAKDOWN ----
+            $dailyBreakdown = [];
+            for ($d = 1; $d <= $lastDay; $d++) {
+                $dateStr = Carbon::createFromDate($year, $month, $d)->format('Y-m-d');
+                $dayIncome = $incomeByDate->get($dateStr, ['total' => 0, 'cash' => 0, 'card' => 0, 'bank' => 0, 'bills_count' => 0]);
+                $dayExpenses = (float)($expensesByDate[$dateStr] ?? 0);
+                $dayCogs = (float)($cogsByDate[$dateStr] ?? 0);
+                $dayTotal = $dayIncome['total'] - $dayExpenses - $dailyStaffCost - $dayCogs;
+
+                $dailyBreakdown[] = [
+                    'date' => $dateStr,
+                    'day' => $d,
+                    'income' => $dayIncome['total'],
+                    'expenses' => $dayExpenses,
+                    'staff_cost' => round($dailyStaffCost, 2),
+                    'cogs' => round($dayCogs, 2),
+                    'net' => round($dayTotal, 2),
+                    'bills_count' => $dayIncome['bills_count'],
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'month' => (int)$month,
+                    'year' => (int)$year,
+                    'month_name' => $startOfMonth->format('F Y'),
+                    'days_counted' => $lastDay,
+                    'income' => [
+                        'total' => round($totalIncome, 2),
+                        'cash' => round($totalCash, 2),
+                        'card' => round($totalCard, 2),
+                        'bank' => round($totalBank, 2),
+                    ],
+                    'expenses' => [
+                        'total' => round($totalExpenses, 2),
+                        'operational' => round($totalOperational, 2),
+                        'staff_cost' => round($totalStaffCost, 2),
+                        'cogs' => round($totalCogs, 2),
+                    ],
+                    'net_profit' => round($netProfit, 2),
+                    'profit_margin' => round($margin, 1),
+                    'status' => $status,
+                    'daily_breakdown' => $dailyBreakdown,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

@@ -778,6 +778,127 @@
             </div>
         </div>
 
+        <!-- Monthly Profit/Loss Report (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden" id="monthlyProfitWidget">
+            <div class="p-3 bg-gradient-to-r from-purple-900 to-indigo-900 text-white">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-purple-300"></i> Monthly Profit/Loss
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <span id="mplStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300">CALCULATING</span>
+                        <button onclick="refreshMonthlyProfit()" class="text-white hover:text-purple-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Month Navigation -->
+                <div class="flex items-center gap-2 mt-2">
+                    <button onclick="changeMonth(-1)" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <span id="mplMonthLabel" class="text-xs font-medium bg-white/10 px-3 py-1.5 rounded flex-1 text-center">{{ date('F Y') }}</span>
+                    <button onclick="changeMonth(1)" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <!-- Net Result -->
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Monthly Net Result</div>
+                        <div class="text-3xl font-extrabold flex items-baseline gap-2" id="mplNetValue">Rs 0.00</div>
+                        <div class="text-xs font-medium mt-1" id="mplMarginContainer">
+                            Margin: <span id="mplMarginValue" class="text-gray-600">0%</span>
+                            <span class="text-gray-400 ml-2" id="mplDaysCounted"></span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-gray-500 mb-1">Status</div>
+                        <div id="mplStatusIcon" class="text-4xl text-gray-300">
+                            <i class="fas fa-circle-notch fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Income Breakdown (Cash / Card / Bank) -->
+                <div class="bg-emerald-50 rounded-lg p-3 mb-3 border border-emerald-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-emerald-700"><i class="fas fa-money-bill-wave mr-1"></i> Total Income</span>
+                        <span class="text-sm font-extrabold text-emerald-700" id="mplTotalIncome">Rs 0.00</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-white rounded p-1.5">
+                            <div class="text-[9px] text-gray-500">Cash</div>
+                            <div class="text-xs font-bold text-green-700" id="mplCash">Rs 0</div>
+                        </div>
+                        <div class="bg-white rounded p-1.5">
+                            <div class="text-[9px] text-gray-500">Card</div>
+                            <div class="text-xs font-bold text-blue-700" id="mplCard">Rs 0</div>
+                        </div>
+                        <div class="bg-white rounded p-1.5">
+                            <div class="text-[9px] text-gray-500">Bank</div>
+                            <div class="text-xs font-bold text-purple-700" id="mplBank">Rs 0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expenses Breakdown -->
+                <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border-t pt-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span> Income</span>
+                        <span class="font-bold text-gray-800" id="mplIncome">Rs 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span> Expenses (No MD)</span>
+                        <span class="font-bold text-gray-800" id="mplExpenses">Rs 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block mr-1"></span> Staff Costs</span>
+                        <span class="font-bold text-gray-800" id="mplStaffCost">Rs 0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block mr-1"></span> Inventory COGS</span>
+                        <span class="font-bold text-gray-800" id="mplCogs">Rs 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Daily Breakdown Chart -->
+                <div class="mt-4 border-t pt-3">
+                    <p class="text-xs font-semibold text-gray-600 mb-2"><i class="fas fa-chart-bar mr-1"></i> Daily Net Profit/Loss</p>
+                    <div id="mplDailyChart" class="h-28 flex items-end gap-[2px] overflow-x-auto">
+                        <div class="text-center py-2 text-gray-400 text-xs w-full"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+
+                <!-- Daily Breakdown Table (Collapsible) -->
+                <div class="mt-3">
+                    <button onclick="toggleMonthlyTable()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                        <i class="fas fa-table"></i> <span id="mplTableToggleText">Show Daily Details</span>
+                        <i class="fas fa-chevron-down text-[8px]" id="mplTableIcon"></i>
+                    </button>
+                    <div id="mplDailyTable" class="hidden mt-2 max-h-64 overflow-y-auto">
+                        <table class="w-full text-[10px]">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-1 text-left">Date</th>
+                                    <th class="px-2 py-1 text-right">Income</th>
+                                    <th class="px-2 py-1 text-right">Expenses</th>
+                                    <th class="px-2 py-1 text-right">Staff</th>
+                                    <th class="px-2 py-1 text-right">COGS</th>
+                                    <th class="px-2 py-1 text-right font-bold">Net</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mplTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
             <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-600">
                 <div class="flex items-center justify-between mb-2">
@@ -3079,6 +3200,160 @@ function refreshNetProfitSummary() {
     loadNetProfitSummary();
 }
 
+// ============ MONTHLY PROFIT/LOSS SUMMARY ============
+let currentMplMonth = {{ date('m') }};
+let currentMplYear = {{ date('Y') }};
+
+function changeMonth(delta) {
+    currentMplMonth += delta;
+    if (currentMplMonth > 12) { currentMplMonth = 1; currentMplYear++; }
+    if (currentMplMonth < 1) { currentMplMonth = 12; currentMplYear--; }
+    loadMonthlyProfit();
+}
+
+async function loadMonthlyProfit() {
+    try {
+        document.getElementById('mplStatusBadge').textContent = 'LOADING';
+        document.getElementById('mplStatusBadge').className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700 text-gray-300';
+        
+        const url = `/api/duty-roster/monthly-profit?month=${currentMplMonth}&year=${currentMplYear}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success) {
+            updateMonthlyProfitUI(result.data);
+        } else {
+            document.getElementById('mplStatusBadge').textContent = 'ERROR';
+            document.getElementById('mplStatusBadge').className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800';
+        }
+    } catch (error) {
+        console.error('Error loading monthly profit:', error);
+        document.getElementById('mplStatusBadge').textContent = 'ERROR';
+        document.getElementById('mplStatusBadge').className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800';
+    }
+}
+
+function updateMonthlyProfitUI(data) {
+    const fmt = (amount) => 'Rs ' + parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const netProfit = parseFloat(data.net_profit);
+
+    // Month label
+    document.getElementById('mplMonthLabel').textContent = data.month_name;
+
+    // Net result
+    document.getElementById('mplNetValue').textContent = fmt(netProfit);
+    document.getElementById('mplMarginValue').textContent = data.profit_margin + '%';
+    document.getElementById('mplDaysCounted').textContent = '(' + data.days_counted + ' days)';
+
+    // Income breakdown
+    document.getElementById('mplTotalIncome').textContent = fmt(data.income.total);
+    document.getElementById('mplCash').textContent = fmt(data.income.cash);
+    document.getElementById('mplCard').textContent = fmt(data.income.card);
+    document.getElementById('mplBank').textContent = fmt(data.income.bank);
+
+    // Summary breakdown
+    document.getElementById('mplIncome').textContent = fmt(data.income.total);
+    document.getElementById('mplExpenses').textContent = fmt(data.expenses.operational);
+    document.getElementById('mplStaffCost').textContent = fmt(data.expenses.staff_cost);
+    document.getElementById('mplCogs').textContent = fmt(data.expenses.cogs);
+
+    // Status styling
+    const statusBadge = document.getElementById('mplStatusBadge');
+    const statusIcon = document.getElementById('mplStatusIcon');
+    const netValue = document.getElementById('mplNetValue');
+    const marginContainer = document.getElementById('mplMarginContainer');
+
+    if (netProfit >= 0) {
+        statusBadge.textContent = 'PROFIT';
+        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800';
+        netValue.className = 'text-3xl font-extrabold flex items-baseline gap-2 text-emerald-600';
+        marginContainer.className = 'text-xs font-medium mt-1 text-emerald-600';
+        statusIcon.innerHTML = '<i class="fas fa-arrow-trend-up text-emerald-500"></i>';
+    } else {
+        statusBadge.textContent = 'LOSS';
+        statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800';
+        netValue.className = 'text-3xl font-extrabold flex items-baseline gap-2 text-red-600';
+        marginContainer.className = 'text-xs font-medium mt-1 text-red-600';
+        statusIcon.innerHTML = '<i class="fas fa-arrow-trend-down text-red-500"></i>';
+    }
+
+    // Daily chart
+    renderMonthlyChart(data.daily_breakdown);
+
+    // Daily table
+    renderMonthlyTable(data.daily_breakdown);
+}
+
+function renderMonthlyChart(breakdown) {
+    const container = document.getElementById('mplDailyChart');
+    if (!breakdown || breakdown.length === 0) {
+        container.innerHTML = '<div class="text-center py-2 text-gray-400 text-xs w-full">No data</div>';
+        return;
+    }
+
+    const maxAbs = Math.max(...breakdown.map(d => Math.abs(d.net)), 1);
+    const chartHeight = 112; // h-28 = 7rem = 112px
+    const halfHeight = chartHeight / 2;
+
+    container.innerHTML = breakdown.map(d => {
+        const net = d.net;
+        const barHeight = Math.max(Math.abs(net) / maxAbs * halfHeight, 2);
+        const isProfit = net >= 0;
+        const color = isProfit ? 'bg-emerald-400' : 'bg-red-400';
+        const position = isProfit ? `bottom: ${halfHeight}px;` : `top: ${halfHeight}px;`;
+        const fmt = (n) => 'Rs ' + parseFloat(n).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+        return `
+            <div class="flex-1 min-w-[8px] relative" style="height: ${chartHeight}px;" title="Day ${d.day}: ${fmt(d.net)}">
+                <div class="absolute left-0 right-0 ${color} rounded-sm opacity-80 hover:opacity-100 transition-opacity" 
+                     style="${position} height: ${barHeight}px;"></div>
+                <div class="absolute left-0 right-0 border-t border-gray-300" style="top: ${halfHeight}px;"></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderMonthlyTable(breakdown) {
+    const tbody = document.getElementById('mplTableBody');
+    const fmt = (n) => parseFloat(n).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+    tbody.innerHTML = breakdown.map(d => {
+        const netClass = d.net >= 0 ? 'text-emerald-600' : 'text-red-600';
+        const netPrefix = d.net >= 0 ? '+' : '';
+        const dateObj = new Date(d.date);
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        return `
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="px-2 py-1 text-left">${d.day} ${dayName}</td>
+                <td class="px-2 py-1 text-right text-emerald-700">${fmt(d.income)}</td>
+                <td class="px-2 py-1 text-right text-red-600">${fmt(d.expenses)}</td>
+                <td class="px-2 py-1 text-right text-orange-600">${fmt(d.staff_cost)}</td>
+                <td class="px-2 py-1 text-right text-blue-600">${fmt(d.cogs)}</td>
+                <td class="px-2 py-1 text-right font-bold ${netClass}">${netPrefix}${fmt(d.net)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function toggleMonthlyTable() {
+    const table = document.getElementById('mplDailyTable');
+    const text = document.getElementById('mplTableToggleText');
+    const icon = document.getElementById('mplTableIcon');
+    if (table.classList.contains('hidden')) {
+        table.classList.remove('hidden');
+        text.textContent = 'Hide Daily Details';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        table.classList.add('hidden');
+        text.textContent = 'Show Daily Details';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function refreshMonthlyProfit() {
+    loadMonthlyProfit();
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -3138,6 +3413,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('nplTargetValue')) {
         loadNetProfitSummary();
         setInterval(loadNetProfitSummary, 300000);
+    }
+
+    // Load Monthly Profit/Loss (Admin Only)
+    if (document.getElementById('monthlyProfitWidget')) {
+        loadMonthlyProfit();
     }
     
     // Load Staff Out (Gate Pass) summary

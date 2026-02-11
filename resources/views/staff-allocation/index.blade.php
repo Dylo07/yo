@@ -899,6 +899,98 @@
             </div>
         </div>
 
+        <!-- Salary Summary Widget (Admin Only) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden" id="salarySummaryWidget">
+            <div class="p-3 bg-gradient-to-r from-slate-800 to-gray-900 text-white">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-money-check-alt text-amber-400"></i> Salary Summary
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <a href="/salary" class="text-xs text-gray-300 hover:text-white"><i class="fas fa-external-link-alt"></i></a>
+                        <button onclick="refreshSalarySummary()" class="text-white hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Month Navigation -->
+                <div class="flex items-center gap-2 mt-2">
+                    <button onclick="changeSalaryMonth(-1)" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <span id="salMonthLabel" class="text-xs font-medium bg-white/10 px-3 py-1.5 rounded flex-1 text-center">{{ date('F Y') }}</span>
+                    <button onclick="changeSalaryMonth(1)" class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded flex items-center gap-1">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <!-- Key Totals -->
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <div class="bg-gray-50 rounded-lg p-2 text-center border">
+                        <div class="text-[9px] text-gray-500 uppercase font-semibold">Total Basic</div>
+                        <div class="text-sm font-extrabold text-gray-800" id="salTotalBasic">Rs 0</div>
+                    </div>
+                    <div class="bg-red-50 rounded-lg p-2 text-center border border-red-200">
+                        <div class="text-[9px] text-red-500 uppercase font-semibold">Advances</div>
+                        <div class="text-sm font-extrabold text-red-700" id="salTotalAdvance">Rs 0</div>
+                    </div>
+                    <div class="bg-emerald-50 rounded-lg p-2 text-center border border-emerald-200">
+                        <div class="text-[9px] text-emerald-500 uppercase font-semibold">Final Salary</div>
+                        <div class="text-sm font-extrabold text-emerald-700" id="salTotalFinal">Rs 0</div>
+                    </div>
+                </div>
+
+                <!-- Attendance Summary -->
+                <div class="flex items-center justify-between text-xs border-t pt-2 mb-3">
+                    <span class="text-gray-500"><i class="fas fa-users mr-1"></i> <span id="salStaffCount">0</span> Staff</span>
+                    <span class="text-emerald-600"><i class="fas fa-check-circle mr-1"></i> Present: <strong id="salPresentDays">0</strong></span>
+                    <span class="text-red-500"><i class="fas fa-times-circle mr-1"></i> Absent: <strong id="salAbsentDays">0</strong></span>
+                </div>
+
+                <!-- Advance Period -->
+                <div class="text-[10px] text-gray-400 mb-2">
+                    <i class="fas fa-calendar-week mr-1"></i> Advance Period: <span id="salAdvancePeriod">-</span>
+                </div>
+
+                <!-- Salary Advances by Person -->
+                <div class="border-t pt-2">
+                    <button onclick="toggleSalaryAdvances()" class="text-xs text-amber-600 hover:text-amber-800 font-medium flex items-center gap-1 mb-1">
+                        <i class="fas fa-hand-holding-usd"></i> <span id="salAdvToggleText">Show Advances</span>
+                        <i class="fas fa-chevron-down text-[8px]" id="salAdvIcon"></i>
+                    </button>
+                    <div id="salAdvancesList" class="hidden max-h-40 overflow-y-auto">
+                        <div class="text-center py-2 text-gray-400 text-xs">No advances</div>
+                    </div>
+                </div>
+
+                <!-- Employee Table (Collapsible) -->
+                <div class="mt-2 border-t pt-2">
+                    <button onclick="toggleSalaryTable()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                        <i class="fas fa-table"></i> <span id="salTableToggleText">Show Staff Details</span>
+                        <i class="fas fa-chevron-down text-[8px]" id="salTableIcon"></i>
+                    </button>
+                    <div id="salEmployeeTable" class="hidden mt-2 max-h-72 overflow-y-auto">
+                        <table class="w-full text-[10px]">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-1 text-left">Employee</th>
+                                    <th class="px-2 py-1 text-right">Basic</th>
+                                    <th class="px-2 py-1 text-right">Advance</th>
+                                    <th class="px-2 py-1 text-center">Present</th>
+                                    <th class="px-2 py-1 text-center">Absent</th>
+                                    <th class="px-2 py-1 text-right font-bold">Final</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
             <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-600">
                 <div class="flex items-center justify-between mb-2">
@@ -3354,6 +3446,125 @@ function refreshMonthlyProfit() {
     loadMonthlyProfit();
 }
 
+// ============ SALARY SUMMARY ============
+let currentSalMonth = {{ date('m') }};
+let currentSalYear = {{ date('Y') }};
+
+function changeSalaryMonth(delta) {
+    currentSalMonth += delta;
+    if (currentSalMonth > 12) { currentSalMonth = 1; currentSalYear++; }
+    if (currentSalMonth < 1) { currentSalMonth = 12; currentSalYear--; }
+    loadSalarySummary();
+}
+
+async function loadSalarySummary() {
+    try {
+        const url = `/api/duty-roster/salary-summary?month=${currentSalMonth}&year=${currentSalYear}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success) {
+            updateSalaryUI(result.data);
+        }
+    } catch (error) {
+        console.error('Error loading salary summary:', error);
+    }
+}
+
+function updateSalaryUI(data) {
+    const fmt = (n) => 'Rs ' + parseFloat(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    document.getElementById('salMonthLabel').textContent = data.month_name;
+    document.getElementById('salTotalBasic').textContent = fmt(data.totals.basic_salary);
+    document.getElementById('salTotalAdvance').textContent = fmt(data.totals.salary_advance);
+    document.getElementById('salTotalFinal').textContent = fmt(data.totals.final_salary);
+    document.getElementById('salStaffCount').textContent = data.staff_count;
+    document.getElementById('salPresentDays').textContent = data.totals.present_days;
+    document.getElementById('salAbsentDays').textContent = data.totals.absent_days;
+    document.getElementById('salAdvancePeriod').textContent = data.advance_period;
+
+    // Render advances by person
+    renderSalaryAdvances(data.advances_by_person);
+
+    // Render employee table
+    renderSalaryTable(data.employees);
+}
+
+function renderSalaryAdvances(advancesByPerson) {
+    const container = document.getElementById('salAdvancesList');
+    const entries = Object.entries(advancesByPerson);
+
+    if (!entries || entries.length === 0) {
+        container.innerHTML = '<div class="text-center py-2 text-gray-400 text-xs">No advances this period</div>';
+        return;
+    }
+
+    const fmt = (n) => parseFloat(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    container.innerHTML = entries.map(([name, info]) => `
+        <div class="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0 text-[11px]">
+            <span class="text-gray-700 font-medium">${name}</span>
+            <div class="flex items-center gap-3">
+                <span class="text-gray-400">${info.count}x</span>
+                <span class="text-red-600 font-bold">Rs ${fmt(info.total)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderSalaryTable(employees) {
+    const tbody = document.getElementById('salTableBody');
+    const fmt = (n) => parseFloat(n).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+    tbody.innerHTML = employees.map(emp => {
+        const finalClass = emp.final_salary >= 0 ? 'text-emerald-700' : 'text-red-600';
+        const advClass = emp.salary_advance > 0 ? 'text-red-600' : 'text-gray-400';
+        return `
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="px-2 py-1 text-left font-medium text-gray-700">${emp.name}</td>
+                <td class="px-2 py-1 text-right">${fmt(emp.basic_salary)}</td>
+                <td class="px-2 py-1 text-right ${advClass}">${emp.salary_advance > 0 ? '-' + fmt(emp.salary_advance) : '-'}</td>
+                <td class="px-2 py-1 text-center text-emerald-600">${emp.present_days !== null ? emp.present_days : '-'}</td>
+                <td class="px-2 py-1 text-center text-red-500">${emp.absent_days !== null ? emp.absent_days : '-'}</td>
+                <td class="px-2 py-1 text-right font-bold ${finalClass}">${fmt(emp.final_salary)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function toggleSalaryAdvances() {
+    const list = document.getElementById('salAdvancesList');
+    const text = document.getElementById('salAdvToggleText');
+    const icon = document.getElementById('salAdvIcon');
+    if (list.classList.contains('hidden')) {
+        list.classList.remove('hidden');
+        text.textContent = 'Hide Advances';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        list.classList.add('hidden');
+        text.textContent = 'Show Advances';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function toggleSalaryTable() {
+    const table = document.getElementById('salEmployeeTable');
+    const text = document.getElementById('salTableToggleText');
+    const icon = document.getElementById('salTableIcon');
+    if (table.classList.contains('hidden')) {
+        table.classList.remove('hidden');
+        text.textContent = 'Hide Staff Details';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        table.classList.add('hidden');
+        text.textContent = 'Show Staff Details';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function refreshSalarySummary() {
+    loadSalarySummary();
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -3418,6 +3629,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load Monthly Profit/Loss (Admin Only)
     if (document.getElementById('monthlyProfitWidget')) {
         loadMonthlyProfit();
+    }
+
+    // Load Salary Summary (Admin Only)
+    if (document.getElementById('salarySummaryWidget')) {
+        loadSalarySummary();
     }
     
     // Load Staff Out (Gate Pass) summary

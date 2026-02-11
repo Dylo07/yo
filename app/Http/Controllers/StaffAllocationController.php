@@ -27,6 +27,8 @@ use App\Models\ProductGroup;
 use App\Models\CustomerFeedback;
 use App\Models\User;
 use App\Models\DailySalesSummary;
+use App\Models\ManualAttendance;
+use App\Models\Salary;
 use Carbon\Carbon;
 use DB;
 
@@ -1127,6 +1129,136 @@ class StaffAllocationController extends Controller
                     'profit_margin' => round($margin, 1),
                     'status' => $status,
                     'daily_breakdown' => $dailyBreakdown,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get salary summary for dashboard widget (Admin Only)
+     * Mirrors the /salary page logic: basic salary, attendance, advances, final salary
+     */
+    public function getSalarySummary(Request $request)
+    {
+        try {
+            $month = $request->input('month', date('m'));
+            $year = $request->input('year', date('Y'));
+
+            // Get active staff
+            $staff = Person::whereHas('staffCode', function ($query) {
+                $query->where('is_active', 1);
+            })->orderBy('name')->get();
+
+            // Salary advance period: 10th of selected month to 10th of next month
+            $periodStart = Carbon::create($year, $month, 10, 0, 0, 0);
+            $periodEnd = Carbon::create($year, $month, 1)->addMonth()->setDay(10)->setTime(23, 59, 59);
+
+            // Fetch all salary advances for the period
+            $salaryAdvances = Cost::with('person')
+                ->where('group_id', 1)
+                ->whereBetween('created_at', [$periodStart, $periodEnd])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $totalAdvance = $salaryAdvances->sum('amount');
+
+            // Get attendance data for all staff
+            $allAttendance = ManualAttendance::whereIn('person_id', $staff->pluck('id'))
+                ->whereYear('attendance_date', $year)
+                ->whereMonth('attendance_date', $month)
+                ->get()
+                ->groupBy('person_id');
+
+            $lastDayOfMonth = Carbon::create($year, $month)->endOfMonth()->day;
+
+            $totalBasicSalary = 0;
+            $totalSalaryAdvance = 0;
+            $totalFinalSalary = 0;
+            $totalPresentDays = 0;
+            $totalAbsentDays = 0;
+            $employeeData = [];
+
+            foreach ($staff as $employee) {
+                $attendance = $allAttendance->get($employee->id, collect());
+                $present = $attendance->where('status', 'present')->count();
+                $half = $attendance->where('status', 'half')->count();
+                $absent = $attendance->where('status', 'absent')->count();
+                $totalMarkedDays = $present + $half + $absent;
+
+                $presentDays = $present + ($half * 0.5);
+                $displayAbsentDays = $absent + ($half * 0.5);
+                $showAttendance = $totalMarkedDays > 0;
+
+                $empAdvance = $salaryAdvances->where('person_id', $employee->id)->sum('amount');
+                $finalSalary = 0;
+
+                if ($employee->basic_salary > 0) {
+                    if ($totalMarkedDays < $lastDayOfMonth) {
+                        $finalSalary = ($presentDays * $employee->basic_salary / 30) - $empAdvance;
+                    } else {
+                        $totalDaysOff = $absent + ($half * 0.5);
+                        if ($totalDaysOff == 5) {
+                            $finalSalary = $employee->basic_salary - $empAdvance;
+                        } elseif ($totalDaysOff < 5) {
+                            $additionalDays = 5 - $totalDaysOff;
+                            $dailyRate = $employee->basic_salary / 30;
+                            $finalSalary = $employee->basic_salary - $empAdvance + ($additionalDays * $dailyRate);
+                        } else {
+                            $excessDays = $totalDaysOff - 5;
+                            $dailyRate = $employee->basic_salary / 25;
+                            $finalSalary = $employee->basic_salary - $empAdvance - ($excessDays * $dailyRate);
+                        }
+                    }
+                }
+
+                $totalBasicSalary += $employee->basic_salary ?? 0;
+                $totalSalaryAdvance += $empAdvance;
+                $totalFinalSalary += $finalSalary;
+                $totalPresentDays += $showAttendance ? $presentDays : 0;
+                $totalAbsentDays += $showAttendance ? $displayAbsentDays : 0;
+
+                $employeeData[] = [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'basic_salary' => round($employee->basic_salary ?? 0, 2),
+                    'salary_advance' => round($empAdvance, 2),
+                    'present_days' => $showAttendance ? $presentDays : null,
+                    'absent_days' => $showAttendance ? $displayAbsentDays : null,
+                    'final_salary' => round($finalSalary, 2),
+                ];
+            }
+
+            // Advances grouped by person
+            $advancesByPerson = $salaryAdvances->groupBy(function ($item) {
+                return $item->person->name ?? 'Unknown';
+            })->map(function ($group) {
+                return [
+                    'total' => round($group->sum('amount'), 2),
+                    'count' => $group->count(),
+                ];
+            });
+
+            $monthName = Carbon::create($year, $month, 1)->format('F Y');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'month' => (int)$month,
+                    'year' => (int)$year,
+                    'month_name' => $monthName,
+                    'staff_count' => $staff->count(),
+                    'totals' => [
+                        'basic_salary' => round($totalBasicSalary, 2),
+                        'salary_advance' => round($totalSalaryAdvance, 2),
+                        'final_salary' => round($totalFinalSalary, 2),
+                        'present_days' => round($totalPresentDays, 1),
+                        'absent_days' => round($totalAbsentDays, 1),
+                    ],
+                    'advance_period' => $periodStart->format('M d') . ' - ' . $periodEnd->format('M d, Y'),
+                    'advances_by_person' => $advancesByPerson,
+                    'employees' => $employeeData,
                 ],
             ]);
         } catch (\Exception $e) {

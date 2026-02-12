@@ -1339,17 +1339,10 @@ class StaffAllocationController extends Controller
 
                     $itemKey = $detail->menu_id;
                     if (!isset($categorizedSales[$categoryId]['items'][$itemKey])) {
-                        // Build item summary from recipes
-                        $itemSummary = [];
-                        $recipes = $allRecipes->get($detail->menu_id, collect());
-                        foreach ($recipes as $recipe) {
-                            $itemSummary[] = $recipe->item_name . ' ' . rtrim(rtrim(number_format($recipe->required_quantity, 2), '0'), '.');
-                        }
-
                         $categorizedSales[$categoryId]['items'][$itemKey] = [
                             'name' => $menu ? $menu->name : ($detail->menu_name ?? 'Unknown'),
                             'quantity' => 0,
-                            'item_summary' => implode('    ', $itemSummary),
+                            'recipes' => $allRecipes->get($detail->menu_id, collect()),
                         ];
                     }
 
@@ -1359,8 +1352,17 @@ class StaffAllocationController extends Controller
                 }
             }
 
-            // Convert items to indexed arrays
+            // Build item_summary with total quantities (recipe qty × sold qty) and convert to indexed arrays
             foreach ($categorizedSales as &$cat) {
+                foreach ($cat['items'] as &$item) {
+                    $itemSummary = [];
+                    foreach ($item['recipes'] as $recipe) {
+                        $totalQty = $recipe->required_quantity * $item['quantity'];
+                        $itemSummary[] = $recipe->item_name . ' ' . rtrim(rtrim(number_format($totalQty, 2), '0'), '.');
+                    }
+                    $item['item_summary'] = implode('    ', $itemSummary);
+                    unset($item['recipes']);
+                }
                 $cat['items'] = array_values($cat['items']);
             }
 

@@ -1433,6 +1433,25 @@ class StaffAllocationController extends Controller
     }
 
     /**
+     * Print Kitchen Summary (Daily Sales + Main Kitchen Issues)
+     */
+    public function printKitchenSummary(Request $request)
+    {
+        $startDate = $request->input('start_date', date('Y-m-d'));
+        $endDate = $request->input('end_date', date('Y-m-d'));
+
+        // Call the same logic as getKitchenSummary but return a view
+        $fakeRequest = new Request(['start_date' => $startDate, 'end_date' => $endDate]);
+        $response = $this->getKitchenSummary($fakeRequest);
+        $result = json_decode($response->getContent(), true);
+
+        $dailySalesData = $result['data']['daily_sales'] ?? ['by_category' => [], 'total_items' => 0, 'total_sales' => 0];
+        $mainKitchenData = $result['data']['main_kitchen'] ?? ['by_category' => [], 'total_quantity' => 0, 'total_transactions' => 0];
+
+        return view('staff-allocation.kitchen-summary-print', compact('startDate', 'endDate', 'dailySalesData', 'mainKitchenData'));
+    }
+
+    /**
      * Get owner's personal tasks (My Priority List)
      */
     public function getOwnerTasks(Request $request)

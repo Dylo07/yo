@@ -999,6 +999,9 @@
                         <i class="fas fa-utensils text-yellow-300"></i> Kitchen Summary
                     </h3>
                     <div class="flex items-center gap-2">
+                        <button onclick="printKitchenSummary()" class="text-white hover:text-blue-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="Print">
+                            <i class="fas fa-print"></i>
+                        </button>
                         <a href="/kitchen/comparison" class="text-xs text-blue-200 hover:text-white"><i class="fas fa-external-link-alt"></i></a>
                         <button onclick="loadKitchenSummary()" class="text-white hover:text-blue-200 text-xs px-2 py-1 rounded hover:bg-white/20">
                             <i class="fas fa-sync-alt"></i>
@@ -3645,6 +3648,12 @@ function refreshSalarySummary() {
 }
 
 // ============ KITCHEN SUMMARY ============
+function printKitchenSummary() {
+    const startDate = document.getElementById('kitchenStartDate').value;
+    const endDate = document.getElementById('kitchenEndDate').value;
+    window.open(`/api/duty-roster/kitchen-summary/print?start_date=${startDate}&end_date=${endDate}`, '_blank');
+}
+
 function setKitchenDate(preset) {
     const today = new Date();
     const fmt = (d) => d.toISOString().split('T')[0];

@@ -991,6 +991,85 @@
             </div>
         </div>
 
+        <!-- Kitchen Summary Widget (Daily Sales + Main Kitchen Issues) -->
+        <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden" id="kitchenSummaryWidget">
+            <div class="p-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-utensils text-yellow-300"></i> Kitchen Summary
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <a href="/kitchen/comparison" class="text-xs text-blue-200 hover:text-white"><i class="fas fa-external-link-alt"></i></a>
+                        <button onclick="loadKitchenSummary()" class="text-white hover:text-blue-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Date Range Selection -->
+                <div class="flex items-center gap-2 mt-2">
+                    <input type="date" id="kitchenStartDate" value="{{ date('Y-m-d') }}" class="text-[11px] bg-white/20 text-white border-0 rounded px-2 py-1.5 flex-1" onchange="loadKitchenSummary()">
+                    <span class="text-xs text-blue-200">to</span>
+                    <input type="date" id="kitchenEndDate" value="{{ date('Y-m-d') }}" class="text-[11px] bg-white/20 text-white border-0 rounded px-2 py-1.5 flex-1" onchange="loadKitchenSummary()">
+                </div>
+                <!-- Quick Date Buttons -->
+                <div class="flex gap-1 mt-2">
+                    <button onclick="setKitchenDate('today')" class="text-[9px] bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded">Today</button>
+                    <button onclick="setKitchenDate('yesterday')" class="text-[9px] bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded">Yesterday</button>
+                    <button onclick="setKitchenDate('week')" class="text-[9px] bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded">Last 7 Days</button>
+                    <button onclick="setKitchenDate('month')" class="text-[9px] bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded">This Month</button>
+                </div>
+            </div>
+
+            <div class="p-3">
+                <!-- Summary Stats Row -->
+                <div class="grid grid-cols-4 gap-2 mb-3">
+                    <div class="bg-blue-50 rounded-lg p-2 text-center border border-blue-200">
+                        <div class="text-[9px] text-blue-500 uppercase font-semibold">Sales Items</div>
+                        <div class="text-sm font-extrabold text-blue-700" id="ksTotalItems">0</div>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-2 text-center border border-blue-200">
+                        <div class="text-[9px] text-blue-500 uppercase font-semibold">Total Bills</div>
+                        <div class="text-sm font-extrabold text-blue-700" id="ksTotalSales">0</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-2 text-center border border-green-200">
+                        <div class="text-[9px] text-green-500 uppercase font-semibold">Kitchen Qty</div>
+                        <div class="text-sm font-extrabold text-green-700" id="ksTotalKitchenQty">0</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-2 text-center border border-green-200">
+                        <div class="text-[9px] text-green-500 uppercase font-semibold">Transactions</div>
+                        <div class="text-sm font-extrabold text-green-700" id="ksTotalTransactions">0</div>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout: Daily Sales | Main Kitchen Issues -->
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Daily Sales -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="text-xs font-bold text-blue-700 flex items-center gap-1">
+                                <i class="fas fa-chart-line"></i> Daily Sales
+                            </h4>
+                        </div>
+                        <div id="ksSalesContent" class="max-h-80 overflow-y-auto border rounded">
+                            <div class="text-center py-4 text-gray-400 text-xs">Loading...</div>
+                        </div>
+                    </div>
+
+                    <!-- Main Kitchen Issues -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="text-xs font-bold text-green-700 flex items-center gap-1">
+                                <i class="fas fa-fire"></i> Main Kitchen Issues
+                            </h4>
+                        </div>
+                        <div id="ksKitchenContent" class="max-h-80 overflow-y-auto border rounded">
+                            <div class="text-center py-4 text-gray-400 text-xs">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="mt-4 bg-white rounded-lg shadow-sm border overflow-hidden">
             <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-600">
                 <div class="flex items-center justify-between mb-2">
@@ -3565,6 +3644,141 @@ function refreshSalarySummary() {
     loadSalarySummary();
 }
 
+// ============ KITCHEN SUMMARY ============
+function setKitchenDate(preset) {
+    const today = new Date();
+    const fmt = (d) => d.toISOString().split('T')[0];
+    let start, end;
+
+    switch (preset) {
+        case 'today':
+            start = end = fmt(today);
+            break;
+        case 'yesterday':
+            const y = new Date(today); y.setDate(y.getDate() - 1);
+            start = end = fmt(y);
+            break;
+        case 'week':
+            const w = new Date(today); w.setDate(w.getDate() - 6);
+            start = fmt(w); end = fmt(today);
+            break;
+        case 'month':
+            start = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
+            end = fmt(today);
+            break;
+    }
+
+    document.getElementById('kitchenStartDate').value = start;
+    document.getElementById('kitchenEndDate').value = end;
+    loadKitchenSummary();
+}
+
+async function loadKitchenSummary() {
+    const startDate = document.getElementById('kitchenStartDate').value;
+    const endDate = document.getElementById('kitchenEndDate').value;
+
+    try {
+        const url = `/api/duty-roster/kitchen-summary?start_date=${startDate}&end_date=${endDate}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success) {
+            updateKitchenSummaryUI(result.data);
+        }
+    } catch (error) {
+        console.error('Error loading kitchen summary:', error);
+    }
+}
+
+function updateKitchenSummaryUI(data) {
+    document.getElementById('ksTotalItems').textContent = data.daily_sales.total_items;
+    document.getElementById('ksTotalSales').textContent = data.daily_sales.total_sales;
+    document.getElementById('ksTotalKitchenQty').textContent = parseFloat(data.main_kitchen.total_quantity).toFixed(1);
+    document.getElementById('ksTotalTransactions').textContent = data.main_kitchen.total_transactions;
+
+    renderKitchenSales(data.daily_sales);
+    renderKitchenIssues(data.main_kitchen);
+}
+
+function renderKitchenSales(salesData) {
+    const container = document.getElementById('ksSalesContent');
+    const categories = Object.values(salesData.by_category || {});
+
+    if (categories.length === 0) {
+        container.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No sales data</div>';
+        return;
+    }
+
+    let html = `<div class="text-[10px] px-2 py-1 bg-gray-50 border-b flex justify-between">
+        <span>Total Items: <strong>${salesData.total_items}</strong></span>
+        <span>Total Sales: <strong>${salesData.total_sales}</strong></span>
+    </div>`;
+
+    categories.forEach(cat => {
+        html += `<div class="bg-blue-500 text-white text-[10px] font-bold px-2 py-1 flex justify-between items-center">
+            <span>${cat.name}</span>
+            <span class="bg-white text-blue-600 rounded-full px-2 py-0.5 text-[9px]">${cat.total} items</span>
+        </div>`;
+
+        // Check if any item has item_summary
+        const hasItemSummary = cat.items.some(item => item.item_summary && item.item_summary.trim() !== '');
+
+        cat.items.forEach(item => {
+            html += `<div class="border-b border-gray-100 px-2 py-1.5">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-gray-700">${item.name}</span>
+                    <span class="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-[9px] font-bold">${item.quantity}</span>
+                </div>`;
+
+            if (item.item_summary && item.item_summary.trim() !== '') {
+                html += `<div class="text-[9px] text-gray-500 mt-0.5 italic">
+                    <i class="fas fa-mortar-pestle text-[8px] mr-1 text-amber-500"></i>${item.item_summary}
+                </div>`;
+            }
+
+            html += `</div>`;
+        });
+    });
+
+    container.innerHTML = html;
+}
+
+function renderKitchenIssues(kitchenData) {
+    const container = document.getElementById('ksKitchenContent');
+    const categories = Object.values(kitchenData.by_category || {});
+
+    if (categories.length === 0) {
+        container.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No kitchen issues</div>';
+        return;
+    }
+
+    let html = `<div class="text-[10px] px-2 py-1 bg-gray-50 border-b flex justify-between">
+        <span>Total Quantity: <strong>${parseFloat(kitchenData.total_quantity).toFixed(1)}</strong></span>
+        <span>Transactions: <strong>${kitchenData.total_transactions}</strong></span>
+    </div>`;
+
+    categories.forEach(cat => {
+        html += `<div class="bg-green-500 text-white text-[10px] font-bold px-2 py-1 flex justify-between items-center">
+            <span>${cat.name}</span>
+            <span class="bg-white text-green-600 rounded-full px-2 py-0.5 text-[9px]">${parseFloat(cat.total_quantity).toFixed(1)} units</span>
+        </div>`;
+
+        cat.items.forEach(item => {
+            html += `<div class="border-b border-gray-100 px-2 py-1.5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] text-gray-700 font-medium">${item.name}</span>
+                        <div class="text-[9px] text-gray-400">${item.time} by ${item.user}</div>
+                    </div>
+                    <span class="bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-[9px] font-bold">${parseFloat(item.quantity).toFixed(1)}</span>
+                </div>
+            </div>`;
+        });
+    });
+
+    container.innerHTML = html;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     renderSections();
@@ -3634,6 +3848,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load Salary Summary (Admin Only)
     if (document.getElementById('salarySummaryWidget')) {
         loadSalarySummary();
+    }
+
+    // Load Kitchen Summary (Admin Only)
+    if (document.getElementById('kitchenSummaryWidget')) {
+        loadKitchenSummary();
     }
     
     // Load Staff Out (Gate Pass) summary

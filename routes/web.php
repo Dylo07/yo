@@ -430,6 +430,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/duty-roster/online-users', [StaffAllocationController::class, 'getOnlineUsers'])->name('duty.roster.api.online-users');
     Route::get('/api/duty-roster/monthly-profit', [StaffAllocationController::class, 'getMonthlyFinancialSummary'])->name('duty.roster.api.monthly-profit');
     Route::get('/api/duty-roster/salary-summary', [StaffAllocationController::class, 'getSalarySummary'])->name('duty.roster.api.salary-summary');
+    Route::get('/api/duty-roster/kitchen-summary', [StaffAllocationController::class, 'getKitchenSummary'])->name('duty.roster.api.kitchen-summary');
 });
 
 

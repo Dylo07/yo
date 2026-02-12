@@ -29,6 +29,8 @@ use App\Models\User;
 use App\Models\DailySalesSummary;
 use App\Models\ManualAttendance;
 use App\Models\Salary;
+use App\Models\SaleDetail;
+use App\Models\MenuItemRecipe;
 use Carbon\Carbon;
 use DB;
 
@@ -1259,6 +1261,160 @@ class StaffAllocationController extends Controller
                     'advance_period' => $periodStart->format('M d') . ' - ' . $periodEnd->format('M d, Y'),
                     'advances_by_person' => $advancesByPerson,
                     'employees' => $employeeData,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get Kitchen Summary (Daily Sales + Main Kitchen Issues) for dashboard widget
+     * Includes Item Summary (recipe ingredients) for each sold menu item
+     */
+    public function getKitchenSummary(Request $request)
+    {
+        try {
+            $startDate = $request->input('start_date', date('Y-m-d'));
+            $endDate = $request->input('end_date', date('Y-m-d'));
+
+            $startCarbon = Carbon::parse($startDate)->startOfDay();
+            $endCarbon = Carbon::parse($endDate);
+            if ($endCarbon->isToday()) {
+                $endCarbon = now();
+            } else {
+                $endCarbon = $endCarbon->endOfDay();
+            }
+
+            // ===== DAILY SALES =====
+            $sales = Sale::whereBetween('updated_at', [$startCarbon, $endCarbon])
+                ->where('sale_status', 'paid')
+                ->with(['saleDetails'])
+                ->get();
+
+            if ($sales->isEmpty()) {
+                $sales = Sale::whereBetween('updated_at', [$startCarbon, $endCarbon])
+                    ->whereIn('sale_status', ['active', 'pending', 'completed'])
+                    ->with(['saleDetails'])
+                    ->get();
+            }
+
+            $allSaleDetails = $sales->flatMap(function ($sale) {
+                return $sale->saleDetails ?? collect();
+            });
+
+            $menuIds = $allSaleDetails->pluck('menu_id')->unique()->filter()->toArray();
+            $menus = Menu::whereIn('id', $menuIds)->with('category')->get()->keyBy('id');
+
+            // Load recipes for all sold menus (Item Summary)
+            $allRecipes = DB::table('menu_item_recipes')
+                ->join('items', 'menu_item_recipes.item_id', '=', 'items.id')
+                ->whereIn('menu_item_recipes.menu_id', $menuIds)
+                ->where('items.is_kitchen_item', true)
+                ->select('menu_item_recipes.menu_id', 'items.name as item_name', 'menu_item_recipes.required_quantity')
+                ->get()
+                ->groupBy('menu_id');
+
+            $totalItems = 0;
+            $totalSales = $sales->count();
+            $categorizedSales = [];
+
+            foreach ($sales as $sale) {
+                if (!$sale->saleDetails || $sale->saleDetails->isEmpty()) continue;
+
+                foreach ($sale->saleDetails as $detail) {
+                    if ($detail->quantity <= 0) continue;
+
+                    $menu = $menus->get($detail->menu_id);
+                    $categoryId = $menu ? ($menu->category_id ?? 'uncategorized') : 'unknown';
+                    $categoryName = ($menu && $menu->category) ? $menu->category->name : ($menu ? 'Uncategorized' : 'Unknown Category');
+
+                    if (!isset($categorizedSales[$categoryId])) {
+                        $categorizedSales[$categoryId] = [
+                            'name' => $categoryName,
+                            'items' => [],
+                            'total' => 0,
+                        ];
+                    }
+
+                    $itemKey = $detail->menu_id;
+                    if (!isset($categorizedSales[$categoryId]['items'][$itemKey])) {
+                        // Build item summary from recipes
+                        $itemSummary = [];
+                        $recipes = $allRecipes->get($detail->menu_id, collect());
+                        foreach ($recipes as $recipe) {
+                            $itemSummary[] = $recipe->item_name . ' ' . rtrim(rtrim(number_format($recipe->required_quantity, 2), '0'), '.');
+                        }
+
+                        $categorizedSales[$categoryId]['items'][$itemKey] = [
+                            'name' => $menu ? $menu->name : ($detail->menu_name ?? 'Unknown'),
+                            'quantity' => 0,
+                            'item_summary' => implode('    ', $itemSummary),
+                        ];
+                    }
+
+                    $categorizedSales[$categoryId]['items'][$itemKey]['quantity'] += $detail->quantity;
+                    $categorizedSales[$categoryId]['total'] += $detail->quantity;
+                    $totalItems += $detail->quantity;
+                }
+            }
+
+            // Convert items to indexed arrays
+            foreach ($categorizedSales as &$cat) {
+                $cat['items'] = array_values($cat['items']);
+            }
+
+            // ===== MAIN KITCHEN ISSUES =====
+            $mainKitchenLogs = StockLog::with(['user', 'item', 'item.group'])
+                ->whereBetween('created_at', [$startCarbon, $endCarbon->copy()->endOfDay()])
+                ->where('action', 'remove_main_kitchen')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $categorizedKitchen = [];
+            $totalKitchenQty = 0;
+            $totalTransactions = $mainKitchenLogs->count();
+
+            foreach ($mainKitchenLogs as $log) {
+                $categoryId = $log->item->group_id ?? 'uncategorized';
+                $categoryName = ($log->item->group->name ?? 'Uncategorized');
+
+                if (!isset($categorizedKitchen[$categoryId])) {
+                    $categorizedKitchen[$categoryId] = [
+                        'name' => $categoryName,
+                        'items' => [],
+                        'total_quantity' => 0,
+                        'total_transactions' => 0,
+                    ];
+                }
+
+                $categorizedKitchen[$categoryId]['items'][] = [
+                    'name' => $log->item->name,
+                    'quantity' => $log->quantity,
+                    'user' => $log->user->name ?? 'Unknown',
+                    'time' => $log->created_at->format('M d, H:i'),
+                ];
+
+                $categorizedKitchen[$categoryId]['total_quantity'] += $log->quantity;
+                $categorizedKitchen[$categoryId]['total_transactions']++;
+                $totalKitchenQty += $log->quantity;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'daily_sales' => [
+                        'by_category' => $categorizedSales,
+                        'total_items' => $totalItems,
+                        'total_sales' => $totalSales,
+                    ],
+                    'main_kitchen' => [
+                        'by_category' => $categorizedKitchen,
+                        'total_quantity' => $totalKitchenQty,
+                        'total_transactions' => $totalTransactions,
+                    ],
                 ],
             ]);
         } catch (\Exception $e) {

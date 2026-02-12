@@ -3766,10 +3766,7 @@ function renderKitchenIssues(kitchenData) {
         cat.items.forEach(item => {
             html += `<div class="border-b border-gray-100 px-2 py-1.5">
                 <div class="flex justify-between items-center">
-                    <div>
-                        <span class="text-[10px] text-gray-700 font-medium">${item.name}</span>
-                        <div class="text-[9px] text-gray-400">${item.time} by ${item.user}</div>
-                    </div>
+                    <span class="text-[10px] text-gray-700 font-medium">${item.name}</span>
                     <span class="bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-[9px] font-bold">${parseFloat(item.quantity).toFixed(1)}</span>
                 </div>
             </div>`;

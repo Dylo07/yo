@@ -1390,16 +1390,24 @@ class StaffAllocationController extends Controller
                     ];
                 }
 
-                $categorizedKitchen[$categoryId]['items'][] = [
-                    'name' => $log->item->name,
-                    'quantity' => $log->quantity,
-                    'user' => $log->user->name ?? 'Unknown',
-                    'time' => $log->created_at->format('M d, H:i'),
-                ];
+                // Aggregate by item name (sum total quantity per item)
+                $itemName = $log->item->name;
+                if (!isset($categorizedKitchen[$categoryId]['items'][$itemName])) {
+                    $categorizedKitchen[$categoryId]['items'][$itemName] = [
+                        'name' => $itemName,
+                        'quantity' => 0,
+                    ];
+                }
+                $categorizedKitchen[$categoryId]['items'][$itemName]['quantity'] += $log->quantity;
 
                 $categorizedKitchen[$categoryId]['total_quantity'] += $log->quantity;
                 $categorizedKitchen[$categoryId]['total_transactions']++;
                 $totalKitchenQty += $log->quantity;
+            }
+
+            // Convert items to indexed arrays
+            foreach ($categorizedKitchen as &$kitCat) {
+                $kitCat['items'] = array_values($kitCat['items']);
             }
 
             return response()->json([

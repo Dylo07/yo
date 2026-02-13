@@ -5,437 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kitchen vs Sales Comparison - Print</title>
     <style>
-        /* A4 Portrait - Compact Layout */
-        @page {
-            size: A4 portrait;
-            margin: 8mm;
-        }
+        @page { size: A4 portrait; margin: 5mm 6mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 6.5pt; line-height: 1.15; color: #000; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        .header { text-align: center; margin-bottom: 2mm; padding-bottom: 1mm; border-bottom: 1pt solid #000; }
+        .header h1 { font-size: 10pt; margin: 0; }
+        .meta { font-size: 6pt; margin-top: 0.5mm; }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            font-size: 7pt;
-            line-height: 1.2;
-            color: #000;
-            background: white;
-        }
+        .cols { display: table; width: 100%; table-layout: fixed; border-spacing: 2mm 0; }
+        .col { display: table-cell; width: 50%; vertical-align: top; }
 
-        .print-container {
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
-            padding: 0;
-        }
+        .col-title { font-size: 7.5pt; font-weight: bold; text-align: center; padding: 1mm 0; border-bottom: 0.75pt solid #000; margin-bottom: 1mm; }
 
-        /* Compact Header */
-        .print-header {
-            text-align: center;
-            margin-bottom: 4mm;
-            padding-bottom: 2mm;
-            border-bottom: 1.5pt solid #000;
-        }
+        .cat { margin-bottom: 1.5mm; page-break-inside: avoid; }
+        .cat-head { font-size: 6.5pt; font-weight: bold; padding: 0.5mm 0; border-bottom: 0.5pt solid #999; display: flex; justify-content: space-between; }
+        .cat-items { padding-left: 1mm; }
 
-        .print-header h1 {
-            font-size: 12pt;
-            font-weight: bold;
-            margin-bottom: 1mm;
-            color: #000;
-        }
+        .row { display: flex; justify-content: space-between; padding: 0.3mm 0; font-size: 6pt; }
+        .row:not(:last-child) { border-bottom: 0.25pt dotted #ccc; }
+        .row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 1mm; }
+        .row .qty { font-weight: bold; min-width: 10mm; text-align: right; }
+        .row .cost { font-size: 5.5pt; color: #666; min-width: 16mm; text-align: right; padding-right: 1mm; }
 
-        /* Compact Date Info */
-        .date-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3mm;
-            padding: 2mm;
-            background: #f5f5f5;
-            font-size: 6.5pt;
-            border: 0.5pt solid #ccc;
-        }
-
-        .date-info div {
-            flex: 1;
-        }
-
-        .date-info label {
-            font-weight: bold;
-            display: inline;
-            margin-right: 2px;
-        }
-
-        .date-info span {
-            display: inline;
-        }
-
-        /* Side-by-Side Columns - Compact */
-        .comparison-wrapper {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 3mm 0;
-        }
-
-        .comparison-section {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-            border: 1pt solid #000;
-        }
-
-        .section-header {
-            padding: 2mm;
-            font-weight: bold;
-            font-size: 9pt;
-            text-align: center;
-            color: white;
-            background-color: #000;
-        }
-
-        .section-header.sales {
-            background-color: #2563eb;
-        }
-
-        .section-header.kitchen {
-            background-color: #059669;
-        }
-
-        .section-content {
-            padding: 2mm;
-        }
-
-        /* Compact Summary */
-        .summary-info {
-            margin-bottom: 2mm;
-            padding: 1.5mm;
-            background: #f5f5f5;
-            font-size: 6.5pt;
-            border: 0.5pt solid #ddd;
-        }
-
-        /* Ultra-Compact Category Blocks */
-        .category-block {
-            margin-bottom: 2mm;
-            border: 0.5pt solid #ccc;
-            page-break-inside: avoid;
-        }
-
-        .category-header {
-            padding: 1.5mm 2mm;
-            font-weight: bold;
-            font-size: 7.5pt;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f0f0f0;
-            border-bottom: 0.5pt solid #ccc;
-        }
-
-        .category-header.sales {
-            background-color: #e0f2fe;
-            color: #1e40af;
-        }
-
-        .category-header.kitchen {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-
-        .category-items {
-            padding: 1mm 2mm;
-            background: white;
-        }
-
-        /* Ultra-Compact Item Rows */
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5mm 0;
-            font-size: 6.5pt;
-            line-height: 1.3;
-        }
-
-        .item-row:not(:last-child) {
-            border-bottom: 0.25pt solid #f0f0f0;
-        }
-
-        .item-name {
-            flex: 1;
-            padding-right: 3mm;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .item-details {
-            font-size: 5.5pt;
-            color: #666;
-            margin-top: 0.5mm;
-        }
-
-        .item-quantity {
-            font-weight: bold;
-            min-width: 12mm;
-            text-align: right;
-        }
-
-        /* Compact Badge */
-        .badge {
-            display: inline-block;
-            padding: 0.5mm 1.5mm;
-            border-radius: 1mm;
-            font-size: 6pt;
-            font-weight: bold;
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        /* Empty State - Compact */
-        .empty-state {
-            padding: 5mm;
-            text-align: center;
-            color: #9ca3af;
-            font-size: 7pt;
-        }
-
-        /* Minimal Footer */
-        .print-footer {
-            margin-top: 3mm;
-            padding-top: 1.5mm;
-            border-top: 0.5pt solid #ccc;
-            text-align: center;
-            font-size: 5.5pt;
-            color: #666;
-        }
-
-        /* Print-specific optimizations */
-        @media print {
-            body {
-                print-color-adjust: exact;
-                -webkit-print-color-adjust: exact;
-            }
-
-            .print-container {
-                width: 100%;
-                max-width: none;
-            }
-
-            /* Force table layout */
-            .comparison-wrapper {
-                display: table !important;
-                width: 100% !important;
-                table-layout: fixed !important;
-            }
-
-            .comparison-section {
-                display: table-cell !important;
-                width: 50% !important;
-                vertical-align: top !important;
-            }
-
-            /* Prevent breaks */
-            .category-block {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-
-            .item-row {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-
-            /* Ensure colors print */
-            .section-header.sales {
-                background-color: #2563eb !important;
-                color: white !important;
-            }
-
-            .section-header.kitchen {
-                background-color: #059669 !important;
-                color: white !important;
-            }
-
-            .category-header.sales {
-                background-color: #e0f2fe !important;
-                color: #1e40af !important;
-            }
-
-            .category-header.kitchen {
-                background-color: #d1fae5 !important;
-                color: #065f46 !important;
-            }
-
-            /* Remove unnecessary spacing */
-            h1, h2, h3, p {
-                orphans: 3;
-                widows: 3;
-            }
-        }
-
-        /* Hide emojis for print */
-        .emoji {
-            display: none;
-        }
-
-        .recipe { font-size: 5pt; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1mm; }
-        .cat-summary { font-size: 5pt; color: #555; font-style: italic; padding: 0.5mm 2mm; background: #f0f4ff; border-bottom: 0.25pt solid #ddd; }
-        .item-cost { font-size: 5.5pt; color: #666; min-width: 16mm; text-align: right; padding-right: 1mm; }
+        .recipe { font-size: 5pt; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 2mm; }
+        .cat-summary { font-size: 5pt; color: #555; font-style: italic; padding: 0.3mm 0; border-bottom: 0.25pt solid #ddd; }
         .cat-cost { font-size: 5.5pt; color: #666; font-weight: normal; }
-        .grand-summary { margin-top: 2mm; padding: 1.5mm; border: 0.75pt solid #000; page-break-inside: avoid; }
+
+        .grand-summary { margin-top: 2mm; padding: 1mm; border: 0.75pt solid #000; page-break-inside: avoid; }
         .grand-summary-title { font-size: 7pt; font-weight: bold; margin-bottom: 0.5mm; border-bottom: 0.5pt solid #999; padding-bottom: 0.5mm; }
-        .grand-summary-body { font-size: 5.5pt; line-height: 1.3; }
+        .grand-summary-body { font-size: 5.5pt; line-height: 1.3; word-spacing: 1mm; }
         .grand-summary-body .ing { white-space: nowrap; display: inline-block; margin-right: 2mm; margin-bottom: 0.3mm; }
         .grand-summary-body .ing-qty { font-weight: bold; }
+
+        .footer { margin-top: 1.5mm; text-align: right; font-size: 5pt; color: #888; }
+
+        @media print {
+            .cols { display: table !important; width: 100% !important; }
+            .col { display: table-cell !important; width: 50% !important; }
+            .cat { page-break-inside: avoid; break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
-    <div class="print-container">
-        <!-- Compact Header -->
-        <div class="print-header">
-            <h1>Kitchen vs Sales Comparison</h1>
-        </div>
-
-        <!-- Compact Date Information -->
-        <div class="date-info">
-            <div>
-                <label>Start:</label>
-                <span>{{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }}</span>
-            </div>
-            <div>
-                <label>End:</label>
-                <span>{{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }}</span>
-            </div>
-            <div>
-                <label>Range:</label>
-                <span>
-                    @if($startDate === $endDate)
-                        1 day
-                    @else
-                        {{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} days
-                    @endif
-                </span>
-            </div>
-            <div>
-                <label>Updated:</label>
-                <span>{{ now()->format('M d, H:i') }}</span>
-            </div>
-        </div>
-
-        <!-- Comparison Sections - Side by Side -->
-        <div class="comparison-wrapper">
-            <!-- Daily Sales Section -->
-            <div class="comparison-section">
-                <div class="section-header sales">
-                    Daily Sales
-                </div>
-                <div class="section-content">
-                    @if(empty($dailySalesData['by_category']))
-                        <div class="empty-state">
-                            <p><strong>No sales recorded</strong></p>
-                        </div>
-                    @else
-                        <!-- Compact Summary -->
-                        <div class="summary-info">
-                            <strong>Items:</strong> {{ $dailySalesData['total_items'] }} | 
-                            <strong>Bills:</strong> {{ $dailySalesData['total_sales'] }}
-                        </div>
-
-                        @foreach($dailySalesData['by_category'] as $categoryId => $category)
-                            <div class="category-block">
-                                <div class="category-header sales">
-                                    <span>{{ $category['name'] }}</span>
-                                    <span class="badge">{{ $category['total'] }}</span>
-                                </div>
-                                @if(!empty($category['category_summary']))
-                                    <div class="cat-summary">{{ $category['category_summary'] }}</div>
-                                @endif
-                                <div class="category-items">
-                                    @foreach($category['items'] as $item)
-                                        <div class="item-row">
-                                            <span class="item-name">{{ $item['name'] }}</span>
-                                            <span class="item-quantity">{{ number_format($item['quantity'], 0) }}</span>
-                                        </div>
-                                        @if(!empty($item['item_summary']))
-                                            <div class="recipe">{{ $item['item_summary'] }}</div>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-
-                        @if(!empty($grandIngredientSummary))
-                            <div class="grand-summary">
-                                <div class="grand-summary-title">Total Ingredients Summary</div>
-                                <div class="grand-summary-body">
-                                    @foreach(preg_split('/\s{2,}/', $grandIngredientSummary) as $ing)
-                                        @if(preg_match('/^(.+?)\s+([\d,.]+)$/', trim($ing), $m))
-                                            <span class="ing">{{ $m[1] }} <span class="ing-qty">{{ $m[2] }}</span></span>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    @endif
-                </div>
-            </div>
-
-            <!-- Main Kitchen Issues Section -->
-            <div class="comparison-section">
-                <div class="section-header kitchen">
-                    {{ $issueFilterLabel ?? 'Main Kitchen' }} Issues
-                </div>
-                <div class="section-content">
-                    @if(empty($mainKitchenData['by_category']))
-                        <div class="empty-state">
-                            <p><strong>No kitchen issues</strong></p>
-                        </div>
-                    @else
-                        <!-- Compact Summary -->
-                        <div class="summary-info">
-                            <strong>Qty:</strong> {{ number_format($mainKitchenData['total_quantity'], 1) }} | 
-                            <strong>Txns:</strong> {{ $mainKitchenData['total_transactions'] }}
-                            @if(($mainKitchenData['total_cost'] ?? 0) > 0)
-                                | <strong>Cost:</strong> Rs {{ number_format($mainKitchenData['total_cost'], 0) }}
-                            @endif
-                        </div>
-
-                        @foreach($mainKitchenData['by_category'] as $categoryId => $category)
-                            <div class="category-block">
-                                <div class="category-header kitchen">
-                                    <span>{{ $category['name'] }}</span>
-                                    <span>{{ number_format($category['total_quantity'], 1) }}@if(($category['total_cost'] ?? 0) > 0) <span class="cat-cost">Rs {{ number_format($category['total_cost'], 0) }}</span>@endif</span>
-                                </div>
-                                <div class="category-items">
-                                    @foreach($category['items'] as $item)
-                                        <div class="item-row">
-                                            <span class="item-name">{{ $item['name'] }}</span>
-                                            @if(($item['total_cost'] ?? 0) > 0)
-                                                <span class="item-cost">Rs {{ number_format($item['total_cost'], 2) }}</span>
-                                            @endif
-                                            <span class="item-quantity">{{ number_format($item['quantity'], 1) }}</span>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Minimal Footer -->
-        <div class="print-footer">
-            <p>Generated: {{ now()->format('Y-m-d H:i') }}</p>
+    <div class="header">
+        <h1>Kitchen vs Sales Comparison</h1>
+        <div class="meta">
+            {{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }} — {{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }}
+            @if($startDate !== $endDate)
+                ({{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} days)
+            @endif
+            &nbsp;|&nbsp; Sales: {{ $dailySalesData['total_items'] }} items / {{ $dailySalesData['total_sales'] }} bills
+            &nbsp;|&nbsp; Issues: {{ number_format($mainKitchenData['total_quantity'], 1) }} qty / {{ $mainKitchenData['total_transactions'] }} txns
+            @if(($mainKitchenData['total_cost'] ?? 0) > 0)
+                / Rs {{ number_format($mainKitchenData['total_cost'], 0) }}
+            @endif
+            &nbsp;|&nbsp; {{ now()->format('M d H:i') }}
         </div>
     </div>
 
+    <div class="cols">
+        <!-- Daily Sales -->
+        <div class="col">
+            <div class="col-title">Daily Sales ({{ $dailySalesData['total_items'] }})</div>
+            @if(empty($dailySalesData['by_category']))
+                <div style="text-align:center; padding:3mm; color:#999; font-size:6pt;">No sales</div>
+            @else
+                @foreach($dailySalesData['by_category'] as $categoryId => $category)
+                    <div class="cat">
+                        <div class="cat-head">
+                            <span>{{ $category['name'] }}</span>
+                            <span>{{ $category['total'] }}</span>
+                        </div>
+                        @if(!empty($category['category_summary']))
+                            <div class="cat-summary">{{ $category['category_summary'] }}</div>
+                        @endif
+                        <div class="cat-items">
+                            @foreach($category['items'] as $item)
+                                <div class="row">
+                                    <span class="name">{{ $item['name'] }}</span>
+                                    <span class="qty">{{ number_format($item['quantity'], 0) }}</span>
+                                </div>
+                                @if(!empty($item['item_summary']))
+                                    <div class="recipe">{{ $item['item_summary'] }}</div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+
+                @if(!empty($grandIngredientSummary))
+                    <div class="grand-summary">
+                        <div class="grand-summary-title">Total Ingredients Summary</div>
+                        <div class="grand-summary-body">
+                            @foreach(preg_split('/\s{2,}/', $grandIngredientSummary) as $ing)
+                                @if(preg_match('/^(.+?)\s+([\d,.]+)$/', trim($ing), $m))
+                                    <span class="ing">{{ $m[1] }} <span class="ing-qty">{{ $m[2] }}</span></span>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            @endif
+        </div>
+
+        <!-- Kitchen Issues -->
+        <div class="col">
+            <div class="col-title">{{ $issueFilterLabel ?? 'Main Kitchen' }} Issues ({{ number_format($mainKitchenData['total_quantity'], 1) }})</div>
+            @if(empty($mainKitchenData['by_category']))
+                <div style="text-align:center; padding:3mm; color:#999; font-size:6pt;">No issues</div>
+            @else
+                @foreach($mainKitchenData['by_category'] as $categoryId => $category)
+                    <div class="cat">
+                        <div class="cat-head">
+                            <span>{{ $category['name'] }}</span>
+                            <span>{{ number_format($category['total_quantity'], 1) }}@if(($category['total_cost'] ?? 0) > 0) <span class="cat-cost">Rs {{ number_format($category['total_cost'], 0) }}</span>@endif</span>
+                        </div>
+                        <div class="cat-items">
+                            @foreach($category['items'] as $item)
+                                <div class="row">
+                                    <span class="name">{{ $item['name'] }}</span>
+                                    @if(($item['total_cost'] ?? 0) > 0)
+                                        <span class="cost">Rs {{ number_format($item['total_cost'], 0) }}</span>
+                                    @endif
+                                    <span class="qty">{{ number_format($item['quantity'], 1) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+
+    <div class="footer">{{ now()->format('Y-m-d H:i') }}</div>
+
     <script>
-        // Auto-print when page loads
         window.onload = function() {
             window.print();
         };

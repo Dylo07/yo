@@ -1564,7 +1564,34 @@ class StaffAllocationController extends Controller
         $mainKitchenData = $mergedKitchen;
         $issueFilterLabel = implode(', ', $actionLabels) ?: 'Main Kitchen';
 
-        return view('staff-allocation.kitchen-summary-print', compact('startDate', 'endDate', 'dailySalesData', 'mainKitchenData', 'issueFilterLabel'));
+        // Build grand total ingredient summary across all displayed sales categories
+        $grandIngredients = [];
+        foreach ($dailySalesData['by_category'] as $cat) {
+            if (empty($cat['category_summary'])) continue;
+            // Parse "IngName qty    IngName qty" format back into totals
+            $parts = preg_split('/\s{2,}/', $cat['category_summary']);
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (empty($part)) continue;
+                // Last token is the number, everything before is the name
+                if (preg_match('/^(.+?)\s+([\d,.]+)$/', $part, $m)) {
+                    $ingName = trim($m[1]);
+                    $ingQty = (float) str_replace(',', '', $m[2]);
+                    if (!isset($grandIngredients[$ingName])) {
+                        $grandIngredients[$ingName] = 0;
+                    }
+                    $grandIngredients[$ingName] += $ingQty;
+                }
+            }
+        }
+        // Format grand summary string
+        $grandSummaryParts = [];
+        foreach ($grandIngredients as $ingName => $ingQty) {
+            $grandSummaryParts[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+        }
+        $grandIngredientSummary = implode('    ', $grandSummaryParts);
+
+        return view('staff-allocation.kitchen-summary-print', compact('startDate', 'endDate', 'dailySalesData', 'mainKitchenData', 'issueFilterLabel', 'grandIngredientSummary'));
     }
 
     /**

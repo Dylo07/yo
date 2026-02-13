@@ -31,6 +31,12 @@
         .recipe { font-size: 5pt; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 2mm; }
         .cat-cost { font-size: 5.5pt; color: #666; font-weight: normal; }
 
+        .grand-summary { margin-top: 2mm; padding: 1mm; border: 0.75pt solid #000; page-break-inside: avoid; }
+        .grand-summary-title { font-size: 7pt; font-weight: bold; margin-bottom: 0.5mm; border-bottom: 0.5pt solid #999; padding-bottom: 0.5mm; }
+        .grand-summary-body { font-size: 5.5pt; line-height: 1.3; word-spacing: 1mm; }
+        .grand-summary-body .ing { white-space: nowrap; display: inline-block; margin-right: 2mm; margin-bottom: 0.3mm; }
+        .grand-summary-body .ing-qty { font-weight: bold; }
+
         .footer { margin-top: 1.5mm; text-align: right; font-size: 5pt; color: #888; }
 
         @media print {
@@ -86,6 +92,19 @@
                         </div>
                     </div>
                 @endforeach
+
+                @if(!empty($grandIngredientSummary))
+                    <div class="grand-summary">
+                        <div class="grand-summary-title">Total Ingredients Summary</div>
+                        <div class="grand-summary-body">
+                            @foreach(preg_split('/\s{2,}/', $grandIngredientSummary) as $ing)
+                                @if(preg_match('/^(.+?)\s+([\d,.]+)$/', trim($ing), $m))
+                                    <span class="ing">{{ $m[1] }} <span class="ing-qty">{{ $m[2] }}</span></span>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             @endif
         </div>
 

@@ -26,8 +26,10 @@
         .row:not(:last-child) { border-bottom: 0.25pt dotted #ccc; }
         .row .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 1mm; }
         .row .qty { font-weight: bold; min-width: 10mm; text-align: right; }
+        .row .cost { font-size: 5.5pt; color: #666; min-width: 16mm; text-align: right; padding-right: 1mm; }
 
         .recipe { font-size: 5pt; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 2mm; }
+        .cat-cost { font-size: 5.5pt; color: #666; font-weight: normal; }
 
         .footer { margin-top: 1.5mm; text-align: right; font-size: 5pt; color: #888; }
 
@@ -47,7 +49,10 @@
                 ({{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} days)
             @endif
             &nbsp;|&nbsp; Sales: {{ $dailySalesData['total_items'] }} items / {{ $dailySalesData['total_sales'] }} bills
-            &nbsp;|&nbsp; Kitchen: {{ number_format($mainKitchenData['total_quantity'], 1) }} qty / {{ $mainKitchenData['total_transactions'] }} txns
+            &nbsp;|&nbsp; Issues: {{ number_format($mainKitchenData['total_quantity'], 1) }} qty / {{ $mainKitchenData['total_transactions'] }} txns
+            @if(($mainKitchenData['total_cost'] ?? 0) > 0)
+                / Rs {{ number_format($mainKitchenData['total_cost'], 2) }}
+            @endif
             &nbsp;|&nbsp; {{ now()->format('M d H:i') }}
         </div>
     </div>
@@ -84,9 +89,9 @@
             @endif
         </div>
 
-        <!-- Main Kitchen Issues -->
+        <!-- Inventory Issues -->
         <div class="col">
-            <div class="col-title">Main Kitchen Issues ({{ number_format($mainKitchenData['total_quantity'], 1) }})</div>
+            <div class="col-title">{{ $issueFilterLabel ?? 'Main Kitchen' }} Issues ({{ number_format($mainKitchenData['total_quantity'], 1) }}@if(($mainKitchenData['total_cost'] ?? 0) > 0) / Rs {{ number_format($mainKitchenData['total_cost'], 0) }}@endif)</div>
             @if(empty($mainKitchenData['by_category']))
                 <div style="text-align:center; padding:3mm; color:#999; font-size:6pt;">No issues</div>
             @else
@@ -94,12 +99,15 @@
                     <div class="cat">
                         <div class="cat-head">
                             <span>{{ $category['name'] }}</span>
-                            <span>{{ number_format($category['total_quantity'], 1) }}</span>
+                            <span>{{ number_format($category['total_quantity'], 1) }}@if(($category['total_cost'] ?? 0) > 0) <span class="cat-cost">Rs {{ number_format($category['total_cost'], 0) }}</span>@endif</span>
                         </div>
                         <div class="cat-items">
                             @foreach($category['items'] as $item)
                                 <div class="row">
                                     <span class="name">{{ $item['name'] }}</span>
+                                    @if(($item['total_cost'] ?? 0) > 0)
+                                        <span class="cost">Rs {{ number_format($item['total_cost'], 2) }}</span>
+                                    @endif
                                     <span class="qty">{{ number_format($item['quantity'], 1) }}</span>
                                 </div>
                             @endforeach

@@ -1489,22 +1489,82 @@ class StaffAllocationController extends Controller
     }
 
     /**
-     * Print Kitchen Summary (Daily Sales + Main Kitchen Issues)
+     * Print Kitchen Summary (Daily Sales + Inventory Issues)
      */
     public function printKitchenSummary(Request $request)
     {
         $startDate = $request->input('start_date', date('Y-m-d'));
         $endDate = $request->input('end_date', date('Y-m-d'));
+        $salesCategoryFilter = $request->input('sales_categories', '');
+        $issueActionsFilter = $request->input('issue_actions', 'remove_main_kitchen');
 
-        // Call the same logic as getKitchenSummary but return a view
+        // Get all data
         $fakeRequest = new Request(['start_date' => $startDate, 'end_date' => $endDate]);
         $response = $this->getKitchenSummary($fakeRequest);
         $result = json_decode($response->getContent(), true);
 
-        $dailySalesData = $result['data']['daily_sales'] ?? ['by_category' => [], 'total_items' => 0, 'total_sales' => 0];
-        $mainKitchenData = $result['data']['main_kitchen'] ?? ['by_category' => [], 'total_quantity' => 0, 'total_transactions' => 0];
+        $allSalesData = $result['data']['daily_sales'] ?? ['by_category' => [], 'total_items' => 0, 'total_sales' => 0];
+        $inventoryIssues = $result['data']['inventory_issues'] ?? [];
 
-        return view('staff-allocation.kitchen-summary-print', compact('startDate', 'endDate', 'dailySalesData', 'mainKitchenData'));
+        // Filter sales categories
+        $salesCatIds = array_filter(explode(',', $salesCategoryFilter));
+        if (!empty($salesCatIds)) {
+            $filteredCats = [];
+            foreach ($allSalesData['by_category'] as $catId => $cat) {
+                if (in_array((string)$catId, $salesCatIds)) {
+                    $filteredCats[$catId] = $cat;
+                }
+            }
+            $allSalesData['by_category'] = $filteredCats;
+        }
+        $dailySalesData = $allSalesData;
+
+        // Filter and merge inventory issues by selected actions
+        $selectedActions = array_filter(explode(',', $issueActionsFilter));
+        $mergedKitchen = ['by_category' => [], 'total_quantity' => 0, 'total_transactions' => 0, 'total_cost' => 0];
+        $actionLabels = [];
+
+        foreach ($selectedActions as $action) {
+            if (!isset($inventoryIssues[$action])) continue;
+            $actionData = $inventoryIssues[$action];
+            $actionLabels[] = $actionData['label'];
+            $mergedKitchen['total_quantity'] += $actionData['total_quantity'];
+            $mergedKitchen['total_transactions'] += $actionData['total_transactions'];
+            $mergedKitchen['total_cost'] += $actionData['total_cost'];
+
+            foreach ($actionData['by_category'] as $catId => $cat) {
+                if (!isset($mergedKitchen['by_category'][$catId])) {
+                    $mergedKitchen['by_category'][$catId] = [
+                        'name' => $cat['name'],
+                        'items' => [],
+                        'total_quantity' => 0,
+                        'total_cost' => $cat['total_cost'] ?? 0,
+                    ];
+                } else {
+                    $mergedKitchen['by_category'][$catId]['total_cost'] += ($cat['total_cost'] ?? 0);
+                }
+                $mergedKitchen['by_category'][$catId]['total_quantity'] += $cat['total_quantity'];
+
+                foreach ($cat['items'] as $item) {
+                    $itemName = $item['name'];
+                    if (!isset($mergedKitchen['by_category'][$catId]['items'][$itemName])) {
+                        $mergedKitchen['by_category'][$catId]['items'][$itemName] = $item;
+                    } else {
+                        $mergedKitchen['by_category'][$catId]['items'][$itemName]['quantity'] += $item['quantity'];
+                        $mergedKitchen['by_category'][$catId]['items'][$itemName]['total_cost'] += $item['total_cost'];
+                    }
+                }
+            }
+        }
+        // Convert items back to indexed arrays
+        foreach ($mergedKitchen['by_category'] as &$mCat) {
+            $mCat['items'] = array_values($mCat['items']);
+        }
+
+        $mainKitchenData = $mergedKitchen;
+        $issueFilterLabel = implode(', ', $actionLabels) ?: 'Main Kitchen';
+
+        return view('staff-allocation.kitchen-summary-print', compact('startDate', 'endDate', 'dailySalesData', 'mainKitchenData', 'issueFilterLabel'));
     }
 
     /**

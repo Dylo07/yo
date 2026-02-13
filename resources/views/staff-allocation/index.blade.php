@@ -3672,7 +3672,9 @@ function refreshSalarySummary() {
 function printKitchenSummary() {
     const startDate = document.getElementById('kitchenStartDate').value;
     const endDate = document.getElementById('kitchenEndDate').value;
-    window.open(`/api/duty-roster/kitchen-summary/print?start_date=${startDate}&end_date=${endDate}`, '_blank');
+    const salesCats = [...document.querySelectorAll('.ksSalesCatCb:checked')].map(cb => cb.value).join(',');
+    const issueActions = [...document.querySelectorAll('.ksIssuesActionCb:checked')].map(cb => cb.value).join(',');
+    window.open(`/api/duty-roster/kitchen-summary/print?start_date=${startDate}&end_date=${endDate}&sales_categories=${encodeURIComponent(salesCats)}&issue_actions=${encodeURIComponent(issueActions)}`, '_blank');
 }
 
 function setKitchenDate(preset) {

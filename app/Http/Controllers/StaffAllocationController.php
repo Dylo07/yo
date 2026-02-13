@@ -1379,48 +1379,89 @@ class StaffAllocationController extends Controller
                 $cat['items'] = array_values($cat['items']);
             }
 
-            // ===== MAIN KITCHEN ISSUES =====
-            $mainKitchenLogs = StockLog::with(['user', 'item', 'item.group'])
+            // ===== INVENTORY ISSUES (all remove actions, grouped by action) =====
+            $allRemoveLogs = StockLog::with(['user', 'item', 'item.group'])
                 ->whereBetween('created_at', [$startCarbon, $endCarbon->copy()->endOfDay()])
-                ->where('action', 'remove_main_kitchen')
+                ->where('action', 'like', 'remove_%')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $categorizedKitchen = [];
-            $totalKitchenQty = 0;
-            $totalTransactions = $mainKitchenLogs->count();
-
-            foreach ($mainKitchenLogs as $log) {
-                $categoryId = $log->item->group_id ?? 'uncategorized';
-                $categoryName = ($log->item->group->name ?? 'Uncategorized');
-
-                if (!isset($categorizedKitchen[$categoryId])) {
-                    $categorizedKitchen[$categoryId] = [
-                        'name' => $categoryName,
-                        'items' => [],
-                        'total_quantity' => 0,
-                        'total_transactions' => 0,
-                    ];
+            // Group by action type
+            $issuesByAction = [];
+            foreach ($allRemoveLogs as $log) {
+                $action = $log->action;
+                if (!isset($issuesByAction[$action])) {
+                    $issuesByAction[$action] = [];
                 }
-
-                // Aggregate by item name (sum total quantity per item)
-                $itemName = $log->item->name;
-                if (!isset($categorizedKitchen[$categoryId]['items'][$itemName])) {
-                    $categorizedKitchen[$categoryId]['items'][$itemName] = [
-                        'name' => $itemName,
-                        'quantity' => 0,
-                    ];
-                }
-                $categorizedKitchen[$categoryId]['items'][$itemName]['quantity'] += $log->quantity;
-
-                $categorizedKitchen[$categoryId]['total_quantity'] += $log->quantity;
-                $categorizedKitchen[$categoryId]['total_transactions']++;
-                $totalKitchenQty += $log->quantity;
+                $issuesByAction[$action][] = $log;
             }
 
-            // Convert items to indexed arrays
-            foreach ($categorizedKitchen as &$kitCat) {
-                $kitCat['items'] = array_values($kitCat['items']);
+            // Build categorized data per action
+            $inventoryIssues = [];
+            foreach ($issuesByAction as $action => $logs) {
+                $categorizedKitchen = [];
+                $totalKitchenQty = 0;
+                $totalTransactions = count($logs);
+                $totalCost = 0;
+
+                foreach ($logs as $log) {
+                    $categoryId = $log->item->group_id ?? 'uncategorized';
+                    $categoryName = ($log->item->group->name ?? 'Uncategorized');
+
+                    if (!isset($categorizedKitchen[$categoryId])) {
+                        $categorizedKitchen[$categoryId] = [
+                            'name' => $categoryName,
+                            'items' => [],
+                            'total_quantity' => 0,
+                            'total_transactions' => 0,
+                            'total_cost' => 0,
+                        ];
+                    }
+
+                    $itemName = $log->item->name;
+                    $costPerUnit = floatval($log->item->kitchen_cost_per_unit ?? 0);
+
+                    if (!isset($categorizedKitchen[$categoryId]['items'][$itemName])) {
+                        $categorizedKitchen[$categoryId]['items'][$itemName] = [
+                            'name' => $itemName,
+                            'quantity' => 0,
+                            'cost_per_unit' => $costPerUnit,
+                            'total_cost' => 0,
+                        ];
+                    }
+                    $categorizedKitchen[$categoryId]['items'][$itemName]['quantity'] += $log->quantity;
+                    $itemCost = $log->quantity * $costPerUnit;
+                    $categorizedKitchen[$categoryId]['items'][$itemName]['total_cost'] += $itemCost;
+
+                    $categorizedKitchen[$categoryId]['total_quantity'] += $log->quantity;
+                    $categorizedKitchen[$categoryId]['total_transactions']++;
+                    $categorizedKitchen[$categoryId]['total_cost'] += $itemCost;
+                    $totalKitchenQty += $log->quantity;
+                    $totalCost += $itemCost;
+                }
+
+                foreach ($categorizedKitchen as &$kitCat) {
+                    $kitCat['items'] = array_values($kitCat['items']);
+                }
+
+                // Friendly action label
+                $actionLabels = [
+                    'remove_main_kitchen' => 'Main Kitchen',
+                    'remove_banquet_hall_kitchen' => 'Banquet Hall Kitchen',
+                    'remove_banquet_hall' => 'Banquet Hall',
+                    'remove_restaurant' => 'Restaurant',
+                    'remove_rooms' => 'Rooms',
+                    'remove_garden' => 'Garden',
+                    'remove_other' => 'Other',
+                ];
+
+                $inventoryIssues[$action] = [
+                    'label' => $actionLabels[$action] ?? ucwords(str_replace('_', ' ', str_replace('remove_', '', $action))),
+                    'by_category' => $categorizedKitchen,
+                    'total_quantity' => $totalKitchenQty,
+                    'total_transactions' => $totalTransactions,
+                    'total_cost' => $totalCost,
+                ];
             }
 
             return response()->json([
@@ -1433,10 +1474,12 @@ class StaffAllocationController extends Controller
                         'total_items' => $totalItems,
                         'total_sales' => $totalSales,
                     ],
+                    'inventory_issues' => $inventoryIssues,
                     'main_kitchen' => [
-                        'by_category' => $categorizedKitchen,
-                        'total_quantity' => $totalKitchenQty,
-                        'total_transactions' => $totalTransactions,
+                        'by_category' => $inventoryIssues['remove_main_kitchen']['by_category'] ?? [],
+                        'total_quantity' => $inventoryIssues['remove_main_kitchen']['total_quantity'] ?? 0,
+                        'total_transactions' => $inventoryIssues['remove_main_kitchen']['total_transactions'] ?? 0,
+                        'total_cost' => $inventoryIssues['remove_main_kitchen']['total_cost'] ?? 0,
                     ],
                 ],
             ]);

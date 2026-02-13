@@ -1044,7 +1044,7 @@
                     </div>
                 </div>
 
-                <!-- Two Column Layout: Daily Sales | Main Kitchen Issues -->
+                <!-- Two Column Layout: Daily Sales | Inventory Issues -->
                 <div class="grid grid-cols-2 gap-3">
                     <!-- Daily Sales -->
                     <div>
@@ -1052,21 +1052,39 @@
                             <h4 class="text-xs font-bold text-blue-700 flex items-center gap-1">
                                 <i class="fas fa-chart-line"></i> Daily Sales
                             </h4>
-                            <select id="ksCategoryFilter" onchange="filterKitchenSalesCategory()" class="text-[10px] border border-blue-300 rounded px-1.5 py-0.5 text-blue-700 bg-blue-50">
-                                <option value="all">All Categories</option>
-                            </select>
+                            <div class="relative">
+                                <button onclick="toggleKsDropdown('salesFilter')" class="text-[10px] border border-blue-300 rounded px-2 py-0.5 text-blue-700 bg-blue-50 hover:bg-blue-100 flex items-center gap-1">
+                                    <i class="fas fa-filter text-[8px]"></i> Filter <i class="fas fa-caret-down text-[8px]"></i>
+                                </button>
+                                <div id="salesFilterDropdown" class="hidden absolute right-0 top-full mt-1 bg-white border border-blue-200 rounded shadow-lg z-50 w-48 max-h-52 overflow-y-auto">
+                                    <div class="px-2 py-1 border-b border-blue-100">
+                                        <label class="flex items-center gap-1 text-[10px] font-bold text-blue-700 cursor-pointer">
+                                            <input type="checkbox" id="ksSalesAll" checked onchange="toggleAllSalesCategories(this)" class="w-3 h-3"> All Categories
+                                        </label>
+                                    </div>
+                                    <div id="ksSalesCatList"></div>
+                                </div>
+                            </div>
                         </div>
                         <div id="ksSalesContent" class="max-h-80 overflow-y-auto border rounded">
                             <div class="text-center py-4 text-gray-400 text-xs">Loading...</div>
                         </div>
                     </div>
 
-                    <!-- Main Kitchen Issues -->
+                    <!-- Inventory Issues -->
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <h4 class="text-xs font-bold text-green-700 flex items-center gap-1">
-                                <i class="fas fa-fire"></i> Main Kitchen Issues
+                                <i class="fas fa-fire"></i> Inventory Issues
                             </h4>
+                            <div class="relative">
+                                <button onclick="toggleKsDropdown('issuesFilter')" class="text-[10px] border border-green-300 rounded px-2 py-0.5 text-green-700 bg-green-50 hover:bg-green-100 flex items-center gap-1">
+                                    <i class="fas fa-filter text-[8px]"></i> Filter <i class="fas fa-caret-down text-[8px]"></i>
+                                </button>
+                                <div id="issuesFilterDropdown" class="hidden absolute right-0 top-full mt-1 bg-white border border-green-200 rounded shadow-lg z-50 w-52 max-h-52 overflow-y-auto">
+                                    <div id="ksIssuesActionList"></div>
+                                </div>
+                            </div>
                         </div>
                         <div id="ksKitchenContent" class="max-h-80 overflow-y-auto border rounded">
                             <div class="text-center py-4 text-gray-400 text-xs">Loading...</div>
@@ -3702,7 +3720,8 @@ async function loadKitchenSummary() {
     }
 }
 
-let _ksSalesData = null; // Store globally for category filter
+let _ksSalesData = null;
+let _ksInventoryIssues = null;
 
 function updateKitchenSummaryUI(data) {
     document.getElementById('ksTotalItems').textContent = data.daily_sales.total_items;
@@ -3711,43 +3730,81 @@ function updateKitchenSummaryUI(data) {
     document.getElementById('ksTotalTransactions').textContent = data.main_kitchen.total_transactions;
 
     _ksSalesData = data.daily_sales;
-    populateKsCategoryFilter(data.daily_sales);
-    renderKitchenSales(data.daily_sales, 'all');
-    renderKitchenIssues(data.main_kitchen);
+    _ksInventoryIssues = data.inventory_issues || {};
+    populateKsSalesFilter(data.daily_sales);
+    populateKsIssuesFilter(data.inventory_issues || {});
+    applyKsSalesFilter();
+    applyKsIssuesFilter();
 }
 
-function populateKsCategoryFilter(salesData) {
-    const select = document.getElementById('ksCategoryFilter');
-    const currentVal = select.value;
-    select.innerHTML = '<option value="all">All Categories</option>';
-    const categories = salesData.by_category || {};
-    Object.keys(categories).forEach(catId => {
-        const opt = document.createElement('option');
-        opt.value = catId;
-        opt.textContent = categories[catId].name;
-        select.appendChild(opt);
+// ---- Dropdown toggle & close on outside click ----
+function toggleKsDropdown(type) {
+    const dd = document.getElementById(type + 'Dropdown');
+    dd.classList.toggle('hidden');
+}
+document.addEventListener('click', function(e) {
+    ['salesFilterDropdown', 'issuesFilterDropdown'].forEach(id => {
+        const dd = document.getElementById(id);
+        if (dd && !dd.classList.contains('hidden') && !dd.contains(e.target) && !e.target.closest('[onclick*="toggleKsDropdown"]')) {
+            dd.classList.add('hidden');
+        }
     });
-    // Restore previous selection if still valid
-    if ([...select.options].some(o => o.value === currentVal)) {
-        select.value = currentVal;
-    }
+});
+
+// ---- DAILY SALES FILTER (multi-select checkboxes) ----
+function populateKsSalesFilter(salesData) {
+    const list = document.getElementById('ksSalesCatList');
+    const categories = salesData.by_category || {};
+    // Remember which were checked
+    const prevChecked = {};
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { prevChecked[cb.value] = cb.checked; });
+    const isFirstLoad = Object.keys(prevChecked).length === 0;
+
+    list.innerHTML = '';
+    Object.keys(categories).forEach(catId => {
+        const checked = isFirstLoad ? true : (prevChecked[catId] !== undefined ? prevChecked[catId] : true);
+        list.innerHTML += `<div class="px-2 py-0.5">
+            <label class="flex items-center gap-1 text-[10px] text-gray-700 cursor-pointer">
+                <input type="checkbox" value="${catId}" ${checked ? 'checked' : ''} onchange="onKsSalesCatChange()" class="w-3 h-3 ksSalesCatCb"> ${categories[catId].name}
+            </label>
+        </div>`;
+    });
+    // Sync "All" checkbox
+    syncSalesAllCheckbox();
 }
 
-function filterKitchenSalesCategory() {
+function toggleAllSalesCategories(allCb) {
+    document.querySelectorAll('.ksSalesCatCb').forEach(cb => { cb.checked = allCb.checked; });
+    applyKsSalesFilter();
+}
+
+function onKsSalesCatChange() {
+    syncSalesAllCheckbox();
+    applyKsSalesFilter();
+}
+
+function syncSalesAllCheckbox() {
+    const all = document.querySelectorAll('.ksSalesCatCb');
+    const checked = document.querySelectorAll('.ksSalesCatCb:checked');
+    const allCb = document.getElementById('ksSalesAll');
+    if (allCb) allCb.checked = all.length === checked.length;
+}
+
+function applyKsSalesFilter() {
     if (!_ksSalesData) return;
-    const filter = document.getElementById('ksCategoryFilter').value;
-    renderKitchenSales(_ksSalesData, filter);
+    const checked = [...document.querySelectorAll('.ksSalesCatCb:checked')].map(cb => cb.value);
+    renderKitchenSales(_ksSalesData, checked);
 }
 
-function renderKitchenSales(salesData, filterCatId) {
+function renderKitchenSales(salesData, selectedCatIds) {
     const container = document.getElementById('ksSalesContent');
     const allCategories = salesData.by_category || {};
     let categories;
 
-    if (filterCatId && filterCatId !== 'all') {
-        categories = allCategories[filterCatId] ? [allCategories[filterCatId]] : [];
+    if (!selectedCatIds || selectedCatIds.length === 0) {
+        categories = [];
     } else {
-        categories = Object.values(allCategories);
+        categories = selectedCatIds.map(id => allCategories[id]).filter(Boolean);
     }
 
     if (categories.length === 0) {
@@ -3766,7 +3823,6 @@ function renderKitchenSales(salesData, filterCatId) {
             <span class="bg-white text-blue-600 rounded-full px-2 py-0.5 text-[9px]">${cat.total} items</span>
         </div>`;
 
-        // Category-level ingredient summary
         if (cat.category_summary && cat.category_summary.trim() !== '') {
             html += `<div class="bg-blue-50 px-2 py-1 border-b border-blue-200">
                 <div class="text-[9px] text-blue-800 font-medium">
@@ -3781,13 +3837,11 @@ function renderKitchenSales(salesData, filterCatId) {
                     <span class="text-[10px] text-gray-700">${item.name}</span>
                     <span class="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-[9px] font-bold">${item.quantity}</span>
                 </div>`;
-
             if (item.item_summary && item.item_summary.trim() !== '') {
                 html += `<div class="text-[9px] text-gray-500 mt-0.5 italic">
                     <i class="fas fa-mortar-pestle text-[8px] mr-1 text-amber-500"></i>${item.item_summary}
                 </div>`;
             }
-
             html += `</div>`;
         });
     });
@@ -3795,37 +3849,104 @@ function renderKitchenSales(salesData, filterCatId) {
     container.innerHTML = html;
 }
 
-function renderKitchenIssues(kitchenData) {
-    const container = document.getElementById('ksKitchenContent');
-    const categories = Object.values(kitchenData.by_category || {});
+// ---- INVENTORY ISSUES FILTER (multi-select by action type, default Main Kitchen) ----
+function populateKsIssuesFilter(issuesData) {
+    const list = document.getElementById('ksIssuesActionList');
+    const prevChecked = {};
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { prevChecked[cb.value] = cb.checked; });
+    const isFirstLoad = Object.keys(prevChecked).length === 0;
 
+    list.innerHTML = '';
+    Object.keys(issuesData).forEach(action => {
+        const checked = isFirstLoad ? (action === 'remove_main_kitchen') : (prevChecked[action] !== undefined ? prevChecked[action] : false);
+        list.innerHTML += `<div class="px-2 py-0.5">
+            <label class="flex items-center gap-1 text-[10px] text-gray-700 cursor-pointer">
+                <input type="checkbox" value="${action}" ${checked ? 'checked' : ''} onchange="applyKsIssuesFilter()" class="w-3 h-3 ksIssuesActionCb"> ${issuesData[action].label}
+            </label>
+        </div>`;
+    });
+}
+
+function applyKsIssuesFilter() {
+    if (!_ksInventoryIssues) return;
+    const checked = [...document.querySelectorAll('.ksIssuesActionCb:checked')].map(cb => cb.value);
+    renderKitchenIssues(checked);
+}
+
+function renderKitchenIssues(selectedActions) {
+    const container = document.getElementById('ksKitchenContent');
+    if (!_ksInventoryIssues || !selectedActions || selectedActions.length === 0) {
+        container.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No issues selected</div>';
+        return;
+    }
+
+    // Merge data from all selected actions
+    let mergedCategories = {};
+    let totalQty = 0, totalTxns = 0, totalCost = 0;
+
+    selectedActions.forEach(action => {
+        const actionData = _ksInventoryIssues[action];
+        if (!actionData) return;
+        totalQty += actionData.total_quantity;
+        totalTxns += actionData.total_transactions;
+        totalCost += actionData.total_cost;
+
+        Object.entries(actionData.by_category || {}).forEach(([catId, cat]) => {
+            if (!mergedCategories[catId]) {
+                mergedCategories[catId] = { name: cat.name, items: {}, total_quantity: 0, total_cost: 0 };
+            }
+            mergedCategories[catId].total_quantity += cat.total_quantity;
+            mergedCategories[catId].total_cost += cat.total_cost;
+            cat.items.forEach(item => {
+                if (!mergedCategories[catId].items[item.name]) {
+                    mergedCategories[catId].items[item.name] = { name: item.name, quantity: 0, cost_per_unit: item.cost_per_unit, total_cost: 0 };
+                }
+                mergedCategories[catId].items[item.name].quantity += item.quantity;
+                mergedCategories[catId].items[item.name].total_cost += item.total_cost;
+            });
+        });
+    });
+
+    const categories = Object.values(mergedCategories);
     if (categories.length === 0) {
-        container.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No kitchen issues</div>';
+        container.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No issues data</div>';
         return;
     }
 
     let html = `<div class="text-[10px] px-2 py-1 bg-gray-50 border-b flex justify-between">
-        <span>Total Quantity: <strong>${parseFloat(kitchenData.total_quantity).toFixed(1)}</strong></span>
-        <span>Transactions: <strong>${kitchenData.total_transactions}</strong></span>
+        <span>Qty: <strong>${parseFloat(totalQty).toFixed(1)}</strong></span>
+        <span>Cost: <strong class="text-red-600">Rs ${parseFloat(totalCost).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</strong></span>
     </div>`;
 
     categories.forEach(cat => {
+        const catItems = Object.values(cat.items);
         html += `<div class="bg-green-500 text-white text-[10px] font-bold px-2 py-1 flex justify-between items-center">
             <span>${cat.name}</span>
-            <span class="bg-white text-green-600 rounded-full px-2 py-0.5 text-[9px]">${parseFloat(cat.total_quantity).toFixed(1)} units</span>
+            <div class="flex gap-1">
+                <span class="bg-white text-green-600 rounded-full px-2 py-0.5 text-[9px]">${parseFloat(cat.total_quantity).toFixed(1)}</span>
+                ${cat.total_cost > 0 ? `<span class="bg-red-100 text-red-700 rounded-full px-2 py-0.5 text-[9px]">Rs ${parseFloat(cat.total_cost).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</span>` : ''}
+            </div>
         </div>`;
 
-        cat.items.forEach(item => {
+        catItems.forEach(item => {
+            const costStr = item.total_cost > 0 ? `<span class="text-[8px] text-red-500 ml-1">Rs ${parseFloat(item.total_cost).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</span>` : '';
             html += `<div class="border-b border-gray-100 px-2 py-1.5">
                 <div class="flex justify-between items-center">
                     <span class="text-[10px] text-gray-700 font-medium">${item.name}</span>
-                    <span class="bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-[9px] font-bold">${parseFloat(item.quantity).toFixed(1)}</span>
+                    <div class="flex items-center gap-1">
+                        ${costStr}
+                        <span class="bg-green-100 text-green-700 rounded-full px-2 py-0.5 text-[9px] font-bold">${parseFloat(item.quantity).toFixed(1)}</span>
+                    </div>
                 </div>
             </div>`;
         });
     });
 
     container.innerHTML = html;
+
+    // Update header stats
+    document.getElementById('ksTotalKitchenQty').textContent = parseFloat(totalQty).toFixed(1);
+    document.getElementById('ksTotalTransactions').textContent = totalTxns;
 }
 
 // Initialize

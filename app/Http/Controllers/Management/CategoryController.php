@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Management;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use Illuminate\Support\Facades\Cache;
 
 
 class CategoryController extends Controller
@@ -44,6 +45,7 @@ class CategoryController extends Controller
         $name = $request->name;
         $category->name =$name;
         $category->save();
+        Cache::forget('cashier_categories');
         $request->session()->flash('status', $request->name." is save successfully");
         return(redirect('/management/category')); 
     }
@@ -84,6 +86,7 @@ class CategoryController extends Controller
         $category= Category::find($id);
         $category->name= $request->name;
         $category->save();
+        Cache::forget('cashier_categories');
         $request->session()->flash('status', $request->name." is updated successfully");
         return(redirect('/management/category')); 
     }
@@ -97,6 +100,7 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         Category::destroy($id);
+        Cache::forget('cashier_categories');
         Session()->flash('status','The category is deleted successfully');
         return redirect ('/management/category');
 

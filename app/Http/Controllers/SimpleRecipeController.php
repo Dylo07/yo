@@ -19,8 +19,11 @@ class SimpleRecipeController extends Controller
      */
     public function index()
     {
-        // Get all menus with their recipes
-        $menus = Menu::with('category')->orderBy('name')->get();
+        // Get all menus with their recipes, ordered by category then name
+        $menus = Menu::with('category')->orderBy('category_id')->orderBy('name')->get();
+        
+        // Get unique categories for filter
+        $categories = $menus->pluck('category')->filter()->unique('id')->sortBy('name')->values();
         
         // Get kitchen items for the dropdown
         $kitchenItems = DB::table('items')
@@ -44,7 +47,7 @@ class SimpleRecipeController extends Controller
             ->get()
             ->groupBy('menu_id');
 
-        return view('recipes.simple-manage', compact('menus', 'kitchenItems', 'recipes'));
+        return view('recipes.simple-manage', compact('menus', 'kitchenItems', 'recipes', 'categories'));
     }
 
     /**

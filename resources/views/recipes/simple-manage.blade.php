@@ -27,30 +27,72 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Menu Items</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Menu Items</h5>
+                        <span class="badge bg-light text-primary" id="menuCount">{{ $menus->count() }}</span>
+                    </div>
                 </div>
-                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
-                    @foreach($menus as $menu)
-                        <div class="menu-item mb-2 p-2 border rounded {{ isset($recipes[$menu->id]) ? 'bg-light' : '' }}" 
-                             style="cursor: pointer;" 
-                             onclick="selectMenu({{ $menu->id }}, '{{ addslashes($menu->name) }}')">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ $menu->name }}</strong>
-                                    <br><small class="text-muted">
-                                        {{ $menu->category ? $menu->category->name : 'No Category' }}
-                                    </small>
+                <div class="card-body p-2">
+                    <!-- Search Box -->
+                    <div class="mb-2">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="menuSearch" class="form-control" placeholder="Search menu items..." oninput="filterMenuItems()">
+                            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('menuSearch').value=''; filterMenuItems();">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category Filter Buttons -->
+                    <div class="mb-2 d-flex flex-wrap gap-1" id="categoryFilters">
+                        <button class="btn btn-sm btn-primary cat-filter-btn active" data-cat="all" onclick="filterByCategory('all', this)">
+                            All <span class="badge bg-light text-primary ms-1">{{ $menus->count() }}</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success cat-filter-btn" data-cat="has-recipe" onclick="filterByCategory('has-recipe', this)">
+                            <i class="fas fa-check me-1"></i>Has Recipe <span class="badge bg-success text-white ms-1">{{ $menus->filter(function($m) use ($recipes) { return isset($recipes[$m->id]); })->count() }}</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning cat-filter-btn" data-cat="no-recipe" onclick="filterByCategory('no-recipe', this)">
+                            <i class="fas fa-exclamation me-1"></i>No Recipe <span class="badge bg-warning text-dark ms-1">{{ $menus->filter(function($m) use ($recipes) { return !isset($recipes[$m->id]); })->count() }}</span>
+                        </button>
+                        @foreach($categories as $category)
+                            <button class="btn btn-sm btn-outline-secondary cat-filter-btn" data-cat="{{ $category->id }}" onclick="filterByCategory('{{ $category->id }}', this)">
+                                {{ $category->name }} <span class="badge bg-secondary text-white ms-1">{{ $menus->where('category_id', $category->id)->count() }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <!-- Menu Items Scrollable List -->
+                    <div style="max-height: 520px; overflow-y: auto;" id="menuListContainer">
+                        @php $currentCat = null; @endphp
+                        @foreach($menus as $menu)
+                            @if($menu->category_id !== $currentCat)
+                                @php $currentCat = $menu->category_id; @endphp
+                                <div class="cat-group-header px-2 py-1 mt-2 mb-1 rounded" style="background:#e9ecef; font-size:0.75rem; font-weight:700; color:#495057; position:sticky; top:0; z-index:1;" data-cat-id="{{ $menu->category_id }}">
+                                    {{ $menu->category ? $menu->category->name : 'No Category' }}
                                 </div>
-                                <div>
-                                    @if(isset($recipes[$menu->id]))
-                                        <span class="badge bg-success">Has Recipe ({{ count($recipes[$menu->id]) }} items)</span>
-                                    @else
-                                        <span class="badge bg-warning">No Recipe</span>
-                                    @endif
+                            @endif
+                            <div class="menu-item mb-1 p-2 border rounded {{ isset($recipes[$menu->id]) ? 'border-success' : 'border-warning' }}" 
+                                 style="cursor: pointer; font-size:0.85rem;" 
+                                 data-cat-id="{{ $menu->category_id }}"
+                                 data-has-recipe="{{ isset($recipes[$menu->id]) ? '1' : '0' }}"
+                                 data-menu-name="{{ strtolower($menu->name) }}"
+                                 onclick="selectMenu({{ $menu->id }}, '{{ addslashes($menu->name) }}')">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div style="min-width:0; flex:1;">
+                                        <strong style="font-size:0.85rem;">{{ $menu->name }}</strong>
+                                    </div>
+                                    <div class="ms-1 flex-shrink-0">
+                                        @if(isset($recipes[$menu->id]))
+                                            <span class="badge bg-success" style="font-size:0.65rem;">{{ count($recipes[$menu->id]) }} items</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark" style="font-size:0.65rem;">No Recipe</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,6 +287,69 @@ function clearRecipe() {
         // Hide current recipe display
         document.getElementById('currentRecipeCard').style.display = 'none';
     }
+}
+
+// ===== Category Filter =====
+let activeCatFilter = 'all';
+
+function filterByCategory(cat, btn) {
+    activeCatFilter = cat;
+    // Update active button
+    document.querySelectorAll('.cat-filter-btn').forEach(b => {
+        b.classList.remove('active', 'btn-primary', 'btn-success', 'btn-warning', 'btn-secondary');
+        const outline = b.className.match(/btn-outline-\w+/);
+        if (!outline) b.classList.add('btn-outline-primary');
+    });
+    btn.classList.add('active');
+    // Remove outline variant and add solid
+    const outlineClass = [...btn.classList].find(c => c.startsWith('btn-outline-'));
+    if (outlineClass) {
+        btn.classList.remove(outlineClass);
+        btn.classList.add(outlineClass.replace('btn-outline-', 'btn-'));
+    }
+    applyFilters();
+}
+
+function filterMenuItems() {
+    applyFilters();
+}
+
+function applyFilters() {
+    const search = (document.getElementById('menuSearch').value || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.menu-item');
+    const headers = document.querySelectorAll('.cat-group-header');
+    let visibleCount = 0;
+    const visibleCats = new Set();
+
+    items.forEach(item => {
+        const catId = item.dataset.catId;
+        const hasRecipe = item.dataset.hasRecipe;
+        const name = item.dataset.menuName || '';
+        let show = true;
+
+        // Category / recipe status filter
+        if (activeCatFilter === 'has-recipe' && hasRecipe !== '1') show = false;
+        else if (activeCatFilter === 'no-recipe' && hasRecipe !== '0') show = false;
+        else if (activeCatFilter !== 'all' && activeCatFilter !== 'has-recipe' && activeCatFilter !== 'no-recipe') {
+            if (catId !== activeCatFilter) show = false;
+        }
+
+        // Text search
+        if (show && search && !name.includes(search)) show = false;
+
+        item.style.display = show ? '' : 'none';
+        if (show) {
+            visibleCount++;
+            visibleCats.add(catId);
+        }
+    });
+
+    // Show/hide category group headers
+    headers.forEach(h => {
+        h.style.display = visibleCats.has(h.dataset.catId) ? '' : 'none';
+    });
+
+    document.getElementById('menuCount').textContent = visibleCount;
 }
 
 function showCurrentRecipe(recipe) {

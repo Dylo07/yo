@@ -65,6 +65,9 @@
                             <span>{{ $category['name'] }}</span>
                             <span>{{ $category['total'] }}</span>
                         </div>
+                        @if(!empty($category['category_summary']))
+                            <div class="recipe" style="padding: 0.3mm 0; border-bottom: 0.25pt solid #ddd;">{{ $category['category_summary'] }}</div>
+                        @endif
                         <div class="cat-items">
                             @foreach($category['items'] as $item)
                                 <div class="row">

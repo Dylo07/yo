@@ -1052,6 +1052,9 @@
                             <h4 class="text-xs font-bold text-blue-700 flex items-center gap-1">
                                 <i class="fas fa-chart-line"></i> Daily Sales
                             </h4>
+                            <select id="ksCategoryFilter" onchange="filterKitchenSalesCategory()" class="text-[10px] border border-blue-300 rounded px-1.5 py-0.5 text-blue-700 bg-blue-50">
+                                <option value="all">All Categories</option>
+                            </select>
                         </div>
                         <div id="ksSalesContent" class="max-h-80 overflow-y-auto border rounded">
                             <div class="text-center py-4 text-gray-400 text-xs">Loading...</div>
@@ -3699,19 +3702,53 @@ async function loadKitchenSummary() {
     }
 }
 
+let _ksSalesData = null; // Store globally for category filter
+
 function updateKitchenSummaryUI(data) {
     document.getElementById('ksTotalItems').textContent = data.daily_sales.total_items;
     document.getElementById('ksTotalSales').textContent = data.daily_sales.total_sales;
     document.getElementById('ksTotalKitchenQty').textContent = parseFloat(data.main_kitchen.total_quantity).toFixed(1);
     document.getElementById('ksTotalTransactions').textContent = data.main_kitchen.total_transactions;
 
-    renderKitchenSales(data.daily_sales);
+    _ksSalesData = data.daily_sales;
+    populateKsCategoryFilter(data.daily_sales);
+    renderKitchenSales(data.daily_sales, 'all');
     renderKitchenIssues(data.main_kitchen);
 }
 
-function renderKitchenSales(salesData) {
+function populateKsCategoryFilter(salesData) {
+    const select = document.getElementById('ksCategoryFilter');
+    const currentVal = select.value;
+    select.innerHTML = '<option value="all">All Categories</option>';
+    const categories = salesData.by_category || {};
+    Object.keys(categories).forEach(catId => {
+        const opt = document.createElement('option');
+        opt.value = catId;
+        opt.textContent = categories[catId].name;
+        select.appendChild(opt);
+    });
+    // Restore previous selection if still valid
+    if ([...select.options].some(o => o.value === currentVal)) {
+        select.value = currentVal;
+    }
+}
+
+function filterKitchenSalesCategory() {
+    if (!_ksSalesData) return;
+    const filter = document.getElementById('ksCategoryFilter').value;
+    renderKitchenSales(_ksSalesData, filter);
+}
+
+function renderKitchenSales(salesData, filterCatId) {
     const container = document.getElementById('ksSalesContent');
-    const categories = Object.values(salesData.by_category || {});
+    const allCategories = salesData.by_category || {};
+    let categories;
+
+    if (filterCatId && filterCatId !== 'all') {
+        categories = allCategories[filterCatId] ? [allCategories[filterCatId]] : [];
+    } else {
+        categories = Object.values(allCategories);
+    }
 
     if (categories.length === 0) {
         container.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">No sales data</div>';
@@ -3729,8 +3766,14 @@ function renderKitchenSales(salesData) {
             <span class="bg-white text-blue-600 rounded-full px-2 py-0.5 text-[9px]">${cat.total} items</span>
         </div>`;
 
-        // Check if any item has item_summary
-        const hasItemSummary = cat.items.some(item => item.item_summary && item.item_summary.trim() !== '');
+        // Category-level ingredient summary
+        if (cat.category_summary && cat.category_summary.trim() !== '') {
+            html += `<div class="bg-blue-50 px-2 py-1 border-b border-blue-200">
+                <div class="text-[9px] text-blue-800 font-medium">
+                    <i class="fas fa-boxes text-[8px] mr-1 text-blue-500"></i>${cat.category_summary}
+                </div>
+            </div>`;
+        }
 
         cat.items.forEach(item => {
             html += `<div class="border-b border-gray-100 px-2 py-1.5">

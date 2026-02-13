@@ -1352,17 +1352,30 @@ class StaffAllocationController extends Controller
                 }
             }
 
-            // Build item_summary with total quantities (recipe qty × sold qty) and convert to indexed arrays
+            // Build item_summary with total quantities (recipe qty × sold qty) and category-level ingredient totals
             foreach ($categorizedSales as &$cat) {
+                $categoryIngredients = [];
                 foreach ($cat['items'] as &$item) {
                     $itemSummary = [];
                     foreach ($item['recipes'] as $recipe) {
                         $totalQty = $recipe->required_quantity * $item['quantity'];
                         $itemSummary[] = $recipe->item_name . ' ' . rtrim(rtrim(number_format($totalQty, 2), '0'), '.');
+                        // Aggregate ingredients at category level
+                        $ingName = $recipe->item_name;
+                        if (!isset($categoryIngredients[$ingName])) {
+                            $categoryIngredients[$ingName] = 0;
+                        }
+                        $categoryIngredients[$ingName] += $totalQty;
                     }
                     $item['item_summary'] = implode('    ', $itemSummary);
                     unset($item['recipes']);
                 }
+                // Build category ingredient summary string
+                $catIngSummary = [];
+                foreach ($categoryIngredients as $ingName => $ingQty) {
+                    $catIngSummary[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+                }
+                $cat['category_summary'] = implode('    ', $catIngSummary);
                 $cat['items'] = array_values($cat['items']);
             }
 

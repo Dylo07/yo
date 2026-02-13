@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 
 class CategoryController extends Controller
@@ -99,6 +100,11 @@ class CategoryController extends Controller
      */
     public function destroy($id)
     {
+        if (!Auth::user()->checkAdmin()) {
+            Session()->flash('status', 'Only admins can delete categories.');
+            return redirect('/management/category');
+        }
+
         Category::destroy($id);
         Cache::forget('cashier_categories');
         Session()->flash('status','The category is deleted successfully');

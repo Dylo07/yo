@@ -34,7 +34,7 @@
             <th scope="col">ID</th>
             <th scope="col">Category</th>
             <th scope="col">Edit</th>
-            <th scope="col">Delete</th>
+            @if(Auth::user()->checkAdmin())<th scope="col">Delete</th>@endif
     </tr>  
     </thead>
     <tbody>
@@ -44,19 +44,17 @@
             <td>{{$category->name}}</td>
             <td>
                 <a href="/management/category/{{$category->id}}/edit" class= "btn btn-warning">Edit</a>
-
-    </td>
-    <td>
-        <form action="/management/category/{{$category->id}}}" method="post">
-                
-@csrf
-@method ('DELETE')
-<!-- <input type="submit" value="Delete" class="btn btn-danger"
-    </form>
-    </td>
-    </tr>> -->
-
-
+            </td>
+            @if(Auth::user()->checkAdmin())
+            <td>
+                <form action="/management/category/{{$category->id}}" method="post" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                    @csrf
+                    @method('DELETE')
+                    <input type="submit" value="Delete" class="btn btn-danger btn-sm">
+                </form>
+            </td>
+            @endif
+        </tr>
         @endforeach
 
     </tbody>

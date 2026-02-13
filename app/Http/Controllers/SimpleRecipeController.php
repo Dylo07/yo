@@ -47,7 +47,16 @@ class SimpleRecipeController extends Controller
             ->get()
             ->groupBy('menu_id');
 
-        return view('recipes.simple-manage', compact('menus', 'kitchenItems', 'recipes', 'categories'));
+        // Get popular ingredients (most used across recipes), top 15
+        $popularItemIds = DB::table('menu_item_recipes')
+            ->select('item_id', DB::raw('COUNT(DISTINCT menu_id) as menu_count'))
+            ->groupBy('item_id')
+            ->orderByDesc('menu_count')
+            ->limit(15)
+            ->pluck('menu_count', 'item_id')
+            ->toArray();
+
+        return view('recipes.simple-manage', compact('menus', 'kitchenItems', 'recipes', 'categories', 'popularItemIds'));
     }
 
     /**

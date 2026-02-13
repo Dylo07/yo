@@ -160,6 +160,7 @@
 let selectedMenuId = null;
 let ingredientCounter = 0;
 const kitchenItems = @json($kitchenItems);
+const popularItemIds = @json($popularItemIds ?? []);
 
 function selectMenu(menuId, menuName) {
     selectedMenuId = menuId;
@@ -212,6 +213,32 @@ function addIngredient() {
     addIngredientRow();
 }
 
+function buildItemOptions(selectedItemId) {
+    let html = '';
+    // Popular items optgroup
+    const popularIds = Object.keys(popularItemIds).map(Number);
+    if (popularIds.length > 0) {
+        const popularItems = kitchenItems.filter(i => popularIds.includes(i.id));
+        // Sort by usage count descending
+        popularItems.sort((a, b) => (popularItemIds[b.id] || 0) - (popularItemIds[a.id] || 0));
+        if (popularItems.length > 0) {
+            html += '<optgroup label="--- Popular (most used) ---">';
+            popularItems.forEach(item => {
+                const used = popularItemIds[item.id] || 0;
+                html += `<option value="${item.id}" ${selectedItemId == item.id ? 'selected' : ''}>${item.name} (${item.kitchen_current_stock} ${item.kitchen_unit}) [${used} menus]</option>`;
+            });
+            html += '</optgroup>';
+        }
+    }
+    // All items optgroup
+    html += '<optgroup label="--- All Items ---">';
+    kitchenItems.forEach(item => {
+        html += `<option value="${item.id}" ${selectedItemId == item.id ? 'selected' : ''}>${item.name} (${item.kitchen_current_stock} ${item.kitchen_unit})</option>`;
+    });
+    html += '</optgroup>';
+    return html;
+}
+
 function addIngredientRow(selectedItemId = null, quantity = '', notes = '') {
     ingredientCounter++;
     
@@ -226,11 +253,7 @@ function addIngredientRow(selectedItemId = null, quantity = '', notes = '') {
                 <label class="form-label fw-bold">Kitchen Item *</label>
                 <select class="form-select" name="ingredients[${ingredientCounter}][item_id]" required>
                     <option value="">Select item...</option>
-                    ${kitchenItems.map(item => 
-                        `<option value="${item.id}" ${selectedItemId == item.id ? 'selected' : ''}>
-                            ${item.name} (${item.kitchen_current_stock} ${item.kitchen_unit})
-                        </option>`
-                    ).join('')}
+                    ${buildItemOptions(selectedItemId)}
                 </select>
             </div>
             <div class="col-md-2">

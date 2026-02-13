@@ -139,7 +139,7 @@
                         <button class="btn btn-sm btn-light" onclick="toggleDropdown('salesFilterDrop')">
                             <i class="fas fa-filter me-1"></i> Filter
                         </button>
-                        <div id="salesFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:200px; max-height:300px; overflow-y:auto; top:100%;">
+                        <div id="salesFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:200px; max-height:300px; overflow-y:auto; top:100%; color:#000;">
                             <label class="d-block small fw-bold border-bottom pb-1 mb-1">
                                 <input type="checkbox" id="salesAllCb" checked onchange="toggleAllSalesCats(this)"> All Categories
                             </label>
@@ -221,7 +221,7 @@
                         <button class="btn btn-sm btn-light" onclick="toggleDropdown('issuesFilterDrop')">
                             <i class="fas fa-filter me-1"></i> Filter
                         </button>
-                        <div id="issuesFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:220px; max-height:300px; overflow-y:auto; top:100%;">
+                        <div id="issuesFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:220px; max-height:300px; overflow-y:auto; top:100%; color:#000;">
                             <label class="d-block small fw-bold border-bottom pb-1 mb-1">
                                 <input type="checkbox" id="issuesAllCb" onchange="toggleAllIssueActions(this)"> All Actions
                             </label>

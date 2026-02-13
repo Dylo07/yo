@@ -281,6 +281,16 @@
         .emoji {
             display: none;
         }
+
+        .recipe { font-size: 5pt; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 1mm; }
+        .cat-summary { font-size: 5pt; color: #555; font-style: italic; padding: 0.5mm 2mm; background: #f0f4ff; border-bottom: 0.25pt solid #ddd; }
+        .item-cost { font-size: 5.5pt; color: #666; min-width: 16mm; text-align: right; padding-right: 1mm; }
+        .cat-cost { font-size: 5.5pt; color: #666; font-weight: normal; }
+        .grand-summary { margin-top: 2mm; padding: 1.5mm; border: 0.75pt solid #000; page-break-inside: avoid; }
+        .grand-summary-title { font-size: 7pt; font-weight: bold; margin-bottom: 0.5mm; border-bottom: 0.5pt solid #999; padding-bottom: 0.5mm; }
+        .grand-summary-body { font-size: 5.5pt; line-height: 1.3; }
+        .grand-summary-body .ing { white-space: nowrap; display: inline-block; margin-right: 2mm; margin-bottom: 0.3mm; }
+        .grand-summary-body .ing-qty { font-weight: bold; }
     </style>
 </head>
 <body>
@@ -341,16 +351,35 @@
                                     <span>{{ $category['name'] }}</span>
                                     <span class="badge">{{ $category['total'] }}</span>
                                 </div>
+                                @if(!empty($category['category_summary']))
+                                    <div class="cat-summary">{{ $category['category_summary'] }}</div>
+                                @endif
                                 <div class="category-items">
                                     @foreach($category['items'] as $item)
                                         <div class="item-row">
                                             <span class="item-name">{{ $item['name'] }}</span>
                                             <span class="item-quantity">{{ number_format($item['quantity'], 0) }}</span>
                                         </div>
+                                        @if(!empty($item['item_summary']))
+                                            <div class="recipe">{{ $item['item_summary'] }}</div>
+                                        @endif
                                     @endforeach
                                 </div>
                             </div>
                         @endforeach
+
+                        @if(!empty($grandIngredientSummary))
+                            <div class="grand-summary">
+                                <div class="grand-summary-title">Total Ingredients Summary</div>
+                                <div class="grand-summary-body">
+                                    @foreach(preg_split('/\s{2,}/', $grandIngredientSummary) as $ing)
+                                        @if(preg_match('/^(.+?)\s+([\d,.]+)$/', trim($ing), $m))
+                                            <span class="ing">{{ $m[1] }} <span class="ing-qty">{{ $m[2] }}</span></span>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -358,7 +387,7 @@
             <!-- Main Kitchen Issues Section -->
             <div class="comparison-section">
                 <div class="section-header kitchen">
-                    Main Kitchen Issues
+                    {{ $issueFilterLabel ?? 'Main Kitchen' }} Issues
                 </div>
                 <div class="section-content">
                     @if(empty($mainKitchenData['by_category']))
@@ -369,24 +398,25 @@
                         <!-- Compact Summary -->
                         <div class="summary-info">
                             <strong>Qty:</strong> {{ number_format($mainKitchenData['total_quantity'], 1) }} | 
-                            <strong>Trans:</strong> {{ $mainKitchenData['total_transactions'] }}
+                            <strong>Txns:</strong> {{ $mainKitchenData['total_transactions'] }}
+                            @if(($mainKitchenData['total_cost'] ?? 0) > 0)
+                                | <strong>Cost:</strong> Rs {{ number_format($mainKitchenData['total_cost'], 0) }}
+                            @endif
                         </div>
 
                         @foreach($mainKitchenData['by_category'] as $categoryId => $category)
                             <div class="category-block">
                                 <div class="category-header kitchen">
                                     <span>{{ $category['name'] }}</span>
-                                    <span class="badge">{{ number_format($category['total_quantity'], 1) }}</span>
+                                    <span>{{ number_format($category['total_quantity'], 1) }}@if(($category['total_cost'] ?? 0) > 0) <span class="cat-cost">Rs {{ number_format($category['total_cost'], 0) }}</span>@endif</span>
                                 </div>
                                 <div class="category-items">
                                     @foreach($category['items'] as $item)
                                         <div class="item-row">
-                                            <div style="flex: 1;">
-                                                <div class="item-name">{{ $item['name'] }}</div>
-                                                @if(isset($item['time']) && isset($item['user']))
-                                                    <div class="item-details">{{ $item['time'] }} by {{ $item['user'] }}</div>
-                                                @endif
-                                            </div>
+                                            <span class="item-name">{{ $item['name'] }}</span>
+                                            @if(($item['total_cost'] ?? 0) > 0)
+                                                <span class="item-cost">Rs {{ number_format($item['total_cost'], 2) }}</span>
+                                            @endif
                                             <span class="item-quantity">{{ number_format($item['quantity'], 1) }}</span>
                                         </div>
                                     @endforeach

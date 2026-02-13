@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\StockLog;
 use App\Models\Sale;
 use App\Models\SaleDetail;
+use App\Models\Menu;
 use Carbon\Carbon;
 
 class KitchenComparisonController extends Controller
@@ -38,8 +39,37 @@ class KitchenComparisonController extends Controller
         // Get daily sales data for the date range
         $dailySalesData = $this->getDailySalesData($startDate, $endDate);
         
-        // Get main kitchen issued stock data for the date range
-        $mainKitchenData = $this->getMainKitchenData($startDate, $endDate);
+        // Get all inventory issues (all remove actions with prices)
+        $inventoryIssues = $this->getAllInventoryIssues($startDate, $endDate);
+        
+        // Get main kitchen issued stock data for backward compat
+        $mainKitchenData = [
+            'by_category' => $inventoryIssues['remove_main_kitchen']['by_category'] ?? [],
+            'total_quantity' => $inventoryIssues['remove_main_kitchen']['total_quantity'] ?? 0,
+            'total_transactions' => $inventoryIssues['remove_main_kitchen']['total_transactions'] ?? 0,
+            'total_cost' => $inventoryIssues['remove_main_kitchen']['total_cost'] ?? 0,
+        ];
+        
+        // Grand ingredient summary
+        $grandIngredients = [];
+        foreach ($dailySalesData['by_category'] as $cat) {
+            if (empty($cat['category_summary'])) continue;
+            $parts = preg_split('/\s{2,}/', $cat['category_summary']);
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (empty($part)) continue;
+                if (preg_match('/^(.+?)\s+([\d,.]+)$/', $part, $m)) {
+                    $ingName = trim($m[1]);
+                    $ingQty = (float) str_replace(',', '', $m[2]);
+                    $grandIngredients[$ingName] = ($grandIngredients[$ingName] ?? 0) + $ingQty;
+                }
+            }
+        }
+        $grandSummaryParts = [];
+        foreach ($grandIngredients as $ingName => $ingQty) {
+            $grandSummaryParts[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+        }
+        $grandIngredientSummary = implode('    ', $grandSummaryParts);
         
         // Create comparison data
         $comparisonData = $this->createComparisonData($dailySalesData, $mainKitchenData);
@@ -49,7 +79,9 @@ class KitchenComparisonController extends Controller
             'endDate', 
             'dailySalesData', 
             'mainKitchenData', 
-            'comparisonData'
+            'comparisonData',
+            'inventoryIssues',
+            'grandIngredientSummary'
         ));
     }
 
@@ -76,16 +108,84 @@ class KitchenComparisonController extends Controller
         }
         
         $dailySalesData = $this->getDailySalesData($startDate, $endDate);
-        $mainKitchenData = $this->getMainKitchenData($startDate, $endDate);
+        $inventoryIssues = $this->getAllInventoryIssues($startDate, $endDate);
+        
+        // Filter by selected actions
+        $issueActionsFilter = $request->input('issue_actions', 'remove_main_kitchen');
+        $selectedActions = array_filter(explode(',', $issueActionsFilter));
+        $mergedKitchen = ['by_category' => [], 'total_quantity' => 0, 'total_transactions' => 0, 'total_cost' => 0];
+        $actionLabels = [];
+        foreach ($selectedActions as $action) {
+            if (!isset($inventoryIssues[$action])) continue;
+            $actionData = $inventoryIssues[$action];
+            $actionLabels[] = $actionData['label'];
+            $mergedKitchen['total_quantity'] += $actionData['total_quantity'];
+            $mergedKitchen['total_transactions'] += $actionData['total_transactions'];
+            $mergedKitchen['total_cost'] += $actionData['total_cost'];
+            foreach ($actionData['by_category'] as $catId => $cat) {
+                if (!isset($mergedKitchen['by_category'][$catId])) {
+                    $mergedKitchen['by_category'][$catId] = ['name' => $cat['name'], 'items' => [], 'total_quantity' => 0, 'total_cost' => $cat['total_cost'] ?? 0];
+                } else {
+                    $mergedKitchen['by_category'][$catId]['total_cost'] += ($cat['total_cost'] ?? 0);
+                }
+                $mergedKitchen['by_category'][$catId]['total_quantity'] += $cat['total_quantity'];
+                foreach ($cat['items'] as $item) {
+                    $iName = $item['name'];
+                    if (!isset($mergedKitchen['by_category'][$catId]['items'][$iName])) {
+                        $mergedKitchen['by_category'][$catId]['items'][$iName] = $item;
+                    } else {
+                        $mergedKitchen['by_category'][$catId]['items'][$iName]['quantity'] += $item['quantity'];
+                        $mergedKitchen['by_category'][$catId]['items'][$iName]['total_cost'] += $item['total_cost'];
+                    }
+                }
+            }
+        }
+        foreach ($mergedKitchen['by_category'] as &$mCat) { $mCat['items'] = array_values($mCat['items']); }
+        $mainKitchenData = $mergedKitchen;
+        $issueFilterLabel = implode(', ', $actionLabels) ?: 'Main Kitchen';
+        
+        // Filter sales categories
+        $salesCategoryFilter = $request->input('sales_categories', '');
+        $salesCatIds = array_filter(explode(',', $salesCategoryFilter));
+        if (!empty($salesCatIds)) {
+            $filteredCats = [];
+            foreach ($dailySalesData['by_category'] as $catId => $cat) {
+                if (in_array((string)$catId, $salesCatIds)) $filteredCats[$catId] = $cat;
+            }
+            $dailySalesData['by_category'] = $filteredCats;
+        }
+        
+        // Grand ingredient summary
+        $grandIngredients = [];
+        foreach ($dailySalesData['by_category'] as $cat) {
+            if (empty($cat['category_summary'])) continue;
+            $parts = preg_split('/\s{2,}/', $cat['category_summary']);
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (empty($part)) continue;
+                if (preg_match('/^(.+?)\s+([\d,.]+)$/', $part, $m)) {
+                    $ingName = trim($m[1]);
+                    $ingQty = (float) str_replace(',', '', $m[2]);
+                    $grandIngredients[$ingName] = ($grandIngredients[$ingName] ?? 0) + $ingQty;
+                }
+            }
+        }
+        $grandSummaryParts = [];
+        foreach ($grandIngredients as $ingName => $ingQty) {
+            $grandSummaryParts[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+        }
+        $grandIngredientSummary = implode('    ', $grandSummaryParts);
+        
         $comparisonData = $this->createComparisonData($dailySalesData, $mainKitchenData);
         
-        // Only difference: returns 'comparison_print' view instead of 'comparison'
         return view('kitchen.comparison_print', compact(
             'startDate',
             'endDate', 
             'dailySalesData', 
             'mainKitchenData', 
-            'comparisonData'
+            'comparisonData',
+            'issueFilterLabel',
+            'grandIngredientSummary'
         ));
     }
     // ============================================
@@ -198,7 +298,7 @@ class KitchenComparisonController extends Controller
             ]);
             
             // Load menus with categories
-            $menus = \App\Models\Menu::whereIn('id', $menuIds)
+            $menus = Menu::whereIn('id', $menuIds)
                 ->with('category')
                 ->get()
                 ->keyBy('id');
@@ -206,6 +306,15 @@ class KitchenComparisonController extends Controller
             \Log::info('Loaded menus', [
                 'menu_count' => $menus->count()
             ]);
+
+            // Load recipes for all sold menus (Item Summary)
+            $allRecipes = DB::table('menu_item_recipes')
+                ->join('items', 'menu_item_recipes.item_id', '=', 'items.id')
+                ->whereIn('menu_item_recipes.menu_id', $menuIds)
+                ->where('items.is_kitchen_item', true)
+                ->select('menu_item_recipes.menu_id', 'items.name as item_name', 'menu_item_recipes.required_quantity')
+                ->get()
+                ->groupBy('menu_id');
 
             // Process each sale
             foreach ($sales as $sale) {
@@ -243,7 +352,8 @@ class KitchenComparisonController extends Controller
                     if (!isset($categorizedData[$categoryId]['items'][$itemKey])) {
                         $categorizedData[$categoryId]['items'][$itemKey] = [
                             'name' => $menuName,
-                            'quantity' => 0
+                            'quantity' => 0,
+                            'recipes' => $allRecipes->get($detail->menu_id, collect()),
                         ];
                     }
 
@@ -253,9 +363,29 @@ class KitchenComparisonController extends Controller
                 }
             }
 
-            // Convert items array to indexed array
-            foreach ($categorizedData as &$category) {
-                $category['items'] = array_values($category['items']);
+            // Build item_summary with total quantities and category-level ingredient totals
+            foreach ($categorizedData as &$cat) {
+                $categoryIngredients = [];
+                foreach ($cat['items'] as &$item) {
+                    $itemSummary = [];
+                    foreach ($item['recipes'] as $recipe) {
+                        $totalQty = $recipe->required_quantity * $item['quantity'];
+                        $itemSummary[] = $recipe->item_name . ' ' . rtrim(rtrim(number_format($totalQty, 2), '0'), '.');
+                        $ingName = $recipe->item_name;
+                        if (!isset($categoryIngredients[$ingName])) {
+                            $categoryIngredients[$ingName] = 0;
+                        }
+                        $categoryIngredients[$ingName] += $totalQty;
+                    }
+                    $item['item_summary'] = implode('    ', $itemSummary);
+                    unset($item['recipes']);
+                }
+                $catIngSummary = [];
+                foreach ($categoryIngredients as $ingName => $ingQty) {
+                    $catIngSummary[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+                }
+                $cat['category_summary'] = implode('    ', $catIngSummary);
+                $cat['items'] = array_values($cat['items']);
             }
 
             return [
@@ -357,6 +487,105 @@ class KitchenComparisonController extends Controller
                 'raw_logs' => collect(),
                 'date_range' => "$startDate to $endDate"
             ];
+        }
+    }
+
+    private function getAllInventoryIssues($startDate, $endDate)
+    {
+        try {
+            $startCarbon = Carbon::parse($startDate)->startOfDay();
+            $endCarbon = Carbon::parse($endDate)->endOfDay();
+
+            $allRemoveLogs = StockLog::with(['user', 'item', 'item.group'])
+                ->whereBetween('created_at', [$startCarbon, $endCarbon])
+                ->where('action', 'like', 'remove_%')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $issuesByAction = [];
+            foreach ($allRemoveLogs as $log) {
+                $action = $log->action;
+                if (!isset($issuesByAction[$action])) {
+                    $issuesByAction[$action] = [];
+                }
+                $issuesByAction[$action][] = $log;
+            }
+
+            $inventoryIssues = [];
+            foreach ($issuesByAction as $action => $logs) {
+                $categorizedKitchen = [];
+                $totalKitchenQty = 0;
+                $totalTransactions = count($logs);
+                $totalCost = 0;
+
+                foreach ($logs as $log) {
+                    $categoryId = $log->item->group_id ?? 'uncategorized';
+                    $categoryName = ($log->item->group->name ?? 'Uncategorized');
+
+                    if (!isset($categorizedKitchen[$categoryId])) {
+                        $categorizedKitchen[$categoryId] = [
+                            'name' => $categoryName,
+                            'items' => [],
+                            'total_quantity' => 0,
+                            'total_transactions' => 0,
+                            'total_cost' => 0,
+                        ];
+                    }
+
+                    $itemName = $log->item->name;
+                    $costPerUnit = floatval($log->item->kitchen_cost_per_unit ?? 0);
+
+                    if (!isset($categorizedKitchen[$categoryId]['items'][$itemName])) {
+                        $categorizedKitchen[$categoryId]['items'][$itemName] = [
+                            'name' => $itemName,
+                            'quantity' => 0,
+                            'cost_per_unit' => $costPerUnit,
+                            'total_cost' => 0,
+                        ];
+                    }
+                    $categorizedKitchen[$categoryId]['items'][$itemName]['quantity'] += $log->quantity;
+                    $itemCost = $log->quantity * $costPerUnit;
+                    $categorizedKitchen[$categoryId]['items'][$itemName]['total_cost'] += $itemCost;
+
+                    $categorizedKitchen[$categoryId]['total_quantity'] += $log->quantity;
+                    $categorizedKitchen[$categoryId]['total_transactions']++;
+                    $categorizedKitchen[$categoryId]['total_cost'] += $itemCost;
+                    $totalKitchenQty += $log->quantity;
+                    $totalCost += $itemCost;
+                }
+
+                foreach ($categorizedKitchen as &$kitCat) {
+                    $kitCat['items'] = array_values($kitCat['items']);
+                }
+
+                $actionLabels = [
+                    'remove_main_kitchen' => 'Main Kitchen',
+                    'remove_banquet_hall_kitchen' => 'Banquet Hall Kitchen',
+                    'remove_banquet_hall' => 'Banquet Hall',
+                    'remove_restaurant' => 'Restaurant',
+                    'remove_rooms' => 'Rooms',
+                    'remove_garden' => 'Garden',
+                    'remove_other' => 'Other',
+                ];
+
+                $inventoryIssues[$action] = [
+                    'label' => $actionLabels[$action] ?? ucwords(str_replace('_', ' ', str_replace('remove_', '', $action))),
+                    'by_category' => $categorizedKitchen,
+                    'total_quantity' => $totalKitchenQty,
+                    'total_transactions' => $totalTransactions,
+                    'total_cost' => $totalCost,
+                ];
+            }
+
+            return $inventoryIssues;
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching inventory issues', [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'error' => $e->getMessage()
+            ]);
+            return [];
         }
     }
 

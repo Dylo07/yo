@@ -100,6 +100,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('cashier.setupAdvancePayment');
 
     Route::post('/cashier/clearTable', 'App\Http\Controllers\Cashier\CashierController@clearTable')->name('cashier.clearTable');
+    Route::post('/cashier/adminDeleteConfirmedItem', 'App\Http\Controllers\Cashier\CashierController@adminDeleteConfirmedItem')->name('cashier.adminDeleteConfirmedItem');
 
     Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
     Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));

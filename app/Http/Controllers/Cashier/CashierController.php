@@ -232,7 +232,12 @@ class CashierController extends Controller
                     $showBtnPayment = false;
                     $html .= '<td><a data-id="'.$saleDetail->id.'" class="btn btn-danger btn-delete-saledetail"><i class="far fa-trash-alt"></a></td>';
                 }else{
-                    $html .= '<td><i class="fas fa-check-circle"></i></td>';
+                    $adminUser = Auth::user();
+                    if ($adminUser && $adminUser->role === 'admin') {
+                        $html .= '<td><i class="fas fa-check-circle me-1"></i><a data-id="'.$saleDetail->id.'" class="btn btn-outline-danger btn-sm btn-admin-delete-confirmed" style="padding:2px 6px; font-size:0.7rem;" title="Admin: Remove item"><i class="fas fa-times"></i></a></td>';
+                    } else {
+                        $html .= '<td><i class="fas fa-check-circle"></i></td>';
+                    }
                 }
             $html .= '</tr>';
         }
@@ -339,6 +344,63 @@ class CashierController extends Controller
         }
         
         return $this->getSaleDetails($sale_id);
+    }
+
+    /**
+     * Admin-only: Delete a confirmed sale detail item
+     */
+    public function adminDeleteConfirmedItem(Request $request){
+        $user = Auth::user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
+        $saleDetail = SaleDetail::find($request->saleDetail_id);
+        if (!$saleDetail) {
+            return 'Item not found.';
+        }
+
+        $sale_id = $saleDetail->sale_id;
+        $itemName = $saleDetail->menu_name;
+        $itemQty = $saleDetail->quantity;
+
+        $saleDetail->delete();
+        $this->recalculateSaleTotal($sale_id);
+
+        // Log the action
+        try {
+            DB::table('menu_activity_logs')->insert([
+                'action' => 'confirmed_item_removed',
+                'menu_id' => null,
+                'menu_name' => $itemName,
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'details' => "Admin removed confirmed item: {$itemName} x{$itemQty} from Sale #{$sale_id}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {}
+
+        // Check if any items remain
+        $remaining = SaleDetail::where('sale_id', $sale_id)->first();
+        if ($remaining) {
+            return $this->getSaleDetails($sale_id);
+        } else {
+            // No items left — free the table
+            $sale = Sale::find($sale_id);
+            if ($sale) {
+                $sale->sale_status = 'cancelled';
+                $sale->total_price = 0;
+                $sale->save();
+                $table = Table::find($sale->table_id);
+                if ($table) {
+                    $table->status = 'available';
+                    $table->save();
+                    Cache::forget('cashier_tables');
+                }
+            }
+            return "Not Found Any Sale Details for the Selected Table";
+        }
     }
 
     public function deleteSaleDetail(Request $request){

@@ -709,6 +709,36 @@ $("#order-detail").on("click", ".btn-wedding-payment", function(){
 loadTables();
 });
 
+// Admin-only: Delete confirmed item
+$(document).on("click", ".btn-admin-delete-confirmed", function(){
+    var saleDetailID = $(this).data("id");
+    if (!confirm('Remove this confirmed item? This action will be logged.')) {
+        return;
+    }
+    $.ajax({
+        type: "POST",
+        data: {
+            "_token": $('meta[name="csrf-token"]').attr('content'),
+            "saleDetail_id": saleDetailID
+        },
+        url: "/cashier/adminDeleteConfirmedItem",
+        success: function(data){
+            $("#order-detail").html(data);
+            // Reload tables in case table was freed
+            $.get("/cashier/getTable?_=" + new Date().getTime(), function(tableData){
+                $("#table-detail").html(tableData);
+            });
+        },
+        error: function(xhr){
+            var msg = 'Failed to remove item.';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                msg = xhr.responseJSON.error;
+            }
+            alert(msg);
+        }
+    });
+});
+
 // Admin-only: Clear Table function
 function clearTable(saleId) {
     if (!confirm('Are you sure you want to clear this table?\n\nThis will remove ALL items and free the table. This action cannot be undone.')) {

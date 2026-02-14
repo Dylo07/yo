@@ -152,56 +152,55 @@
     </div>
   </div>
 
-<!-- Reason Modal -->
-<div class="modal fade" id="reasonModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
+<!-- Reason Modal (Bootstrap 5) -->
+<div class="modal fade" id="reasonModal" tabindex="-1">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-danger text-white">
         <h5 class="modal-title" id="reasonModalTitle">Reason Required</h5>
-        <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p id="reasonModalDesc" class="mb-2"></p>
-        <div class="form-group">
-          <label for="reasonInput"><strong>Reason:</strong></label>
+        <div class="mb-3">
+          <label for="reasonInput" class="form-label"><strong>Reason:</strong></label>
           <textarea id="reasonInput" class="form-control" rows="3" placeholder="Enter reason (e.g., wrong bill, duplicate, customer request)" required></textarea>
         </div>
         <div class="alert alert-info small">
-          <i class="fa fa-info-circle"></i> Stock items will be automatically restored to kitchen inventory.
+          <i class="fas fa-info-circle"></i> Stock items will be automatically restored to kitchen inventory.
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger" id="reasonConfirmBtn">Confirm</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Result Modal -->
-<div class="modal fade" id="resultModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
+<!-- Result Modal (Bootstrap 5) -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header" id="resultModalHeader">
         <h5 class="modal-title" id="resultModalTitle">Result</h5>
-        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="resultModalBody"></div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
       </div>
     </div>
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tempusdominus-bootstrap-4/5.1.2/js/tempusdominus-bootstrap-4.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
     var pendingAction = null;
+    var reasonModalEl = document.getElementById('reasonModal');
+    var resultModalEl = document.getElementById('resultModal');
+    var reasonModal = new bootstrap.Modal(reasonModalEl);
+    var resultModal = new bootstrap.Modal(resultModalEl);
 
     // Cancel Bill button click
     $(document).on('click', '.btn-cancel-bill', function() {
@@ -210,7 +209,7 @@ $(document).ready(function() {
         $('#reasonModalDesc').html('This will <strong>cancel the entire bill</strong> and <strong>restore all stock items</strong> that were deducted. This action cannot be undone.');
         $('#reasonInput').val('');
         pendingAction = { type: 'cancel-bill', sale_id: saleId };
-        $('#reasonModal').modal('show');
+        reasonModal.show();
     });
 
     // Void Item button click
@@ -222,7 +221,7 @@ $(document).ready(function() {
         $('#reasonModalDesc').html('This will <strong>remove "' + menuName + '"</strong> from Bill #' + saleId + ' and <strong>restore its stock items</strong>. This action cannot be undone.');
         $('#reasonInput').val('');
         pendingAction = { type: 'void-item', sale_detail_id: detailId, sale_id: saleId };
-        $('#reasonModal').modal('show');
+        reasonModal.show();
     });
 
     // Confirm button in reason modal
@@ -247,16 +246,16 @@ $(document).ready(function() {
                     reason: reason
                 },
                 success: function(data) {
-                    $('#reasonModal').modal('hide');
+                    reasonModal.hide();
                     showResult(true, data.message, data.restored_items);
                     var row = $('#sale-row-' + pendingAction.sale_id);
                     row.removeClass('bg-primary').addClass('bg-secondary');
-                    row.find('td:eq(1)').append(' <span class="badge badge-danger">CANCELLED</span>');
+                    row.find('td:eq(1)').append(' <span class="badge bg-danger">CANCELLED</span>');
                     row.find('.btn-cancel-bill').remove();
                     $('[data-sale-id="' + pendingAction.sale_id + '"].btn-void-item').remove();
                 },
                 error: function(xhr) {
-                    $('#reasonModal').modal('hide');
+                    reasonModal.hide();
                     var msg = 'Failed to cancel bill.';
                     if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
                     showResult(false, msg, []);
@@ -276,7 +275,7 @@ $(document).ready(function() {
                     reason: reason
                 },
                 success: function(data) {
-                    $('#reasonModal').modal('hide');
+                    reasonModal.hide();
                     showResult(true, data.message, data.restored_items);
                     $('#detail-row-' + pendingAction.sale_detail_id).fadeOut(300, function() { $(this).remove(); });
                     if (data.new_total !== undefined) {
@@ -285,12 +284,12 @@ $(document).ready(function() {
                     if (data.sale_cancelled) {
                         var row = $('#sale-row-' + pendingAction.sale_id);
                         row.removeClass('bg-primary').addClass('bg-secondary');
-                        row.find('td:eq(1)').append(' <span class="badge badge-danger">CANCELLED</span>');
+                        row.find('td:eq(1)').append(' <span class="badge bg-danger">CANCELLED</span>');
                         row.find('.btn-cancel-bill').remove();
                     }
                 },
                 error: function(xhr) {
-                    $('#reasonModal').modal('hide');
+                    reasonModal.hide();
                     var msg = 'Failed to void item.';
                     if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
                     showResult(false, msg, []);
@@ -322,7 +321,7 @@ $(document).ready(function() {
             body += '</ul></div>';
         }
         $('#resultModalBody').html(body);
-        $('#resultModal').modal('show');
+        resultModal.show();
     }
 });
 </script>

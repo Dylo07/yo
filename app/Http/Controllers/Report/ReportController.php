@@ -43,10 +43,15 @@ class ReportController extends Controller
         ->get();
 
 
+        // Calculate totals from paid bills only (exclude cancelled)
+        $paidSales = (clone $sales)->where('sale_status', 'paid');
+        $totalSale = $paidSales->sum('change');
+        $serviceCharge = $paidSales->sum('total_recieved');
+
         return view('report.showReport')->with('dateStart', date("m/d/Y H:i:s", strtotime($request->dateStart.' 00:00:00')))
         ->with('dateEnd', date("m/d/Y H:i:s", strtotime($request->dateEnd.' 23:59:59')))
-        ->with('totalSale', $sales->sum('change'))
-        ->with('serviceCharge', $sales->sum('total_recieved'))
+        ->with('totalSale', $totalSale)
+        ->with('serviceCharge', $serviceCharge)
         ->with('summarySales', $summarySales)
         ->with('sales', $sales->paginate(500));
 

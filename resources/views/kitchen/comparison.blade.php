@@ -217,19 +217,32 @@
                         <i class="fas fa-utensils me-2"></i>
                         <span id="issuesTitle">Inventory Issues</span>
                     </h5>
-                    <div class="position-relative">
-                        <button class="btn btn-sm btn-light" onclick="toggleDropdown('issuesFilterDrop')">
-                            <i class="fas fa-filter me-1"></i> Filter
-                        </button>
-                        <div id="issuesFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:220px; max-height:300px; overflow-y:auto; top:100%; color:#000;">
-                            <label class="d-block small fw-bold border-bottom pb-1 mb-1">
-                                <input type="checkbox" id="issuesAllCb" onchange="toggleAllIssueActions(this)"> All Actions
-                            </label>
-                            @foreach($inventoryIssues as $action => $actionData)
-                                <label class="d-block small">
-                                    <input type="checkbox" class="issuesActionCb" value="{{ $action }}" {{ $action === 'remove_main_kitchen' ? 'checked' : '' }} onchange="filterIssueActions()"> {{ $actionData['label'] }}
+                    <div class="d-flex gap-1">
+                        <div class="position-relative">
+                            <button class="btn btn-sm btn-light" onclick="toggleDropdown('issuesFilterDrop')">
+                                <i class="fas fa-map-marker-alt me-1"></i> Location
+                            </button>
+                            <div id="issuesFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:220px; max-height:300px; overflow-y:auto; top:100%; color:#000;">
+                                <label class="d-block small fw-bold border-bottom pb-1 mb-1">
+                                    <input type="checkbox" id="issuesAllCb" onchange="toggleAllIssueActions(this)"> All Locations
                                 </label>
-                            @endforeach
+                                @foreach($inventoryIssues as $action => $actionData)
+                                    <label class="d-block small">
+                                        <input type="checkbox" class="issuesActionCb" value="{{ $action }}" {{ $action === 'remove_main_kitchen' ? 'checked' : '' }} onchange="filterIssueActions()"> {{ $actionData['label'] }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="position-relative">
+                            <button class="btn btn-sm btn-light" onclick="toggleDropdown('issuesCatFilterDrop')">
+                                <i class="fas fa-tags me-1"></i> Category
+                            </button>
+                            <div id="issuesCatFilterDrop" class="position-absolute end-0 bg-white border rounded shadow-sm p-2" style="display:none; z-index:100; min-width:220px; max-height:300px; overflow-y:auto; top:100%; color:#000;">
+                                <label class="d-block small fw-bold border-bottom pb-1 mb-1">
+                                    <input type="checkbox" id="issuesCatAllCb" checked onchange="toggleAllIssueCats(this)"> All Categories
+                                </label>
+                                <div id="issuesCatList"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,7 +381,7 @@
         el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
     document.addEventListener('click', function(e) {
-        ['salesFilterDrop','issuesFilterDrop'].forEach(id => {
+        ['salesFilterDrop','issuesFilterDrop','issuesCatFilterDrop'].forEach(id => {
             const dd = document.getElementById(id);
             if (dd && !dd.contains(e.target) && !e.target.closest('[onclick*="'+id+'"]')) {
                 dd.style.display = 'none';
@@ -403,22 +416,73 @@
         document.querySelectorAll('.issuesActionCb').forEach(c => c.checked = cb.checked);
         filterIssueActions();
     }
+
+    // ===== Issues Category Filter =====
+    function toggleAllIssueCats(cb) {
+        document.querySelectorAll('.issuesCatCb').forEach(c => c.checked = cb.checked);
+        filterIssueActions();
+    }
+    function buildIssueCategoryFilter(merged) {
+        const list = document.getElementById('issuesCatList');
+        const allCats = {};
+        Object.entries(merged).forEach(([catId, cat]) => { allCats[catId] = cat.name; });
+        // Also scan all data for categories not yet visible
+        Object.values(inventoryIssuesData).forEach(ad => {
+            Object.entries(ad.by_category).forEach(([catId, cat]) => {
+                if (!allCats[catId]) allCats[catId] = cat.name;
+            });
+        });
+        const prevChecked = [...document.querySelectorAll('.issuesCatCb:checked')].map(c => c.value);
+        const isFirstBuild = document.querySelectorAll('.issuesCatCb').length === 0;
+        let html = '';
+        Object.entries(allCats).sort((a, b) => a[1].localeCompare(b[1])).forEach(([catId, catName]) => {
+            const checked = isFirstBuild || prevChecked.includes(catId) ? 'checked' : '';
+            html += `<label class="d-block small"><input type="checkbox" class="issuesCatCb" value="${catId}" ${checked} onchange="filterIssueActions()"> ${catName}</label>`;
+        });
+        list.innerHTML = html;
+        const allCb = document.getElementById('issuesCatAllCb');
+        allCb.checked = document.querySelectorAll('.issuesCatCb').length === document.querySelectorAll('.issuesCatCb:checked').length;
+    }
+
     function filterIssueActions() {
         const selected = [...document.querySelectorAll('.issuesActionCb:checked')].map(c => c.value);
         document.getElementById('issuesAllCb').checked = selected.length === document.querySelectorAll('.issuesActionCb').length;
 
-        // Merge selected actions
-        const merged = {};
-        let totalQty = 0, totalTxns = 0, totalCost = 0;
-        const labels = [];
+        // Merge selected actions (unfiltered by category first, to build category list)
+        const mergedAll = {};
         selected.forEach(action => {
             const ad = inventoryIssuesData[action];
             if (!ad) return;
-            labels.push(ad.label);
-            totalQty += ad.total_quantity;
-            totalTxns += ad.total_transactions;
-            totalCost += ad.total_cost;
             Object.entries(ad.by_category).forEach(([catId, cat]) => {
+                if (!mergedAll[catId]) mergedAll[catId] = { name: cat.name, items: {}, total_quantity: 0, total_cost: 0 };
+                mergedAll[catId].total_quantity += cat.total_quantity;
+                mergedAll[catId].total_cost += (cat.total_cost || 0);
+                cat.items.forEach(item => {
+                    if (!mergedAll[catId].items[item.name]) {
+                        mergedAll[catId].items[item.name] = { ...item };
+                    } else {
+                        mergedAll[catId].items[item.name].quantity += item.quantity;
+                        mergedAll[catId].items[item.name].total_cost += item.total_cost;
+                    }
+                });
+            });
+        });
+
+        // Build/update category filter checkboxes
+        buildIssueCategoryFilter(mergedAll);
+
+        // Now apply category filter
+        const selectedCats = [...document.querySelectorAll('.issuesCatCb:checked')].map(c => c.value);
+        const merged = {};
+        let totalQty = 0, totalTxns = 0, totalCost = 0;
+        const labels = [];
+        const labelsAdded = new Set();
+        selected.forEach(action => {
+            const ad = inventoryIssuesData[action];
+            if (!ad) return;
+            if (!labelsAdded.has(ad.label)) { labels.push(ad.label); labelsAdded.add(ad.label); }
+            Object.entries(ad.by_category).forEach(([catId, cat]) => {
+                if (!selectedCats.includes(catId)) return;
                 if (!merged[catId]) merged[catId] = { name: cat.name, items: {}, total_quantity: 0, total_cost: 0 };
                 merged[catId].total_quantity += cat.total_quantity;
                 merged[catId].total_cost += (cat.total_cost || 0);
@@ -432,8 +496,17 @@
                 });
             });
         });
+        Object.values(merged).forEach(cat => { totalQty += cat.total_quantity; totalCost += cat.total_cost; });
+        // Count transactions from filtered categories
+        selected.forEach(action => {
+            const ad = inventoryIssuesData[action];
+            if (!ad) return;
+            Object.entries(ad.by_category).forEach(([catId, cat]) => {
+                if (selectedCats.includes(catId)) totalTxns += (cat.total_transactions || 0);
+            });
+        });
 
-        // Update title
+        // Update title & totals
         document.getElementById('issuesTitle').textContent = (labels.length ? labels.join(', ') : 'Inventory') + ' Issues';
         document.getElementById('issuesTotalQty').textContent = totalQty.toFixed(1);
         document.getElementById('issuesTotalTxns').textContent = totalTxns;

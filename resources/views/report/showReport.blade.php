@@ -284,42 +284,265 @@
         {{ $sales->appends($_GET)->links() }}
       </div>
 
-      {{-- Summary Section --}}
+      {{-- Summary Section with Charts --}}
       @if($summarySales->count() > 0)
-        <div class="summary-section">
-          <h5><i class="fas fa-clipboard-list me-2"></i>Sales Summary</h5>
-          <p style="font-size:0.8rem; color:#999;">Aggregated quantities by menu item (paid bills only)</p>
+        @php
+          // Group summary data by category for charts
+          $chartCategories = [];
+          $chartCategoryTotals = [];
+          foreach($summarySales as $item) {
+              if (!isset($chartCategories[$item->name])) {
+                  $chartCategories[$item->name] = [];
+                  $chartCategoryTotals[$item->name] = 0;
+              }
+              $chartCategories[$item->name][] = ['menu_id' => $item->menu_id, 'menu_name' => $item->menu_name, 'qty' => $item->qty_sum];
+              $chartCategoryTotals[$item->name] += $item->qty_sum;
+          }
+        @endphp
 
-          @php $CategoryNew = ''; @endphp
-          @foreach($summarySales as $summaryItem)
-            @if($CategoryNew != $summaryItem->name)
-              @if($CategoryNew != '')
-                </tbody></table>
-              @endif
-              <div class="summary-cat-header">
-                <i class="fas fa-tag me-2"></i>{{ $summaryItem->name }}
+        <div class="summary-section">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+              <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Sales Summary</h5>
+              <p style="font-size:0.8rem; color:#999; margin:0.25rem 0 0;">Aggregated quantities by menu item (paid bills only)</p>
+            </div>
+            <div class="btn-group" role="group">
+              <button class="btn btn-sm btn-outline-secondary active" id="viewChart" style="border-radius:2rem 0 0 2rem;"><i class="fas fa-chart-bar me-1"></i>Chart</button>
+              <button class="btn btn-sm btn-outline-secondary" id="viewTable" style="border-radius:0 2rem 2rem 0;"><i class="fas fa-table me-1"></i>Table</button>
+            </div>
+          </div>
+
+          {{-- Chart View --}}
+          <div id="chartView">
+            {{-- Category Overview Doughnut --}}
+            <div class="row g-4 mb-4">
+              <div class="col-lg-5">
+                <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem;">
+                  <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
+                    <i class="fas fa-chart-pie me-2"></i>Category Overview
+                  </h6>
+                  <div style="max-width:300px; margin:0 auto;">
+                    <canvas id="categoryDoughnut"></canvas>
+                  </div>
+                </div>
               </div>
-              <table class="summary-table">
-                <thead>
-                  <tr>
-                    <th style="width:100px;">Menu ID</th>
-                    <th>Menu Item</th>
-                    <th style="width:120px;" class="text-center">Quantity</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div class="col-lg-7">
+                <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem;">
+                  <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
+                    <i class="fas fa-chart-bar me-2"></i>Items by Category
+                  </h6>
+                  <canvas id="categoryBar"></canvas>
+                </div>
+              </div>
+            </div>
+
+            {{-- Per-Category Horizontal Bar Charts --}}
+            @php $catIndex = 0; @endphp
+            @foreach($chartCategories as $catName => $items)
+              <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem; margin-bottom:1rem;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h6 style="font-weight:700; color:#1e3c72; margin:0; font-size:0.85rem;">
+                    <i class="fas fa-tag me-2" style="color:#667eea;"></i>{{ $catName }}
+                  </h6>
+                  <span style="background:#667eea; color:#fff; border-radius:2rem; padding:0.15rem 0.75rem; font-size:0.75rem; font-weight:600;">
+                    {{ $chartCategoryTotals[$catName] }} items
+                  </span>
+                </div>
+                <div style="max-height:{{ max(count($items) * 35 + 40, 120) }}px;">
+                  <canvas id="catChart{{ $catIndex }}"></canvas>
+                </div>
+              </div>
+              @php $catIndex++; @endphp
+            @endforeach
+          </div>
+
+          {{-- Table View (hidden by default) --}}
+          <div id="tableView" style="display:none;">
+            @php $CategoryNew = ''; @endphp
+            @foreach($summarySales as $summaryItem)
+              @if($CategoryNew != $summaryItem->name)
+                @if($CategoryNew != '')
+                  </tbody></table>
+                @endif
+                <div class="summary-cat-header">
+                  <i class="fas fa-tag me-2"></i>{{ $summaryItem->name }}
+                </div>
+                <table class="summary-table">
+                  <thead>
+                    <tr>
+                      <th style="width:100px;">Menu ID</th>
+                      <th>Menu Item</th>
+                      <th style="width:120px;" class="text-center">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+              @endif
+              @php $CategoryNew = $summaryItem->name; @endphp
+              <tr>
+                <td style="color:#999;">{{ $summaryItem->menu_id }}</td>
+                <td style="font-weight:500;">{{ $summaryItem->menu_name }}</td>
+                <td class="text-center"><span class="qty-badge">{{ $summaryItem->qty_sum }}</span></td>
+              </tr>
+            @endforeach
+            @if($CategoryNew != '')
+              </tbody></table>
             @endif
-            @php $CategoryNew = $summaryItem->name; @endphp
-            <tr>
-              <td style="color:#999;">{{ $summaryItem->menu_id }}</td>
-              <td style="font-weight:500;">{{ $summaryItem->menu_name }}</td>
-              <td class="text-center"><span class="qty-badge">{{ $summaryItem->qty_sum }}</span></td>
-            </tr>
-          @endforeach
-          @if($CategoryNew != '')
-            </tbody></table>
-          @endif
+          </div>
         </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+        $(document).ready(function() {
+            // View toggle
+            $('#viewChart').click(function() {
+                $(this).addClass('active'); $('#viewTable').removeClass('active');
+                $('#chartView').show(); $('#tableView').hide();
+            });
+            $('#viewTable').click(function() {
+                $(this).addClass('active'); $('#viewChart').removeClass('active');
+                $('#tableView').show(); $('#chartView').hide();
+            });
+
+            // Color palette
+            var colors = [
+                '#667eea', '#764ba2', '#f5576c', '#4facfe', '#00f2fe',
+                '#43e97b', '#fa709a', '#fee140', '#a18cd1', '#fbc2eb',
+                '#f093fb', '#c471f5', '#48c6ef', '#6f86d6', '#0ba360',
+                '#ff9a9e', '#fecfef', '#a1c4fd', '#d4fc79', '#96e6a1'
+            ];
+            var bgColors = colors.map(function(c) { return c + 'cc'; });
+
+            // Category data
+            var catNames = @json(array_keys($chartCategoryTotals));
+            var catTotals = @json(array_values($chartCategoryTotals));
+
+            // Doughnut Chart
+            new Chart(document.getElementById('categoryDoughnut'), {
+                type: 'doughnut',
+                data: {
+                    labels: catNames,
+                    datasets: [{
+                        data: catTotals,
+                        backgroundColor: bgColors.slice(0, catNames.length),
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '55%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+                        tooltip: {
+                            backgroundColor: 'rgba(30,60,114,0.9)',
+                            padding: 10,
+                            cornerRadius: 8,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+                                    var pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return ctx.label + ': ' + ctx.parsed + ' items (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Category Bar Chart
+            new Chart(document.getElementById('categoryBar'), {
+                type: 'bar',
+                data: {
+                    labels: catNames,
+                    datasets: [{
+                        label: 'Total Qty',
+                        data: catTotals,
+                        backgroundColor: bgColors.slice(0, catNames.length),
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barThickness: 28
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(30,60,114,0.9)',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(ctx) { return ctx.parsed.x + ' items sold'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                        y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } }
+                    }
+                }
+            });
+
+            // Per-category horizontal bar charts
+            var allCatData = @json(array_values($chartCategories));
+            allCatData.forEach(function(items, idx) {
+                var canvas = document.getElementById('catChart' + idx);
+                if (!canvas) return;
+                var labels = items.map(function(i) { return i.menu_name; });
+                var data = items.map(function(i) { return i.qty; });
+                var maxQty = Math.max.apply(null, data);
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: data.map(function(v) {
+                                var intensity = 0.3 + (v / maxQty) * 0.7;
+                                return 'rgba(102, 126, 234, ' + intensity + ')';
+                            }),
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            barThickness: 22
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30,60,114,0.9)',
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(ctx) { return 'Qty: ' + ctx.parsed.x; }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(0,0,0,0.05)' },
+                                ticks: { font: { size: 10 }, stepSize: Math.max(1, Math.ceil(maxQty / 5)) }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11 }, color: '#333' }
+                            }
+                        }
+                    }
+                });
+            });
+        });
+        </script>
       @endif
 
       {{-- Export Bar --}}

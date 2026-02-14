@@ -344,7 +344,9 @@
                   <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
                     <i class="fas fa-chart-bar me-2"></i>Items by Category
                   </h6>
-                  <canvas id="categoryBar"></canvas>
+                  <div style="height:{{ max(count($chartCategoryTotals) * 40 + 40, 150) }}px; position:relative;">
+                    <canvas id="categoryBar"></canvas>
+                  </div>
                 </div>
               </div>
             </div>
@@ -361,7 +363,7 @@
                     {{ $chartCategoryTotals[$catName] }} items
                   </span>
                 </div>
-                <div style="max-height:{{ max(count($items) * 35 + 40, 120) }}px;">
+                <div style="height:{{ max(count($items) * 35 + 40, 120) }}px; position:relative;">
                   <canvas id="catChart{{ $catIndex }}"></canvas>
                 </div>
               </div>

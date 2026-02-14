@@ -119,6 +119,8 @@ Route::get('/management', function () {
 // routes for management
 Route::resource('management/category', App\Http\Controllers\Management\CategoryController::class);
 Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
+Route::post('management/menu/bulk-delete', [App\Http\Controllers\Management\MenuController::class, 'bulkDelete'])->name('management.menu.bulk-delete');
+Route::post('management/menu/bulk-move', [App\Http\Controllers\Management\MenuController::class, 'bulkMove'])->name('management.menu.bulk-move');
 Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
 
 // route for inventory

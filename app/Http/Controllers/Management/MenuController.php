@@ -155,4 +155,42 @@ class MenuController extends Controller
         
         ;
     }
+
+    /**
+     * Bulk delete selected menus
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+
+        $menus = Menu::whereIn('id', $request->ids)->get();
+        $count = 0;
+
+        foreach ($menus as $menu) {
+            if ($menu->image != 'noimage.png' && file_exists(public_path('menu_images') . '/' . $menu->image)) {
+                unlink(public_path('menu_images') . '/' . $menu->image);
+            }
+            $menu->delete();
+            $count++;
+        }
+
+        return response()->json(['success' => true, 'message' => "$count menu(s) deleted successfully"]);
+    }
+
+    /**
+     * Bulk move selected menus to a category
+     */
+    public function bulkMove(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'category_id' => 'required|exists:categories,id'
+        ]);
+
+        $count = Menu::whereIn('id', $request->ids)->update(['category_id' => $request->category_id]);
+        $category = Category::find($request->category_id);
+
+        return response()->json(['success' => true, 'message' => "$count menu(s) moved to {$category->name}"]);
+    }
 }

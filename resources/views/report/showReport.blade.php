@@ -220,7 +220,7 @@
               <div class="d-flex align-items-center gap-3">
                 <div class="text-end">
                   <div class="sale-amount {{ $sale->sale_status === 'cancelled' ? 'cancelled-amount' : '' }} sale-total-{{$sale->id}}">
-                    Rs {{ number_format($sale->total_price, 2) }}
+                    Rs {{ number_format($sale->total_price + $sale->total_recieved, 2) }}
                   </div>
                   @if($sale->sale_status !== 'cancelled' && $sale->total_recieved > 0)
                     <div style="font-size:0.7rem; color:#999;">S/C: Rs {{ number_format($sale->total_recieved, 2) }}</div>
@@ -283,7 +283,7 @@
                 </div>
                 <div>
                   <span class="footer-label">Bill Total: </span>
-                  <span class="footer-value" style="color:#11998e;">Rs {{ number_format($sale->total_price, 2) }}</span>
+                  <span class="footer-value" style="color:#11998e;">Rs {{ number_format($sale->total_price + $sale->total_recieved, 2) }}</span>
                 </div>
               </div>
             </div>

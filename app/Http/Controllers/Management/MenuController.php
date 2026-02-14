@@ -15,8 +15,9 @@ class MenuController extends Controller
      */
     public function index()
     {
-        $menus = Menu::all();
-        return view ('management.menu')->with('menus',$menus);
+        $menus = Menu::with('category')->orderBy('category_id')->orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+        return view('management.menu', compact('menus', 'categories'));
     }
 
     /**

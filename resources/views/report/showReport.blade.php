@@ -137,7 +137,7 @@
         <div class="col-6 col-lg-3">
           <div class="stat-card bg-gradient-blue">
             <div class="stat-icon"><i class="fas fa-receipt"></i></div>
-            <div class="stat-label">Total Sales</div>
+            <div class="stat-label">Total Bill Amount</div>
             <div class="stat-value">Rs {{ number_format($totalSale, 2) }}</div>
             <div class="stat-sub">{{ $paidCount }} paid bills</div>
           </div>
@@ -145,9 +145,9 @@
         <div class="col-6 col-lg-3">
           <div class="stat-card bg-gradient-green">
             <div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div>
-            <div class="stat-label">Service Charge</div>
+            <div class="stat-label">Service Charge (S/C)</div>
             <div class="stat-value">Rs {{ number_format($serviceCharge, 2) }}</div>
-            <div class="stat-sub">Total received</div>
+            <div class="stat-sub">From paid bills</div>
           </div>
         </div>
         <div class="col-6 col-lg-3">
@@ -210,7 +210,7 @@
                     Rs {{ number_format($sale->total_price, 2) }}
                   </div>
                   @if($sale->sale_status !== 'cancelled' && $sale->total_recieved > 0)
-                    <div style="font-size:0.7rem; color:#999;">Received: Rs {{ number_format($sale->total_recieved, 2) }}</div>
+                    <div style="font-size:0.7rem; color:#999;">S/C: Rs {{ number_format($sale->total_recieved, 2) }}</div>
                   @endif
                 </div>
                 @if(Auth::user() && Auth::user()->role === 'admin' && $sale->sale_status !== 'cancelled')
@@ -265,8 +265,8 @@
                 <div>
                   <span class="footer-label">Items: </span>
                   <span class="footer-value">{{ $sale->saleDetails->count() }}</span>
-                  <span class="footer-label ms-3">Change: </span>
-                  <span class="footer-value">Rs {{ number_format($sale->change, 2) }}</span>
+                  <span class="footer-label ms-3">S/C: </span>
+                  <span class="footer-value">Rs {{ number_format($sale->total_recieved, 2) }}</span>
                 </div>
                 <div>
                   <span class="footer-label">Bill Total: </span>

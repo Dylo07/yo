@@ -825,6 +825,10 @@ Route::middleware(['auth', 'VerifyAdmin'])->group(function () {
     Route::get('/report/show', 'App\Http\Controllers\Report\ReportController@show');
 
 
+    // Report admin actions
+    Route::post('/report/cancel-bill', 'App\Http\Controllers\Report\ReportController@cancelBill')->name('report.cancelBill');
+    Route::post('/report/void-item', 'App\Http\Controllers\Report\ReportController@voidItem')->name('report.voidItem');
+
     // routes for inventory
     Route::post('inventory/storestock/{itemid}', 'App\Http\Controllers\Inventory\StockController@store')->name('Stock.storeStock');
     Route::delete('inventory/removeStock/{itemid}', 'App\Http\Controllers\Inventory\StockController@destroy')->name('Stock.removeStock');

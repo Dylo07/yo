@@ -26,12 +26,22 @@ class MenuController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Recipe counts per menu
-        $recipeCounts = DB::table('menu_item_recipes')
-            ->select('menu_id', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('menu_id')
-            ->pluck('cnt', 'menu_id')
-            ->toArray();
+        // Recipe ingredients per menu (name list + count)
+        $recipeData = DB::table('menu_item_recipes')
+            ->join('items', 'menu_item_recipes.item_id', '=', 'items.id')
+            ->select('menu_item_recipes.menu_id', 'items.name as item_name', 'menu_item_recipes.required_quantity', 'items.kitchen_unit')
+            ->orderBy('items.name')
+            ->get()
+            ->groupBy('menu_id');
+
+        $recipeCounts = [];
+        $recipeIngredients = [];
+        foreach ($recipeData as $menuId => $items) {
+            $recipeCounts[$menuId] = $items->count();
+            $recipeIngredients[$menuId] = $items->map(function($i) {
+                return $i->item_name . ' (' . rtrim(rtrim(number_format($i->required_quantity, 3), '0'), '.') . ' ' . $i->kitchen_unit . ')';
+            })->toArray();
+        }
 
         // Popular ingredients (top 15)
         $popularItemIds = DB::table('menu_item_recipes')
@@ -42,7 +52,7 @@ class MenuController extends Controller
             ->pluck('menu_count', 'item_id')
             ->toArray();
 
-        return view('management.menu', compact('menus', 'categories', 'kitchenItems', 'recipeCounts', 'popularItemIds'));
+        return view('management.menu', compact('menus', 'categories', 'kitchenItems', 'recipeCounts', 'recipeIngredients', 'popularItemIds'));
     }
 
     /**

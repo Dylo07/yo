@@ -93,7 +93,7 @@
                         <th>Name</th>
                         <th style="width:90px;">Price</th>
                         <th>Category</th>
-                        <th>Description</th>
+                        <th>Ingredients</th>
                         <th style="width:70px;" class="text-center">Recipe</th>
                         <th style="width:110px;" class="text-center">Actions</th>
                     </tr>
@@ -132,8 +132,12 @@
                                     {{ $menu->category ? $menu->category->name : 'N/A' }}
                                 </span>
                             </td>
-                            <td style="font-size:0.8rem; color:#666; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                {{ $menu->description ?? '-' }}
+                            <td style="font-size:0.72rem; color:#555; max-width:250px;">
+                                @if(isset($recipeIngredients[$menu->id]))
+                                    {{ implode(', ', $recipeIngredients[$menu->id]) }}
+                                @else
+                                    <span class="text-muted fst-italic">No recipe</span>
+                                @endif
                             </td>
                             <td class="text-center">
                                 @if(isset($recipeCounts[$menu->id]))

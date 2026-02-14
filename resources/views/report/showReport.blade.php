@@ -132,6 +132,19 @@
         $cancelledCount = $sales->where('sale_status', 'cancelled')->count();
       @endphp
 
+      {{-- Total Value Card --}}
+      @php $totalValue = $totalSale + $serviceCharge; @endphp
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="stat-card" style="background:linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding:1.5rem 1.5rem;">
+            <div class="stat-icon" style="font-size:3rem;"><i class="fas fa-coins"></i></div>
+            <div class="stat-label" style="font-size:0.8rem;">Total Value (Bill Amount + S/C)</div>
+            <div class="stat-value" style="font-size:2rem;">Rs {{ number_format($totalValue, 2) }}</div>
+            <div class="stat-sub">Rs {{ number_format($totalSale, 2) }} (Bills) + Rs {{ number_format($serviceCharge, 2) }} (S/C)</div>
+          </div>
+        </div>
+      </div>
+
       {{-- Stat Cards --}}
       <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Management;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Category;
 use App\Models\Menu;
 class MenuController extends Controller
@@ -100,6 +101,7 @@ class MenuController extends Controller
     $menu->description = $request->description;
     $menu->category_id =$request->category_id;
     $menu->save();
+    $this->logActivity('created', $menu->id, $menu->name, "Created menu: {$menu->name} (Rs " . number_format($menu->price, 2) . ")");
     $request->session()->flash('status',$request->name. ' is saved successfully');
     return redirect('/management/menu');
 }
@@ -166,6 +168,7 @@ class MenuController extends Controller
         $menu->description = $request->description;
         $menu->category_id = $request->category_id;
         $menu->save();
+        $this->logActivity('updated', $menu->id, $menu->name, "Updated menu: {$menu->name} (Rs " . number_format($menu->price, 2) . ")");
         $request -> session ()->flash('status',$request->name. ' is updated succesfully');
         return redirect('/management/menu');
     }
@@ -185,6 +188,7 @@ class MenuController extends Controller
         }
         $menuName=$menu->name;
         $menu->delete();
+        $this->logActivity('deleted', $id, $menuName, "Deleted menu: {$menuName}");
         Session()->flash('status',$menuName. ' is deleted Successfully');
          return redirect('management/menu');
         
@@ -209,6 +213,9 @@ class MenuController extends Controller
             $count++;
         }
 
+        $names = $menus->pluck('name')->implode(', ');
+        $this->logActivity('bulk_deleted', null, null, "Bulk deleted {$count} menu(s): {$names}");
+
         return response()->json(['success' => true, 'message' => "$count menu(s) deleted successfully"]);
     }
 
@@ -223,9 +230,46 @@ class MenuController extends Controller
             'category_id' => 'required|exists:categories,id'
         ]);
 
+        $menuNames = Menu::whereIn('id', $request->ids)->pluck('name')->implode(', ');
         $count = Menu::whereIn('id', $request->ids)->update(['category_id' => $request->category_id]);
         $category = Category::find($request->category_id);
 
+        $this->logActivity('bulk_moved', null, null, "Moved {$count} menu(s) to {$category->name}: {$menuNames}");
+
         return response()->json(['success' => true, 'message' => "$count menu(s) moved to {$category->name}"]);
+    }
+
+    /**
+     * Get activity logs (AJAX)
+     */
+    public function getLogs(Request $request)
+    {
+        $logs = DB::table('menu_activity_logs')
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get();
+
+        return response()->json($logs);
+    }
+
+    /**
+     * Log a menu activity
+     */
+    private function logActivity($action, $menuId, $menuName, $details)
+    {
+        try {
+            DB::table('menu_activity_logs')->insert([
+                'action' => $action,
+                'menu_id' => $menuId,
+                'menu_name' => $menuName,
+                'user_id' => Auth::id(),
+                'user_name' => Auth::user() ? Auth::user()->name : 'System',
+                'details' => $details,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to log menu activity: ' . $e->getMessage());
+        }
     }
 }

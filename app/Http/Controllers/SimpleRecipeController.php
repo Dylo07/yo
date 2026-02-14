@@ -92,6 +92,25 @@ class SimpleRecipeController extends Controller
 
             DB::commit();
 
+            // Log recipe change
+            $menu = Menu::find($request->menu_id);
+            $ingredientNames = collect($request->ingredients)->map(function($ing) {
+                $item = DB::table('items')->find($ing['item_id']);
+                return $item ? $item->name : 'Unknown';
+            })->implode(', ');
+            try {
+                DB::table('menu_activity_logs')->insert([
+                    'action' => 'recipe_updated',
+                    'menu_id' => $request->menu_id,
+                    'menu_name' => $menu ? $menu->name : null,
+                    'user_id' => Auth::id(),
+                    'user_name' => Auth::user() ? Auth::user()->name : 'System',
+                    'details' => "Recipe updated for {$menu->name}: {$ingredientNames} (" . count($request->ingredients) . " ingredients)",
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $logEx) {}
+
             if ($request->expectsJson()) {
                 return response()->json(['success' => true, 'message' => 'Recipe saved successfully!']);
             }

@@ -9,9 +9,14 @@
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0"><i class="fas fa-bowl-rice text-primary me-2"></i> Menu Management</h4>
-            <a href="/management/menu/create" class="btn btn-success btn-sm">
-                <i class="fas fa-plus me-1"></i> Create Menu
-            </a>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="openLogModal()">
+                    <i class="fas fa-history me-1"></i> Log History
+                </button>
+                <a href="/management/menu/create" class="btn btn-success btn-sm">
+                    <i class="fas fa-plus me-1"></i> Create Menu
+                </a>
+            </div>
         </div>
 
         <!-- Flash Messages -->
@@ -195,6 +200,52 @@
                 <button type="button" class="btn btn-success btn-sm" onclick="saveRecipe()">
                     <i class="fas fa-save me-1"></i> Save Recipe
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log History Modal -->
+<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white py-2">
+                <h5 class="modal-title" id="logModalLabel"><i class="fas fa-history me-2"></i>Menu Activity Log</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-2 bg-light border-bottom d-flex gap-2 align-items-center flex-wrap">
+                    <input type="text" id="logSearch" class="form-control form-control-sm" style="width:200px;" placeholder="Search logs..." oninput="filterLogs()">
+                    <select id="logActionFilter" class="form-select form-select-sm" style="width:160px;" onchange="filterLogs()">
+                        <option value="">All Actions</option>
+                        <option value="created">Created</option>
+                        <option value="updated">Updated</option>
+                        <option value="deleted">Deleted</option>
+                        <option value="recipe_updated">Recipe Updated</option>
+                        <option value="bulk_deleted">Bulk Deleted</option>
+                        <option value="bulk_moved">Bulk Moved</option>
+                    </select>
+                    <small class="text-muted ms-auto" id="logCount"></small>
+                </div>
+                <div class="table-responsive" style="max-height:60vh;">
+                    <table class="table table-sm table-striped table-hover mb-0" style="font-size:0.8rem;">
+                        <thead class="table-dark" style="position:sticky; top:0;">
+                            <tr>
+                                <th style="width:140px;">Date/Time</th>
+                                <th style="width:100px;">User</th>
+                                <th style="width:100px;">Action</th>
+                                <th style="width:140px;">Menu</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <tr><td colspan="5" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -478,6 +529,81 @@ function saveRecipe() {
     .catch(err => {
         document.getElementById('recipeSaveStatus').innerHTML = '<span class="text-danger">Request failed: ' + err.message + '</span>';
     });
+}
+
+// ===== Log History =====
+let allLogs = [];
+
+function openLogModal() {
+    const modal = new bootstrap.Modal(document.getElementById('logModal'));
+    modal.show();
+    document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    document.getElementById('logSearch').value = '';
+    document.getElementById('logActionFilter').value = '';
+
+    fetch('{{ route("management.menu.logs") }}')
+        .then(res => res.json())
+        .then(data => {
+            allLogs = data;
+            renderLogs(data);
+        })
+        .catch(err => {
+            document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-3">Failed to load logs.</td></tr>';
+        });
+}
+
+function getActionBadge(action) {
+    const map = {
+        'created': '<span class="badge bg-success">Created</span>',
+        'updated': '<span class="badge bg-warning text-dark">Updated</span>',
+        'deleted': '<span class="badge bg-danger">Deleted</span>',
+        'recipe_updated': '<span class="badge bg-info text-dark">Recipe</span>',
+        'bulk_deleted': '<span class="badge bg-danger">Bulk Delete</span>',
+        'bulk_moved': '<span class="badge bg-primary">Bulk Move</span>'
+    };
+    return map[action] || `<span class="badge bg-secondary">${action}</span>`;
+}
+
+function formatLogDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function renderLogs(logs) {
+    const tbody = document.getElementById('logTableBody');
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No logs found.</td></tr>';
+        document.getElementById('logCount').textContent = '0 entries';
+        return;
+    }
+    let html = '';
+    logs.forEach(log => {
+        html += `<tr>
+            <td class="text-nowrap">${formatLogDate(log.created_at)}</td>
+            <td><strong>${log.user_name || 'System'}</strong></td>
+            <td>${getActionBadge(log.action)}</td>
+            <td>${log.menu_name || '-'}</td>
+            <td style="font-size:0.75rem; color:#555;">${log.details || '-'}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('logCount').textContent = logs.length + ' entries';
+}
+
+function filterLogs() {
+    const search = (document.getElementById('logSearch').value || '').toLowerCase().trim();
+    const action = document.getElementById('logActionFilter').value;
+    const filtered = allLogs.filter(log => {
+        if (action && log.action !== action) return false;
+        if (search) {
+            const text = ((log.menu_name || '') + ' ' + (log.details || '') + ' ' + (log.user_name || '')).toLowerCase();
+            if (!text.includes(search)) return false;
+        }
+        return true;
+    });
+    renderLogs(filtered);
 }
 </script>
 

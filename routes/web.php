@@ -99,6 +99,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cashier/setup-advance-payment/{table_id}', 'App\Http\Controllers\Cashier\CashierController@setupAdvancePayment')
         ->name('cashier.setupAdvancePayment');
 
+    Route::post('/cashier/clearTable', 'App\Http\Controllers\Cashier\CashierController@clearTable')->name('cashier.clearTable');
+
     Route::get('pettycash', 'App\Http\Controllers\PettycashController@index')->name('pettycash');
     Route::post('pettycash/store', 'App\Http\Controllers\PettycashController@store')->name(('pettycash.store'));
     Route::get('pettycash/destroy/{id}', 'App\Http\Controllers\PettycashController@destroy')->name(('pettycash.destroy'));

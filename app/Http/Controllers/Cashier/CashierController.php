@@ -267,6 +267,12 @@ class CashierController extends Controller
             if (!$hasRegularMenuItems && !$hasAdvancePayment) {
                 $html .= '<a href="'.url('/cashier/advance-payment/'.$sale_id).'" class="btn btn-primary btn-block">Advance Payment</a>';
             }
+
+            // Admin-only: Clear Table button
+            $currentUser = Auth::user();
+            if ($currentUser && $currentUser->role === 'admin') {
+                $html .= '<button data-id="'.$sale_id.'" class="btn btn-outline-danger btn-block btn-clear-table mt-2" onclick="clearTable('.$sale_id.')"><i class="fas fa-broom me-1"></i> Clear Table (Admin)</button>';
+            }
         }else{
             $html .= '<button data-id="'.$sale_id.'" class="btn btn-warning btn-block btn-confirm-order">Confirm Order</button>';
         }
@@ -644,6 +650,62 @@ class CashierController extends Controller
         
         // Redirect to the advance payment selection
         return redirect('/cashier/advance-payment/' . $sale->id);
+    }
+
+    /**
+     * Admin-only: Clear table - remove all items and free the table
+     */
+    public function clearTable(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['error' => 'Unauthorized. Admin access required.'], 403);
+        }
+
+        $request->validate(['sale_id' => 'required|integer']);
+        $sale = Sale::find($request->sale_id);
+
+        if (!$sale) {
+            return response()->json(['error' => 'Sale not found.'], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Delete all sale details
+            SaleDetail::where('sale_id', $sale->id)->delete();
+
+            // Mark sale as cancelled
+            $sale->sale_status = 'cancelled';
+            $sale->total_price = 0;
+            $sale->save();
+
+            // Free the table
+            $table = Table::find($sale->table_id);
+            if ($table) {
+                $table->status = 'available';
+                $table->save();
+                Cache::forget('cashier_tables');
+            }
+
+            // Log the action
+            DB::table('menu_activity_logs')->insert([
+                'action' => 'table_cleared',
+                'menu_id' => null,
+                'menu_name' => null,
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'details' => "Cleared table {$sale->table_name} (Sale #{$sale->id}) by admin",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => "Table {$sale->table_name} cleared successfully."]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error clearing table: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to clear table.'], 500);
+        }
     }
 
     private function processKitchenStockDeduction($saleID)

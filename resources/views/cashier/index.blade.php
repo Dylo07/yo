@@ -709,6 +709,42 @@ $("#order-detail").on("click", ".btn-wedding-payment", function(){
 loadTables();
 });
 
+// Admin-only: Clear Table function
+function clearTable(saleId) {
+    if (!confirm('Are you sure you want to clear this table?\n\nThis will remove ALL items and free the table. This action cannot be undone.')) {
+        return;
+    }
+    $.ajax({
+        type: "POST",
+        url: "/cashier/clearTable",
+        data: {
+            "_token": $('meta[name="csrf-token"]').attr('content'),
+            "sale_id": saleId
+        },
+        success: function(data) {
+            if (data.success) {
+                alert(data.message);
+                // Reload tables to update status
+                $.get("/cashier/getTable?_=" + new Date().getTime(), function(tableData){
+                    $("#table-detail").html(tableData);
+                });
+                // Clear the order panel
+                $("#order-detail").html('<div class="alert alert-success">Table cleared successfully.</div>');
+                $("#selected-table").html('');
+            } else {
+                alert(data.error || 'Failed to clear table.');
+            }
+        },
+        error: function(xhr) {
+            var msg = 'Failed to clear table.';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                msg = xhr.responseJSON.error;
+            }
+            alert(msg);
+        }
+    });
+}
+
 
 </script>
 @endpush

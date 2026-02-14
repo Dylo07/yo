@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Management;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Category;
 use App\Models\Menu;
 class MenuController extends Controller
@@ -17,7 +18,31 @@ class MenuController extends Controller
     {
         $menus = Menu::with('category')->orderBy('category_id')->orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
-        return view('management.menu', compact('menus', 'categories'));
+
+        // Kitchen items for recipe dropdown
+        $kitchenItems = DB::table('items')
+            ->where('is_kitchen_item', true)
+            ->where('kitchen_is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Recipe counts per menu
+        $recipeCounts = DB::table('menu_item_recipes')
+            ->select('menu_id', DB::raw('COUNT(*) as cnt'))
+            ->groupBy('menu_id')
+            ->pluck('cnt', 'menu_id')
+            ->toArray();
+
+        // Popular ingredients (top 15)
+        $popularItemIds = DB::table('menu_item_recipes')
+            ->select('item_id', DB::raw('COUNT(DISTINCT menu_id) as menu_count'))
+            ->groupBy('item_id')
+            ->orderByDesc('menu_count')
+            ->limit(15)
+            ->pluck('menu_count', 'item_id')
+            ->toArray();
+
+        return view('management.menu', compact('menus', 'categories', 'kitchenItems', 'recipeCounts', 'popularItemIds'));
     }
 
     /**

@@ -94,6 +94,7 @@
                         <th style="width:90px;">Price</th>
                         <th>Category</th>
                         <th>Description</th>
+                        <th style="width:70px;" class="text-center">Recipe</th>
                         <th style="width:110px;" class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -103,7 +104,7 @@
                         @if($menu->category_id !== $currentCat)
                             @php $currentCat = $menu->category_id; @endphp
                             <tr class="cat-separator" data-cat-id="{{ $menu->category_id }}">
-                                <td colspan="8" style="background:#e9ecef; font-weight:700; font-size:0.8rem; padding:4px 10px; color:#495057;">
+                                <td colspan="9" style="background:#e9ecef; font-weight:700; font-size:0.8rem; padding:4px 10px; color:#495057;">
                                     <input type="checkbox" class="cat-select-all me-2" data-cat-id="{{ $menu->category_id }}" onclick="toggleCatSelect(this)" title="Select all in this category">
                                     {{ $menu->category ? $menu->category->name : 'No Category' }}
                                     <span class="badge bg-secondary ms-1">{{ $menus->where('category_id', $menu->category_id)->count() }}</span>
@@ -135,6 +136,17 @@
                                 {{ $menu->description ?? '-' }}
                             </td>
                             <td class="text-center">
+                                @if(isset($recipeCounts[$menu->id]))
+                                    <button class="btn btn-sm btn-success py-0 px-1" style="font-size:0.7rem;" onclick="openRecipeModal({{ $menu->id }}, '{{ addslashes($menu->name) }}')" title="Edit Recipe">
+                                        <i class="fas fa-utensils"></i> {{ $recipeCounts[$menu->id] }}
+                                    </button>
+                                @else
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size:0.7rem;" onclick="openRecipeModal({{ $menu->id }}, '{{ addslashes($menu->name) }}')" title="Add Recipe">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                @endif
+                            </td>
+                            <td class="text-center">
                                 <div class="btn-group btn-group-sm">
                                     <a href="/management/menu/{{ $menu->id }}/edit" class="btn btn-outline-warning" title="Edit">
                                         <i class="fas fa-edit"></i>
@@ -158,9 +170,38 @@
 </div>
 </div>
 
+<!-- Recipe Modal -->
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-labelledby="recipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white py-2">
+                <h5 class="modal-title" id="recipeModalLabel"><i class="fas fa-utensils me-2"></i>Recipe for: <span id="recipeMenuName"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="recipeMenuId">
+                <div id="recipeIngredientsList"></div>
+                <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addRecipeRow()">
+                    <i class="fas fa-plus me-1"></i> Add Ingredient
+                </button>
+            </div>
+            <div class="modal-footer py-2">
+                <span id="recipeSaveStatus" class="text-muted me-auto" style="font-size:0.8rem;"></span>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="saveRecipe()">
+                    <i class="fas fa-save me-1"></i> Save Recipe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let activeCat = 'all';
 const csrfToken = '{{ csrf_token() }}';
+const kitchenItems = @json($kitchenItems);
+const popularItemIds = @json($popularItemIds ?? []);
+let recipeRowCounter = 0;
 
 // ===== Filtering =====
 function filterByCat(cat, btn) {
@@ -313,6 +354,127 @@ function bulkMove() {
     })
     .catch(err => alert('Request failed: ' + err.message));
 }
+
+// ===== Recipe Modal =====
+function buildRecipeItemOptions(selectedItemId) {
+    let html = '';
+    const popularIds = Object.keys(popularItemIds).map(Number);
+    if (popularIds.length > 0) {
+        const popularItems = kitchenItems.filter(i => popularIds.includes(i.id));
+        popularItems.sort((a, b) => (popularItemIds[b.id] || 0) - (popularItemIds[a.id] || 0));
+        if (popularItems.length > 0) {
+            html += '<optgroup label="--- Popular (most used) ---">';
+            popularItems.forEach(item => {
+                const used = popularItemIds[item.id] || 0;
+                html += `<option value="${item.id}" ${selectedItemId == item.id ? 'selected' : ''}>${item.name} (${item.kitchen_current_stock} ${item.kitchen_unit}) [${used} menus]</option>`;
+            });
+            html += '</optgroup>';
+        }
+    }
+    html += '<optgroup label="--- All Items ---">';
+    kitchenItems.forEach(item => {
+        html += `<option value="${item.id}" ${selectedItemId == item.id ? 'selected' : ''}>${item.name} (${item.kitchen_current_stock} ${item.kitchen_unit})</option>`;
+    });
+    html += '</optgroup>';
+    return html;
+}
+
+function addRecipeRow(itemId = null, qty = '', notes = '') {
+    recipeRowCounter++;
+    const list = document.getElementById('recipeIngredientsList');
+    const row = document.createElement('div');
+    row.className = 'recipe-ing-row mb-2 p-2 border rounded bg-light';
+    row.innerHTML = `
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label mb-0" style="font-size:0.75rem; font-weight:600;">Kitchen Item *</label>
+                <select class="form-select form-select-sm" name="r_item_id" required>
+                    <option value="">Select item...</option>
+                    ${buildRecipeItemOptions(itemId)}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0" style="font-size:0.75rem; font-weight:600;">Qty *</label>
+                <input type="number" class="form-control form-control-sm" name="r_qty" step="0.001" min="0.001" value="${qty}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label mb-0" style="font-size:0.75rem; font-weight:600;">Notes</label>
+                <input type="text" class="form-control form-control-sm" name="r_notes" value="${notes || ''}" placeholder="Optional">
+            </div>
+            <div class="col-md-1 text-center">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.recipe-ing-row').remove()" title="Remove">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    list.appendChild(row);
+}
+
+function openRecipeModal(menuId, menuName) {
+    document.getElementById('recipeMenuId').value = menuId;
+    document.getElementById('recipeMenuName').textContent = menuName;
+    document.getElementById('recipeIngredientsList').innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading recipe...</div>';
+    document.getElementById('recipeSaveStatus').textContent = '';
+    recipeRowCounter = 0;
+
+    const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
+    modal.show();
+
+    fetch(`/recipes/get/${menuId}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('recipeIngredientsList').innerHTML = '';
+            if (data.length > 0) {
+                data.forEach(ing => addRecipeRow(ing.item_id, ing.required_quantity, ing.preparation_notes));
+            } else {
+                addRecipeRow();
+            }
+        })
+        .catch(err => {
+            document.getElementById('recipeIngredientsList').innerHTML = '<div class="text-danger">Failed to load recipe.</div>';
+        });
+}
+
+function saveRecipe() {
+    const menuId = document.getElementById('recipeMenuId').value;
+    const rows = document.querySelectorAll('.recipe-ing-row');
+    const ingredients = [];
+    let valid = true;
+
+    rows.forEach((row, i) => {
+        const itemId = row.querySelector('[name="r_item_id"]').value;
+        const qty = row.querySelector('[name="r_qty"]').value;
+        const notes = row.querySelector('[name="r_notes"]').value;
+        if (!itemId || !qty || parseFloat(qty) <= 0) { valid = false; return; }
+        ingredients.push({ item_id: itemId, quantity: qty, notes: notes });
+    });
+
+    if (!valid || ingredients.length === 0) {
+        alert('Please fill in all required fields (Item and Quantity) for every ingredient.');
+        return;
+    }
+
+    document.getElementById('recipeSaveStatus').textContent = 'Saving...';
+
+    fetch('/recipes/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ menu_id: menuId, ingredients: ingredients })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('recipeSaveStatus').innerHTML = '<span class="text-success"><i class="fas fa-check me-1"></i>' + data.message + '</span>';
+            setTimeout(() => location.reload(), 800);
+        } else {
+            document.getElementById('recipeSaveStatus').innerHTML = '<span class="text-danger">' + (data.message || 'Error saving recipe.') + '</span>';
+        }
+    })
+    .catch(err => {
+        document.getElementById('recipeSaveStatus').innerHTML = '<span class="text-danger">Request failed: ' + err.message + '</span>';
+    });
+}
 </script>
 
 <style>
@@ -322,5 +484,6 @@ function bulkMove() {
 #selectAll { width: 16px; height: 16px; cursor: pointer; }
 .cat-btn.active { font-weight: 600; }
 .btn-group-sm .btn { padding: 0.2rem 0.5rem; }
+.recipe-ing-row select, .recipe-ing-row input { font-size: 0.8rem; }
 </style>
 @endsection

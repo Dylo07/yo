@@ -92,10 +92,16 @@ class SimpleRecipeController extends Controller
 
             DB::commit();
 
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Recipe saved successfully!']);
+            }
             return redirect()->back()->with('success', 'Recipe saved successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Error saving recipe: ' . $e->getMessage()], 422);
+            }
             return redirect()->back()->with('error', 'Error saving recipe: ' . $e->getMessage());
         }
     }

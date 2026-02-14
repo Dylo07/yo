@@ -224,8 +224,9 @@ class KitchenComparisonController extends Controller
                 })->unique()->sort()->values()->toArray()
             ]);
 
-            // Try different status combinations
-            $salesQuery = Sale::whereBetween('updated_at', [$startCarbon, $endCarbon]);
+            // Try different status combinations - EXCLUDE cancelled from main sales
+            $salesQuery = Sale::whereBetween('updated_at', [$startCarbon, $endCarbon])
+                ->where('sale_status', '!=', 'cancelled');
             
             // First try with 'paid' status
             $sales = (clone $salesQuery)->where('sale_status', 'paid')
@@ -236,7 +237,7 @@ class KitchenComparisonController extends Controller
                 'count' => $sales->count()
             ]);
 
-            // If no paid sales, try other statuses
+            // If no paid sales, try other statuses (excluding cancelled)
             if ($sales->isEmpty()) {
                 $sales = (clone $salesQuery)->whereIn('sale_status', ['active', 'pending', 'completed'])
                     ->with(['saleDetails'])
@@ -248,16 +249,22 @@ class KitchenComparisonController extends Controller
                 ]);
             }
 
-            // If still no sales, get ANY sales for debugging
+            // If still no sales, get ANY non-cancelled sales
             if ($sales->isEmpty()) {
                 $sales = (clone $salesQuery)->with(['saleDetails'])->get();
-                \Log::info('Using ANY status sales for debugging', [
+                \Log::info('Using ANY status (non-cancelled) sales', [
                     'count' => $sales->count(),
                     'statuses' => $sales->pluck('sale_status')->unique()->toArray()
                 ]);
             }
-            
-            if ($sales->isEmpty()) {
+
+            // Separately fetch cancelled sales
+            $cancelledSales = Sale::whereBetween('updated_at', [$startCarbon, $endCarbon])
+                ->where('sale_status', 'cancelled')
+                ->with(['saleDetails'])
+                ->get();
+
+            if ($sales->isEmpty() && $cancelledSales->isEmpty()) {
                 \Log::warning('No sales found for date range', [
                     'start_date' => $startDate,
                     'end_date' => $endDate
@@ -281,10 +288,36 @@ class KitchenComparisonController extends Controller
             });
             
             if ($allSaleDetails->isEmpty()) {
-                \Log::warning('No sale details found in sales');
+                // Skip main processing and jump to cancelled items section
+                $cancelledItems = [];
+                $cancelledTotal = 0;
+                foreach ($cancelledSales as $cSale) {
+                    if (!$cSale->saleDetails || $cSale->saleDetails->isEmpty()) continue;
+                    foreach ($cSale->saleDetails as $detail) {
+                        if ($detail->quantity <= 0) continue;
+                        $itemKey = $detail->menu_id;
+                        if (!isset($cancelledItems[$itemKey])) {
+                            $cancelledItems[$itemKey] = [
+                                'name' => $detail->menu_name . ' (Bill #' . $cSale->id . ')',
+                                'quantity' => 0,
+                                'item_summary' => '',
+                            ];
+                        }
+                        $cancelledItems[$itemKey]['quantity'] += $detail->quantity;
+                        $cancelledTotal += $detail->quantity;
+                    }
+                }
+                if (!empty($cancelledItems)) {
+                    $categorizedData['cancelled'] = [
+                        'name' => 'Cancelled Items',
+                        'items' => array_values($cancelledItems),
+                        'total' => $cancelledTotal,
+                        'category_summary' => '',
+                    ];
+                }
                 return [
-                    'by_category' => [],
-                    'total_items' => 0,
+                    'by_category' => $categorizedData,
+                    'total_items' => $totalItems,
                     'total_sales' => $totalSales,
                     'date_range' => "$startDate to $endDate"
                 ];
@@ -386,6 +419,36 @@ class KitchenComparisonController extends Controller
                 }
                 $cat['category_summary'] = implode('    ', $catIngSummary);
                 $cat['items'] = array_values($cat['items']);
+            }
+
+            // Add cancelled sales as a separate "Cancelled Items" category
+            if ($cancelledSales->isNotEmpty()) {
+                $cancelledItems = [];
+                $cancelledTotal = 0;
+                foreach ($cancelledSales as $cSale) {
+                    if (!$cSale->saleDetails || $cSale->saleDetails->isEmpty()) continue;
+                    foreach ($cSale->saleDetails as $detail) {
+                        if ($detail->quantity <= 0) continue;
+                        $itemKey = $detail->menu_id;
+                        if (!isset($cancelledItems[$itemKey])) {
+                            $cancelledItems[$itemKey] = [
+                                'name' => $detail->menu_name . ' (Bill #' . $cSale->id . ')',
+                                'quantity' => 0,
+                                'item_summary' => '',
+                            ];
+                        }
+                        $cancelledItems[$itemKey]['quantity'] += $detail->quantity;
+                        $cancelledTotal += $detail->quantity;
+                    }
+                }
+                if (!empty($cancelledItems)) {
+                    $categorizedData['cancelled'] = [
+                        'name' => 'Cancelled Items',
+                        'items' => array_values($cancelledItems),
+                        'total' => $cancelledTotal,
+                        'category_summary' => '',
+                    ];
+                }
             }
 
             return [

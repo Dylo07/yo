@@ -135,12 +135,12 @@
             
 
 <div id="buttons">
-            <a href="/export/salereport">
+            <a href="/report/show/export">
             <button class="btn btn-back">
                 Show Report
             </button>
-            
-
+            </a>
+</div>
 
             
           @else

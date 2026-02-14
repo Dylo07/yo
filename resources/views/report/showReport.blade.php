@@ -133,14 +133,14 @@
       @endphp
 
       {{-- Total Value Card --}}
-      @php $totalValue = $totalSale + $serviceCharge; @endphp
+      @php $billOnly = $totalSale - $serviceCharge; @endphp
       <div class="row g-3 mb-3">
         <div class="col-12">
           <div class="stat-card" style="background:linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding:1.5rem 1.5rem;">
             <div class="stat-icon" style="font-size:3rem;"><i class="fas fa-coins"></i></div>
             <div class="stat-label" style="font-size:0.8rem;">Total Value (Bill Amount + S/C)</div>
-            <div class="stat-value" style="font-size:2rem;">Rs {{ number_format($totalValue, 2) }}</div>
-            <div class="stat-sub">Rs {{ number_format($totalSale, 2) }} (Bills) + Rs {{ number_format($serviceCharge, 2) }} (S/C)</div>
+            <div class="stat-value" style="font-size:2rem;">Rs {{ number_format($totalSale, 2) }}</div>
+            <div class="stat-sub">Rs {{ number_format($billOnly, 2) }} (Bills) + Rs {{ number_format($serviceCharge, 2) }} (S/C)</div>
           </div>
         </div>
       </div>
@@ -150,8 +150,8 @@
         <div class="col-6 col-lg-3">
           <div class="stat-card bg-gradient-blue">
             <div class="stat-icon"><i class="fas fa-receipt"></i></div>
-            <div class="stat-label">Total Bill Amount</div>
-            <div class="stat-value">Rs {{ number_format($totalSale, 2) }}</div>
+            <div class="stat-label">Bill Amount</div>
+            <div class="stat-value">Rs {{ number_format($billOnly, 2) }}</div>
             <div class="stat-sub">{{ $paidCount }} paid bills</div>
           </div>
         </div>

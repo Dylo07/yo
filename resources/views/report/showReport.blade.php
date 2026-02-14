@@ -253,12 +253,13 @@
                   </thead>
                   <tbody>
                     @foreach($sale->saleDetails as $saleDetail)
-                      <tr id="detail-row-{{$saleDetail->id}}">
+                      @php $isNegative = $saleDetail->menu_price < 0; @endphp
+                      <tr id="detail-row-{{$saleDetail->id}}" @if($isNegative) style="background:#fff5f5;" @endif>
                         <td style="color:#aaa; font-size:0.8rem;">{{ $saleDetail->menu_id }}</td>
-                        <td class="item-name">{{ $saleDetail->menu_name }}</td>
-                        <td class="text-center"><span class="item-qty">{{ $saleDetail->quantity }}</span></td>
-                        <td class="text-end">{{ number_format($saleDetail->menu_price, 2) }}</td>
-                        <td class="text-end item-total">{{ number_format($saleDetail->menu_price * $saleDetail->quantity, 2) }}</td>
+                        <td class="item-name" @if($isNegative) style="color:#dc3545;" @endif>{{ $saleDetail->menu_name }}</td>
+                        <td class="text-center"><span class="item-qty" @if($isNegative) style="background:#fde8e8; color:#dc3545;" @endif>{{ $saleDetail->quantity }}</span></td>
+                        <td class="text-end" @if($isNegative) style="color:#dc3545; font-weight:600;" @endif>{{ number_format($saleDetail->menu_price, 2) }}</td>
+                        <td class="text-end item-total" @if($isNegative) style="color:#dc3545; font-weight:600;" @endif>{{ number_format($saleDetail->menu_price * $saleDetail->quantity, 2) }}</td>
                         <td style="color:#999; font-size:0.8rem;">{{ $saleDetail->created_at ? $saleDetail->created_at->format('d/m/Y H:i') : 'N/A' }}</td>
                         @if(Auth::user() && Auth::user()->role === 'admin')
                           <td class="text-center">
@@ -308,7 +309,7 @@
                   $chartCategories[$item->name] = [];
                   $chartCategoryTotals[$item->name] = 0;
               }
-              $chartCategories[$item->name][] = ['menu_id' => $item->menu_id, 'menu_name' => $item->menu_name, 'qty' => $item->qty_sum];
+              $chartCategories[$item->name][] = ['menu_id' => $item->menu_id, 'menu_name' => $item->menu_name, 'qty' => $item->qty_sum, 'price' => $item->menu_price ?? 0];
               $chartCategoryTotals[$item->name] += $item->qty_sum;
           }
         @endphp
@@ -393,10 +394,11 @@
                   <tbody>
               @endif
               @php $CategoryNew = $summaryItem->name; @endphp
-              <tr>
-                <td style="color:#999;">{{ $summaryItem->menu_id }}</td>
-                <td style="font-weight:500;">{{ $summaryItem->menu_name }}</td>
-                <td class="text-center"><span class="qty-badge">{{ $summaryItem->qty_sum }}</span></td>
+              @php $isNegPrice = ($summaryItem->menu_price ?? 0) < 0; @endphp
+              <tr @if($isNegPrice) style="background:#fff5f5;" @endif>
+                <td style="color:{{ $isNegPrice ? '#dc3545' : '#999' }};">{{ $summaryItem->menu_id }}</td>
+                <td style="font-weight:500; {{ $isNegPrice ? 'color:#dc3545;' : '' }}">{{ $summaryItem->menu_name }}</td>
+                <td class="text-center"><span class="qty-badge" @if($isNegPrice) style="background:#fde8e8; color:#dc3545;" @endif>{{ $summaryItem->qty_sum }}</span></td>
               </tr>
             @endforeach
             @if($CategoryNew != '')
@@ -513,13 +515,16 @@
                 var data = items.map(function(i) { return i.qty; });
                 var maxQty = Math.max.apply(null, data);
 
+                var prices = items.map(function(i) { return i.price; });
+
                 new Chart(canvas, {
                     type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [{
                             data: data,
-                            backgroundColor: data.map(function(v) {
+                            backgroundColor: data.map(function(v, i) {
+                                if (prices[i] < 0) return 'rgba(220, 53, 69, 0.85)';
                                 var intensity = 0.3 + (v / maxQty) * 0.7;
                                 return 'rgba(102, 126, 234, ' + intensity + ')';
                             }),

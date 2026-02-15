@@ -348,10 +348,10 @@
                 Booking Options
             </h3>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <button onclick="openExistingBookingModal()" style="flex:1; min-width:140px; padding:10px 8px; background:linear-gradient(135deg,#28a745,#20c997); color:#fff; border:none; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
+                <button id="btnExistingBooking" onclick="openExistingBookingModal()" style="flex:1; min-width:140px; padding:10px 8px; background:linear-gradient(135deg,#28a745,#20c997); color:#fff; border:none; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
                     + Add to Existing Booking
                 </button>
-                <button onclick="goToNewBooking()" style="flex:1; min-width:140px; padding:10px 8px; background:linear-gradient(135deg,#007bff,#6610f2); color:#fff; border:none; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
+                <button id="btnNewBooking" onclick="goToNewBooking()" style="flex:1; min-width:140px; padding:10px 8px; background:linear-gradient(135deg,#007bff,#6610f2); color:#fff; border:none; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
                     New Booking
                 </button>
             </div>
@@ -407,7 +407,22 @@
         var selectedBookingId = null;
         var searchTimeout = null;
 
+        function disableBookingButtons() {
+            var btn1 = document.getElementById('btnExistingBooking');
+            var btn2 = document.getElementById('btnNewBooking');
+            if (btn1) { btn1.disabled = true; btn1.style.opacity = '0.5'; btn1.style.cursor = 'not-allowed'; }
+            if (btn2) { btn2.disabled = true; btn2.style.opacity = '0.5'; btn2.style.cursor = 'not-allowed'; }
+        }
+
+        function enableBookingButtons() {
+            var btn1 = document.getElementById('btnExistingBooking');
+            var btn2 = document.getElementById('btnNewBooking');
+            if (btn1) { btn1.disabled = false; btn1.style.opacity = '1'; btn1.style.cursor = 'pointer'; }
+            if (btn2) { btn2.disabled = false; btn2.style.opacity = '1'; btn2.style.cursor = 'pointer'; }
+        }
+
         function openExistingBookingModal() {
+            disableBookingButtons();
             document.getElementById('bookingModal').style.display = 'block';
             document.getElementById('bookingSearch').value = '';
             document.getElementById('bookingResults').innerHTML = '<p style="text-align:center; color:#999; font-size:11px; padding:20px;">Type to search for bookings...</p>';
@@ -419,9 +434,11 @@
 
         function closeBookingModal() {
             document.getElementById('bookingModal').style.display = 'none';
+            enableBookingButtons();
         }
 
         function goToNewBooking() {
+            disableBookingButtons();
             var params = new URLSearchParams({
                 bill_number: saleId,
                 advance_payment: saleAmount,

@@ -1762,9 +1762,18 @@
                     amount.className = 'mb-1';
                     amount.textContent = `Amount: Rs. ${parseFloat(payment.amount).toFixed(2)}`;
 
-                    const billNumber = document.createElement('p');
-                    billNumber.className = 'mb-1';
-                    billNumber.textContent = `Bill Number: ${payment.billNumber}`;
+                    const billNumber = document.createElement('div');
+                    billNumber.className = 'mb-1 d-flex align-items-center';
+                    billNumber.innerHTML = `Bill Number: ${payment.billNumber}`;
+                    if (payment.billNumber) {
+                        const printBtn = document.createElement('a');
+                        printBtn.href = `/cashier/showAdvanceRecipt/${payment.billNumber}`;
+                        printBtn.target = '_blank';
+                        printBtn.className = 'btn btn-sm btn-outline-primary ms-2';
+                        printBtn.style.cssText = 'padding:1px 6px; font-size:11px; line-height:1.4;';
+                        printBtn.innerHTML = '<i class="fas fa-print"></i> Print';
+                        billNumber.appendChild(printBtn);
+                    }
 
                     const date = document.createElement('p');
                     date.className = 'mb-1';

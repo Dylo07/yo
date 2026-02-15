@@ -549,6 +549,12 @@ class CashierController extends Controller
         return view('cashier.showAdvanceRecipt')->with('sale',$sale)->with('saleDetails', $saleDetails);
     }
 
+    public function printAdvanceRecipt($saleID){
+        $sale = Sale::find($saleID);
+        $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
+        return view('cashier.printAdvanceRecipt')->with('sale',$sale)->with('saleDetails', $saleDetails);
+    }
+
     public function showAdvanceWeddingRecipt($saleID){
         $sale = Sale::find($saleID);
         $saleDetails = SaleDetail::where('sale_id', $saleID)->get();

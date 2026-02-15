@@ -1767,7 +1767,7 @@
                     billNumber.innerHTML = `Bill Number: ${payment.billNumber}`;
                     if (payment.billNumber) {
                         const printBtn = document.createElement('a');
-                        printBtn.href = `/cashier/showAdvanceRecipt/${payment.billNumber}`;
+                        printBtn.href = `/cashier/printAdvanceRecipt/${payment.billNumber}`;
                         printBtn.target = '_blank';
                         printBtn.className = 'btn btn-sm btn-outline-primary ms-2';
                         printBtn.style.cssText = 'padding:1px 6px; font-size:11px; line-height:1.4;';

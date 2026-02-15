@@ -93,6 +93,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/cashier/showAdvanceRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceRecipt')
         ->name('cashier.showAdvanceRecipt');
+    Route::get('/cashier/printAdvanceRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@printAdvanceRecipt')
+        ->name('cashier.printAdvanceRecipt');
     Route::get('/cashier/showAdvanceWeddingRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showAdvanceWeddingRecipt')
         ->name('cashier.showAdvanceWeddingRecipt');
 

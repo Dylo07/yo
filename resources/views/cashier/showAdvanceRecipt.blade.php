@@ -44,7 +44,7 @@
                 margin: 0;
                 padding: 5px;
             }
-            #buttons {
+            #buttons, #booking-actions, #bookingModal, #actionMessage {
                 display: none !important;
             }
         }
@@ -439,6 +439,7 @@
 
         function goToNewBooking() {
             disableBookingButtons();
+            window.print();
             var params = new URLSearchParams({
                 bill_number: saleId,
                 advance_payment: saleAmount,

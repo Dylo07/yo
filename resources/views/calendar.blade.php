@@ -2466,6 +2466,44 @@
             calendar.on('eventsSet', function (events) {
                 console.log('Calendar events loaded:', events);
             });
+
+            // Pre-fill form if coming from advance payment receipt
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('from_receipt') === '1') {
+                const billNumber = urlParams.get('bill_number') || '';
+                const advancePayment = urlParams.get('advance_payment') || '';
+                const advanceDate = urlParams.get('advance_date') || '';
+
+                // Pre-fill the payment fields
+                const billField = document.getElementById('bill_number');
+                const paymentField = document.getElementById('time_slot');
+                const dateField = document.getElementById('advance_date');
+                const methodField = document.getElementById('payment_method');
+
+                if (billField) billField.value = billNumber;
+                if (paymentField) paymentField.value = advancePayment;
+                if (dateField) dateField.value = advanceDate;
+                if (methodField) methodField.value = 'cash';
+
+                // Make pre-filled fields read-only with visual indicator
+                [billField, paymentField, dateField].forEach(function(field) {
+                    if (field) {
+                        field.style.backgroundColor = '#e8f5e9';
+                        field.style.borderColor = '#28a745';
+                        field.readOnly = true;
+                    }
+                });
+
+                // Show notification banner
+                const banner = document.createElement('div');
+                banner.style.cssText = 'background:linear-gradient(135deg,#28a745,#20c997); color:#fff; padding:12px 20px; border-radius:8px; margin-bottom:15px; text-align:center; font-size:14px; font-weight:bold;';
+                banner.innerHTML = 'Creating booking from Advance Payment - Bill #' + billNumber + ' (Rs ' + parseFloat(advancePayment).toLocaleString() + ')<br><small style="font-weight:normal; opacity:0.9;">Payment details have been pre-filled. Please complete the remaining booking details.</small>';
+                const form = document.getElementById('booking-form');
+                if (form) form.insertBefore(banner, form.firstChild);
+
+                // Scroll to the form
+                if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     </script>
 </body>

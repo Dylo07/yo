@@ -577,4 +577,99 @@ public function canEditDates()
         'can_edit_dates' => $user && $user->role === 'admin'
     ]);
 }
+
+/**
+ * Search bookings for the "Add to Existing Booking" feature on advance payment receipt.
+ */
+public function searchBookings(Request $request)
+{
+    $query = $request->get('q', '');
+    
+    $bookings = Booking::with(['payments'])
+        ->where(function($q) use ($query) {
+            $q->where('name', 'LIKE', "%{$query}%")
+              ->orWhere('function_type', 'LIKE', "%{$query}%")
+              ->orWhere('contact_number', 'LIKE', "%{$query}%")
+              ->orWhere('id', 'LIKE', "%{$query}%");
+        })
+        ->orderBy('start', 'desc')
+        ->limit(20)
+        ->get();
+
+    return $bookings->map(function($booking) {
+        $totalPaid = $booking->payments->sum('amount');
+        return [
+            'id' => $booking->id,
+            'name' => $booking->name,
+            'function_type' => $booking->function_type,
+            'contact_number' => $booking->contact_number,
+            'guest_count' => $booking->guest_count,
+            'start' => $booking->start ? $booking->start->format('M j, Y g:i A') : 'N/A',
+            'end' => $booking->end ? $booking->end->format('M j, Y g:i A') : 'N/A',
+            'total_paid' => $totalPaid,
+            'payment_count' => $booking->payments->count(),
+        ];
+    });
+}
+
+/**
+ * Add a payment to an existing booking (called from advance payment receipt page).
+ */
+public function addPaymentFromReceipt(Request $request)
+{
+    $request->validate([
+        'booking_id' => 'required|exists:bookings,id',
+        'amount' => 'required|numeric|min:0',
+        'bill_number' => 'required|string',
+        'payment_date' => 'required|date',
+        'payment_method' => 'required|in:online,cash',
+    ]);
+
+    try {
+        \DB::beginTransaction();
+
+        $booking = Booking::findOrFail($request->booking_id);
+
+        $payment = $booking->addPayment([
+            'advance_payment' => $request->amount,
+            'bill_number' => $request->bill_number,
+            'advance_date' => $request->payment_date,
+            'payment_method' => $request->payment_method,
+        ]);
+
+        // Log the action
+        BookingAuditLog::create([
+            'booking_id' => $booking->id,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name,
+            'action' => 'payment_added',
+            'field_changed' => 'payment',
+            'old_value' => null,
+            'new_value' => json_encode([
+                'amount' => $request->amount,
+                'bill_number' => $request->bill_number,
+                'date' => $request->payment_date,
+                'method' => $request->payment_method,
+                'source' => 'advance_payment_receipt'
+            ]),
+            'ip_address' => $request->ip()
+        ]);
+
+        \DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Payment of Rs " . number_format($request->amount, 2) . " added to booking #{$booking->id} ({$booking->function_type} - {$booking->name})",
+            'booking' => [
+                'id' => $booking->id,
+                'name' => $booking->name,
+                'function_type' => $booking->function_type,
+            ]
+        ]);
+    } catch (\Exception $e) {
+        \DB::rollBack();
+        Log::error('Add Payment From Receipt Error:', ['error' => $e->getMessage()]);
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
 };

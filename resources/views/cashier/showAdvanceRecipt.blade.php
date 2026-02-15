@@ -334,14 +334,215 @@
         
         <div id="buttons">
             <button class="btn btn-print" type="button" onclick="window.print(); return false;">
-                Print
+                Print Receipt
             </button>
             <a href="/cashier" style="width: 48%; text-decoration: none;">
                 <button class="btn btn-back" style="width: 100%;">
-                    Back to cashier
+                    Back to Cashier
                 </button>
             </a>
         </div>
+
+        <div id="booking-actions" style="margin-top:15px; border:2px solid #007bff; border-radius:8px; padding:12px; background:#f0f7ff;">
+            <h3 style="font-size:12px; color:#007bff; margin:0 0 10px; text-align:center; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">
+                Booking Options
+            </h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button onclick="openExistingBookingModal()" style="flex:1; min-width:140px; padding:10px 8px; background:linear-gradient(135deg,#28a745,#20c997); color:#fff; border:none; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
+                    + Add to Existing Booking
+                </button>
+                <button onclick="goToNewBooking()" style="flex:1; min-width:140px; padding:10px 8px; background:linear-gradient(135deg,#007bff,#6610f2); color:#fff; border:none; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
+                    New Booking
+                </button>
+            </div>
+            <p style="font-size:8px; color:#666; text-align:center; margin:6px 0 0;">Bill #{{$sale->id}} | Rs {{ number_format($sale->total_price, 2) }}</p>
+        </div>
     </div>
+
+    <div id="bookingModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; overflow-y:auto;">
+        <div style="max-width:600px; margin:30px auto; background:#fff; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#28a745,#20c997); padding:15px 20px; color:#fff;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h4 style="margin:0; font-size:14px;">Add Payment to Existing Booking</h4>
+                    <button onclick="closeBookingModal()" style="background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
+                </div>
+                <p style="margin:4px 0 0; font-size:10px; opacity:0.9;">Bill #{{$sale->id}} - Rs {{ number_format($sale->total_price, 2) }}</p>
+            </div>
+            <div style="padding:15px 20px;">
+                <div style="position:relative; margin-bottom:12px;">
+                    <input type="text" id="bookingSearch" placeholder="Search by name, contact, function type, or booking ID..." 
+                           style="width:100%; padding:10px 12px; border:2px solid #ddd; border-radius:8px; font-size:12px; box-sizing:border-box;"
+                           oninput="searchBookings(this.value)">
+                </div>
+                <div id="bookingResults" style="max-height:350px; overflow-y:auto;">
+                    <p style="text-align:center; color:#999; font-size:11px; padding:20px;">Type to search for bookings...</p>
+                </div>
+                <div id="paymentMethodSection" style="display:none; margin-top:12px; padding-top:12px; border-top:2px solid #eee;">
+                    <label style="font-size:11px; font-weight:bold; color:#333; display:block; margin-bottom:6px;">Payment Method:</label>
+                    <div style="display:flex; gap:8px;">
+                        <label style="flex:1; display:flex; align-items:center; gap:4px; padding:8px; border:2px solid #ddd; border-radius:6px; cursor:pointer; font-size:11px;">
+                            <input type="radio" name="bookingPayMethod" value="cash" checked> Cash
+                        </label>
+                        <label style="flex:1; display:flex; align-items:center; gap:4px; padding:8px; border:2px solid #ddd; border-radius:6px; cursor:pointer; font-size:11px;">
+                            <input type="radio" name="bookingPayMethod" value="online"> Online
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div id="modalFooter" style="display:none; padding:12px 20px; background:#f8f9fa; border-top:1px solid #eee;">
+                <button id="confirmAddPayment" onclick="confirmAddToBooking()" 
+                        style="width:100%; padding:10px; background:#28a745; color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer;">
+                    Confirm & Add Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="actionMessage" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:10000; padding:12px 24px; border-radius:8px; font-size:12px; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.2); max-width:90%;"></div>
+
+    <script>
+        var saleId = {{ $sale->id }};
+        var saleAmount = {{ $sale->total_price }};
+        var saleDate = '{{ date("Y-m-d", strtotime($sale->updated_at)) }}';
+        var selectedBookingId = null;
+        var searchTimeout = null;
+
+        function openExistingBookingModal() {
+            document.getElementById('bookingModal').style.display = 'block';
+            document.getElementById('bookingSearch').value = '';
+            document.getElementById('bookingResults').innerHTML = '<p style="text-align:center; color:#999; font-size:11px; padding:20px;">Type to search for bookings...</p>';
+            document.getElementById('paymentMethodSection').style.display = 'none';
+            document.getElementById('modalFooter').style.display = 'none';
+            selectedBookingId = null;
+            setTimeout(function() { document.getElementById('bookingSearch').focus(); }, 100);
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+        }
+
+        function goToNewBooking() {
+            var params = new URLSearchParams({
+                bill_number: saleId,
+                advance_payment: saleAmount,
+                advance_date: saleDate,
+                from_receipt: 1
+            });
+            window.location.href = '/calendar?' + params.toString();
+        }
+
+        function searchBookings(query) {
+            clearTimeout(searchTimeout);
+            var resultsDiv = document.getElementById('bookingResults');
+
+            if (query.length < 1) {
+                resultsDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:11px; padding:20px;">Type to search for bookings...</p>';
+                document.getElementById('paymentMethodSection').style.display = 'none';
+                document.getElementById('modalFooter').style.display = 'none';
+                selectedBookingId = null;
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:11px; padding:20px;">Searching...</p>';
+
+            searchTimeout = setTimeout(function() {
+                fetch('/bookings/search?q=' + encodeURIComponent(query), {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(bookings) {
+                    if (bookings.length === 0) {
+                        resultsDiv.innerHTML = '<p style="text-align:center; color:#999; font-size:11px; padding:20px;">No bookings found.</p>';
+                        return;
+                    }
+                    var html = '';
+                    bookings.forEach(function(b) {
+                        html += '<div class="booking-result" data-id="' + b.id + '" onclick="selectBooking(' + b.id + ', this)" style="padding:10px 12px; border:2px solid #eee; border-radius:8px; margin-bottom:8px; cursor:pointer; transition:all 0.2s;">';
+                        html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+                        html += '<div>';
+                        html += '<strong style="font-size:12px; color:#333;">#' + b.id + ' - ' + b.function_type + '</strong>';
+                        html += '<div style="font-size:10px; color:#666; margin-top:2px;">' + (b.name || 'N/A') + '</div>';
+                        html += '</div>';
+                        html += '<div style="text-align:right;">';
+                        html += '<div style="font-size:10px; color:#28a745; font-weight:bold;">Rs ' + parseFloat(b.total_paid).toLocaleString(undefined, {minimumFractionDigits:2}) + '</div>';
+                        html += '<div style="font-size:9px; color:#999;">' + b.payment_count + ' payment(s)</div>';
+                        html += '</div>';
+                        html += '</div>';
+                        html += '<div style="font-size:9px; color:#888; margin-top:4px;">Tel: ' + b.contact_number + ' | Guests: ' + (b.guest_count || 'N/A') + ' | ' + b.start + '</div>';
+                        html += '</div>';
+                    });
+                    resultsDiv.innerHTML = html;
+                })
+                .catch(function(err) {
+                    resultsDiv.innerHTML = '<p style="text-align:center; color:#dc3545; font-size:11px; padding:20px;">Error searching bookings.</p>';
+                });
+            }, 300);
+        }
+
+        function selectBooking(bookingId, el) {
+            selectedBookingId = bookingId;
+            var allResults = document.querySelectorAll('.booking-result');
+            allResults.forEach(function(r) {
+                r.style.borderColor = '#eee';
+                r.style.background = '#fff';
+            });
+            el.style.borderColor = '#28a745';
+            el.style.background = '#f0fff4';
+            document.getElementById('paymentMethodSection').style.display = 'block';
+            document.getElementById('modalFooter').style.display = 'block';
+        }
+
+        function confirmAddToBooking() {
+            if (!selectedBookingId) return;
+
+            var btn = document.getElementById('confirmAddPayment');
+            btn.disabled = true;
+            btn.textContent = 'Adding payment...';
+
+            var method = document.querySelector('input[name="bookingPayMethod"]:checked').value;
+            var csrfToken = '{{ csrf_token() }}';
+
+            fetch('/bookings/add-payment-from-receipt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    booking_id: selectedBookingId,
+                    amount: saleAmount,
+                    bill_number: String(saleId),
+                    payment_date: saleDate,
+                    payment_method: method
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    closeBookingModal();
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.error || 'Failed to add payment.', 'error');
+                }
+                btn.disabled = false;
+                btn.textContent = 'Confirm & Add Payment';
+            })
+            .catch(function(err) {
+                showMessage('Network error. Please try again.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Confirm & Add Payment';
+            });
+        }
+
+        function showMessage(text, type) {
+            var msgDiv = document.getElementById('actionMessage');
+            msgDiv.textContent = text;
+            msgDiv.style.display = 'block';
+            msgDiv.style.background = type === 'success' ? '#28a745' : '#dc3545';
+            msgDiv.style.color = '#fff';
+            setTimeout(function() { msgDiv.style.display = 'none'; }, 5000);
+        }
+    </script>
 </body>
 </html>

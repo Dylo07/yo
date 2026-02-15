@@ -194,6 +194,8 @@ Route::get('/calendar', function () {
 })->name('calendar');
 Route::get('/bookings', [BookingController::class, 'index']);
 Route::post('/bookings', [BookingController::class, 'store']);
+Route::get('/bookings/search', [BookingController::class, 'searchBookings'])->middleware('auth')->name('bookings.search');
+Route::post('/bookings/add-payment-from-receipt', [BookingController::class, 'addPaymentFromReceipt'])->middleware('auth')->name('bookings.addPaymentFromReceipt');
 Route::put('/bookings/{id}', [BookingController::class, 'update']);
 Route::get('/available-rooms', [BookingController::class, 'availableRooms']);
 Route::get('/booking-logs', [BookingController::class, 'getLogs']);

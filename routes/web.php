@@ -559,6 +559,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/kitchen/comparison/print', [App\Http\Controllers\KitchenComparisonController::class, 'print'])
         ->name('kitchen.comparison.print');
 
+    // Kitchen comparison detailed print view
+    Route::get('/kitchen/comparison/print-detailed', [App\Http\Controllers\KitchenComparisonController::class, 'printDetailed'])
+        ->name('kitchen.comparison.print-detailed');
+
     // Kitchen comparison data API
     Route::get('/kitchen/comparison/data', [App\Http\Controllers\KitchenComparisonController::class, 'getComparisonData'])
         ->name('kitchen.comparison.data');

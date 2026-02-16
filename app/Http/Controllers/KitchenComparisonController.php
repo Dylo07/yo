@@ -188,6 +188,209 @@ class KitchenComparisonController extends Controller
             'grandIngredientSummary'
         ));
     }
+
+    /**
+     * Detailed print view - shows bill numbers per sale item and date/time per issue
+     */
+    public function printDetailed(Request $request)
+    {
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+
+        if (!$startDate || !$endDate) {
+            $startDate = now()->toDateString();
+            $endDate = now()->toDateString();
+        }
+
+        if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
+            $temp = $startDate;
+            $startDate = $endDate;
+            $endDate = $temp;
+        }
+
+        $startCarbon = Carbon::parse($startDate)->startOfDay();
+        $endCarbon = Carbon::parse($endDate);
+        if ($endCarbon->isToday()) {
+            $endCarbon = now();
+        } else {
+            $endCarbon = $endCarbon->endOfDay();
+        }
+
+        // ---- SALES: per-bill detail ----
+        $sales = Sale::whereBetween('updated_at', [$startCarbon, $endCarbon])
+            ->where('sale_status', 'paid')
+            ->with(['saleDetails'])
+            ->get();
+
+        $menuIds = $sales->flatMap(fn($s) => $s->saleDetails ? $s->saleDetails->pluck('menu_id') : collect())->unique()->filter()->toArray();
+        $menus = Menu::whereIn('id', $menuIds)->with('category')->get()->keyBy('id');
+
+        $allRecipes = DB::table('menu_item_recipes')
+            ->join('items', 'menu_item_recipes.item_id', '=', 'items.id')
+            ->whereIn('menu_item_recipes.menu_id', $menuIds)
+            ->where('items.is_kitchen_item', true)
+            ->select('menu_item_recipes.menu_id', 'items.name as item_name', 'menu_item_recipes.required_quantity')
+            ->get()
+            ->groupBy('menu_id');
+
+        $salesByCategory = [];
+        $totalItems = 0;
+        $totalBills = $sales->count();
+
+        foreach ($sales as $sale) {
+            if (!$sale->saleDetails || $sale->saleDetails->isEmpty()) continue;
+            foreach ($sale->saleDetails as $detail) {
+                if ($detail->quantity <= 0) continue;
+                $menu = $menus->get($detail->menu_id);
+                $categoryId = $menu ? ($menu->category_id ?? 'uncategorized') : 'unknown';
+                $categoryName = $menu && $menu->category ? $menu->category->name : ($menu ? 'Uncategorized' : 'Unknown');
+                $menuName = $menu ? $menu->name : $detail->menu_name;
+                $itemKey = $detail->menu_id;
+
+                if (!isset($salesByCategory[$categoryId])) {
+                    $salesByCategory[$categoryId] = ['name' => $categoryName, 'items' => [], 'total' => 0, 'category_summary' => ''];
+                }
+                if (!isset($salesByCategory[$categoryId]['items'][$itemKey])) {
+                    $salesByCategory[$categoryId]['items'][$itemKey] = [
+                        'name' => $menuName,
+                        'quantity' => 0,
+                        'bills' => [],
+                        'recipes' => $allRecipes->get($detail->menu_id, collect()),
+                    ];
+                }
+                $salesByCategory[$categoryId]['items'][$itemKey]['quantity'] += $detail->quantity;
+                $salesByCategory[$categoryId]['total'] += $detail->quantity;
+                $totalItems += $detail->quantity;
+
+                // Track per-bill qty
+                $billId = $sale->id;
+                if (!isset($salesByCategory[$categoryId]['items'][$itemKey]['bills'][$billId])) {
+                    $salesByCategory[$categoryId]['items'][$itemKey]['bills'][$billId] = 0;
+                }
+                $salesByCategory[$categoryId]['items'][$itemKey]['bills'][$billId] += $detail->quantity;
+            }
+        }
+
+        // Build item_summary and category_summary
+        $grandIngredients = [];
+        foreach ($salesByCategory as &$cat) {
+            $categoryIngredients = [];
+            foreach ($cat['items'] as &$item) {
+                $itemSummary = [];
+                foreach ($item['recipes'] as $recipe) {
+                    $totalQty = $recipe->required_quantity * $item['quantity'];
+                    $itemSummary[] = $recipe->item_name . ' ' . rtrim(rtrim(number_format($totalQty, 2), '0'), '.');
+                    $categoryIngredients[$recipe->item_name] = ($categoryIngredients[$recipe->item_name] ?? 0) + $totalQty;
+                    $grandIngredients[$recipe->item_name] = ($grandIngredients[$recipe->item_name] ?? 0) + $totalQty;
+                }
+                $item['item_summary'] = implode('    ', $itemSummary);
+                unset($item['recipes']);
+            }
+            $catIngSummary = [];
+            foreach ($categoryIngredients as $ingName => $ingQty) {
+                $catIngSummary[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+            }
+            $cat['category_summary'] = implode('    ', $catIngSummary);
+            $cat['items'] = array_values($cat['items']);
+        }
+
+        $grandSummaryParts = [];
+        foreach ($grandIngredients as $ingName => $ingQty) {
+            $grandSummaryParts[] = $ingName . ' ' . rtrim(rtrim(number_format($ingQty, 2), '0'), '.');
+        }
+        $grandIngredientSummary = implode('    ', $grandSummaryParts);
+
+        $dailySalesData = [
+            'by_category' => $salesByCategory,
+            'total_items' => $totalItems,
+            'total_sales' => $totalBills,
+        ];
+
+        // ---- ISSUES: per-log detail (date/time per item) ----
+        $issueActionsFilter = $request->input('issue_actions', 'remove_main_kitchen');
+        $selectedActions = array_filter(explode(',', $issueActionsFilter));
+
+        $allRemoveLogs = StockLog::with(['user', 'item', 'item.group'])
+            ->whereBetween('created_at', [$startCarbon, $endCarbon->copy()->endOfDay()])
+            ->whereIn('action', $selectedActions)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $mergedKitchen = ['by_category' => [], 'total_quantity' => 0, 'total_transactions' => 0, 'total_cost' => 0];
+        $actionLabels = [
+            'remove_main_kitchen' => 'Main Kitchen',
+            'remove_banquet_hall_kitchen' => 'Banquet Hall Kitchen',
+            'remove_banquet_hall' => 'Banquet Hall',
+            'remove_restaurant' => 'Restaurant',
+            'remove_rooms' => 'Rooms',
+            'remove_garden' => 'Garden',
+            'remove_other' => 'Other',
+        ];
+        $usedLabels = [];
+
+        foreach ($allRemoveLogs as $log) {
+            $action = $log->action;
+            $usedLabels[$action] = $actionLabels[$action] ?? ucwords(str_replace('_', ' ', str_replace('remove_', '', $action)));
+
+            $categoryId = $log->item->group_id ?? 'uncategorized';
+            $categoryName = $log->item->group->name ?? 'Uncategorized';
+            $itemName = $log->item->name;
+            $costPerUnit = floatval($log->item->kitchen_cost_per_unit ?? 0);
+
+            if (!isset($mergedKitchen['by_category'][$categoryId])) {
+                $mergedKitchen['by_category'][$categoryId] = [
+                    'name' => $categoryName, 'items' => [], 'total_quantity' => 0, 'total_cost' => 0,
+                ];
+            }
+            if (!isset($mergedKitchen['by_category'][$categoryId]['items'][$itemName])) {
+                $mergedKitchen['by_category'][$categoryId]['items'][$itemName] = [
+                    'name' => $itemName,
+                    'quantity' => 0,
+                    'cost_per_unit' => $costPerUnit,
+                    'total_cost' => 0,
+                    'logs' => [],
+                ];
+            }
+            $mergedKitchen['by_category'][$categoryId]['items'][$itemName]['quantity'] += $log->quantity;
+            $itemCost = $log->quantity * $costPerUnit;
+            $mergedKitchen['by_category'][$categoryId]['items'][$itemName]['total_cost'] += $itemCost;
+            $mergedKitchen['by_category'][$categoryId]['items'][$itemName]['logs'][] = [
+                'qty' => $log->quantity,
+                'time' => $log->created_at->format('m/d H:i'),
+                'user' => $log->user->name ?? '',
+            ];
+            $mergedKitchen['by_category'][$categoryId]['total_quantity'] += $log->quantity;
+            $mergedKitchen['by_category'][$categoryId]['total_cost'] += $itemCost;
+            $mergedKitchen['total_quantity'] += $log->quantity;
+            $mergedKitchen['total_transactions']++;
+            $mergedKitchen['total_cost'] += $itemCost;
+        }
+        foreach ($mergedKitchen['by_category'] as &$mCat) { $mCat['items'] = array_values($mCat['items']); }
+
+        $mainKitchenData = $mergedKitchen;
+        $issueFilterLabel = implode(', ', array_values($usedLabels)) ?: 'Main Kitchen';
+
+        // Filter sales categories
+        $salesCategoryFilter = $request->input('sales_categories', '');
+        $salesCatIds = array_filter(explode(',', $salesCategoryFilter));
+        if (!empty($salesCatIds)) {
+            $filteredCats = [];
+            foreach ($dailySalesData['by_category'] as $catId => $cat) {
+                if (in_array((string)$catId, $salesCatIds)) $filteredCats[$catId] = $cat;
+            }
+            $dailySalesData['by_category'] = $filteredCats;
+        }
+
+        return view('kitchen.comparison_print_detailed', compact(
+            'startDate',
+            'endDate',
+            'dailySalesData',
+            'mainKitchenData',
+            'issueFilterLabel',
+            'grandIngredientSummary'
+        ));
+    }
+
     // ============================================
     // END OF NEW METHOD
     // Everything below is YOUR ORIGINAL CODE

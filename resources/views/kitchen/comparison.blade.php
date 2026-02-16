@@ -18,6 +18,9 @@
             <button class="btn btn-outline-secondary" onclick="printComparison()">
                 <i class="fas fa-print me-1"></i> Print
             </button>
+            <button class="btn btn-outline-info" onclick="printDetailedComparison()">
+                <i class="fas fa-print me-1"></i> Detail Print
+            </button>
         </div>
     </div>
 
@@ -545,6 +548,15 @@
         const salesCats = [...document.querySelectorAll('.salesCatCb:checked')].map(cb => cb.value).join(',');
         const issueActions = [...document.querySelectorAll('.issuesActionCb:checked')].map(cb => cb.value).join(',');
         window.open(`/kitchen/comparison/print?start_date=${startDate}&end_date=${endDate}&sales_categories=${encodeURIComponent(salesCats)}&issue_actions=${encodeURIComponent(issueActions)}`, '_blank');
+    }
+
+    // ===== Detailed Print Function =====
+    function printDetailedComparison() {
+        const startDate = document.getElementById('startDate').value || '{{ $startDate }}';
+        const endDate = document.getElementById('endDate').value || '{{ $endDate }}';
+        const salesCats = [...document.querySelectorAll('.salesCatCb:checked')].map(cb => cb.value).join(',');
+        const issueActions = [...document.querySelectorAll('.issuesActionCb:checked')].map(cb => cb.value).join(',');
+        window.open(`/kitchen/comparison/print-detailed?start_date=${startDate}&end_date=${endDate}&sales_categories=${encodeURIComponent(salesCats)}&issue_actions=${encodeURIComponent(issueActions)}`, '_blank');
     }
 
     // ===== Consumption Loader =====

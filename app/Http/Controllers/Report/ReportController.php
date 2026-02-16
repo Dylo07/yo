@@ -29,7 +29,7 @@ class ReportController extends Controller
 
         $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])->whereIn('sale_status', ['paid', 'cancelled']);
       
-        $summarySales = Sale::select('menu_id','menu_name','categories.name', DB::raw('SUM(sale_details.quantity) as qty_sum'), DB::raw('MIN(sale_details.menu_price) as menu_price'))
+        $summarySales = Sale::select('menu_id','menu_name','categories.name', DB::raw('SUM(sale_details.quantity) as qty_sum'), DB::raw('MIN(sale_details.menu_price) as menu_price'), DB::raw('SUM(sale_details.menu_price * sale_details.quantity) as revenue_sum'))
         ->join('sale_details', 'sales.id', '=', 'sale_details.sale_id')
         ->join('menus', 'menus.id', '=', 'sale_details.menu_id')
         ->join('categories', 'categories.id', '=', 'menus.category_id')
@@ -47,12 +47,18 @@ class ReportController extends Controller
         $paidSales = (clone $sales)->where('sale_status', 'paid');
         $totalSale = $paidSales->sum('change');
         $serviceCharge = $paidSales->sum('total_recieved');
+        $paidBillCount = (clone $sales)->where('sale_status', 'paid')->count();
+        $cancelledBillCount = (clone $sales)->where('sale_status', 'cancelled')->count();
+        $avgBillValue = $paidBillCount > 0 ? $totalSale / $paidBillCount : 0;
 
         return view('report.showReport')->with('dateStart', date("m/d/Y H:i:s", strtotime($request->dateStart.' 00:00:00')))
         ->with('dateEnd', date("m/d/Y H:i:s", strtotime($request->dateEnd.' 23:59:59')))
         ->with('totalSale', $totalSale)
         ->with('serviceCharge', $serviceCharge)
         ->with('summarySales', $summarySales)
+        ->with('paidBillCount', $paidBillCount)
+        ->with('cancelledBillCount', $cancelledBillCount)
+        ->with('avgBillValue', $avgBillValue)
         ->with('sales', $sales->paginate(500));
 
     }

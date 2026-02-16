@@ -304,21 +304,50 @@
           // Group summary data by category for charts
           $chartCategories = [];
           $chartCategoryTotals = [];
+          $chartCategoryRevenue = [];
+          $grandTotalQty = 0;
+          $grandTotalRevenue = 0;
+          $topItemByQty = null;
+          $topItemByRevenue = null;
+          $topCategoryByRevenue = null;
+          $topCategoryRevVal = 0;
+
           foreach($summarySales as $item) {
+              $rev = $item->revenue_sum ?? ($item->menu_price * $item->qty_sum);
               if (!isset($chartCategories[$item->name])) {
                   $chartCategories[$item->name] = [];
                   $chartCategoryTotals[$item->name] = 0;
+                  $chartCategoryRevenue[$item->name] = 0;
               }
-              $chartCategories[$item->name][] = ['menu_id' => $item->menu_id, 'menu_name' => $item->menu_name, 'qty' => $item->qty_sum, 'price' => $item->menu_price ?? 0];
+              $chartCategories[$item->name][] = [
+                  'menu_id' => $item->menu_id,
+                  'menu_name' => $item->menu_name,
+                  'qty' => $item->qty_sum,
+                  'price' => $item->menu_price ?? 0,
+                  'revenue' => $rev
+              ];
               $chartCategoryTotals[$item->name] += $item->qty_sum;
+              $chartCategoryRevenue[$item->name] += $rev;
+              $grandTotalQty += $item->qty_sum;
+              $grandTotalRevenue += $rev;
+
+              if (!$topItemByQty || $item->qty_sum > $topItemByQty->qty_sum) $topItemByQty = $item;
+              if (!$topItemByRevenue || $rev > ($topItemByRevenue->revenue_sum ?? 0)) $topItemByRevenue = $item;
           }
+
+          foreach($chartCategoryRevenue as $cn => $rv) {
+              if ($rv > $topCategoryRevVal) { $topCategoryRevVal = $rv; $topCategoryByRevenue = $cn; }
+          }
+
+          $uniqueItemCount = $summarySales->count();
+          $categoryCount = count($chartCategories);
         @endphp
 
         <div class="summary-section">
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
             <div>
-              <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Sales Summary</h5>
-              <p style="font-size:0.8rem; color:#999; margin:0.25rem 0 0;">Aggregated quantities by menu item (paid bills only)</p>
+              <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Sales Summary &amp; Revenue Analytics</h5>
+              <p style="font-size:0.8rem; color:#999; margin:0.25rem 0 0;">Comprehensive sales performance overview (paid bills only)</p>
             </div>
             <div class="btn-group" role="group">
               <button class="btn btn-sm btn-outline-secondary active" id="viewChart" style="border-radius:2rem 0 0 2rem;"><i class="fas fa-chart-bar me-1"></i>Chart</button>
@@ -326,43 +355,184 @@
             </div>
           </div>
 
+          {{-- KPI Cards Row --}}
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); border-radius:1rem; padding:1rem; color:#fff; position:relative; overflow:hidden;">
+                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; opacity:0.85;">Total Item Revenue</div>
+                <div style="font-size:1.3rem; font-weight:700;">Rs {{ number_format($grandTotalRevenue, 2) }}</div>
+                <div style="font-size:0.65rem; opacity:0.7;">{{ $uniqueItemCount }} unique items across {{ $categoryCount }} categories</div>
+                <i class="fas fa-money-bill-wave" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); font-size:2rem; opacity:0.15;"></i>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div style="background:linear-gradient(135deg,#11998e 0%,#38ef7d 100%); border-radius:1rem; padding:1rem; color:#fff; position:relative; overflow:hidden;">
+                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; opacity:0.85;">Total Items Sold</div>
+                <div style="font-size:1.3rem; font-weight:700;">{{ number_format($grandTotalQty) }}</div>
+                <div style="font-size:0.65rem; opacity:0.7;">Avg Rs {{ $grandTotalQty > 0 ? number_format($grandTotalRevenue / $grandTotalQty, 2) : '0.00' }} per item</div>
+                <i class="fas fa-shopping-cart" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); font-size:2rem; opacity:0.15;"></i>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%); border-radius:1rem; padding:1rem; color:#fff; position:relative; overflow:hidden;">
+                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; opacity:0.85;">Best Seller (Qty)</div>
+                <div style="font-size:1rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $topItemByQty ? $topItemByQty->menu_name : 'N/A' }}</div>
+                <div style="font-size:0.65rem; opacity:0.7;">{{ $topItemByQty ? $topItemByQty->qty_sum . ' sold' : '' }}</div>
+                <i class="fas fa-trophy" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); font-size:2rem; opacity:0.15;"></i>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%); border-radius:1rem; padding:1rem; color:#fff; position:relative; overflow:hidden;">
+                <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; opacity:0.85;">Top Revenue Category</div>
+                <div style="font-size:1rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $topCategoryByRevenue ?? 'N/A' }}</div>
+                <div style="font-size:0.65rem; opacity:0.7;">Rs {{ number_format($topCategoryRevVal, 2) }}</div>
+                <i class="fas fa-crown" style="position:absolute; right:0.75rem; top:50%; transform:translateY(-50%); font-size:2rem; opacity:0.15;"></i>
+              </div>
+            </div>
+          </div>
+
+          {{-- Bill Performance Row --}}
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div style="background:#fff; border-radius:1rem; padding:1rem; border:1px solid #e8e8e8;">
+                <div style="font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Paid Bills</div>
+                <div style="font-size:1.2rem; font-weight:700; color:#11998e;">{{ $paidBillCount ?? 0 }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div style="background:#fff; border-radius:1rem; padding:1rem; border:1px solid #e8e8e8;">
+                <div style="font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Cancelled Bills</div>
+                <div style="font-size:1.2rem; font-weight:700; color:#dc3545;">{{ $cancelledBillCount ?? 0 }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div style="background:#fff; border-radius:1rem; padding:1rem; border:1px solid #e8e8e8;">
+                <div style="font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Avg Bill Value</div>
+                <div style="font-size:1.2rem; font-weight:700; color:#667eea;">Rs {{ number_format($avgBillValue ?? 0, 2) }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div style="background:#fff; border-radius:1rem; padding:1rem; border:1px solid #e8e8e8;">
+                <div style="font-size:0.7rem; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Top Revenue Item</div>
+                <div style="font-size:0.85rem; font-weight:700; color:#764ba2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ $topItemByRevenue ? $topItemByRevenue->menu_name : 'N/A' }}">{{ $topItemByRevenue ? $topItemByRevenue->menu_name : 'N/A' }}</div>
+                <div style="font-size:0.65rem; color:#999;">Rs {{ $topItemByRevenue ? number_format($topItemByRevenue->revenue_sum ?? 0, 2) : '0.00' }}</div>
+              </div>
+            </div>
+          </div>
+
           {{-- Chart View --}}
           <div id="chartView">
-            {{-- Category Overview Doughnut --}}
+            {{-- Quantity & Revenue Doughnuts --}}
             <div class="row g-4 mb-4">
-              <div class="col-lg-5">
+              <div class="col-lg-6">
                 <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem;">
                   <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
-                    <i class="fas fa-chart-pie me-2"></i>Category Overview
+                    <i class="fas fa-chart-pie me-2"></i>Quantity by Category
                   </h6>
-                  <div style="max-width:300px; margin:0 auto;">
+                  <div style="max-width:280px; margin:0 auto;">
                     <canvas id="categoryDoughnut"></canvas>
                   </div>
                 </div>
               </div>
-              <div class="col-lg-7">
+              <div class="col-lg-6">
                 <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem;">
                   <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
-                    <i class="fas fa-chart-bar me-2"></i>Items by Category
+                    <i class="fas fa-rupee-sign me-2"></i>Revenue by Category
                   </h6>
-                  <div style="height:{{ max(count($chartCategoryTotals) * 40 + 40, 150) }}px; position:relative;">
-                    <canvas id="categoryBar"></canvas>
+                  <div style="max-width:280px; margin:0 auto;">
+                    <canvas id="revenueDoughnut"></canvas>
                   </div>
                 </div>
               </div>
             </div>
 
-            {{-- Per-Category Horizontal Bar Charts --}}
+            {{-- Revenue vs Quantity Bar --}}
+            <div class="row g-4 mb-4">
+              <div class="col-12">
+                <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem;">
+                  <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
+                    <i class="fas fa-chart-bar me-2"></i>Revenue by Category (Rs)
+                  </h6>
+                  <div style="height:{{ max(count($chartCategoryTotals) * 45 + 50, 200) }}px; position:relative;">
+                    <canvas id="revenueBar"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {{-- Category Revenue Summary Table --}}
+            <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem; margin-bottom:1rem;">
+              <h6 style="font-weight:700; color:#1e3c72; margin-bottom:1rem; font-size:0.9rem;">
+                <i class="fas fa-list-ol me-2"></i>Category Performance Ranking
+              </h6>
+              <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                  <thead>
+                    <tr style="background:#1e3c72; color:#fff;">
+                      <th style="padding:0.6rem 0.8rem; text-align:left; border-radius:0.5rem 0 0 0;">#</th>
+                      <th style="padding:0.6rem 0.8rem; text-align:left;">Category</th>
+                      <th style="padding:0.6rem 0.8rem; text-align:center;">Items</th>
+                      <th style="padding:0.6rem 0.8rem; text-align:right;">Qty Sold</th>
+                      <th style="padding:0.6rem 0.8rem; text-align:right;">Revenue (Rs)</th>
+                      <th style="padding:0.6rem 0.8rem; text-align:right;">% of Revenue</th>
+                      <th style="padding:0.6rem 0.8rem; text-align:right; border-radius:0 0.5rem 0 0;">Avg Price/Item</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @php
+                      $sortedCats = collect($chartCategoryRevenue)->sortDesc();
+                      $rank = 1;
+                    @endphp
+                    @foreach($sortedCats as $cn => $rv)
+                      <tr style="border-bottom:1px solid #eee; {{ $rank <= 3 ? 'background:#fffdf0;' : '' }}">
+                        <td style="padding:0.5rem 0.8rem; font-weight:700; color:#667eea;">
+                          @if($rank == 1) <span style="color:#FFD700;">&#9733;</span> @elseif($rank == 2) <span style="color:#C0C0C0;">&#9733;</span> @elseif($rank == 3) <span style="color:#CD7F32;">&#9733;</span> @endif
+                          {{ $rank }}
+                        </td>
+                        <td style="padding:0.5rem 0.8rem; font-weight:600;">{{ $cn }}</td>
+                        <td style="padding:0.5rem 0.8rem; text-align:center;">{{ count($chartCategories[$cn]) }}</td>
+                        <td style="padding:0.5rem 0.8rem; text-align:right;">{{ number_format($chartCategoryTotals[$cn]) }}</td>
+                        <td style="padding:0.5rem 0.8rem; text-align:right; font-weight:700; color:#11998e;">{{ number_format($rv, 2) }}</td>
+                        <td style="padding:0.5rem 0.8rem; text-align:right;">
+                          <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.4rem;">
+                            <div style="width:60px; height:6px; background:#e8e8e8; border-radius:3px; overflow:hidden;">
+                              <div style="width:{{ $grandTotalRevenue > 0 ? round(($rv / $grandTotalRevenue) * 100, 1) : 0 }}%; height:100%; background:linear-gradient(90deg,#667eea,#764ba2); border-radius:3px;"></div>
+                            </div>
+                            {{ $grandTotalRevenue > 0 ? number_format(($rv / $grandTotalRevenue) * 100, 1) : '0.0' }}%
+                          </div>
+                        </td>
+                        <td style="padding:0.5rem 0.8rem; text-align:right;">{{ $chartCategoryTotals[$cn] > 0 ? number_format($rv / $chartCategoryTotals[$cn], 2) : '0.00' }}</td>
+                      </tr>
+                      @php $rank++; @endphp
+                    @endforeach
+                    <tr style="background:#f0f2f5; font-weight:700;">
+                      <td colspan="3" style="padding:0.6rem 0.8rem;">TOTAL</td>
+                      <td style="padding:0.6rem 0.8rem; text-align:right;">{{ number_format($grandTotalQty) }}</td>
+                      <td style="padding:0.6rem 0.8rem; text-align:right; color:#11998e;">{{ number_format($grandTotalRevenue, 2) }}</td>
+                      <td style="padding:0.6rem 0.8rem; text-align:right;">100%</td>
+                      <td style="padding:0.6rem 0.8rem; text-align:right;">{{ $grandTotalQty > 0 ? number_format($grandTotalRevenue / $grandTotalQty, 2) : '0.00' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {{-- Per-Category Horizontal Bar Charts with Revenue --}}
             @php $catIndex = 0; @endphp
             @foreach($chartCategories as $catName => $items)
               <div style="background:#f8f9ff; border-radius:1rem; padding:1.25rem; margin-bottom:1rem;">
-                <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center justify-content-between flex-wrap mb-2 gap-2">
                   <h6 style="font-weight:700; color:#1e3c72; margin:0; font-size:0.85rem;">
                     <i class="fas fa-tag me-2" style="color:#667eea;"></i>{{ $catName }}
                   </h6>
-                  <span style="background:#667eea; color:#fff; border-radius:2rem; padding:0.15rem 0.75rem; font-size:0.75rem; font-weight:600;">
-                    {{ $chartCategoryTotals[$catName] }} items
-                  </span>
+                  <div class="d-flex gap-2">
+                    <span style="background:#667eea; color:#fff; border-radius:2rem; padding:0.15rem 0.75rem; font-size:0.7rem; font-weight:600;">
+                      {{ $chartCategoryTotals[$catName] }} qty
+                    </span>
+                    <span style="background:#11998e; color:#fff; border-radius:2rem; padding:0.15rem 0.75rem; font-size:0.7rem; font-weight:600;">
+                      Rs {{ number_format($chartCategoryRevenue[$catName], 2) }}
+                    </span>
+                  </div>
                 </div>
                 <div style="height:{{ max(count($items) * 35 + 40, 120) }}px; position:relative;">
                   <canvas id="catChart{{ $catIndex }}"></canvas>
@@ -374,36 +544,74 @@
 
           {{-- Table View (hidden by default) --}}
           <div id="tableView" style="display:none;">
-            @php $CategoryNew = ''; @endphp
+            @php $CategoryNew = ''; $catSubTotal = 0; $catSubQty = 0; @endphp
             @foreach($summarySales as $summaryItem)
               @if($CategoryNew != $summaryItem->name)
                 @if($CategoryNew != '')
+                  <tr style="background:#f0f2f5; font-weight:700; font-size:0.8rem;">
+                    <td colspan="2" style="padding:0.5rem 0.8rem;">{{ $CategoryNew }} Subtotal</td>
+                    <td class="text-center" style="padding:0.5rem 0.8rem;">{{ number_format($catSubQty) }}</td>
+                    <td style="padding:0.5rem 0.8rem;"></td>
+                    <td class="text-end" style="padding:0.5rem 0.8rem; color:#11998e;">Rs {{ number_format($catSubTotal, 2) }}</td>
+                    <td style="padding:0.5rem 0.8rem;"></td>
+                  </tr>
                   </tbody></table>
                 @endif
+                @php $catSubTotal = 0; $catSubQty = 0; @endphp
                 <div class="summary-cat-header">
                   <i class="fas fa-tag me-2"></i>{{ $summaryItem->name }}
+                  <span style="float:right; font-size:0.75rem; font-weight:600; color:#11998e;">
+                    Rs {{ number_format($chartCategoryRevenue[$summaryItem->name] ?? 0, 2) }}
+                  </span>
                 </div>
                 <table class="summary-table">
                   <thead>
                     <tr>
-                      <th style="width:100px;">Menu ID</th>
+                      <th style="width:80px;">ID</th>
                       <th>Menu Item</th>
-                      <th style="width:120px;" class="text-center">Quantity</th>
+                      <th style="width:80px;" class="text-center">Qty</th>
+                      <th style="width:100px;" class="text-end">Unit Price</th>
+                      <th style="width:120px;" class="text-end">Revenue</th>
+                      <th style="width:80px;" class="text-end">% Share</th>
                     </tr>
                   </thead>
                   <tbody>
               @endif
-              @php $CategoryNew = $summaryItem->name; @endphp
-              @php $isNegPrice = ($summaryItem->menu_price ?? 0) < 0; @endphp
+              @php
+                $CategoryNew = $summaryItem->name;
+                $isNegPrice = ($summaryItem->menu_price ?? 0) < 0;
+                $itemRevenue = $summaryItem->revenue_sum ?? ($summaryItem->menu_price * $summaryItem->qty_sum);
+                $catSubTotal += $itemRevenue;
+                $catSubQty += $summaryItem->qty_sum;
+                $revPct = $grandTotalRevenue > 0 ? ($itemRevenue / $grandTotalRevenue) * 100 : 0;
+              @endphp
               <tr @if($isNegPrice) style="background:#fff5f5;" @endif>
-                <td style="color:{{ $isNegPrice ? '#dc3545' : '#999' }};">{{ $summaryItem->menu_id }}</td>
+                <td style="color:{{ $isNegPrice ? '#dc3545' : '#999' }}; font-size:0.8rem;">{{ $summaryItem->menu_id }}</td>
                 <td style="font-weight:500; {{ $isNegPrice ? 'color:#dc3545;' : '' }}">{{ $summaryItem->menu_name }}</td>
                 <td class="text-center"><span class="qty-badge" @if($isNegPrice) style="background:#fde8e8; color:#dc3545;" @endif>{{ $summaryItem->qty_sum }}</span></td>
+                <td class="text-end" style="font-size:0.8rem; {{ $isNegPrice ? 'color:#dc3545;' : 'color:#666;' }}">Rs {{ number_format($summaryItem->menu_price ?? 0, 2) }}</td>
+                <td class="text-end" style="font-weight:600; {{ $isNegPrice ? 'color:#dc3545;' : 'color:#11998e;' }}">Rs {{ number_format($itemRevenue, 2) }}</td>
+                <td class="text-end" style="font-size:0.75rem; color:#888;">{{ number_format($revPct, 1) }}%</td>
               </tr>
             @endforeach
             @if($CategoryNew != '')
+              <tr style="background:#f0f2f5; font-weight:700; font-size:0.8rem;">
+                <td colspan="2" style="padding:0.5rem 0.8rem;">{{ $CategoryNew }} Subtotal</td>
+                <td class="text-center" style="padding:0.5rem 0.8rem;">{{ number_format($catSubQty) }}</td>
+                <td style="padding:0.5rem 0.8rem;"></td>
+                <td class="text-end" style="padding:0.5rem 0.8rem; color:#11998e;">Rs {{ number_format($catSubTotal, 2) }}</td>
+                <td style="padding:0.5rem 0.8rem;"></td>
+              </tr>
               </tbody></table>
             @endif
+            {{-- Grand Total --}}
+            <div style="background:linear-gradient(135deg,#1e3c72,#2a5298); color:#fff; border-radius:0.75rem; padding:0.75rem 1rem; margin-top:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.9rem;"><i class="fas fa-calculator me-2"></i>Grand Total</span>
+              <div style="text-align:right;">
+                <div style="font-size:0.75rem; opacity:0.8;">{{ number_format($grandTotalQty) }} items sold</div>
+                <div style="font-size:1.1rem; font-weight:700;">Rs {{ number_format($grandTotalRevenue, 2) }}</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -432,8 +640,9 @@
             // Category data
             var catNames = @json(array_keys($chartCategoryTotals));
             var catTotals = @json(array_values($chartCategoryTotals));
+            var catRevenues = @json(array_values($chartCategoryRevenue));
 
-            // Doughnut Chart
+            // Quantity Doughnut Chart
             new Chart(document.getElementById('categoryDoughnut'), {
                 type: 'doughnut',
                 data: {
@@ -451,7 +660,7 @@
                     maintainAspectRatio: true,
                     cutout: '55%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+                        legend: { position: 'bottom', labels: { padding: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 10 } } },
                         tooltip: {
                             backgroundColor: 'rgba(30,60,114,0.9)',
                             padding: 10,
@@ -470,18 +679,55 @@
                 }
             });
 
-            // Category Bar Chart
-            new Chart(document.getElementById('categoryBar'), {
+            // Revenue Doughnut Chart
+            new Chart(document.getElementById('revenueDoughnut'), {
+                type: 'doughnut',
+                data: {
+                    labels: catNames,
+                    datasets: [{
+                        data: catRevenues,
+                        backgroundColor: bgColors.slice(0, catNames.length),
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '55%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 10 } } },
+                        tooltip: {
+                            backgroundColor: 'rgba(30,60,114,0.9)',
+                            padding: 10,
+                            cornerRadius: 8,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(ctx) {
+                                    var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+                                    var pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return ctx.label + ': Rs ' + ctx.parsed.toLocaleString(undefined, {minimumFractionDigits:2}) + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Revenue Bar Chart
+            new Chart(document.getElementById('revenueBar'), {
                 type: 'bar',
                 data: {
                     labels: catNames,
                     datasets: [{
-                        label: 'Total Qty',
-                        data: catTotals,
+                        label: 'Revenue (Rs)',
+                        data: catRevenues,
                         backgroundColor: bgColors.slice(0, catNames.length),
                         borderRadius: 8,
                         borderSkipped: false,
-                        barThickness: 28
+                        barThickness: 30
                     }]
                 },
                 options: {
@@ -495,27 +741,33 @@
                             padding: 10,
                             cornerRadius: 8,
                             callbacks: {
-                                label: function(ctx) { return ctx.parsed.x + ' items sold'; }
+                                label: function(ctx) {
+                                    var idx = ctx.dataIndex;
+                                    return [
+                                        'Revenue: Rs ' + ctx.parsed.x.toLocaleString(undefined, {minimumFractionDigits:2}),
+                                        'Qty Sold: ' + catTotals[idx]
+                                    ];
+                                }
                             }
                         }
                     },
                     scales: {
-                        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                        x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 }, callback: function(v) { return 'Rs ' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v); } } },
                         y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } }
                     }
                 }
             });
 
-            // Per-category horizontal bar charts
+            // Per-category horizontal bar charts with revenue tooltips
             var allCatData = @json(array_values($chartCategories));
             allCatData.forEach(function(items, idx) {
                 var canvas = document.getElementById('catChart' + idx);
                 if (!canvas) return;
                 var labels = items.map(function(i) { return i.menu_name; });
                 var data = items.map(function(i) { return i.qty; });
-                var maxQty = Math.max.apply(null, data);
-
+                var revenues = items.map(function(i) { return i.revenue; });
                 var prices = items.map(function(i) { return i.price; });
+                var maxQty = Math.max.apply(null, data);
 
                 new Chart(canvas, {
                     type: 'bar',
@@ -544,7 +796,14 @@
                                 padding: 10,
                                 cornerRadius: 8,
                                 callbacks: {
-                                    label: function(ctx) { return 'Qty: ' + ctx.parsed.x; }
+                                    label: function(ctx) {
+                                        var i = ctx.dataIndex;
+                                        return [
+                                            'Qty: ' + ctx.parsed.x,
+                                            'Price: Rs ' + parseFloat(prices[i]).toLocaleString(undefined, {minimumFractionDigits:2}),
+                                            'Revenue: Rs ' + parseFloat(revenues[i]).toLocaleString(undefined, {minimumFractionDigits:2})
+                                        ];
+                                    }
                                 }
                             }
                         },

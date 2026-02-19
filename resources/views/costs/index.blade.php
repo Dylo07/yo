@@ -131,8 +131,10 @@
                     <tr>
                         <th>Category</th>
                         <th>Person/Shop</th>
+                        <th>Description</th>
                         <th>Expense</th>
                         <th>Date</th>
+                        <th>Time</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,7 +142,7 @@
                 @foreach ($monthlyGroupedCosts as $group => $persons)
                     <!-- Category Row -->
                     <tr data-toggle="collapse" data-target=".group-{{ $groupIndex }}" class="clickable collapsed table-secondary">
-                        <td colspan="4">
+                        <td colspan="6">
                             <strong>{{ $group }}</strong>
                             <span class="float-right">&#x25BC;</span>
                         </td>
@@ -149,15 +151,17 @@
                         <!-- Person/Shop Row -->
                         <tr class="collapse group-{{ $groupIndex }} table-light">
                             <td></td>
-                            <td colspan="4"><strong>{{ $person }}</strong></td>
+                            <td colspan="5"><strong>{{ $person }}</strong></td>
                         </tr>
                         @foreach ($data['costs'] as $cost)
                             <!-- Expense Row -->
                             <tr class="collapse group-{{ $groupIndex }}">
                                 <td></td>
                                 <td></td>
+                                <td>{{ $cost->description ?: '-' }}</td>
                                 <td>Rs. {{ number_format($cost->amount, 2) }}</td>
                                 <td>{{ $cost->cost_date->format('M d, Y') }}</td>
+                                <td>{{ $cost->created_at ? $cost->created_at->format('h:i A') : '-' }}</td>
                             </tr>
                         @endforeach
                         <!-- Total for Person/Shop -->
@@ -165,6 +169,7 @@
                             <td></td>
                             <td colspan="2" class="text-end"><strong>Total for {{ $person }}</strong></td>
                             <td><strong>Rs. {{ number_format($data['total'], 2) }}</strong></td>
+                            <td colspan="2"></td>
                         </tr>
                     @endforeach
                     @php $groupIndex++; @endphp
@@ -173,6 +178,7 @@
                 <tr class="table-primary">
                     <td colspan="3" class="text-end"><strong>Grand Total</strong></td>
                     <td><strong>Rs. {{ number_format($grandTotal, 2) }}</strong></td>
+                    <td colspan="2"></td>
                 </tr>
                 </tbody>
             </table>

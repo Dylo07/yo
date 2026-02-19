@@ -272,16 +272,59 @@ private function prepareChartData($costs)
             ->sortByDesc('total')
             ->values();
 
+        // Stacked daily-by-category data
+        $allDates = $costs->groupBy(function($cost) {
+            return $cost->cost_date->format('Y-m-d');
+        })->keys()->sort()->values();
+
+        $allCategories = $costs->groupBy('group.name')->keys()->values();
+
+        $stackedData = [];
+        foreach ($allCategories as $cat) {
+            $catCosts = $costs->filter(fn($c) => ($c->group->name ?? '') === $cat);
+            $byDay = $catCosts->groupBy(fn($c) => $c->cost_date->format('Y-m-d'));
+            $stackedData[$cat] = $allDates->map(fn($d) => $byDay->has($d) ? $byDay[$d]->sum('amount') : 0)->values();
+        }
+
+        // Previous month comparison data (daily totals)
+        $firstCost = $costs->first();
+        $prevMonthData = collect();
+        if ($firstCost) {
+            $monthYear = Carbon::parse($firstCost->cost_date)->startOfMonth();
+            $prevStart = $monthYear->copy()->subMonth()->startOfMonth();
+            $prevEnd   = $monthYear->copy()->subMonth()->endOfMonth();
+            $prevCosts = Cost::with(['group'])
+                ->whereBetween('cost_date', [$prevStart, $prevEnd])
+                ->get();
+            $prevMonthData = $prevCosts->groupBy(fn($c) => $c->cost_date->format('d'))
+                ->map(fn($dc) => $dc->sum('amount'))
+                ->values();
+        }
+
+        $currentMonthDailyTotals = $costs->groupBy(fn($c) => $c->cost_date->format('d'))
+            ->map(fn($dc) => $dc->sum('amount'))
+            ->values();
+
         return [
-            'dailyExpenses' => $dailyExpenses,
-            'categoryDistribution' => $categoryDistribution
+            'dailyExpenses'          => $dailyExpenses,
+            'categoryDistribution'   => $categoryDistribution,
+            'stackedDates'           => $allDates->map(fn($d) => Carbon::parse($d)->format('M d'))->values(),
+            'stackedCategories'      => $allCategories,
+            'stackedData'            => $stackedData,
+            'prevMonthDailyTotals'   => $prevMonthData,
+            'currentMonthDailyTotals'=> $currentMonthDailyTotals,
         ];
 
     } catch (\Exception $e) {
         \Log::error('Error preparing chart data: ' . $e->getMessage());
         return [
-            'dailyExpenses' => collect(),
-            'categoryDistribution' => collect()
+            'dailyExpenses'           => collect(),
+            'categoryDistribution'    => collect(),
+            'stackedDates'            => collect(),
+            'stackedCategories'       => collect(),
+            'stackedData'             => [],
+            'prevMonthDailyTotals'    => collect(),
+            'currentMonthDailyTotals' => collect(),
         ];
     }
 }

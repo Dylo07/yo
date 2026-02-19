@@ -2,16 +2,53 @@
 
 @section('content')
 <div class="container">
-    <h1 class="text-4xl font-bold mb-4">Hotel Expenses</h1>
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="text-4xl font-bold mb-0">Hotel Expenses</h1>
+        <div class="d-flex gap-2">
+            <a href="{{ route('costs.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Expense</a>
+            <a href="{{ route('groups.create') }}" class="btn btn-info btn-sm text-white"><i class="bi bi-tag me-1"></i>Add Category</a>
+            <a href="{{ route('persons.create') }}" class="btn btn-secondary btn-sm"><i class="bi bi-person-plus me-1"></i>Add Person/Shop</a>
+        </div>
+    </div>
 
-<div class="mb-4">
-    <a href="{{ route('costs.create') }}" class="btn btn-primary bg-blue-500 text-white px-4 py-2 rounded-md">Add New Expense</a>
-    <a href="{{ route('groups.create') }}" class="btn btn-info bg-blue-400 text-white px-4 py-2 rounded-md">Add New Category</a>
-    <a href="{{ route('persons.create') }}" class="btn btn-secondary bg-gray-500 text-white px-4 py-2 rounded-md">Add New Person/Shop</a>
-</div>
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+
+    <!-- Unified Filter Bar -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body py-3">
+            <form action="{{ route('costs.index') }}" method="GET" id="filterForm">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold mb-1"><i class="bi bi-calendar-month me-1"></i>Month</label>
+                        <input type="month" name="month" id="month" class="form-control" value="{{ $month }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold mb-1"><i class="bi bi-calendar-day me-1"></i>Daily View Date</label>
+                        <input type="date" name="date" id="date" class="form-control" value="{{ $selectedDate }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Apply</button>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold mb-1">Quick Jump</label>
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="quickJump('{{ now()->format('Y-m') }}', '{{ now()->toDateString() }}')">Today</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="quickJump('{{ now()->format('Y-m') }}', '{{ now()->subDay()->toDateString() }}')">Yesterday</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="quickJump('{{ now()->format('Y-m') }}', '{{ now()->toDateString() }}')">This Month</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="quickJump('{{ now()->subMonth()->format('Y-m') }}', '{{ now()->subMonth()->toDateString() }}')">Last Month</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Analytics Cards -->
     <div class="row mb-4">
@@ -107,19 +144,6 @@
     </div>
 </div>
 
-    <!-- Month Selector -->
-    <form action="{{ route('costs.index') }}" method="GET" class="mb-3">
-        <div class="form-group row">
-            <label for="month" class="col-form-label col-sm-2">Select Month</label>
-            <div class="col-sm-4">
-                <input type="month" name="month" id="month" class="form-control" value="{{ $month }}">
-            </div>
-            <div class="col-sm-2">
-                <button type="submit" class="btn btn-secondary">Filter</button>
-            </div>
-        </div>
-    </form>
-
     <!-- Summary of Expenses of the Month -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -198,19 +222,6 @@
         </div>
     </div>
     <div class="card-body">
-        <!-- Date Selector -->
-        <form action="{{ route('costs.index') }}" method="GET" class="mb-3">
-            <div class="form-group row">
-                <label for="date" class="col-form-label col-sm-2">Select Date</label>
-                <div class="col-sm-4">
-                    <input type="date" name="date" id="date" class="form-control" value="{{ $selectedDate }}">
-                </div>
-                <div class="col-sm-2">
-                    <button type="submit" class="btn btn-secondary">Filter</button>
-                </div>
-            </div>
-        </form>
-
         @if ($dailyGroupedCosts->isEmpty())
             <div class="alert alert-info">No expenses found for the selected date.</div>
         @else
@@ -430,6 +441,12 @@ function initializeCollapse() {
             });
         });
     });
+}
+
+function quickJump(month, date) {
+    document.getElementById('month').value = month;
+    document.getElementById('date').value = date;
+    document.getElementById('filterForm').submit();
 }
 </script>
 @endpush

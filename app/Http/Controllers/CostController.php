@@ -77,6 +77,7 @@ class CostController extends Controller
         return view('costs.index', compact(
             'monthlyGroupedCosts',
             'dailyGroupedCosts',
+            'monthlyCosts',
             'logDetails',
             'month',
             'selectedDate',

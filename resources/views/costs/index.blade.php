@@ -51,13 +51,23 @@
     </div>
 
     <!-- Analytics Cards -->
+    @php
+        $trend = $analytics['trend_percentage'];
+        $trendUp = $trend >= 0;
+        $trendArrow = $trendUp ? '&#x2191;' : '&#x2193;';
+        $trendColor = $trendUp ? '#ff6b6b' : '#51cf66';
+        $highestCost = $monthlyCosts->sortByDesc('amount')->first();
+    @endphp
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <h5 class="card-title">Total Expenses</h5>
                     <h3 class="card-text">Rs. {{ number_format($analytics['total_amount'], 2) }}</h3>
-                    <small>{{ $analytics['trend_percentage'] }}% from last month</small>
+                    <small>
+                        <span style="color:{{ $trendColor }}; font-size:1rem; font-weight:bold;">{!! $trendArrow !!}</span>
+                        {{ abs($trend) }}% vs last month
+                    </small>
                 </div>
             </div>
         </div>
@@ -70,27 +80,31 @@
                 </div>
             </div>
         </div>
-        <!-- In your index.blade.php, update the Top Category card -->
-<div class="col-md-3">
-    <div class="card bg-info text-white">
-        <div class="card-body">
-            <h5 class="card-title">Top Category</h5>
-            <h3 class="card-text">{{ $analytics['top_category']['name'] }}</h3>
-            @if($analytics['top_category']['total'] > 0)
-                <small>Rs. {{ number_format($analytics['top_category']['total'], 2) }} 
-                      ({{ $analytics['top_category']['count'] }} transactions)</small>
-            @else
-                <small>No expenses recorded</small>
-            @endif
-        </div>
-    </div>
-</div>
         <div class="col-md-3">
-            <div class="card bg-warning text-white">
+            <div class="card bg-info text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Daily Total</h5>
-                    <h3 class="card-text">Rs. {{ number_format($analytics['daily_total'], 2) }}</h3>
-                    <small>{{ \Carbon\Carbon::parse($selectedDate)->format('F j, Y') }}</small>
+                    <h5 class="card-title">Top Category</h5>
+                    <h3 class="card-text" style="font-size:1.1rem;">{{ $analytics['top_category']['name'] }}</h3>
+                    @if($analytics['top_category']['total'] > 0)
+                        <small>Rs. {{ number_format($analytics['top_category']['total'], 2) }}
+                              ({{ $analytics['top_category']['count'] }} txns)</small>
+                    @else
+                        <small>No expenses recorded</small>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white" style="background:#6f42c1;">
+                <div class="card-body">
+                    <h5 class="card-title">Highest Single Expense</h5>
+                    @if($highestCost)
+                        <h3 class="card-text">Rs. {{ number_format($highestCost->amount, 2) }}</h3>
+                        <small>{{ $highestCost->group->name ?? '-' }} &mdash; {{ $highestCost->cost_date->format('M d') }}</small>
+                    @else
+                        <h3 class="card-text">Rs. 0.00</h3>
+                        <small>No expenses</small>
+                    @endif
                 </div>
             </div>
         </div>
@@ -150,7 +164,11 @@
             <h3 class="mb-0">Summary of Expenses of {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->format('F Y') }}</h3>
         </div>
         <div class="card-body">
-            <table class="table table-bordered table-hover">
+            <!-- Search/Filter Box -->
+            <div class="mb-3">
+                <input type="text" id="monthlySummarySearch" class="form-control" placeholder="&#128269; Search by category, person/shop, or description..." oninput="filterMonthlySummary(this.value)">
+            </div>
+            <table class="table table-bordered table-hover" id="monthlySummaryTable">
                 <thead class="table-light">
                     <tr>
                         <th>Category</th>
@@ -165,10 +183,14 @@
                 @php $groupIndex = 0; @endphp
                 @foreach ($monthlyGroupedCosts as $group => $persons)
                     <!-- Category Row -->
-                    <tr data-toggle="collapse" data-target=".group-{{ $groupIndex }}" class="clickable collapsed table-secondary">
+                    @php
+                        $catTotal = collect($persons)->sum('total');
+                    @endphp
+                    <tr data-toggle="collapse" data-target=".group-{{ $groupIndex }}" class="clickable collapsed table-secondary summary-cat-row" data-category="{{ strtolower($group) }}">
                         <td colspan="6">
                             <strong>{{ $group }}</strong>
                             <span class="float-right">&#x25BC;</span>
+                            <span class="float-right me-3 text-dark">Rs. {{ number_format($catTotal, 2) }}</span>
                         </td>
                     </tr>
                     @foreach ($persons as $person => $data)
@@ -447,6 +469,57 @@ function quickJump(month, date) {
     document.getElementById('month').value = month;
     document.getElementById('date').value = date;
     document.getElementById('filterForm').submit();
+}
+
+function filterMonthlySummary(query) {
+    const q = query.toLowerCase().trim();
+    const table = document.getElementById('monthlySummaryTable');
+    if (!table) return;
+    const rows = table.querySelectorAll('tbody tr');
+
+    if (q === '') {
+        // Reset: collapse everything back to default state
+        rows.forEach(function(row) {
+            row.style.display = '';
+            // Re-collapse detail rows
+            if (row.classList.contains('collapse') && !row.classList.contains('show')) {
+                row.style.display = 'none';
+            }
+        });
+        return;
+    }
+
+    // Collect category header rows and their associated detail rows
+    const catRows = table.querySelectorAll('tr.summary-cat-row');
+    catRows.forEach(function(catRow) {
+        const target = catRow.getAttribute('data-target'); // e.g. ".group-0"
+        const catName = (catRow.getAttribute('data-category') || '').toLowerCase();
+        const detailRows = target ? table.querySelectorAll(target) : [];
+
+        let catMatches = catName.includes(q);
+        let anyDetailMatches = false;
+
+        detailRows.forEach(function(dRow) {
+            const text = dRow.textContent.toLowerCase();
+            if (text.includes(q)) {
+                anyDetailMatches = true;
+                dRow.style.display = '';
+            } else {
+                dRow.style.display = 'none';
+            }
+        });
+
+        if (catMatches || anyDetailMatches) {
+            catRow.style.display = '';
+            // Expand matching category
+            detailRows.forEach(function(dRow) {
+                if (dRow.style.display !== 'none') dRow.style.display = '';
+            });
+        } else {
+            catRow.style.display = 'none';
+            detailRows.forEach(function(dRow) { dRow.style.display = 'none'; });
+        }
+    });
 }
 </script>
 @endpush

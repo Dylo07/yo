@@ -61,7 +61,7 @@ class CostController extends Controller
 
         // Get groups and persons for filters
         $groups = Group::orderBy('name')->get();
-        $persons = Person::orderBy('name')->get();
+        $allPersons = Person::orderBy('name')->get();
 
 
          // Add this section for the pie chart data
@@ -82,7 +82,7 @@ class CostController extends Controller
             'month',
             'selectedDate',
             'groups',
-            'persons',
+            'allPersons',
             'analytics',
             'chartData',
             'grandTotal',
@@ -120,8 +120,11 @@ class CostController extends Controller
             'user_id' => auth()->id(),
         ]);
 
+        $month = $request->get('month', Carbon::now()->format('Y-m'));
+        $date  = $request->get('date', Carbon::now()->format('Y-m-d'));
+
         return redirect()
-            ->route('costs.index')
+            ->route('costs.index', ['month' => $month, 'date' => $date])
             ->with('success', 'Expense added successfully!');
     }
 

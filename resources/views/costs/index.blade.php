@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('content')
+@section('styles')
 <style>
 /* ── Modern Expense Dashboard Theme ── */
 :root {
@@ -180,11 +180,19 @@ body { background: var(--exp-bg) !important; }
 .chart-tabs .nav-link.active { color: var(--exp-primary); background: #eef1ff; border-bottom: 2px solid var(--exp-primary); }
 
 /* Responsive */
-@media(max-width:768px) {
+@@media(max-width:768px) {
     .exp-header { flex-direction: column; align-items: flex-start; }
     .exp-kpi .kpi-value { font-size: 1.15rem; }
 }
+
+/* Collapse */
+.collapse { display: none; }
+.collapse.show { display: table-row; }
+.clickable { cursor: pointer; }
+.cat-row-arrow { display:inline-block; transition: transform .2s; font-size:.8rem; color:#6b7a99; }
+.collapsed .cat-row-arrow { transform: rotate(-90deg); }
 </style>
+@endsection
 
 @section('content')
 <div class="exp-page container-fluid px-3 px-md-4">
@@ -200,6 +208,7 @@ body { background: var(--exp-bg) !important; }
             </button>
             <a href="{{ route('groups.create') }}" class="btn btn-outline-light btn-sm fw-bold"><i class="bi bi-tag me-1"></i>Add Category</a>
             <a href="{{ route('persons.create') }}" class="btn btn-outline-light btn-sm fw-bold"><i class="bi bi-person-plus me-1"></i>Add Person/Shop</a>
+            <a href="{{ route('costs.export', ['month' => $month]) }}" class="btn btn-outline-light btn-sm fw-bold"><i class="bi bi-download me-1"></i>Export CSV</a>
         </div>
     </div>
 
@@ -207,29 +216,17 @@ body { background: var(--exp-bg) !important; }
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <!-- Unified Filter Bar -->
+    <!-- Month Filter Bar -->
     <div class="exp-filter-bar">
         <form action="{{ route('costs.index') }}" method="GET" id="filterForm">
+            <input type="hidden" name="date" id="dateHidden" value="{{ $selectedDate }}">
             <div class="row g-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label"><i class="bi bi-calendar-month me-1"></i>Month</label>
                     <input type="month" name="month" id="month" class="form-control" value="{{ $month }}">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label"><i class="bi bi-calendar-day me-1"></i>Daily View Date</label>
-                    <input type="date" name="date" id="date" class="form-control" value="{{ $selectedDate }}">
-                </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-apply w-100"><i class="bi bi-search me-1"></i>Apply</button>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Quick Jump</label>
-                    <div class="d-flex gap-1 exp-quick-btns flex-wrap">
-                        <button type="button" class="btn btn-sm" onclick="quickJump('{{ now()->format('Y-m') }}', '{{ now()->toDateString() }}')">Today</button>
-                        <button type="button" class="btn btn-sm" onclick="quickJump('{{ now()->format('Y-m') }}', '{{ now()->subDay()->toDateString() }}')">Yesterday</button>
-                        <button type="button" class="btn btn-sm" onclick="quickJump('{{ now()->format('Y-m') }}', '{{ now()->toDateString() }}')">This Month</button>
-                        <button type="button" class="btn btn-sm" onclick="quickJump('{{ now()->subMonth()->format('Y-m') }}', '{{ now()->subMonth()->toDateString() }}')">Last Month</button>
-                    </div>
                 </div>
             </div>
         </form>
@@ -362,11 +359,12 @@ body { background: var(--exp-bg) !important; }
                         $catTotal = collect($persons)->sum('total');
                     @endphp
                     <tr data-toggle="collapse" data-target=".group-{{ $groupIndex }}" class="clickable collapsed table-secondary summary-cat-row" data-category="{{ strtolower($group) }}">
-                        <td colspan="6">
-                            <strong>{{ $group }}</strong>
-                            <span class="float-right">&#x25BC;</span>
-                            <span class="float-right me-3 text-dark">Rs. {{ number_format($catTotal, 2) }}</span>
-                        </td>
+                        <td><strong>{{ $group }}</strong></td>
+                        <td></td>
+                        <td></td>
+                        <td style="font-weight:600;color:#1e2a3a;">Rs. {{ number_format($catTotal, 2) }}</td>
+                        <td></td>
+                        <td style="text-align:right;"><span class="cat-row-arrow">&#x25BC;</span></td>
                     </tr>
                     @foreach ($persons as $person => $data)
                         <!-- Person/Shop Row -->
@@ -408,8 +406,17 @@ body { background: var(--exp-bg) !important; }
 
     <!-- Daily Summary Section -->
     <div class="exp-section mb-4">
-        <div class="exp-section-header">
+        <div class="exp-section-header" style="flex-wrap:wrap; gap:.75rem;">
             <h3><i class="bi bi-calendar-check me-2"></i>Daily — {{ \Carbon\Carbon::parse($selectedDate)->format('F j, Y') }}</h3>
+            <form action="{{ route('costs.index') }}" method="GET" class="d-flex align-items-center gap-2 flex-wrap" style="margin:0;">
+                <input type="hidden" name="month" value="{{ $month }}">
+                <input type="date" name="date" id="dailyDate" class="form-control form-control-sm" value="{{ $selectedDate }}" style="width:160px;">
+                <button type="submit" class="btn btn-sm btn-apply" style="white-space:nowrap;"><i class="bi bi-search me-1"></i>Go</button>
+                <div class="d-flex gap-1 exp-quick-btns">
+                    <button type="button" class="btn btn-sm" onclick="setDailyDate('{{ now()->toDateString() }}')">Today</button>
+                    <button type="button" class="btn btn-sm" onclick="setDailyDate('{{ now()->subDay()->toDateString() }}')">Yesterday</button>
+                </div>
+            </form>
             <a href="{{ route('costs.print.daily', ['date' => $selectedDate]) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-printer me-1"></i>Print Daily
             </a>
@@ -440,13 +447,14 @@ body { background: var(--exp-bg) !important; }
                                 <th>Description</th>
                                 <th>Expense</th>
                                 <th>Time</th>
+                                <th>Added By</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($persons as $person => $data)
                                 <tr class="person-row">
-                                    <td colspan="5"><i class="bi bi-person me-1"></i>{{ $person }}</td>
+                                    <td colspan="6"><i class="bi bi-person me-1"></i>{{ $person }}</td>
                                 </tr>
                                 @foreach ($data['costs'] as $cost)
                                     <tr class="detail-row">
@@ -454,15 +462,16 @@ body { background: var(--exp-bg) !important; }
                                         <td>{{ $cost->description ?? '-' }}</td>
                                         <td>Rs. {{ number_format($cost->amount, 2) }}</td>
                                         <td>{{ $cost->created_at->format('h:i A') }}</td>
+                                        <td>{{ $cost->user?->name ?? 'System' }}</td>
                                         <td>
-                                            <a href="{{ route('costs.print.transaction', $cost) }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="font-size:.75rem;">
+                                            <a href="{{ route('costs.print.transaction', $cost) }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="font-size:.75rem;" title="Print">
                                                 <i class="bi bi-printer"></i>
                                             </a>
                                         </td>
                                     </tr>
                                 @endforeach
                                 <tr class="subtotal-row">
-                                    <td colspan="2" class="text-end">Total for {{ $person }}</td>
+                                    <td colspan="3" class="text-end">Total for {{ $person }}</td>
                                     <td>Rs. {{ number_format($data['total'], 2) }}</td>
                                     <td colspan="2"></td>
                                 </tr>
@@ -502,9 +511,25 @@ body { background: var(--exp-bg) !important; }
                         <label class="form-label">Person / Shop</label>
                         <select name="person_id" class="form-select" required>
                             <option value="">Select person/shop...</option>
-                            @foreach($persons as $person)
-                                <option value="{{ $person->id }}">{{ $person->name }}</option>
-                            @endforeach
+                            @php
+                                $staffIds = \App\Models\StaffCode::where('is_active', 1)->pluck('person_id')->toArray();
+                                $staffPersons = $allPersons->filter(fn($p) => in_array($p->id, $staffIds));
+                                $otherPersons = $allPersons->filter(fn($p) => !in_array($p->id, $staffIds));
+                            @endphp
+                            @if($staffPersons->count() > 0)
+                                <optgroup label="── Staff Members ──">
+                                    @foreach($staffPersons as $personModel)
+                                        <option value="{{ $personModel->id }}">{{ $personModel->name }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                            @if($otherPersons->count() > 0)
+                                <optgroup label="── Others (Shops/Suppliers) ──">
+                                    @foreach($otherPersons as $personModel)
+                                        <option value="{{ $personModel->id }}">{{ $personModel->name }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
                         </select>
                     </div>
                     <div class="mb-3">
@@ -513,7 +538,7 @@ body { background: var(--exp-bg) !important; }
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Date</label>
-                        <input type="date" name="cost_date" class="form-control" value="{{ $selectedDate }}" required>
+                        <input type="date" name="cost_date" class="form-control" value="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" readonly style="background:#f0f2f7;cursor:not-allowed;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description <span style="font-weight:400;text-transform:none;">(optional)</span></label>
@@ -636,19 +661,15 @@ function initializeCollapse() {
     document.querySelectorAll('.clickable').forEach(function(el) {
         el.addEventListener('click', function() {
             const target = this.getAttribute('data-target');
-            const icon = this.querySelector('.float-right');
-            const isCollapsed = this.classList.contains('collapsed');
-            if (icon) icon.innerHTML = isCollapsed ? '▲' : '▼';
             this.classList.toggle('collapsed');
             document.querySelectorAll(target).forEach(function(t) { t.classList.toggle('show'); });
         });
     });
 }
 
-function quickJump(month, date) {
-    document.getElementById('month').value = month;
-    document.getElementById('date').value = date;
-    document.getElementById('filterForm').submit();
+function setDailyDate(date) {
+    document.getElementById('dailyDate').value = date;
+    document.getElementById('dailyDate').closest('form').submit();
 }
 
 function filterMonthlySummary(query) {
@@ -680,10 +701,3 @@ function filterMonthlySummary(query) {
 </script>
 @endpush
 
-<style>
-.collapse { display: none; }
-.collapse.show { display: table-row; }
-.float-right { float: right; transition: transform .2s; }
-.collapsed .float-right { transform: rotate(180deg); }
-.clickable { cursor: pointer; }
-</style>

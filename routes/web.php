@@ -307,6 +307,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Costs routes with print functionality
     Route::resource('costs', CostController::class)->except(['show']);
+    Route::get('costs/export', [CostController::class, 'export'])->name('costs.export');
     Route::get('costs/print-daily', [CostController::class, 'printDailyExpenses'])->name('costs.print.daily');
     Route::get('costs/{cost}/print', [CostController::class, 'printTransaction'])->name('costs.print.transaction');
 });

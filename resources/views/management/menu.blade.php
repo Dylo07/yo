@@ -76,7 +76,7 @@
                         <i class="fas fa-arrows-alt me-1"></i> Move
                     </button>
                 </div>
-                @if(Auth::id() == 1)
+                @if($isAdmin)
                     <button class="btn btn-sm btn-warning" onclick="bulkLock()">
                         <i class="fas fa-lock me-1"></i> Lock Selected
                     </button>
@@ -165,7 +165,7 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                @if(Auth::id() == 1)
+                                @if($isAdmin)
                                     <button class="btn btn-sm {{ $menu->is_locked ? 'btn-danger' : 'btn-outline-secondary' }} py-0 px-2" 
                                             style="font-size:0.7rem;" 
                                             onclick="toggleLock({{ $menu->id }}, '{{ addslashes($menu->name) }}')" 
@@ -183,7 +183,7 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    @if($menu->is_locked && Auth::id() != 1)
+                                    @if($menu->is_locked && !$isAdmin)
                                         <button class="btn btn-outline-secondary" disabled title="Locked - Only admin can edit">
                                             <i class="fas fa-edit"></i>
                                         </button>

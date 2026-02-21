@@ -53,7 +53,10 @@ class MenuController extends Controller
             ->pluck('menu_count', 'item_id')
             ->toArray();
 
-        return view('management.menu', compact('menus', 'categories', 'kitchenItems', 'recipeCounts', 'recipeIngredients', 'popularItemIds'));
+        // Check if current user is admin (user_id = 1)
+        $isAdmin = Auth::id() == 1;
+
+        return view('management.menu', compact('menus', 'categories', 'kitchenItems', 'recipeCounts', 'recipeIngredients', 'popularItemIds', 'isAdmin'));
     }
 
     /**

@@ -266,6 +266,66 @@ class MenuController extends Controller
     }
 
     /**
+     * Bulk lock selected menus (Admin only)
+     */
+    public function bulkLock(Request $request)
+    {
+        if (Auth::id() != 1) {
+            return response()->json(['success' => false, 'message' => 'Only admin can lock menu items'], 403);
+        }
+
+        $request->validate(['ids' => 'required|array']);
+        
+        $menus = Menu::whereIn('id', $request->ids)->get();
+        $count = 0;
+        
+        foreach ($menus as $menu) {
+            if (!$menu->is_locked) {
+                $menu->is_locked = true;
+                $menu->locked_by = Auth::id();
+                $menu->locked_at = now();
+                $menu->save();
+                $count++;
+            }
+        }
+        
+        $menuNames = $menus->pluck('name')->implode(', ');
+        $this->logActivity('bulk_locked', null, null, "Locked {$count} menu(s): {$menuNames}");
+        
+        return response()->json(['success' => true, 'message' => "$count menu(s) locked successfully"]);
+    }
+
+    /**
+     * Bulk unlock selected menus (Admin only)
+     */
+    public function bulkUnlock(Request $request)
+    {
+        if (Auth::id() != 1) {
+            return response()->json(['success' => false, 'message' => 'Only admin can unlock menu items'], 403);
+        }
+
+        $request->validate(['ids' => 'required|array']);
+        
+        $menus = Menu::whereIn('id', $request->ids)->get();
+        $count = 0;
+        
+        foreach ($menus as $menu) {
+            if ($menu->is_locked) {
+                $menu->is_locked = false;
+                $menu->locked_by = null;
+                $menu->locked_at = null;
+                $menu->save();
+                $count++;
+            }
+        }
+        
+        $menuNames = $menus->pluck('name')->implode(', ');
+        $this->logActivity('bulk_unlocked', null, null, "Unlocked {$count} menu(s): {$menuNames}");
+        
+        return response()->json(['success' => true, 'message' => "$count menu(s) unlocked successfully"]);
+    }
+
+    /**
      * Toggle lock status of a menu item (Admin only)
      */
     public function toggleLock($id)

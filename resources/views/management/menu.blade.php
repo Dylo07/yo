@@ -76,6 +76,14 @@
                         <i class="fas fa-arrows-alt me-1"></i> Move
                     </button>
                 </div>
+                @if(Auth::id() == 1)
+                    <button class="btn btn-sm btn-warning" onclick="bulkLock()">
+                        <i class="fas fa-lock me-1"></i> Lock Selected
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="bulkUnlock()">
+                        <i class="fas fa-lock-open me-1"></i> Unlock Selected
+                    </button>
+                @endif
                 <button class="btn btn-sm btn-danger" onclick="bulkDelete()">
                     <i class="fas fa-trash me-1"></i> Delete Selected
                 </button>
@@ -435,6 +443,52 @@ function bulkMove() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
         body: JSON.stringify({ ids: ids, category_id: parseInt(categoryId) })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(err => alert('Request failed: ' + err.message));
+}
+
+function bulkLock() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) { alert('No menus selected.'); return; }
+
+    if (!confirm(`Lock ${ids.length} menu(s)? Staff won't be able to edit them.`)) return;
+
+    fetch('{{ route("management.menu.bulk-lock") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ ids: ids })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(err => alert('Request failed: ' + err.message));
+}
+
+function bulkUnlock() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) { alert('No menus selected.'); return; }
+
+    if (!confirm(`Unlock ${ids.length} menu(s)? Staff will be able to edit them.`)) return;
+
+    fetch('{{ route("management.menu.bulk-unlock") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ ids: ids })
     })
     .then(res => res.json())
     .then(data => {

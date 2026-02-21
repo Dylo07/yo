@@ -458,15 +458,38 @@ class CashierController extends Controller
     }
 
     public function savePayment(Request $request){
-        $saleID = $request->saleID;
-        $recievedAmount = $request->recievedAmount;
-        $paymentType = $request->PaymentType;
+        // Validate all payment inputs to prevent manipulation via DevTools
+        $validated = $request->validate([
+            'saleID' => 'required|integer|exists:sales,id',
+            'recievedAmount' => 'required|numeric|min:0|max:999999',
+            'PaymentType' => 'required|in:cash,card,bank_transfer,online'
+        ]);
+        
+        $saleID = $validated['saleID'];
+        $recievedAmount = $validated['recievedAmount'];
+        $paymentType = $validated['PaymentType'];
         
         // Begin transaction for data consistency
         DB::beginTransaction();
         
         try {
-            $sale = Sale::find($saleID);
+            $sale = Sale::findOrFail($saleID);
+            
+            // Security: Log suspicious low or zero service charges
+            // Normal service charge should be at least 2% of bill
+            $expectedMinimum = $sale->total_price * 0.02;
+            if ($recievedAmount < $expectedMinimum && $sale->total_price > 0) {
+                \Log::warning('SUSPICIOUS: Low service charge detected', [
+                    'user_id' => Auth::id(),
+                    'user_name' => Auth::user()->name,
+                    'sale_id' => $saleID,
+                    'bill_amount' => $sale->total_price,
+                    'service_charge_entered' => $recievedAmount,
+                    'expected_minimum' => $expectedMinimum,
+                    'table' => $sale->table_name,
+                    'timestamp' => now()
+                ]);
+            }
             $sale->total_recieved = $recievedAmount;
             
             // ⚠️ IMPORTANT: DO NOT MODIFY THIS CALCULATION - IT IS CORRECT!

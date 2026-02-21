@@ -485,7 +485,7 @@
         <div class="mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300" id="fraudAlertWidget">
             <div class="p-3 flex items-center justify-between">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-shield-alt animate-pulse"></i> Security Alert: Suspicious Activity
+                    <i class="fas fa-shield-alt"></i> Security Alert: Suspicious Activity
                 </h3>
                 <span class="text-xs bg-white/30 text-white px-2 py-1 rounded-full font-bold" id="fraudCount">0</span>
             </div>
@@ -5994,7 +5994,7 @@ async function loadFraudReport() {
                     </div>
                 `;
             } else {
-                widget.className = 'mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300 animate-pulse';
+                widget.className = 'mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300';
                 let html = `
                     <div class="bg-red-50 border-l-4 border-red-600 p-2 mb-2 rounded">
                         <p class="text-red-800 font-bold text-xs">⚠️ ${count} Suspicious Transaction${count > 1 ? 's' : ''} Detected for ${selectedDate}</p>

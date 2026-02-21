@@ -443,6 +443,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/duty-roster/salary-summary', [StaffAllocationController::class, 'getSalarySummary'])->name('duty.roster.api.salary-summary');
     Route::get('/api/duty-roster/kitchen-summary', [StaffAllocationController::class, 'getKitchenSummary'])->name('duty.roster.api.kitchen-summary');
     Route::get('/api/duty-roster/kitchen-summary/print', [StaffAllocationController::class, 'printKitchenSummary'])->name('duty.roster.kitchen-summary.print');
+    Route::get('/api/duty-roster/fraud-report', [StaffAllocationController::class, 'getFraudReport'])->name('duty.roster.api.fraud-report');
 });
 
 

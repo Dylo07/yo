@@ -480,6 +480,21 @@
             </div>
         </div>
 
+        <!-- 🚨 FRAUD ALERT WIDGET (Security Monitor) -->
+        <div class="mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300" id="fraudAlertWidget">
+            <div class="p-3 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-shield-alt animate-pulse"></i> Security Alert: Suspicious Activity
+                </h3>
+                <span class="text-xs bg-white/30 text-white px-2 py-1 rounded-full font-bold" id="fraudCount">0</span>
+            </div>
+            <div class="bg-white/95 p-3 rounded-b-xl">
+                <div id="fraudAlertContent">
+                    <div class="text-center py-2 text-gray-400 text-xs"><i class="fas fa-spinner fa-spin"></i> Checking...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Arrivals & Departures Widget -->
         <div class="mb-4 grid grid-cols-2 gap-3" id="arrivalsWidget">
             <!-- Arrivals -->
@@ -4037,6 +4052,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCommandCenterData();
     setInterval(loadCommandCenterData, 120000);
 
+    // Load Fraud Report (Security Monitor)
+    loadFraudReport();
+    setInterval(loadFraudReport, 60000); // Refresh every 1 minute
+
     // Load Arrivals & Departures
     loadArrivalsAndDepartures();
     setInterval(loadArrivalsAndDepartures, 300000);
@@ -4813,6 +4832,7 @@ function handleDateChange(date) {
     
     // Refresh Command Center widgets for new date
     loadCommandCenterData();
+    loadFraudReport();
     loadArrivalsAndDepartures();
     loadTodayTasks();
     
@@ -5922,6 +5942,71 @@ async function loadCommandCenterData() {
         }
     } catch (error) {
         console.error('Error loading command center data:', error);
+    }
+}
+
+// ===== FRAUD ALERT (Security Monitor) =====
+async function loadFraudReport() {
+    try {
+        const date = document.getElementById('allocationDate')?.value || new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/duty-roster/fraud-report?date=${date}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const count = data.stats.total_suspicious;
+            document.getElementById('fraudCount').textContent = count;
+            
+            const widget = document.getElementById('fraudAlertWidget');
+            const content = document.getElementById('fraudAlertContent');
+            
+            if (count === 0) {
+                widget.className = 'mb-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg border-2 border-green-300';
+                content.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle text-green-600 text-2xl mb-1"></i>
+                        <p class="text-green-800 font-semibold text-sm">✓ All Clear</p>
+                        <p class="text-green-600 text-xs">No suspicious activity detected today</p>
+                    </div>
+                `;
+            } else {
+                widget.className = 'mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300 animate-pulse';
+                let html = `
+                    <div class="bg-red-50 border-l-4 border-red-600 p-2 mb-2 rounded">
+                        <p class="text-red-800 font-bold text-xs">⚠️ ${count} Suspicious Transaction${count > 1 ? 's' : ''} Detected</p>
+                        <p class="text-red-600 text-xs">Potential loss: Rs. ${data.stats.potential_loss.toFixed(2)}</p>
+                        <p class="text-red-600 text-xs">${data.stats.unique_staff} staff member${data.stats.unique_staff > 1 ? 's' : ''} involved</p>
+                    </div>
+                    <div class="max-h-48 overflow-y-auto space-y-2">
+                `;
+                
+                data.activities.forEach(activity => {
+                    html += `
+                        <div class="bg-white border border-red-200 rounded p-2 text-xs">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-bold text-red-700">${activity.user_name}</span>
+                                <span class="text-gray-500 text-[10px]">${new Date(activity.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div class="text-gray-700 space-y-0.5">
+                                <p>• Table: <strong>${activity.table}</strong> (Sale #${activity.sale_id})</p>
+                                <p>• Bill: Rs. ${parseFloat(activity.bill_amount).toFixed(2)}</p>
+                                <p class="text-red-600 font-semibold">• Service Charge: Rs. ${parseFloat(activity.service_charge).toFixed(2)} 
+                                   (Expected min: Rs. ${parseFloat(activity.expected_minimum).toFixed(2)})</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+                content.innerHTML = html;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading fraud report:', error);
+        document.getElementById('fraudAlertContent').innerHTML = `
+            <div class="text-center py-2 text-red-500 text-xs">
+                <i class="fas fa-exclamation-circle"></i> Error loading report
+            </div>
+        `;
     }
 }
 

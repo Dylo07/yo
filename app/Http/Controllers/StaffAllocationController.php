@@ -2313,4 +2313,61 @@ class StaffAllocationController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
+
+    /**
+     * Get daily fraud/suspicious activity report
+     */
+    public function getFraudReport(Request $request)
+    {
+        try {
+            $date = $request->query('date', Carbon::today()->format('Y-m-d'));
+            $logFile = storage_path('logs/laravel.log');
+            
+            $suspiciousActivities = [];
+            
+            if (file_exists($logFile)) {
+                $logContent = file_get_contents($logFile);
+                $lines = explode("\n", $logContent);
+                
+                // Parse log entries for suspicious activity on the given date
+                foreach ($lines as $line) {
+                    if (strpos($line, 'SUSPICIOUS') !== false && strpos($line, $date) !== false) {
+                        // Extract JSON data from log entry
+                        if (preg_match('/\{.*\}/', $line, $matches)) {
+                            $data = json_decode($matches[0], true);
+                            if ($data) {
+                                $suspiciousActivities[] = [
+                                    'user_id' => $data['user_id'] ?? null,
+                                    'user_name' => $data['user_name'] ?? 'Unknown',
+                                    'sale_id' => $data['sale_id'] ?? null,
+                                    'bill_amount' => $data['bill_amount'] ?? 0,
+                                    'service_charge' => $data['service_charge_entered'] ?? 0,
+                                    'expected_minimum' => $data['expected_minimum'] ?? 0,
+                                    'table' => $data['table'] ?? 'N/A',
+                                    'timestamp' => $data['timestamp'] ?? $date,
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Calculate stats
+            $totalSuspicious = count($suspiciousActivities);
+            $totalPotentialLoss = array_sum(array_column($suspiciousActivities, 'expected_minimum'));
+            
+            return response()->json([
+                'success' => true,
+                'date' => $date,
+                'activities' => $suspiciousActivities,
+                'stats' => [
+                    'total_suspicious' => $totalSuspicious,
+                    'potential_loss' => $totalPotentialLoss,
+                    'unique_staff' => count(array_unique(array_column($suspiciousActivities, 'user_id'))),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
 }

@@ -97,12 +97,14 @@ class SalaryController extends Controller
 
         $totalAdvance = $salaryAdvances->sum('amount');
 
-        // Get attendance data (1st to end of month)
+        // Get attendance data for work month (previous month)
+        // March salary = February work, so show February attendance
+        $workMonth = Carbon::create($year, $month)->subMonth();
         $attendanceData = [];
         foreach ($staff as $employee) {
             $attendance = ManualAttendance::where('person_id', $employee->id)
-                ->whereYear('attendance_date', $year)
-                ->whereMonth('attendance_date', $month)
+                ->whereYear('attendance_date', $workMonth->year)
+                ->whereMonth('attendance_date', $workMonth->month)
                 ->get();
 
             if ($attendance->count() > 0) {
@@ -173,10 +175,12 @@ class SalaryController extends Controller
         $periodStart = Carbon::create($year, $month, 10)->subMonth()->startOfDay();
         $periodEnd = Carbon::create($year, $month, 10)->endOfDay();
 
-        // Get attendance data
+        // Get attendance data for work month (previous month)
+        // March salary = February work, so show February attendance
+        $workMonth = Carbon::create($year, $month)->subMonth();
         $attendance = ManualAttendance::where('person_id', $personId)
-            ->whereMonth('attendance_date', $month)
-            ->whereYear('attendance_date', $year)
+            ->whereYear('attendance_date', $workMonth->year)
+            ->whereMonth('attendance_date', $workMonth->month)
             ->get();
 
         // Get salary advance (use cost_date for accurate period matching)
@@ -247,10 +251,12 @@ class SalaryController extends Controller
         $month = request('month', Carbon::now()->format('m'));
         $year = request('year', Carbon::now()->format('Y'));
 
-        // Get attendance data
+        // Get attendance data for work month (previous month)
+        // March salary = February work, so show February attendance
+        $workMonth = Carbon::create($year, $month)->subMonth();
         $attendance = ManualAttendance::where('person_id', $person->id)
-            ->whereMonth('attendance_date', $month)
-            ->whereYear('attendance_date', $year)
+            ->whereYear('attendance_date', $workMonth->year)
+            ->whereMonth('attendance_date', $workMonth->month)
             ->get();
 
         // Calculate salary advance period - Previous month 10th to current month 10th

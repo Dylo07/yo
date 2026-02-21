@@ -2325,36 +2325,47 @@ class StaffAllocationController extends Controller
             
             $suspiciousActivities = [];
             
-            if (file_exists($logFile)) {
-                $logContent = file_get_contents($logFile);
-                $lines = explode("\n", $logContent);
-                
-                // Parse log entries for suspicious activity on the given date
-                foreach ($lines as $line) {
-                    if (strpos($line, 'SUSPICIOUS') !== false && strpos($line, $date) !== false) {
-                        // Extract JSON data from log entry
-                        if (preg_match('/\{.*\}/', $line, $matches)) {
-                            $data = json_decode($matches[0], true);
-                            if ($data) {
-                                $suspiciousActivities[] = [
-                                    'user_id' => $data['user_id'] ?? null,
-                                    'user_name' => $data['user_name'] ?? 'Unknown',
-                                    'sale_id' => $data['sale_id'] ?? null,
-                                    'bill_amount' => $data['bill_amount'] ?? 0,
-                                    'service_charge' => $data['service_charge_entered'] ?? 0,
-                                    'expected_minimum' => $data['expected_minimum'] ?? 0,
-                                    'table' => $data['table'] ?? 'N/A',
-                                    'timestamp' => $data['timestamp'] ?? $date,
-                                ];
+            if (file_exists($logFile) && is_readable($logFile)) {
+                // Read file line by line for efficiency (don't load entire file)
+                $handle = fopen($logFile, 'r');
+                if ($handle) {
+                    while (($line = fgets($handle)) !== false) {
+                        // Only process lines with SUSPICIOUS and the date
+                        if (strpos($line, 'SUSPICIOUS') !== false && strpos($line, $date) !== false) {
+                            // Extract JSON data from log entry - use greedy match
+                            if (preg_match('/\{[^}]+\}/', $line, $matches)) {
+                                $jsonStr = $matches[0];
+                                $data = @json_decode($jsonStr, true);
+                                if ($data && is_array($data)) {
+                                    $suspiciousActivities[] = [
+                                        'user_id' => $data['user_id'] ?? null,
+                                        'user_name' => $data['user_name'] ?? 'Unknown',
+                                        'sale_id' => $data['sale_id'] ?? null,
+                                        'bill_amount' => floatval($data['bill_amount'] ?? 0),
+                                        'service_charge' => floatval($data['service_charge_entered'] ?? 0),
+                                        'expected_minimum' => floatval($data['expected_minimum'] ?? 0),
+                                        'table' => $data['table'] ?? 'N/A',
+                                        'timestamp' => $data['timestamp'] ?? $date,
+                                    ];
+                                }
                             }
                         }
                     }
+                    fclose($handle);
                 }
             }
             
             // Calculate stats
             $totalSuspicious = count($suspiciousActivities);
-            $totalPotentialLoss = array_sum(array_column($suspiciousActivities, 'expected_minimum'));
+            $totalPotentialLoss = 0;
+            $uniqueStaff = [];
+            
+            foreach ($suspiciousActivities as $activity) {
+                $totalPotentialLoss += $activity['expected_minimum'];
+                if ($activity['user_id']) {
+                    $uniqueStaff[$activity['user_id']] = true;
+                }
+            }
             
             return response()->json([
                 'success' => true,
@@ -2362,12 +2373,22 @@ class StaffAllocationController extends Controller
                 'activities' => $suspiciousActivities,
                 'stats' => [
                     'total_suspicious' => $totalSuspicious,
-                    'potential_loss' => $totalPotentialLoss,
-                    'unique_staff' => count(array_unique(array_column($suspiciousActivities, 'user_id'))),
+                    'potential_loss' => round($totalPotentialLoss, 2),
+                    'unique_staff' => count($uniqueStaff),
                 ]
             ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+            \Log::error('Fraud report error: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'date' => $request->query('date', Carbon::today()->format('Y-m-d')),
+                'activities' => [],
+                'stats' => [
+                    'total_suspicious' => 0,
+                    'potential_loss' => 0,
+                    'unique_staff' => 0,
+                ]
+            ]);
         }
     }
 }

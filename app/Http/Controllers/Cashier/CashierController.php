@@ -468,7 +468,15 @@ class CashierController extends Controller
         try {
             $sale = Sale::find($saleID);
             $sale->total_recieved = $recievedAmount;
+            
+            // ⚠️ IMPORTANT: DO NOT MODIFY THIS CALCULATION - IT IS CORRECT!
+            // The 'change' field name is MISLEADING - it does NOT store customer change.
+            // ACTUAL PURPOSE: Stores Grand Total = Service Charge + Bill Total
+            // Formula: change = total_recieved (service charge) + total_price (bill)
+            // This is INTENTIONAL business logic from original system design.
+            // Example: Bill Rs.5000 + Service Rs.500 = Grand Total Rs.5500 (stored in 'change')
             $sale->change = $recievedAmount + $sale->total_price;
+            
             $sale->payment_type = $paymentType;
             $sale->sale_status = "paid";
             $sale->save();

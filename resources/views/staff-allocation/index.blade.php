@@ -480,7 +480,8 @@
             </div>
         </div>
 
-        <!-- 🚨 FRAUD ALERT WIDGET (Security Monitor) -->
+        @if(auth()->user() && auth()->user()->id == 1)
+        <!-- 🚨 FRAUD ALERT WIDGET (Security Monitor) - ADMIN ONLY -->
         <div class="mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300" id="fraudAlertWidget">
             <div class="p-3 flex items-center justify-between">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
@@ -494,6 +495,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- Arrivals & Departures Widget -->
         <div class="mb-4 grid grid-cols-2 gap-3" id="arrivalsWidget">
@@ -5948,16 +5950,39 @@ async function loadCommandCenterData() {
 // ===== FRAUD ALERT (Security Monitor) =====
 async function loadFraudReport() {
     try {
-        const date = document.getElementById('allocationDate')?.value || new Date().toISOString().split('T')[0];
-        const response = await fetch(`/api/duty-roster/fraud-report?date=${date}`);
+        @if(auth()->user() && auth()->user()->id == 1)
+        const dateInput = document.getElementById('allocationDate');
+        let selectedDate;
+        
+        if (dateInput && dateInput._flatpickr) {
+            // Get from flatpickr if initialized
+            selectedDate = dateInput._flatpickr.selectedDates[0];
+            if (selectedDate) {
+                // Format to YYYY-MM-DD avoiding timezone offset issues
+                const year = selectedDate.getFullYear();
+                const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                const day = String(selectedDate.getDate()).padStart(2, '0');
+                selectedDate = `${year}-${month}-${day}`;
+            }
+        }
+        
+        // Fallback to value or today
+        if (!selectedDate) {
+            selectedDate = dateInput?.value || new Date().toISOString().split('T')[0];
+        }
+
+        const response = await fetch(`/api/duty-roster/fraud-report?date=${selectedDate}`);
         const data = await response.json();
         
         if (data.success) {
             const count = data.stats.total_suspicious;
-            document.getElementById('fraudCount').textContent = count;
+            const fraudCountEl = document.getElementById('fraudCount');
+            if (fraudCountEl) fraudCountEl.textContent = count;
             
             const widget = document.getElementById('fraudAlertWidget');
             const content = document.getElementById('fraudAlertContent');
+            
+            if (!widget || !content) return;
             
             if (count === 0) {
                 widget.className = 'mb-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-lg border-2 border-green-300';
@@ -5965,14 +5990,14 @@ async function loadFraudReport() {
                     <div class="text-center py-3">
                         <i class="fas fa-check-circle text-green-600 text-2xl mb-1"></i>
                         <p class="text-green-800 font-semibold text-sm">✓ All Clear</p>
-                        <p class="text-green-600 text-xs">No suspicious activity detected today</p>
+                        <p class="text-green-600 text-xs">No suspicious activity detected for ${selectedDate}</p>
                     </div>
                 `;
             } else {
                 widget.className = 'mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300 animate-pulse';
                 let html = `
                     <div class="bg-red-50 border-l-4 border-red-600 p-2 mb-2 rounded">
-                        <p class="text-red-800 font-bold text-xs">⚠️ ${count} Suspicious Transaction${count > 1 ? 's' : ''} Detected</p>
+                        <p class="text-red-800 font-bold text-xs">⚠️ ${count} Suspicious Transaction${count > 1 ? 's' : ''} Detected for ${selectedDate}</p>
                         <p class="text-red-600 text-xs">Potential loss: Rs. ${data.stats.potential_loss.toFixed(2)}</p>
                         <p class="text-red-600 text-xs">${data.stats.unique_staff} staff member${data.stats.unique_staff > 1 ? 's' : ''} involved</p>
                     </div>
@@ -6000,13 +6025,17 @@ async function loadFraudReport() {
                 content.innerHTML = html;
             }
         }
+        @endif
     } catch (error) {
         console.error('Error loading fraud report:', error);
-        document.getElementById('fraudAlertContent').innerHTML = `
-            <div class="text-center py-2 text-red-500 text-xs">
-                <i class="fas fa-exclamation-circle"></i> Error loading report
-            </div>
-        `;
+        const content = document.getElementById('fraudAlertContent');
+        if (content) {
+            content.innerHTML = `
+                <div class="text-center py-2 text-red-500 text-xs">
+                    <i class="fas fa-exclamation-circle"></i> Error loading report
+                </div>
+            `;
+        }
     }
 }
 

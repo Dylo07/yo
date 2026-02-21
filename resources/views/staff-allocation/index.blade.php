@@ -480,7 +480,7 @@
             </div>
         </div>
 
-        @if(auth()->user() && auth()->user()->id == 1)
+        @if(auth()->user() && auth()->user()->role === 'admin')
         <!-- 🚨 FRAUD ALERT WIDGET (Security Monitor) - ADMIN ONLY -->
         <div class="mb-4 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl shadow-lg border-2 border-red-300" id="fraudAlertWidget">
             <div class="p-3 flex items-center justify-between">
@@ -5950,7 +5950,7 @@ async function loadCommandCenterData() {
 // ===== FRAUD ALERT (Security Monitor) =====
 async function loadFraudReport() {
     try {
-        @if(auth()->user() && auth()->user()->id == 1)
+        @if(auth()->user() && auth()->user()->role === 'admin')
         const dateInput = document.getElementById('allocationDate');
         let selectedDate;
         

@@ -43,6 +43,23 @@ class GroupController extends Controller
 
     public function destroy(Group $group)
     {
+        // CRITICAL SECURITY: Prevent deletion of groups with cost records
+        $costCount = $group->costs()->count();
+        
+        if ($costCount > 0) {
+            return redirect()
+                ->route('groups.index')
+                ->with('error', "Cannot delete '{$group->name}' - it has {$costCount} expense record(s). Delete the expenses first or contact admin.");
+        }
+        
+        // Extra protection for critical groups
+        $protectedGroups = ['Salary Advance', 'Staff Salary', 'Staff Commission'];
+        if (in_array($group->name, $protectedGroups)) {
+            return redirect()
+                ->route('groups.index')
+                ->with('error', "Cannot delete '{$group->name}' - this is a protected category for financial records.");
+        }
+
         $group->delete();
 
         return redirect()->route('groups.index')->with('success', 'Group deleted successfully!');

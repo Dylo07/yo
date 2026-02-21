@@ -115,6 +115,9 @@ class CostController extends Controller
             'description' => 'nullable|string|max:1000',
         ]);
 
+        // SECURITY: Always enforce today's date, ignore any date manipulation via DevTools
+        $validated['cost_date'] = Carbon::today()->format('Y-m-d');
+
         Cost::create([
             ...$validated,
             'user_id' => auth()->id(),
@@ -150,6 +153,10 @@ class CostController extends Controller
             'amount' => 'required|numeric|min:0',
             'cost_date' => 'required|date',
         ]);
+
+        // SECURITY: Prevent changing the date of existing expense records
+        // Keep original cost_date to maintain audit trail integrity
+        unset($validated['cost_date']);
 
         $cost->update($validated);
 

@@ -77,14 +77,15 @@ class SalaryController extends Controller
         $year = request('year', Carbon::now()->format('Y'));
         
         // Calculate salary advance period for selected month
-        $periodStart = Carbon::create($year, $month, 10, 0, 0, 0);
-        $periodEnd = Carbon::create($year, $month)->addMonth()->setDay(10)->setTime(23, 59, 59);
+        // Example: For February salary (paid 10th Feb) → Period is Jan 10 to Feb 10
+        $periodStart = Carbon::create($year, $month, 10)->subMonth()->startOfDay(); // Previous month 10th
+        $periodEnd = Carbon::create($year, $month, 10)->endOfDay(); // Current month 10th
 
-        // Fetch salary advances
+        // Fetch salary advances (use cost_date, not created_at)
         $salaryAdvances = Cost::with(['person', 'user'])
             ->where('group_id', 1)
-            ->whereBetween('created_at', [$periodStart, $periodEnd])
-            ->orderBy('created_at', 'desc')
+            ->whereBetween('cost_date', [$periodStart, $periodEnd])
+            ->orderBy('cost_date', 'desc')
             ->get();
 
         $totalAdvance = $salaryAdvances->sum('amount');
@@ -160,15 +161,10 @@ class SalaryController extends Controller
             ], 400);
         }
 
-        // Calculate advance period
-        $basePeriod = Carbon::create($year, $month, 1);
-        if ($basePeriod->day > 10) {
-            $periodStart = Carbon::create($basePeriod->year, $basePeriod->month, 10, 0, 0, 0);
-            $periodEnd = Carbon::create($basePeriod->year, $basePeriod->month + 1, 10, 23, 59, 59);
-        } else {
-            $periodStart = Carbon::create($basePeriod->year, $basePeriod->month - 1, 10, 0, 0, 0);
-            $periodEnd = Carbon::create($basePeriod->year, $basePeriod->month, 10, 23, 59, 59);
-        }
+        // Calculate advance period - Previous month 10th to current month 10th
+        // Example: For February salary (paid 10th Feb) → Period is Jan 10 to Feb 10
+        $periodStart = Carbon::create($year, $month, 10)->subMonth()->startOfDay();
+        $periodEnd = Carbon::create($year, $month, 10)->endOfDay();
 
         // Get attendance data
         $attendance = ManualAttendance::where('person_id', $personId)
@@ -176,12 +172,10 @@ class SalaryController extends Controller
             ->whereYear('attendance_date', $year)
             ->get();
 
-        // Get salary advance
-        $salaryAdvance = Cost::with(['person', 'user'])
-            ->where('group_id', 1)
+        // Get salary advance (use cost_date for accurate period matching)
+        $salaryAdvance = Cost::where('group_id', 1)
             ->where('person_id', $personId)
-            ->whereBetween('created_at', [$periodStart, $periodEnd])
-            ->orderBy('created_at', 'desc')
+            ->whereBetween('cost_date', [$periodStart, $periodEnd])
             ->sum('amount') ?? 0;
 
         $presentDays = $attendance->where('status', 'present')->count();
@@ -252,14 +246,15 @@ class SalaryController extends Controller
             ->whereYear('attendance_date', $year)
             ->get();
 
-        // Calculate salary advance period
-        $periodStart = Carbon::create($year, $month, 10, 0, 0, 0);
-        $periodEnd = Carbon::create($year, $month)->addMonth()->setDay(10)->setTime(23, 59, 59);
+        // Calculate salary advance period - Previous month 10th to current month 10th
+        // Example: For February salary (paid 10th Feb) → Period is Jan 10 to Feb 10
+        $periodStart = Carbon::create($year, $month, 10)->subMonth()->startOfDay();
+        $periodEnd = Carbon::create($year, $month, 10)->endOfDay();
 
-        // Get salary advance
+        // Get salary advance (use cost_date for accurate period matching)
         $salaryAdvance = Cost::where('group_id', 1)
             ->where('person_id', $person->id)
-            ->whereBetween('created_at', [$periodStart, $periodEnd])
+            ->whereBetween('cost_date', [$periodStart, $periodEnd])
             ->sum('amount') ?? 0;
 
         $presentDays = $attendance->where('status', 'present')->count();

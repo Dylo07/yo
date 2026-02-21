@@ -274,7 +274,21 @@
         </div>
     </div>
 </div>
+@endsection
 
+@push('styles')
+<style>
+.menu-row:hover { background-color: #f8f9fa !important; }
+.menu-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.cat-select-all { width: 14px; height: 14px; cursor: pointer; }
+#selectAll { width: 16px; height: 16px; cursor: pointer; }
+.cat-btn.active { font-weight: 600; }
+.btn-group-sm .btn { padding: 0.2rem 0.5rem; }
+.recipe-ing-row select, .recipe-ing-row input { font-size: 0.8rem; }
+</style>
+@endpush
+
+@push('scripts')
 <script>
 let activeCat = 'all';
 const csrfToken = '{{ csrf_token() }}';
@@ -671,16 +685,4 @@ function toggleLock(menuId, menuName) {
     }
 }
 </script>
-@endsection
-
-@push('styles')
-<style>
-.menu-row:hover { background-color: #f8f9fa !important; }
-.menu-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
-.cat-select-all { width: 14px; height: 14px; cursor: pointer; }
-#selectAll { width: 16px; height: 16px; cursor: pointer; }
-.cat-btn.active { font-weight: 600; }
-.btn-group-sm .btn { padding: 0.2rem 0.5rem; }
-.recipe-ing-row select, .recipe-ing-row input { font-size: 0.8rem; }
-</style>
 @endpush

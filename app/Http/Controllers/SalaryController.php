@@ -73,8 +73,15 @@ class SalaryController extends Controller
             ->get();
         */
 
-        $month = request('month', Carbon::now()->format('m'));
-        $year = request('year', Carbon::now()->format('Y'));
+        // Auto-advance to next month after the 10th
+        // After Feb 10, show March salary (since Feb salary was already paid)
+        $defaultDate = Carbon::now();
+        if ($defaultDate->day > 10) {
+            $defaultDate->addMonth(); // Move to next month
+        }
+        
+        $month = request('month', $defaultDate->format('m'));
+        $year = request('year', $defaultDate->format('Y'));
         
         // Calculate salary advance period for selected month
         // Example: For February salary (paid 10th Feb) → Period is Jan 10 to Feb 10

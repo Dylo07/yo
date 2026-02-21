@@ -1067,12 +1067,42 @@ document.addEventListener('DOMContentLoaded', function() {
                         @php
                             $employeeName = $advances->first()->person->name ?? 'Unknown';
                             $balance = $salaryBalances[$personId] ?? 0;
+                            $uniqueId = 'advance-' . $personId;
                         @endphp
-                        <tr>
-                            <td><strong>{{ $employeeName }}</strong></td>
+                        <tr class="cursor-pointer" data-bs-toggle="collapse" data-bs-target="#{{ $uniqueId }}" style="cursor: pointer;">
+                            <td>
+                                <i class="fas fa-chevron-right me-2 collapse-icon" id="icon-{{ $uniqueId }}"></i>
+                                <strong>{{ $employeeName }}</strong>
+                            </td>
                             <td class="text-end text-danger fw-bold">Rs. {{ number_format($advances->sum('amount'), 2) }}</td>
                             <td class="text-end {{ $balance >= 0 ? 'text-success' : 'text-danger' }} fw-bold">Rs. {{ number_format($balance, 2) }}</td>
                             <td class="text-center">{{ $advances->count() }}</td>
+                        </tr>
+                        <tr class="collapse" id="{{ $uniqueId }}">
+                            <td colspan="4" class="p-0">
+                                <div class="bg-light p-3">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead class="table-secondary">
+                                            <tr>
+                                                <th style="width: 20%;">Date</th>
+                                                <th style="width: 25%;">Amount</th>
+                                                <th style="width: 40%;">Description</th>
+                                                <th style="width: 15%;">Added By</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($advances->sortByDesc('cost_date') as $advance)
+                                                <tr>
+                                                    <td>{{ \Carbon\Carbon::parse($advance->cost_date)->format('M d, Y') }}</td>
+                                                    <td class="text-danger fw-bold">Rs. {{ number_format($advance->amount, 2) }}</td>
+                                                    <td>{{ $advance->description ?? '-' }}</td>
+                                                    <td class="text-muted small">{{ $advance->user->name ?? '-' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -1400,5 +1430,36 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 0.7rem;
     opacity: 0.8;
 }
+
+/* Chevron rotation for collapsible rows */
+.collapse-icon {
+    transition: transform 0.3s ease;
+}
+.collapse-icon.rotated {
+    transform: rotate(90deg);
+}
 </style>
+
+<script>
+// Handle chevron icon rotation for salary advance dropdowns
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all collapsible elements in salary advances
+    const collapsibleElements = document.querySelectorAll('[id^="advance-"]');
+    
+    collapsibleElements.forEach(function(element) {
+        const iconId = 'icon-' + element.id;
+        const icon = document.getElementById(iconId);
+        
+        if (icon) {
+            element.addEventListener('show.bs.collapse', function() {
+                icon.classList.add('rotated');
+            });
+            
+            element.addEventListener('hide.bs.collapse', function() {
+                icon.classList.remove('rotated');
+            });
+        }
+    });
+});
+</script>
 @endsection

@@ -100,6 +100,7 @@
                         <th>Category</th>
                         <th>Ingredients</th>
                         <th style="width:70px;" class="text-center">Recipe</th>
+                        <th style="width:80px;" class="text-center">Lock</th>
                         <th style="width:110px;" class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -109,7 +110,7 @@
                         @if($menu->category_id !== $currentCat)
                             @php $currentCat = $menu->category_id; @endphp
                             <tr class="cat-separator" data-cat-id="{{ $menu->category_id }}">
-                                <td colspan="9" style="background:#e9ecef; font-weight:700; font-size:0.8rem; padding:4px 10px; color:#495057;">
+                                <td colspan="10" style="background:#e9ecef; font-weight:700; font-size:0.8rem; padding:4px 10px; color:#495057;">
                                     <input type="checkbox" class="cat-select-all me-2" data-cat-id="{{ $menu->category_id }}" onclick="toggleCatSelect(this)" title="Select all in this category">
                                     {{ $menu->category ? $menu->category->name : 'No Category' }}
                                     <span class="badge bg-secondary ms-1">{{ $menus->where('category_id', $menu->category_id)->count() }}</span>
@@ -156,10 +157,33 @@
                                 @endif
                             </td>
                             <td class="text-center">
+                                @if(Auth::id() == 1)
+                                    <button class="btn btn-sm {{ $menu->is_locked ? 'btn-danger' : 'btn-outline-secondary' }} py-0 px-2" 
+                                            style="font-size:0.7rem;" 
+                                            onclick="toggleLock({{ $menu->id }}, '{{ addslashes($menu->name) }}')" 
+                                            id="lock-btn-{{ $menu->id }}"
+                                            title="{{ $menu->is_locked ? 'Locked - Click to unlock' : 'Unlocked - Click to lock' }}">
+                                        <i class="fas fa-{{ $menu->is_locked ? 'lock' : 'lock-open' }}" id="lock-icon-{{ $menu->id }}"></i>
+                                    </button>
+                                @else
+                                    @if($menu->is_locked)
+                                        <span class="badge bg-danger" title="Locked by admin"><i class="fas fa-lock"></i> Locked</span>
+                                    @else
+                                        <span class="text-muted" style="font-size:0.7rem;"><i class="fas fa-lock-open"></i></span>
+                                    @endif
+                                @endif
+                            </td>
+                            <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    <a href="/management/menu/{{ $menu->id }}/edit" class="btn btn-outline-warning" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    @if($menu->is_locked && Auth::id() != 1)
+                                        <button class="btn btn-outline-secondary" disabled title="Locked - Only admin can edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    @else
+                                        <a href="/management/menu/{{ $menu->id }}/edit" class="btn btn-outline-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    @endif
                                     <form action="/management/menu/{{ $menu->id }}" method="post" style="display:inline;" 
                                           onsubmit="return confirm('Delete {{ addslashes($menu->name) }}?')">
                                         @csrf
@@ -616,4 +640,47 @@ function filterLogs() {
 .btn-group-sm .btn { padding: 0.2rem 0.5rem; }
 .recipe-ing-row select, .recipe-ing-row input { font-size: 0.8rem; }
 </style>
+
+<script>
+// Toggle lock/unlock for menu items (Admin only)
+function toggleLock(menuId, menuName) {
+    if (confirm(`Are you sure you want to toggle lock status for "${menuName}"?`)) {
+        $.ajax({
+            url: `/management/menu/${menuId}/toggle-lock`,
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update button appearance
+                    const btn = $('#lock-btn-' + menuId);
+                    const icon = $('#lock-icon-' + menuId);
+                    
+                    if (response.is_locked) {
+                        btn.removeClass('btn-outline-secondary').addClass('btn-danger');
+                        btn.attr('title', 'Locked - Click to unlock');
+                        icon.removeClass('fa-lock-open').addClass('fa-lock');
+                    } else {
+                        btn.removeClass('btn-danger').addClass('btn-outline-secondary');
+                        btn.attr('title', 'Unlocked - Click to lock');
+                        icon.removeClass('fa-lock').addClass('fa-lock-open');
+                    }
+                    
+                    // Show success message
+                    alert(response.message);
+                    
+                    // Reload page to update edit button status
+                    location.reload();
+                } else {
+                    alert(response.message || 'Failed to toggle lock status');
+                }
+            },
+            error: function(xhr) {
+                alert('Error: ' + (xhr.responseJSON?.message || 'Failed to toggle lock status'));
+            }
+        });
+    }
+}
+</script>
 @endsection

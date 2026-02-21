@@ -126,6 +126,7 @@ Route::resource('management/category', App\Http\Controllers\Management\CategoryC
 Route::get('management/menu/logs', [App\Http\Controllers\Management\MenuController::class, 'getLogs'])->name('management.menu.logs');
 Route::post('management/menu/bulk-delete', [App\Http\Controllers\Management\MenuController::class, 'bulkDelete'])->name('management.menu.bulk-delete');
 Route::post('management/menu/bulk-move', [App\Http\Controllers\Management\MenuController::class, 'bulkMove'])->name('management.menu.bulk-move');
+Route::post('management/menu/{id}/toggle-lock', [App\Http\Controllers\Management\MenuController::class, 'toggleLock'])->name('management.menu.toggleLock');
 Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
 Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
 

@@ -126,6 +126,13 @@ class MenuController extends Controller
     public function edit($id)
     {
         $menu = Menu::find($id);
+        
+        // Check if menu is locked and user is not admin
+        if ($menu->is_locked && Auth::id() != 1) {
+            return redirect('/management/menu')
+                ->with('error', 'This menu item is locked. Only admin can edit it.');
+        }
+        
         $categories = Category::all();
         return view('management.editMenu')->with('menu',$menu)->with('categories',$categories);
     }
@@ -146,6 +153,12 @@ class MenuController extends Controller
             'category_id'=>'required|numeric'
         ]);
         $menu = Menu::find($id);
+        
+        // Security check: prevent non-admin from updating locked items
+        if ($menu->is_locked && Auth::id() != 1) {
+            return redirect('/management/menu')
+                ->with('error', 'This menu item is locked. Only admin can edit it.');
+        }
         //validate if a user upload a image
         if($request->image){
             $request->validate([
@@ -250,6 +263,47 @@ class MenuController extends Controller
             ->get();
 
         return response()->json($logs);
+    }
+
+    /**
+     * Toggle lock status of a menu item (Admin only)
+     */
+    public function toggleLock($id)
+    {
+        // Only admin (user_id = 1) can lock/unlock menu items
+        if (Auth::id() != 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admin can lock/unlock menu items'
+            ], 403);
+        }
+
+        $menu = Menu::findOrFail($id);
+        
+        if ($menu->is_locked) {
+            // Unlock
+            $menu->is_locked = false;
+            $menu->locked_by = null;
+            $menu->locked_at = null;
+            $action = 'unlocked';
+            $message = $menu->name . ' is now unlocked';
+        } else {
+            // Lock
+            $menu->is_locked = true;
+            $menu->locked_by = Auth::id();
+            $menu->locked_at = now();
+            $action = 'locked';
+            $message = $menu->name . ' is now locked';
+        }
+        
+        $menu->save();
+        $this->logActivity($action, $menu->id, $menu->name, "{$action} menu: {$menu->name}");
+        
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'is_locked' => $menu->is_locked
+        ]);
     }
 
     /**

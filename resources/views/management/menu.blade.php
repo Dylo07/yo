@@ -6,11 +6,6 @@
     @include('management.inc.sidebar')
 
     <div class="col-md-10">
-        <!-- DEBUG INFO - REMOVE AFTER FIXING -->
-        <div class="alert alert-info">
-            <strong>Debug:</strong> User ID = {{ Auth::id() }} | isAdmin = {{ $isAdmin ? 'TRUE' : 'FALSE' }}
-        </div>
-        
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0"><i class="fas fa-bowl-rice text-primary me-2"></i> Menu Management</h4>

@@ -53,8 +53,8 @@ class MenuController extends Controller
             ->pluck('menu_count', 'item_id')
             ->toArray();
 
-        // Check if current user is admin (user_id = 1)
-        $isAdmin = Auth::id() == 1;
+        // Check if current user is admin (user_id = 1 or user_id = 3)
+        $isAdmin = in_array(Auth::id(), [1, 3]);
 
         return view('management.menu', compact('menus', 'categories', 'kitchenItems', 'recipeCounts', 'recipeIngredients', 'popularItemIds', 'isAdmin'));
     }
@@ -131,7 +131,7 @@ class MenuController extends Controller
         $menu = Menu::find($id);
         
         // Check if menu is locked and user is not admin
-        if ($menu->is_locked && Auth::id() != 1) {
+        if ($menu->is_locked && !in_array(Auth::id(), [1, 3])) {
             return redirect('/management/menu')
                 ->with('error', 'This menu item is locked. Only admin can edit it.');
         }
@@ -158,7 +158,7 @@ class MenuController extends Controller
         $menu = Menu::find($id);
         
         // Security check: prevent non-admin from updating locked items
-        if ($menu->is_locked && Auth::id() != 1) {
+        if ($menu->is_locked && !in_array(Auth::id(), [1, 3])) {
             return redirect('/management/menu')
                 ->with('error', 'This menu item is locked. Only admin can edit it.');
         }
@@ -273,7 +273,7 @@ class MenuController extends Controller
      */
     public function bulkLock(Request $request)
     {
-        if (Auth::id() != 1) {
+        if (!in_array(Auth::id(), [1, 3])) {
             return response()->json(['success' => false, 'message' => 'Only admin can lock menu items'], 403);
         }
 
@@ -303,7 +303,7 @@ class MenuController extends Controller
      */
     public function bulkUnlock(Request $request)
     {
-        if (Auth::id() != 1) {
+        if (!in_array(Auth::id(), [1, 3])) {
             return response()->json(['success' => false, 'message' => 'Only admin can unlock menu items'], 403);
         }
 
@@ -333,8 +333,8 @@ class MenuController extends Controller
      */
     public function toggleLock($id)
     {
-        // Only admin (user_id = 1) can lock/unlock menu items
-        if (Auth::id() != 1) {
+        // Only admin (user_id = 1 or 3) can lock/unlock menu items
+        if (!in_array(Auth::id(), [1, 3])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admin can lock/unlock menu items'

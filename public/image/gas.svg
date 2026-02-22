@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="gas_icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+	 width="800px" height="800px" viewBox="0 0 512 512" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#000000;}
+</style>
+<g>
+	<!-- Gas Cylinder Body -->
+	<path class="st0" d="M160,140h192c13.3,0,24,10.7,24,24v280c0,13.3-10.7,24-24,24H160c-13.3,0-24-10.7-24-24V164
+		C136,150.7,146.7,140,160,140z M176,180v248h160V180H176z"/>
+	
+	<!-- Cylinder Top/Valve -->
+	<rect x="220" y="80" class="st0" width="72" height="60"/>
+	<ellipse class="st0" cx="256" cy="80" rx="40" ry="20"/>
+	
+	<!-- Flame Icon -->
+	<path class="st0" d="M256,240c-8,0-16,8-20,20c-4,12-4,24,0,36c4,12,12,20,20,20s16-8,20-20c4-12,4-24,0-36
+		C272,248,264,240,256,240z M256,300c-4,0-8-4-10-12c-2-8-2-16,0-24c2-8,6-12,10-12s8,4,10,12c2,8,2,16,0,24
+		C264,296,260,300,256,300z"/>
+	
+	<!-- Warning Stripes -->
+	<rect x="176" y="360" class="st0" width="160" height="8"/>
+	<rect x="176" y="380" class="st0" width="160" height="8"/>
+</g>
+</svg>

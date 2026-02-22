@@ -932,3 +932,15 @@ Route::middleware(['auth'])->prefix('feedback')->name('feedback.')->group(functi
     Route::post('/{feedback}/complete', [App\Http\Controllers\CustomerFeedbackController::class, 'markCompleted'])->name('complete');
     Route::delete('/{feedback}', [App\Http\Controllers\CustomerFeedbackController::class, 'destroy'])->name('destroy');
 });
+
+// LP Gas Management Routes
+Route::middleware(['auth'])->prefix('gas')->name('gas.')->group(function () {
+    Route::get('/', [App\Http\Controllers\GasController::class, 'index'])->name('index');
+    Route::post('/cylinder', [App\Http\Controllers\GasController::class, 'storeCylinder'])->name('cylinder.store');
+    Route::put('/cylinder/{id}', [App\Http\Controllers\GasController::class, 'updateCylinder'])->name('cylinder.update');
+    Route::delete('/cylinder/{id}', [App\Http\Controllers\GasController::class, 'deleteCylinder'])->name('cylinder.delete');
+    Route::post('/purchase', [App\Http\Controllers\GasController::class, 'storePurchase'])->name('purchase.store');
+    Route::post('/issue', [App\Http\Controllers\GasController::class, 'storeIssue'])->name('issue.store');
+    Route::get('/stats', [App\Http\Controllers\GasController::class, 'getStats'])->name('stats');
+    Route::get('/history', [App\Http\Controllers\GasController::class, 'getHistory'])->name('history');
+});

@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="mb-1"><i class="fas fa-fire text-warning me-2"></i>LP Gas Management</h2>
             <p class="text-muted mb-0">Track gas cylinder stock, purchases, and usage</p>
@@ -15,9 +15,21 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal">
                 <i class="fas fa-shopping-cart me-1"></i> Record Purchase
             </button>
-            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#issueModal">
-                <i class="fas fa-sign-out-alt me-1"></i> Issue to Kitchen
-            </button>
+        </div>
+    </div>
+
+    <!-- Quick Issue Button - Most Used -->
+    <div class="card border-0 shadow-sm mb-4 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-white">
+                    <h5 class="mb-1"><i class="fas fa-fire-alt me-2"></i>Quick Issue to Kitchen</h5>
+                    <p class="mb-0 small opacity-75">Most frequently used - Issue gas cylinders to kitchen</p>
+                </div>
+                <button class="btn btn-warning btn-lg px-4 shadow" data-bs-toggle="modal" data-bs-target="#issueModal">
+                    <i class="fas fa-sign-out-alt me-2"></i> Issue to Kitchen
+                </button>
+            </div>
         </div>
     </div>
 

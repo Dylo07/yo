@@ -13,7 +13,7 @@
                 <i class="fas fa-plus me-1"></i> Add Cylinder Type
             </button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal">
-                <i class="fas fa-shopping-cart me-1"></i> Record Purchase
+                <i class="fas fa-exchange-alt me-1"></i> Exchange Cylinders
             </button>
         </div>
     </div>
@@ -54,12 +54,29 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted mb-1 small">Total Stock</p>
-                            <h3 class="mb-0">{{ $totalStock }}</h3>
-                            <small class="text-muted">Cylinders</small>
+                            <p class="text-muted mb-1 small">Filled Cylinders</p>
+                            <h3 class="mb-0 text-success">{{ $totalFilledStock }}</h3>
+                            <small class="text-muted">Ready to use</small>
                         </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-gas-pump text-primary fa-2x"></i>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Empty Cylinders</p>
+                            <h3 class="mb-0 text-warning">{{ $totalEmptyStock }}</h3>
+                            <small class="text-muted">To be exchanged</small>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-recycle text-warning fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -73,27 +90,10 @@
                         <div>
                             <p class="text-muted mb-1 small">Stock Value</p>
                             <h3 class="mb-0">Rs. {{ number_format($totalStockValue, 2) }}</h3>
-                            <small class="text-muted">Current worth</small>
+                            <small class="text-muted">Filled cylinders</small>
                         </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-coins text-success fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted mb-1 small">Monthly Usage</p>
-                            <h3 class="mb-0">{{ $monthlyIssues }}</h3>
-                            <small class="text-muted">Cylinders issued</small>
-                        </div>
-                        <div class="bg-warning bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-chart-line text-warning fa-2x"></i>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-coins text-primary fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -105,9 +105,9 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted mb-1 small">Today's Activity</p>
+                            <p class="text-muted mb-1 small">Today's Issues</p>
                             <h3 class="mb-0">{{ $todayIssues }}</h3>
-                            <small class="text-muted">Issued today</small>
+                            <small class="text-muted">Issued to kitchen</small>
                         </div>
                         <div class="bg-info bg-opacity-10 p-3 rounded">
                             <i class="fas fa-calendar-day text-info fa-2x"></i>
@@ -147,7 +147,9 @@
                             <th>Cylinder Type</th>
                             <th>Weight (kg)</th>
                             <th>Price per Unit</th>
-                            <th>Current Stock</th>
+                            <th>Filled Stock</th>
+                            <th>Empty Stock</th>
+                            <th>Total</th>
                             <th>Min. Stock</th>
                             <th>Stock Value</th>
                             <th>Status</th>
@@ -161,15 +163,21 @@
                             <td>{{ $cylinder->weight_kg }} kg</td>
                             <td>Rs. {{ number_format($cylinder->price, 2) }}</td>
                             <td>
-                                <span class="badge {{ $cylinder->isLowStock() ? 'bg-danger' : 'bg-success' }} fs-6">
-                                    {{ $cylinder->current_stock }}
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check-circle"></i> {{ $cylinder->filled_stock }}
                                 </span>
                             </td>
+                            <td>
+                                <span class="badge bg-warning fs-6">
+                                    <i class="fas fa-recycle"></i> {{ $cylinder->empty_stock }}
+                                </span>
+                            </td>
+                            <td>{{ $cylinder->total_stock }}</td>
                             <td>{{ $cylinder->minimum_stock }}</td>
-                            <td>Rs. {{ number_format($cylinder->current_stock * $cylinder->price, 2) }}</td>
+                            <td>Rs. {{ number_format($cylinder->filled_stock * $cylinder->price, 2) }}</td>
                             <td>
                                 @if($cylinder->isLowStock())
-                                    <span class="badge bg-warning">Low Stock</span>
+                                    <span class="badge bg-danger">Low Stock</span>
                                 @else
                                     <span class="badge bg-success">Adequate</span>
                                 @endif
@@ -215,7 +223,7 @@
         <div class="col-md-6">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2 text-success"></i>Recent Purchases</h5>
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt me-2 text-success"></i>Recent Exchanges</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -224,7 +232,8 @@
                                 <tr>
                                     <th>Date</th>
                                     <th>Cylinder</th>
-                                    <th>Qty</th>
+                                    <th>Filled</th>
+                                    <th>Empty</th>
                                     <th>Amount</th>
                                     <th>Dealer</th>
                                 </tr>
@@ -234,13 +243,14 @@
                                 <tr>
                                     <td>{{ $purchase->purchase_date->format('d M Y') }}</td>
                                     <td>{{ $purchase->gasCylinder->name }}</td>
-                                    <td><span class="badge bg-success">{{ $purchase->quantity }}</span></td>
+                                    <td><span class="badge bg-success"><i class="fas fa-arrow-down"></i> {{ $purchase->filled_received }}</span></td>
+                                    <td><span class="badge bg-warning"><i class="fas fa-arrow-up"></i> {{ $purchase->empty_returned }}</span></td>
                                     <td>Rs. {{ number_format($purchase->total_amount, 2) }}</td>
                                     <td>{{ $purchase->dealer_name ?? '-' }}</td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-3 text-muted">No purchases recorded yet</td>
+                                    <td colspan="6" class="text-center py-3 text-muted">No exchanges recorded yet</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -373,30 +383,41 @@
             <form action="{{ route('gas.purchase.store') }}" method="POST">
                 @csrf
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-shopping-cart me-2"></i>Record Gas Purchase</h5>
+                    <h5 class="modal-title"><i class="fas fa-exchange-alt me-2"></i>Exchange Cylinders with Dealer</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Exchange Process:</strong> Return empty cylinders and receive filled ones from dealer.
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Cylinder Type <span class="text-danger">*</span></label>
-                        <select class="form-select" name="gas_cylinder_id" id="purchase_cylinder_id" required onchange="updatePurchasePrice()">
+                        <select class="form-select" name="gas_cylinder_id" id="purchase_cylinder_id" required onchange="updatePurchaseInfo()">
                             <option value="">Select cylinder type</option>
                             @foreach($cylinders as $cylinder)
-                                <option value="{{ $cylinder->id }}" data-price="{{ $cylinder->price }}">
-                                    {{ $cylinder->name }} ({{ $cylinder->weight_kg }}kg) - Rs. {{ number_format($cylinder->price, 2) }}
+                                <option value="{{ $cylinder->id }}" data-price="{{ $cylinder->price }}" data-empty="{{ $cylinder->empty_stock }}">
+                                    {{ $cylinder->name }} - Empty: {{ $cylinder->empty_stock }}, Price: Rs. {{ number_format($cylinder->price, 2) }}
                                 </option>
                             @endforeach
                         </select>
+                        <small class="text-muted">Available empty cylinders: <span id="available_empty">-</span></small>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Quantity <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="quantity" id="purchase_quantity" min="1" required onchange="calculateTotal()">
+                            <label class="form-label">Filled Received <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="filled_received" id="filled_received" min="1" required onchange="calculateTotal()">
+                            <small class="text-muted">Filled cylinders from dealer</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Price per Unit <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" class="form-control" name="price_per_unit" id="purchase_price" required onchange="calculateTotal()">
+                            <label class="form-label">Empty Returned <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="empty_returned" id="empty_returned" min="0" value="0" required>
+                            <small class="text-muted">Empty cylinders to dealer</small>
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price per Filled Cylinder <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" name="price_per_unit" id="purchase_price" required onchange="calculateTotal()">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Total Amount</label>
@@ -427,7 +448,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Record Purchase</button>
+                    <button type="submit" class="btn btn-primary">Record Exchange</button>
                 </div>
             </form>
         </div>
@@ -445,17 +466,21 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Issued cylinders will be moved from <strong>Filled</strong> to <strong>Empty</strong> stock.
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Cylinder Type <span class="text-danger">*</span></label>
                         <select class="form-select" name="gas_cylinder_id" id="issue_cylinder_id" required onchange="updateAvailableStock()">
                             <option value="">Select cylinder type</option>
                             @foreach($cylinders as $cylinder)
-                                <option value="{{ $cylinder->id }}" data-stock="{{ $cylinder->current_stock }}">
-                                    {{ $cylinder->name }} (Available: {{ $cylinder->current_stock }})
+                                <option value="{{ $cylinder->id }}" data-stock="{{ $cylinder->filled_stock }}">
+                                    {{ $cylinder->name }} (Filled: {{ $cylinder->filled_stock }})
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Available stock: <span id="available_stock">-</span></small>
+                        <small class="text-muted">Available filled cylinders: <span id="available_stock">-</span></small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Quantity <span class="text-danger">*</span></label>
@@ -504,20 +529,26 @@ function editCylinder(id, name, weight, price, minStock) {
     new bootstrap.Modal(document.getElementById('editCylinderModal')).show();
 }
 
-// Update purchase price when cylinder is selected
-function updatePurchasePrice() {
+// Update purchase info when cylinder is selected
+function updatePurchaseInfo() {
     const select = document.getElementById('purchase_cylinder_id');
     const selectedOption = select.options[select.selectedIndex];
     const price = selectedOption.getAttribute('data-price');
+    const emptyStock = selectedOption.getAttribute('data-empty');
+    
     if (price) {
         document.getElementById('purchase_price').value = price;
         calculateTotal();
+    }
+    
+    if (emptyStock !== null) {
+        document.getElementById('available_empty').textContent = emptyStock;
     }
 }
 
 // Calculate total purchase amount
 function calculateTotal() {
-    const qty = parseFloat(document.getElementById('purchase_quantity').value) || 0;
+    const qty = parseFloat(document.getElementById('filled_received').value) || 0;
     const price = parseFloat(document.getElementById('purchase_price').value) || 0;
     const total = qty * price;
     document.getElementById('purchase_total').value = 'Rs. ' + total.toFixed(2);

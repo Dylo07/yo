@@ -30,7 +30,7 @@ class GasController extends Controller
         
         // Monthly purchases
         $monthlyPurchases = GasPurchase::whereBetween('purchase_date', [$currentMonth, $currentMonthEnd])
-            ->sum('quantity');
+            ->sum('filled_received');
         $monthlyPurchaseAmount = GasPurchase::whereBetween('purchase_date', [$currentMonth, $currentMonthEnd])
             ->sum('total_amount');
             
@@ -40,16 +40,19 @@ class GasController extends Controller
             
         // Today's stats
         $today = Carbon::today();
-        $todayPurchases = GasPurchase::whereDate('purchase_date', $today)->sum('quantity');
+        $todayPurchases = GasPurchase::whereDate('purchase_date', $today)->sum('filled_received');
         $todayIssues = GasIssue::whereDate('issue_date', $today)->sum('quantity');
         
-        // Total stock value
+        // Total stock value (only filled cylinders have value)
         $totalStockValue = $cylinders->sum(function($c) {
-            return $c->current_stock * $c->price;
+            return $c->filled_stock * $c->price;
         });
         
-        // Total current stock
-        $totalStock = $cylinders->sum('current_stock');
+        // Total filled stock
+        $totalFilledStock = $cylinders->sum('filled_stock');
+        
+        // Total empty stock
+        $totalEmptyStock = $cylinders->sum('empty_stock');
         
         // Low stock alerts
         $lowStockCylinders = $cylinders->filter(function($c) {
@@ -75,7 +78,8 @@ class GasController extends Controller
             'todayPurchases',
             'todayIssues',
             'totalStockValue',
-            'totalStock',
+            'totalFilledStock',
+            'totalEmptyStock',
             'lowStockCylinders',
             'recentPurchases',
             'recentIssues'
@@ -98,7 +102,8 @@ class GasController extends Controller
             'name' => $request->name,
             'weight_kg' => $request->weight_kg,
             'price' => $request->price,
-            'current_stock' => 0,
+            'filled_stock' => 0,
+            'empty_stock' => 0,
             'minimum_stock' => $request->minimum_stock,
             'is_active' => true,
         ]);
@@ -130,13 +135,14 @@ class GasController extends Controller
     }
 
     /**
-     * Record a gas purchase (incoming stock from dealer)
+     * Record a gas exchange (incoming filled, outgoing empty)
      */
     public function storePurchase(Request $request)
     {
         $request->validate([
             'gas_cylinder_id' => 'required|exists:gas_cylinders,id',
-            'quantity' => 'required|integer|min:1',
+            'filled_received' => 'required|integer|min:1',
+            'empty_returned' => 'required|integer|min:0',
             'price_per_unit' => 'required|numeric|min:0',
             'dealer_name' => 'nullable|string|max:255',
             'invoice_number' => 'nullable|string|max:255',
@@ -144,12 +150,20 @@ class GasController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $totalAmount = $request->quantity * $request->price_per_unit;
+        $cylinder = GasCylinder::findOrFail($request->gas_cylinder_id);
+        
+        // Validate we have enough empty cylinders to return
+        if ($request->empty_returned > $cylinder->empty_stock) {
+            return redirect()->back()->with('error', 'Insufficient empty cylinders! Available: ' . $cylinder->empty_stock);
+        }
+
+        DB::transaction(function () use ($request, $cylinder) {
+            $totalAmount = $request->filled_received * $request->price_per_unit;
 
             GasPurchase::create([
                 'gas_cylinder_id' => $request->gas_cylinder_id,
-                'quantity' => $request->quantity,
+                'filled_received' => $request->filled_received,
+                'empty_returned' => $request->empty_returned,
                 'price_per_unit' => $request->price_per_unit,
                 'total_amount' => $totalAmount,
                 'dealer_name' => $request->dealer_name,
@@ -159,9 +173,9 @@ class GasController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            // Update stock
-            $cylinder = GasCylinder::find($request->gas_cylinder_id);
-            $cylinder->increment('current_stock', $request->quantity);
+            // Update stock: add filled, remove empty
+            $cylinder->increment('filled_stock', $request->filled_received);
+            $cylinder->decrement('empty_stock', $request->empty_returned);
             
             // Optionally update the price
             if ($request->has('update_price') && $request->update_price) {
@@ -169,11 +183,11 @@ class GasController extends Controller
             }
         });
 
-        return redirect()->back()->with('success', 'Gas purchase recorded successfully!');
+        return redirect()->back()->with('success', 'Gas exchange recorded successfully!');
     }
 
     /**
-     * Record a gas issue (outgoing to kitchen)
+     * Record a gas issue (filled to kitchen, becomes empty)
      */
     public function storeIssue(Request $request)
     {
@@ -187,8 +201,8 @@ class GasController extends Controller
 
         $cylinder = GasCylinder::findOrFail($request->gas_cylinder_id);
         
-        if ($cylinder->current_stock < $request->quantity) {
-            return redirect()->back()->with('error', 'Insufficient stock! Available: ' . $cylinder->current_stock);
+        if ($cylinder->filled_stock < $request->quantity) {
+            return redirect()->back()->with('error', 'Insufficient filled cylinders! Available: ' . $cylinder->filled_stock);
         }
 
         DB::transaction(function () use ($request, $cylinder) {
@@ -201,11 +215,12 @@ class GasController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
-            // Update stock
-            $cylinder->decrement('current_stock', $request->quantity);
+            // Update stock: remove from filled, add to empty
+            $cylinder->decrement('filled_stock', $request->quantity);
+            $cylinder->increment('empty_stock', $request->quantity);
         });
 
-        return redirect()->back()->with('success', 'Gas issued successfully!');
+        return redirect()->back()->with('success', 'Gas issued successfully! Cylinders moved to empty stock.');
     }
 
     /**
@@ -223,7 +238,7 @@ class GasController extends Controller
                 $monthStart = $date->copy()->startOfMonth();
                 $monthEnd = $date->copy()->endOfMonth();
                 
-                $purchases = GasPurchase::whereBetween('purchase_date', [$monthStart, $monthEnd])->sum('quantity');
+                $purchases = GasPurchase::whereBetween('purchase_date', [$monthStart, $monthEnd])->sum('filled_received');
                 $issues = GasIssue::whereBetween('issue_date', [$monthStart, $monthEnd])->sum('quantity');
                 
                 $stats[] = [
@@ -238,7 +253,7 @@ class GasController extends Controller
             for ($i = 29; $i >= 0; $i--) {
                 $date = Carbon::now()->subDays($i);
                 
-                $purchases = GasPurchase::whereDate('purchase_date', $date)->sum('quantity');
+                $purchases = GasPurchase::whereDate('purchase_date', $date)->sum('filled_received');
                 $issues = GasIssue::whereDate('issue_date', $date)->sum('quantity');
                 
                 $stats[] = [

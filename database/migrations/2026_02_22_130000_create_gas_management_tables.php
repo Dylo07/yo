@@ -17,17 +17,19 @@ return new class extends Migration
             $table->string('name'); // e.g., "12.5kg Cylinder", "37.5kg Cylinder"
             $table->decimal('weight_kg', 8, 2); // Weight in kg
             $table->decimal('price', 10, 2); // Current price per cylinder
-            $table->integer('current_stock')->default(0); // Current stock quantity
-            $table->integer('minimum_stock')->default(5); // Alert threshold
+            $table->integer('filled_stock')->default(0); // Filled cylinders ready to use
+            $table->integer('empty_stock')->default(0); // Empty cylinders to be exchanged
+            $table->integer('minimum_stock')->default(5); // Alert threshold for filled cylinders
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 
-        // Gas purchases from dealer (incoming stock)
+        // Gas purchases/exchanges from dealer (incoming filled, outgoing empty)
         Schema::create('gas_purchases', function (Blueprint $table) {
             $table->id();
             $table->foreignId('gas_cylinder_id')->constrained('gas_cylinders')->onDelete('cascade');
-            $table->integer('quantity');
+            $table->integer('filled_received'); // Filled cylinders received from dealer
+            $table->integer('empty_returned')->default(0); // Empty cylinders returned to dealer
             $table->decimal('price_per_unit', 10, 2);
             $table->decimal('total_amount', 12, 2);
             $table->string('dealer_name')->nullable();

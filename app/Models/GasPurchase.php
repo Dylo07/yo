@@ -11,7 +11,8 @@ class GasPurchase extends Model
 
     protected $fillable = [
         'gas_cylinder_id',
-        'quantity',
+        'filled_received',
+        'empty_returned',
         'price_per_unit',
         'total_amount',
         'dealer_name',

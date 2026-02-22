@@ -13,7 +13,8 @@ class GasCylinder extends Model
         'name',
         'weight_kg',
         'price',
-        'current_stock',
+        'filled_stock',
+        'empty_stock',
         'minimum_stock',
         'is_active',
     ];
@@ -36,6 +37,11 @@ class GasCylinder extends Model
 
     public function isLowStock()
     {
-        return $this->current_stock <= $this->minimum_stock;
+        return $this->filled_stock <= $this->minimum_stock;
+    }
+
+    public function getTotalStockAttribute()
+    {
+        return $this->filled_stock + $this->empty_stock;
     }
 }

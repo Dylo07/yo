@@ -324,9 +324,14 @@
                         <input type="number" step="0.01" class="form-control" name="price" placeholder="2500.00" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Initial Cylinder Count <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="initial_count" placeholder="10" value="0" required>
+                        <small class="text-muted">Total cylinders you own (will be added as filled stock)</small>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Minimum Stock Alert <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" name="minimum_stock" value="5" required>
-                        <small class="text-muted">Alert when stock falls below this quantity</small>
+                        <small class="text-muted">Alert when filled stock falls below this quantity</small>
                     </div>
                 </div>
                 <div class="modal-footer">

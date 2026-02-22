@@ -95,6 +95,7 @@ class GasController extends Controller
             'name' => 'required|string|max:255',
             'weight_kg' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
+            'initial_count' => 'required|integer|min:0',
             'minimum_stock' => 'required|integer|min:0',
         ]);
 
@@ -102,13 +103,13 @@ class GasController extends Controller
             'name' => $request->name,
             'weight_kg' => $request->weight_kg,
             'price' => $request->price,
-            'filled_stock' => 0,
+            'filled_stock' => $request->initial_count,
             'empty_stock' => 0,
             'minimum_stock' => $request->minimum_stock,
             'is_active' => true,
         ]);
 
-        return redirect()->back()->with('success', 'Gas cylinder type added successfully!');
+        return redirect()->back()->with('success', 'Gas cylinder type added successfully with ' . $request->initial_count . ' filled cylinders!');
     }
 
     /**

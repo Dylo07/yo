@@ -219,15 +219,16 @@
     </div>
 
     <!-- Recent Transactions -->
-    <div class="row g-3">
+    <h5 class="mb-3 mt-4"><i class="fas fa-history me-2"></i>Recent Activity</h5>
+    <div class="row g-4">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-exchange-alt me-2 text-success"></i>Recent Exchanges</h5>
+                <div class="card-header bg-success bg-opacity-10 py-3 border-bottom">
+                    <h5 class="mb-0 text-success"><i class="fas fa-truck me-2"></i>Recent Exchanges</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm mb-0">
+                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                        <table class="table table-hover mb-0">
                             <thead class="table-light sticky-top">
                                 <tr>
                                     <th>Date</th>
@@ -262,12 +263,12 @@
 
         <div class="col-md-6">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-sign-out-alt me-2 text-warning"></i>Recent Issues</h5>
+                <div class="card-header bg-warning bg-opacity-10 py-3 border-bottom">
+                    <h5 class="mb-0 text-warning"><i class="fas fa-fire me-2"></i>Recent Issues to Kitchen</h5>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm mb-0">
+                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                        <table class="table table-hover mb-0">
                             <thead class="table-light sticky-top">
                                 <tr>
                                     <th>Date</th>

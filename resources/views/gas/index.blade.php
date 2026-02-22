@@ -13,7 +13,7 @@
                 <i class="fas fa-plus me-1"></i> Add Cylinder Type
             </button>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal">
-                <i class="fas fa-exchange-alt me-1"></i> Exchange Cylinders
+                <i class="fas fa-truck me-1"></i> Get Gas from Dealer
             </button>
         </div>
     </div>
@@ -23,11 +23,11 @@
         <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="text-white">
-                    <h5 class="mb-1"><i class="fas fa-fire-alt me-2"></i>Quick Issue to Kitchen</h5>
-                    <p class="mb-0 small opacity-75">Most frequently used - Issue gas cylinders to kitchen</p>
+                    <h5 class="mb-1"><i class="fas fa-fire-alt me-2"></i>Give Gas to Kitchen</h5>
+                    <p class="mb-0 small opacity-75">Most used button - Send gas cylinders to kitchen</p>
                 </div>
                 <button class="btn btn-warning btn-lg px-4 shadow" data-bs-toggle="modal" data-bs-target="#issueModal">
-                    <i class="fas fa-sign-out-alt me-2"></i> Issue to Kitchen
+                    <i class="fas fa-fire me-2"></i> Give to Kitchen
                 </button>
             </div>
         </div>
@@ -388,72 +388,71 @@
             <form action="{{ route('gas.purchase.store') }}" method="POST">
                 @csrf
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-exchange-alt me-2"></i>Exchange Cylinders with Dealer</h5>
+                    <h5 class="modal-title"><i class="fas fa-truck me-2"></i>Get Gas from Dealer</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Exchange Process:</strong> Return empty cylinders and receive filled ones from dealer.
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Cylinder Type <span class="text-danger">*</span></label>
-                        <select class="form-select" name="gas_cylinder_id" id="purchase_cylinder_id" required onchange="updatePurchaseInfo()">
-                            <option value="">Select cylinder type</option>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold fs-5">Which gas cylinder? <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-lg" name="gas_cylinder_id" id="purchase_cylinder_id" required onchange="updatePurchaseInfo()">
+                            <option value="">-- Choose Size --</option>
                             @foreach($cylinders as $cylinder)
                                 <option value="{{ $cylinder->id }}" data-price="{{ $cylinder->price }}" data-empty="{{ $cylinder->empty_stock }}">
-                                    {{ $cylinder->name }} - Empty: {{ $cylinder->empty_stock }}, Price: Rs. {{ number_format($cylinder->price, 2) }}
+                                    {{ $cylinder->name }}
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Available empty cylinders: <span id="available_empty">-</span></small>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Filled Received <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="filled_received" id="filled_received" min="1" required onchange="calculateTotal()">
-                            <small class="text-muted">Filled cylinders from dealer</small>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="card bg-success bg-opacity-10 border-success">
+                                <div class="card-body text-center">
+                                    <label class="form-label fw-bold">How many FILLED got? <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-lg text-center fw-bold" name="filled_received" id="filled_received" min="1" placeholder="0" required onchange="calculateTotal()" style="font-size: 1.5rem;">
+                                    <small class="text-success"><i class="fas fa-check-circle"></i> New filled cylinders</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Empty Returned <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="empty_returned" id="empty_returned" min="0" value="0" required>
-                            <small class="text-muted">Empty cylinders to dealer</small>
+                        <div class="col-6">
+                            <div class="card bg-warning bg-opacity-10 border-warning">
+                                <div class="card-body text-center">
+                                    <label class="form-label fw-bold">How many EMPTY gave? <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-lg text-center fw-bold" name="empty_returned" id="empty_returned" min="0" value="0" placeholder="0" required style="font-size: 1.5rem;">
+                                    <small class="text-warning"><i class="fas fa-recycle"></i> Empty returned (You have: <span id="available_empty" class="fw-bold">-</span>)</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Price per Filled Cylinder <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" class="form-control" name="price_per_unit" id="purchase_price" required onchange="calculateTotal()">
+                        <label class="form-label fw-bold">Price for each filled cylinder <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">Rs.</span>
+                            <input type="number" step="0.01" class="form-control" name="price_per_unit" id="purchase_price" placeholder="2500.00" required onchange="calculateTotal()">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Total Amount</label>
-                        <input type="text" class="form-control bg-light" id="purchase_total" readonly>
+
+                    <div class="alert alert-primary mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold fs-5">Total Bill:</span>
+                            <span class="fw-bold fs-4" id="purchase_total">Rs. 0.00</span>
+                        </div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Dealer Name</label>
-                        <input type="text" class="form-control" name="dealer_name" placeholder="Dealer name">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Invoice Number</label>
-                        <input type="text" class="form-control" name="invoice_number" placeholder="Invoice #">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Purchase Date <span class="text-danger">*</span></label>
+                        <label class="form-label">Date <span class="text-danger">*</span></label>
                         <input type="date" class="form-control" name="purchase_date" value="{{ date('Y-m-d') }}" required>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-control" name="notes" rows="2" placeholder="Additional notes"></textarea>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="update_price" id="update_price" value="1">
-                        <label class="form-check-label" for="update_price">
-                            Update cylinder price to match this purchase
-                        </label>
+                        <label class="form-label">Dealer Name (Optional)</label>
+                        <input type="text" class="form-control" name="dealer_name" placeholder="e.g., Laugfs Gas">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Record Exchange</button>
+                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fas fa-save me-2"></i>Save</button>
                 </div>
             </form>
         </div>
@@ -467,57 +466,54 @@
             <form action="{{ route('gas.issue.store') }}" method="POST">
                 @csrf
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title"><i class="fas fa-sign-out-alt me-2"></i>Issue Gas to Kitchen</h5>
+                    <h5 class="modal-title"><i class="fas fa-fire me-2"></i>Give Gas to Kitchen</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Note:</strong> Issued cylinders will be moved from <strong>Filled</strong> to <strong>Empty</strong> stock.
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Cylinder Type <span class="text-danger">*</span></label>
-                        <select class="form-select" name="gas_cylinder_id" id="issue_cylinder_id" required onchange="updateAvailableStock()">
-                            <option value="">Select cylinder type</option>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold fs-5">Which gas cylinder? <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-lg" name="gas_cylinder_id" id="issue_cylinder_id" required onchange="updateAvailableStock()">
+                            <option value="">-- Choose Size --</option>
                             @foreach($cylinders as $cylinder)
                                 <option value="{{ $cylinder->id }}" data-stock="{{ $cylinder->filled_stock }}">
-                                    {{ $cylinder->name }} (Filled: {{ $cylinder->filled_stock }})
+                                    {{ $cylinder->name }}
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted">Available filled cylinders: <span id="available_stock">-</span></small>
+                        <small class="text-success fw-bold"><i class="fas fa-check-circle"></i> Available: <span id="available_stock" class="fs-5">-</span> filled cylinders</small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Quantity <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" name="quantity" min="1" required>
+
+                    <div class="card bg-warning bg-opacity-10 border-warning mb-4">
+                        <div class="card-body text-center">
+                            <label class="form-label fw-bold fs-5">How many cylinders? <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control form-control-lg text-center fw-bold" name="quantity" min="1" placeholder="0" required style="font-size: 2rem;">
+                            <small class="text-muted">Enter number of cylinders to give to kitchen</small>
+                        </div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Issued To <span class="text-danger">*</span></label>
-                        <select class="form-select" name="issued_to" required>
+                        <label class="form-label fw-bold">Where to send? <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-lg" name="issued_to" required>
                             <option value="Kitchen">Kitchen</option>
                             <option value="Restaurant">Restaurant</option>
-                            <option value="Banquet">Banquet</option>
+                            <option value="Banquet">Banquet Hall</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Issue Date <span class="text-danger">*</span></label>
+                        <label class="form-label">Date <span class="text-danger">*</span></label>
                         <input type="date" class="form-control" name="issue_date" value="{{ date('Y-m-d') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-control" name="notes" rows="2" placeholder="Additional notes"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Issue Gas</button>
+                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-lg px-5"><i class="fas fa-check me-2"></i>Give to Kitchen</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-@endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
@@ -556,7 +552,7 @@ function calculateTotal() {
     const qty = parseFloat(document.getElementById('filled_received').value) || 0;
     const price = parseFloat(document.getElementById('purchase_price').value) || 0;
     const total = qty * price;
-    document.getElementById('purchase_total').value = 'Rs. ' + total.toFixed(2);
+    document.getElementById('purchase_total').textContent = 'Rs. ' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 // Update available stock when cylinder is selected for issue

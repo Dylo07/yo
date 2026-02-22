@@ -9,9 +9,11 @@
             <p class="text-muted mb-0">Track gas cylinder stock, purchases, and usage</p>
         </div>
         <div class="d-flex gap-2">
+            @if(Auth::user() && Auth::user()->checkAdmin())
             <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCylinderModal">
                 <i class="fas fa-plus me-1"></i> Add Cylinder Type
             </button>
+            @endif
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseModal">
                 <i class="fas fa-truck me-1"></i> Get Gas from Dealer
             </button>

@@ -661,11 +661,6 @@ $(document).ready(function(){
           // Set the calculated service charge
           $("#recieved-amount").val(response.service_charge);
           $(".changeAmount").html("Service Charge: Rs " + response.service_charge.toFixed(2));
-          
-          // Show info about which items have service charge included
-          if(response.items && response.items.length > 0){
-            console.log('Service charge calculated on items:', response.items);
-          }
         }
       },
       error: function(){

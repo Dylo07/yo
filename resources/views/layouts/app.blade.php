@@ -33,22 +33,7 @@
     <!-- Vite Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
-    <!-- Add attendance specific styles -->
-    <style>
-        .badge-success {
-            background-color: #28a745;
-            color: white;
-        }
-        .badge-warning {
-            background-color: #ffc107;
-            color: black;
-        }
-        .badge-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-    </style>
-    @yield('styles')
+    @stack('styles')
 </head>
 <body>
     <div id="app">

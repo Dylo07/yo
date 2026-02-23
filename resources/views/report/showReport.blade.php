@@ -229,7 +229,7 @@
                   @endif
                 </div>
                 @if(Auth::user() && Auth::user()->role === 'admin' && $sale->sale_status !== 'cancelled')
-                  <button class="btn btn-danger btn-cancel-bill" data-sale-id="{{$sale->id}}" title="Cancel Bill & Restore Stock" onclick="event.stopPropagation();">
+                  <button class="btn btn-danger btn-cancel-bill" data-sale-id="{{$sale->id}}" title="Cancel Bill & Restore Stock">
                     <i class="fas fa-ban me-1"></i> Cancel
                   </button>
                 @endif
@@ -266,7 +266,7 @@
                         @if(Auth::user() && Auth::user()->role === 'admin')
                           <td class="text-center">
                             @if($sale->sale_status !== 'cancelled')
-                              <button class="btn btn-outline-danger btn-void-item" data-detail-id="{{$saleDetail->id}}" data-menu-name="{{$saleDetail->menu_name}}" data-sale-id="{{$sale->id}}" title="Void Item & Restore Stock" onclick="event.stopPropagation();">
+                              <button class="btn btn-outline-danger btn-void-item" data-detail-id="{{$saleDetail->id}}" data-menu-name="{{$saleDetail->menu_name}}" data-sale-id="{{$sale->id}}" title="Void Item & Restore Stock">
                                 <i class="fas fa-times"></i>
                               </button>
                             @endif
@@ -853,7 +853,7 @@
 
 {{-- Reason Modal --}}
 <div class="modal fade" id="reasonModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog">
     <div class="modal-content" style="border-radius:1rem; overflow:hidden; border:none;">
       <div class="modal-header" style="background:linear-gradient(135deg,#f5576c 0%,#ff6b6b 100%); color:#fff; border:none;">
         <h5 class="modal-title" id="reasonModalTitle"><i class="fas fa-exclamation-triangle me-2"></i>Reason Required</h5>
@@ -881,7 +881,7 @@
 
 {{-- Result Modal --}}
 <div class="modal fade" id="resultModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog">
     <div class="modal-content" style="border-radius:1rem; overflow:hidden; border:none;">
       <div class="modal-header" id="resultModalHeader" style="border:none;">
         <h5 class="modal-title" id="resultModalTitle">Result</h5>

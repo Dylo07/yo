@@ -202,7 +202,7 @@
       <div id="salesContainer">
         @foreach($sales as $sale)
           <div class="sale-card {{ $sale->sale_status === 'cancelled' ? 'cancelled' : 'active-sale' }}" data-status="{{ $sale->sale_status }}" data-search="{{ strtolower($sale->id . ' ' . $sale->table_name . ' ' . $sale->user_name) }}" id="sale-row-{{$sale->id}}">
-            <div class="sale-card-header" data-bs-toggle="collapse" data-bs-target="#saleBody{{$sale->id}}" aria-expanded="false">
+            <div class="sale-card-header" onclick="$('#saleBody{{$sale->id}}').collapse('toggle'); $(this).find('.chevron').toggleClass('fa-chevron-down fa-chevron-up');">
               <div class="d-flex align-items-center gap-3 flex-wrap" style="flex:1;">
                 <div>
                   <span class="sale-id">#{{ $sale->id }}</span>
@@ -229,7 +229,7 @@
                   @endif
                 </div>
                 @if(Auth::user() && Auth::user()->role === 'admin' && $sale->sale_status !== 'cancelled')
-                  <button class="btn btn-danger btn-cancel-bill" data-sale-id="{{$sale->id}}" title="Cancel Bill & Restore Stock">
+                  <button type="button" class="btn btn-danger btn-cancel-bill" data-sale-id="{{$sale->id}}" title="Cancel Bill & Restore Stock">
                     <i class="fas fa-ban me-1"></i> Cancel
                   </button>
                 @endif
@@ -266,7 +266,7 @@
                         @if(Auth::user() && Auth::user()->role === 'admin')
                           <td class="text-center">
                             @if($sale->sale_status !== 'cancelled')
-                              <button class="btn btn-outline-danger btn-void-item" data-detail-id="{{$saleDetail->id}}" data-menu-name="{{$saleDetail->menu_name}}" data-sale-id="{{$sale->id}}" title="Void Item & Restore Stock">
+                              <button type="button" class="btn btn-outline-danger btn-void-item" data-detail-id="{{$saleDetail->id}}" data-menu-name="{{$saleDetail->menu_name}}" data-sale-id="{{$sale->id}}" title="Void Item & Restore Stock">
                                 <i class="fas fa-times"></i>
                               </button>
                             @endif
@@ -938,10 +938,10 @@ $(document).ready(function() {
     });
 
     // Cancel Bill
-    $(document).on('click', '.btn-cancel-bill', function(e) {
+    $('body').on('click', '.btn-cancel-bill', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        var saleId = $(this).data('sale-id');
+        var saleId = $(this).attr('data-sale-id') || $(this).data('sale-id');
         $('#reasonModalTitle').html('<i class="fas fa-exclamation-triangle me-2"></i>Cancel Bill #' + saleId);
         $('#reasonModalDesc').html('This will <strong>cancel the entire bill</strong> and <strong>restore all stock items</strong> that were deducted. This action cannot be undone.');
         $('#reasonInput').val('');
@@ -950,12 +950,12 @@ $(document).ready(function() {
     });
 
     // Void Item
-    $(document).on('click', '.btn-void-item', function(e) {
+    $('body').on('click', '.btn-void-item', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        var detailId = $(this).data('detail-id');
-        var menuName = $(this).data('menu-name');
-        var saleId = $(this).data('sale-id');
+        var detailId = $(this).attr('data-detail-id') || $(this).data('detail-id');
+        var menuName = $(this).attr('data-menu-name') || $(this).data('menu-name');
+        var saleId = $(this).attr('data-sale-id') || $(this).data('sale-id');
         $('#reasonModalTitle').html('<i class="fas fa-exclamation-triangle me-2"></i>Void: ' + menuName);
         $('#reasonModalDesc').html('This will <strong>remove "' + menuName + '"</strong> from Bill #' + saleId + ' and <strong>restore its stock items</strong>. This action cannot be undone.');
         $('#reasonInput').val('');

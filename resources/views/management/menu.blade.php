@@ -558,6 +558,35 @@ function addRecipeRow(itemId = null, qty = '', notes = '') {
     list.appendChild(row);
 }
 
+function updateMenuRecipeDisplay(menuId, ingredients) {
+    // Find the table row for this menu
+    const menuRow = document.querySelector(`tr.menu-row[data-id="${menuId}"]`);
+    if (!menuRow) return;
+    
+    // Get ingredient names from kitchenItems global array
+    const ingredientNames = ingredients.map(ing => {
+        const item = kitchenItems.find(ki => ki.id == ing.item_id);
+        return item ? item.name : 'Unknown';
+    }).join(', ');
+    
+    // Update the ingredients column (6th td)
+    const ingredientCell = menuRow.querySelectorAll('td')[5];
+    if (ingredientCell) {
+        ingredientCell.innerHTML = `<span style="font-size:0.72rem; color:#555;">${ingredientNames}</span>`;
+    }
+    
+    // Update the recipe button (7th td)
+    const recipeButtonCell = menuRow.querySelectorAll('td')[6];
+    if (recipeButtonCell) {
+        const menuName = menuRow.querySelector('td:nth-child(4) strong').textContent;
+        recipeButtonCell.innerHTML = `
+            <button class="btn btn-sm btn-success py-0 px-1" style="font-size:0.7rem;" onclick="openRecipeModal(${menuId}, '${menuName.replace(/'/g, "\\'")}')" title="Edit Recipe">
+                <i class="fas fa-utensils"></i> ${ingredients.length}
+            </button>
+        `;
+    }
+}
+
 function openRecipeModal(menuId, menuName) {
     document.getElementById('recipeMenuId').value = menuId;
     document.getElementById('recipeMenuName').textContent = menuName;
@@ -613,7 +642,16 @@ function saveRecipe() {
     .then(data => {
         if (data.success) {
             document.getElementById('recipeSaveStatus').innerHTML = '<span class="text-success"><i class="fas fa-check me-1"></i>' + data.message + '</span>';
-            setTimeout(() => location.reload(), 800);
+            
+            // Update UI without page reload
+            setTimeout(() => {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('recipeModal'));
+                if (modal) modal.hide();
+                
+                // Update the table row for this menu
+                updateMenuRecipeDisplay(menuId, ingredients);
+            }, 600);
         } else {
             document.getElementById('recipeSaveStatus').innerHTML = '<span class="text-danger">' + (data.message || 'Error saving recipe.') + '</span>';
         }

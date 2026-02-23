@@ -329,6 +329,33 @@ class MenuController extends Controller
     }
 
     /**
+     * Toggle service charge included status (Admin only)
+     */
+    public function toggleServiceCharge(Request $request, $id)
+    {
+        // Only admin can modify service charge settings
+        if (!in_array(Auth::id(), [1, 3])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admin can modify service charge settings'
+            ], 403);
+        }
+
+        $menu = Menu::findOrFail($id);
+        $menu->service_charge_included = $request->service_charge_included;
+        $menu->save();
+        
+        $status = $request->service_charge_included ? 'included' : 'not included';
+        $this->logActivity('service_charge_updated', $menu->id, $menu->name, "Service charge {$status} for: {$menu->name}");
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Service charge {$status} for {$menu->name}",
+            'service_charge_included' => $menu->service_charge_included
+        ]);
+    }
+
+    /**
      * Toggle lock status of a menu item (Admin only)
      */
     public function toggleLock($id)

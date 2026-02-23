@@ -183,6 +183,38 @@ class CashierController extends Controller
     }
 
     /**
+     * Calculate service charge for a sale based on menu settings
+     * Only items where service_charge_included=false will be counted
+     */
+    public function calculateServiceCharge($saleId){
+        $saleDetails = SaleDetail::where('sale_id', $saleId)->get();
+        $subtotal = 0;
+        $itemsWithoutServiceCharge = [];
+        
+        foreach($saleDetails as $detail){
+            $menu = Menu::find($detail->menu_id);
+            if($menu && !$menu->service_charge_included){
+                $itemTotal = $detail->unit_price * $detail->quantity;
+                $subtotal += $itemTotal;
+                $itemsWithoutServiceCharge[] = [
+                    'name' => $detail->menu_name,
+                    'amount' => $itemTotal
+                ];
+            }
+        }
+        
+        // Calculate 10% service charge on subtotal of items without included service charge
+        $serviceCharge = $subtotal * 0.10;
+        
+        return response()->json([
+            'success' => true,
+            'subtotal' => $subtotal,
+            'service_charge' => round($serviceCharge, 2),
+            'items' => $itemsWithoutServiceCharge
+        ]);
+    }
+
+    /**
      * OPTIMIZED: Load sale with details in single query
      */
     private function getSaleDetails($sale_id){

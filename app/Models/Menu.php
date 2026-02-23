@@ -20,7 +20,8 @@ class Menu extends Model
         'description',
         'category_id',
         'image',
-        'stock'
+        'stock',
+        'service_charge_included'
     ];
     
     public function category(){

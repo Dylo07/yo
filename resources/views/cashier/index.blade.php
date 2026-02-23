@@ -650,8 +650,30 @@ $(document).ready(function(){
   $("#order-detail").on("click", ".btn-payment", function(){
     var totalAmount = $(this).attr('data-totalAmount');
     $(".totalAmount").html("Total Amount Rs " + totalAmount);
-    $("#recieved-amount").val(0);
     SALE_ID = $(this).data('id');
+    
+    // Auto-calculate service charge based on menu settings
+    $.ajax({
+      url: '/cashier/calculateServiceCharge/' + SALE_ID,
+      method: 'GET',
+      success: function(response){
+        if(response.success){
+          // Set the calculated service charge
+          $("#recieved-amount").val(response.service_charge);
+          $(".changeAmount").html("Service Charge: Rs " + response.service_charge.toFixed(2));
+          
+          // Show info about which items have service charge included
+          if(response.items && response.items.length > 0){
+            console.log('Service charge calculated on items:', response.items);
+          }
+        }
+      },
+      error: function(){
+        // Fallback: set to 0 if calculation fails
+        $("#recieved-amount").val(0);
+        $(".changeAmount").html("Service Charge: Rs 0.00");
+      }
+    });
   });
 
   // Calculate change amount on keyup

@@ -108,6 +108,7 @@
                         <th>Category</th>
                         <th>Ingredients</th>
                         <th style="width:70px;" class="text-center">Recipe</th>
+                        <th style="width:80px;" class="text-center">S/C Inc.</th>
                         <th style="width:80px;" class="text-center">Lock</th>
                         <th style="width:110px;" class="text-center">Actions</th>
                     </tr>
@@ -162,6 +163,23 @@
                                     <button class="btn btn-sm btn-outline-secondary py-0 px-1" style="font-size:0.7rem;" onclick="openRecipeModal({{ $menu->id }}, '{{ addslashes($menu->name) }}')" title="Add Recipe">
                                         <i class="fas fa-plus"></i>
                                     </button>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if($isAdmin)
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="sc-switch-{{ $menu->id }}" 
+                                               {{ $menu->service_charge_included ? 'checked' : '' }}
+                                               onchange="toggleServiceCharge({{ $menu->id }}, this.checked)"
+                                               title="Service charge already included in price">
+                                    </div>
+                                @else
+                                    @if($menu->service_charge_included)
+                                        <span class="badge bg-success" style="font-size:0.65rem;" title="Service charge included"><i class="fas fa-check"></i></span>
+                                    @else
+                                        <span class="text-muted" style="font-size:0.65rem;">-</span>
+                                    @endif
                                 @endif
                             </td>
                             <td class="text-center">
@@ -734,6 +752,28 @@ function filterLogs() {
         return true;
     });
     renderLogs(filtered);
+}
+
+// Toggle service charge included status (Admin only)
+function toggleServiceCharge(menuId, isChecked) {
+    $.ajax({
+        url: `/management/menu/${menuId}/toggle-service-charge`,
+        method: 'POST',
+        data: {
+            _token: '{{ csrf_token() }}',
+            service_charge_included: isChecked
+        },
+        success: function(response) {
+            if (response.success) {
+                console.log(response.message);
+            }
+        },
+        error: function(xhr) {
+            alert('Failed to update service charge status');
+            // Revert checkbox on error
+            $('#sc-switch-' + menuId).prop('checked', !isChecked);
+        }
+    });
 }
 
 // Toggle lock/unlock for menu items (Admin only)

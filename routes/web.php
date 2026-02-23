@@ -74,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/cashier/confirmOrderStatus', 'App\Http\Controllers\Cashier\CashierController@confirmOrderStatus');
 
+    Route::get('/cashier/calculateServiceCharge/{saleId}', 'App\Http\Controllers\Cashier\CashierController@calculateServiceCharge');
     Route::post('/cashier/savePayment', 'App\Http\Controllers\Cashier\CashierController@savePayment');
     Route::get('/cashier/showRecipt/{saleID}', 'App\Http\Controllers\Cashier\CashierController@showRecipt');
 
@@ -129,6 +130,7 @@ Route::post('management/menu/bulk-move', [App\Http\Controllers\Management\MenuCo
 Route::post('management/menu/bulk-lock', [App\Http\Controllers\Management\MenuController::class, 'bulkLock'])->name('management.menu.bulk-lock');
 Route::post('management/menu/bulk-unlock', [App\Http\Controllers\Management\MenuController::class, 'bulkUnlock'])->name('management.menu.bulk-unlock');
 Route::post('management/menu/{id}/toggle-lock', [App\Http\Controllers\Management\MenuController::class, 'toggleLock'])->name('management.menu.toggleLock');
+Route::post('management/menu/{id}/toggle-service-charge', [App\Http\Controllers\Management\MenuController::class, 'toggleServiceCharge'])->name('management.menu.toggleServiceCharge');
 Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
 Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
 

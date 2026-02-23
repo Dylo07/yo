@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('content')
+@push('styles')
 <style>
   .report-page { background: #f0f2f5; min-height: 100vh; padding-bottom: 3rem; }
   .report-header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; padding: 1.5rem 0; margin-bottom: 2rem; border-radius: 0 0 1.5rem 1.5rem; }
@@ -93,7 +93,9 @@
     .sale-card-header { flex-wrap: wrap; }
   }
 </style>
+@endpush
 
+@section('content')
 <div class="report-page">
   {{-- Header --}}
   <div class="report-header">
@@ -615,6 +617,7 @@
           </div>
         </div>
 
+      @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script>
         $(document).ready(function() {
@@ -822,6 +825,7 @@
             });
         });
         </script>
+      @endpush
       @endif
 
       {{-- Export Bar --}}
@@ -891,6 +895,7 @@
   </div>
 </div>
 
+@push('scripts')
 <script type="text/javascript">
 $(document).ready(function() {
     var pendingAction = null;
@@ -1039,5 +1044,6 @@ $(document).ready(function() {
     }
 });
 </script>
+@endpush
 
 @endsection

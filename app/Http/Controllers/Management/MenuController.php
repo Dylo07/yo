@@ -342,10 +342,12 @@ class MenuController extends Controller
         }
 
         $menu = Menu::findOrFail($id);
-        $menu->service_charge_included = $request->service_charge_included;
+        // Fix: Convert string/boolean input to integer (0 or 1) for TINYINT column
+        $isChecked = filter_var($request->service_charge_included, FILTER_VALIDATE_BOOLEAN);
+        $menu->service_charge_included = $isChecked ? 1 : 0;
         $menu->save();
         
-        $status = $request->service_charge_included ? 'included' : 'not included';
+        $status = $isChecked ? 'included' : 'not included';
         $this->logActivity('service_charge_updated', $menu->id, $menu->name, "Service charge {$status} for: {$menu->name}");
         
         return response()->json([

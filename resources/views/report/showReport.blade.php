@@ -939,6 +939,7 @@ $(document).ready(function() {
 
     // Cancel Bill
     $(document).on('click', '.btn-cancel-bill', function(e) {
+        e.preventDefault();
         e.stopPropagation();
         var saleId = $(this).data('sale-id');
         $('#reasonModalTitle').html('<i class="fas fa-exclamation-triangle me-2"></i>Cancel Bill #' + saleId);
@@ -950,6 +951,7 @@ $(document).ready(function() {
 
     // Void Item
     $(document).on('click', '.btn-void-item', function(e) {
+        e.preventDefault();
         e.stopPropagation();
         var detailId = $(this).data('detail-id');
         var menuName = $(this).data('menu-name');

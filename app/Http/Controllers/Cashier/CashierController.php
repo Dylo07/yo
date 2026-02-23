@@ -187,30 +187,27 @@ class CashierController extends Controller
      * Only items where service_charge_included=false will be counted
      */
     public function calculateServiceCharge($saleId){
+        $sale = Sale::find($saleId);
         $saleDetails = SaleDetail::where('sale_id', $saleId)->get();
-        $subtotal = 0;
-        $itemsWithoutServiceCharge = [];
+        $serviceCharge = 0;
         
         foreach($saleDetails as $detail){
             $menu = Menu::find($detail->menu_id);
             if($menu && !$menu->service_charge_included){
-                $itemTotal = $detail->unit_price * $detail->quantity;
-                $subtotal += $itemTotal;
-                $itemsWithoutServiceCharge[] = [
-                    'name' => $detail->menu_name,
-                    'amount' => $itemTotal
-                ];
+                // If item has a fixed service charge, use that
+                if($menu->fixed_service_charge !== null && $menu->fixed_service_charge >= 0) {
+                    $serviceCharge += ($menu->fixed_service_charge * $detail->quantity);
+                } else {
+                    // Otherwise use standard 10%
+                    $itemTotal = $detail->menu_price * $detail->quantity;
+                    $serviceCharge += ($itemTotal * 0.10);
+                }
             }
         }
         
-        // Calculate 10% service charge on subtotal of items without included service charge
-        $serviceCharge = $subtotal * 0.10;
-        
         return response()->json([
             'success' => true,
-            'subtotal' => $subtotal,
-            'service_charge' => round($serviceCharge, 2),
-            'items' => $itemsWithoutServiceCharge
+            'service_charge' => round($serviceCharge, 2)
         ]);
     }
 
@@ -526,17 +523,31 @@ class CashierController extends Controller
             
             // Calculate and store 'hidden' service charge from items where it's included
             // Formula: Price * (10/110) = ~9.09% of gross price is the service charge component
+            // OR use the fixed amount if specified
             $includedServiceCharge = 0;
             $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
+            
             foreach($saleDetails as $detail){
                 $menu = Menu::find($detail->menu_id);
-                if($menu && $menu->service_charge_included){
-                    // For items with included service charge, we calculate the portion
-                    // Assuming 10% rate: Price = Base + (Base * 0.10) = Base * 1.10
-                    // S/C = Price - Base = Price - (Price / 1.10)
-                    $itemTotal = $detail->unit_price * $detail->quantity;
-                    $sChargePortion = $itemTotal - ($itemTotal / 1.10);
-                    $includedServiceCharge += $sChargePortion;
+                
+                if ($menu) {
+                    // Priority 1: Check for Fixed Service Charge
+                    // If a fixed amount is set (> 0), it is ALWAYS treated as an included/assigned service charge
+                    if ($menu->fixed_service_charge !== null && $menu->fixed_service_charge > 0) {
+                        $amount = $menu->fixed_service_charge * $detail->quantity;
+                        $includedServiceCharge += $amount;
+                    }
+                    // Priority 2: Check for Percentage-based Included Service Charge
+                    // Only if fixed charge is NOT set
+                    elseif ($menu->service_charge_included) {
+                        // Otherwise standard 10% calculation
+                        // S/C = Price - Base = Price - (Price / 1.10)
+                        // Note: SaleDetail uses 'menu_price', NOT 'unit_price'
+                        $price = $detail->menu_price ?? $detail->unit_price; 
+                        $itemTotal = $price * $detail->quantity;
+                        $sChargePortion = $itemTotal - ($itemTotal / 1.10);
+                        $includedServiceCharge += $sChargePortion;
+                    }
                 }
             }
             $sale->included_service_charge = round($includedServiceCharge, 2);

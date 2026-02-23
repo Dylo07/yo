@@ -19,10 +19,25 @@
                     </div>
                 </div>
                 <div class="card-body bg-light">
-                    <div class="alert alert-dark shadow-sm text-center">
-                        <h4 class="mb-0">Total S/C for {{ Carbon\Carbon::parse($selectedMonth)->format('F Y') }}: 
-                            <span class="fw-bold">Rs {{ number_format($serviceCharge, 2) }}</span>
-                        </h4>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="alert alert-secondary mb-0 text-center shadow-sm">
+                                <h6 class="mb-1 text-muted">Billed S/C</h6>
+                                <h4 class="mb-0">Rs {{ number_format($billedSC, 2) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="alert alert-secondary mb-0 text-center shadow-sm">
+                                <h6 class="mb-1 text-muted">Assigned S/C</h6>
+                                <h4 class="mb-0">Rs {{ number_format($includedSC, 2) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="alert alert-dark mb-0 text-center shadow-sm">
+                                <h6 class="mb-1 text-muted">Total S/C</h6>
+                                <h4 class="mb-0 fw-bold">Rs {{ number_format($serviceCharge, 2) }}</h4>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

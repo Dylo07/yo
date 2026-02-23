@@ -21,7 +21,8 @@ class Menu extends Model
         'category_id',
         'image',
         'stock',
-        'service_charge_included'
+        'service_charge_included',
+        'fixed_service_charge'
     ];
     
     public function category(){

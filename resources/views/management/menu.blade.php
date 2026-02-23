@@ -167,16 +167,23 @@
                             </td>
                             <td class="text-center">
                                 @if($isAdmin)
-                                    <div class="form-check form-switch d-flex justify-content-center">
-                                        <input class="form-check-input" type="checkbox" 
-                                               id="sc-switch-{{ $menu->id }}" 
-                                               {{ $menu->service_charge_included ? 'checked' : '' }}
-                                               onchange="toggleServiceCharge({{ $menu->id }}, this.checked)"
-                                               title="Service charge already included in price">
-                                    </div>
+                                    <button class="btn btn-sm {{ $menu->fixed_service_charge ? 'btn-primary' : ($menu->service_charge_included ? 'btn-success' : 'btn-outline-secondary') }} py-0 px-1" 
+                                            style="font-size:0.7rem;" 
+                                            onclick="openServiceChargeModal({{ $menu->id }}, '{{ addslashes($menu->name) }}', {{ $menu->fixed_service_charge ?? 'null' }}, {{ $menu->service_charge_included ? 'true' : 'false' }})" 
+                                            title="Manage Service Charge">
+                                        @if($menu->fixed_service_charge)
+                                            <i class="fas fa-dollar-sign"></i> Rs {{ number_format($menu->fixed_service_charge, 0) }}
+                                        @elseif($menu->service_charge_included)
+                                            <i class="fas fa-check"></i> Inc.
+                                        @else
+                                            <i class="fas fa-plus"></i> Add
+                                        @endif
+                                    </button>
                                 @else
-                                    @if($menu->service_charge_included)
-                                        <span class="badge bg-success" style="font-size:0.65rem;" title="Service charge included"><i class="fas fa-check"></i></span>
+                                    @if($menu->fixed_service_charge)
+                                        <span class="badge bg-primary" style="font-size:0.65rem;" title="Fixed Service Charge">Rs {{ number_format($menu->fixed_service_charge, 0) }}</span>
+                                    @elseif($menu->service_charge_included)
+                                        <span class="badge bg-success" style="font-size:0.65rem;" title="Service charge included"><i class="fas fa-check"></i> Inc.</span>
                                     @else
                                         <span class="text-muted" style="font-size:0.65rem;">-</span>
                                     @endif
@@ -249,6 +256,66 @@
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success btn-sm" onclick="saveRecipe()">
                     <i class="fas fa-save me-1"></i> Save Recipe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Charge Modal -->
+<div class="modal fade" id="serviceChargeModal" tabindex="-1" aria-labelledby="serviceChargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title" id="serviceChargeModalLabel"><i class="fas fa-dollar-sign me-2"></i>Service Charge: <span id="scMenuName"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="scMenuId">
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Service Charge Type</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="scType" id="scTypeStandard" value="standard" checked onchange="toggleScInputs()">
+                        <label class="form-check-label" for="scTypeStandard">
+                            Standard Percentage (10%)
+                        </label>
+                        <div class="form-text text-muted small">Calculated automatically as 10% of the item price.</div>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="scType" id="scTypeFixed" value="fixed" onchange="toggleScInputs()">
+                        <label class="form-check-label" for="scTypeFixed">
+                            Fixed Amount
+                        </label>
+                    </div>
+                </div>
+
+                <div id="fixedAmountGroup" class="mb-3" style="display:none;">
+                    <label for="scFixedAmount" class="form-label">Fixed Amount (Rs)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rs</span>
+                        <input type="number" class="form-control" id="scFixedAmount" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-text text-muted">Enter the exact service charge amount for this item.</div>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="scIncluded">
+                        <label class="form-check-label fw-bold" for="scIncluded">Service Charge Included in Price?</label>
+                    </div>
+                    <div class="form-text text-muted" id="scIncludedHelp">
+                        If checked, the system considers the service charge is <strong>already inside</strong> the menu price.<br>
+                        If unchecked, the service charge is added <strong>on top</strong> of the menu price.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveServiceCharge()">
+                    <i class="fas fa-save me-1"></i> Save Changes
                 </button>
             </div>
         </div>
@@ -815,6 +882,75 @@ function toggleLock(menuId, menuName) {
             }
         });
     }
+}
+// Service Charge Functions
+function openServiceChargeModal(id, name, fixedAmount, isIncluded) {
+    $('#scMenuId').val(id);
+    $('#scMenuName').text(name);
+    
+    // Reset form
+    $('#scIncluded').prop('checked', isIncluded);
+    
+    if(fixedAmount !== null) {
+        $('#scTypeFixed').prop('checked', true);
+        $('#scFixedAmount').val(fixedAmount);
+        $('#fixedAmountGroup').show();
+    } else {
+        $('#scTypeStandard').prop('checked', true);
+        $('#scFixedAmount').val('');
+        $('#fixedAmountGroup').hide();
+    }
+    
+    var modal = new bootstrap.Modal(document.getElementById('serviceChargeModal'));
+    modal.show();
+}
+
+function toggleScInputs() {
+    if($('#scTypeFixed').is(':checked')) {
+        $('#fixedAmountGroup').slideDown();
+        // Force "Included" to be checked and disabled for Fixed Amount
+        $('#scIncluded').prop('checked', true).prop('disabled', true);
+        $('#scIncludedHelp').html('<strong>Note:</strong> Fixed service charges are always treated as <em>internal allocations</em> (included) and are never added to the customer\'s bill.');
+    } else {
+        $('#fixedAmountGroup').slideUp();
+        // Restore "Included" control
+        $('#scIncluded').prop('disabled', false);
+        $('#scIncludedHelp').html('If checked, the system considers the service charge is <strong>already inside</strong> the menu price.<br>If unchecked, the service charge is added <strong>on top</strong> of the menu price.');
+    }
+}
+
+function saveServiceCharge() {
+    const id = $('#scMenuId').val();
+    const isFixed = $('#scTypeFixed').is(':checked');
+    const fixedAmount = isFixed ? $('#scFixedAmount').val() : null;
+    // If fixed, it's always included. Otherwise check the box.
+    const isIncluded = isFixed ? true : $('#scIncluded').is(':checked');
+
+    if(isFixed && (fixedAmount === '' || fixedAmount < 0)) {
+        alert('Please enter a valid fixed amount');
+        return;
+    }
+
+    $.ajax({
+        url: `/management/menu/${id}/update-service-charge`,
+        method: 'POST',
+        data: {
+            _token: csrfToken,
+            fixed_service_charge: fixedAmount,
+            service_charge_included: isIncluded ? 1 : 0
+        },
+        success: function(response) {
+            if(response.success) {
+                location.reload(); // Reload to update the button state
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function(xhr) {
+            alert('Failed to update service charge settings');
+            console.error(xhr.responseText);
+        }
+    });
 }
 </script>
 @endpush

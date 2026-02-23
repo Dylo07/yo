@@ -50,11 +50,13 @@ class HomeController extends Controller
              $dateEnd = Carbon::now();
          }
      
-         // Get current month service charge
-        // Sum of 'total_recieved' (Extra S/C) + 'included_service_charge' (Hidden S/C from packages)
+         // Get current month service charge breakdown
         $currentSales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
                         ->where('sale_status', 'paid');
-        $serviceCharge = $currentSales->sum(DB::raw('total_recieved + IFNULL(included_service_charge, 0)'));
+        
+        $billedSC = $currentSales->sum('total_recieved');
+        $includedSC = $currentSales->sum('included_service_charge');
+        $serviceCharge = $billedSC + $includedSC;
     
         // Get previous month service charge
         $prevMonthStart = $dateStart->copy()->subMonth()->startOfMonth();
@@ -355,6 +357,8 @@ class HomeController extends Controller
     
         return view('home', compact(
              'serviceCharge',
+             'billedSC',
+             'includedSC',
              'previousServiceCharge',
              'percentageChange',
              'periodLabel',

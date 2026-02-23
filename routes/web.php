@@ -127,6 +127,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('management/menu/bulk-unlock', [App\Http\Controllers\Management\MenuController::class, 'bulkUnlock'])->name('management.menu.bulk-unlock');
     Route::post('management/menu/{id}/toggle-lock', [App\Http\Controllers\Management\MenuController::class, 'toggleLock'])->name('management.menu.toggleLock');
     Route::post('management/menu/{id}/toggle-service-charge', [App\Http\Controllers\Management\MenuController::class, 'toggleServiceCharge'])->name('management.menu.toggleServiceCharge');
+    Route::post('management/menu/{id}/update-service-charge', [App\Http\Controllers\Management\MenuController::class, 'updateServiceCharge'])->name('management.menu.updateServiceCharge');
     Route::resource('management/menu', App\Http\Controllers\Management\MenuController::class);
     Route::resource('management/table', App\Http\Controllers\Management\TableController::class);
 

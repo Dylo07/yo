@@ -46,7 +46,7 @@ class ServiceChargeController extends Controller
         $prevMonthSales = Sale::whereYear('updated_at', $prevMonth->year)
             ->whereMonth('updated_at', $prevMonth->month)
             ->where('sale_status', 'paid')
-            ->sum('total_recieved');
+            ->sum(DB::raw('total_recieved + included_service_charge'));
 
         // Get current month's damage items
         $currentMonthDamages = DamageItem::whereYear('reported_date', $year)
@@ -134,7 +134,7 @@ class ServiceChargeController extends Controller
             $prevMonthSales = Sale::whereYear('updated_at', $prevMonth->year)
                 ->whereMonth('updated_at', $prevMonth->month)
                 ->where('sale_status', 'paid')
-                ->sum('total_recieved');
+                ->sum(DB::raw('total_recieved + included_service_charge'));
 
             // Get current month's damage items
             $currentMonthDamages = DamageItem::whereYear('reported_date', $year)

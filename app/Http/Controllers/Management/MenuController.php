@@ -329,7 +329,51 @@ class MenuController extends Controller
     }
 
     /**
+     * Update service charge details for a menu item
+     */
+    public function updateServiceCharge(Request $request, $id)
+    {
+        // Only admin can modify service charge settings
+        if (!in_array(Auth::id(), [1, 3])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admin can modify service charge settings'
+            ], 403);
+        }
+
+        $request->validate([
+            'fixed_service_charge' => 'nullable|numeric|min:0',
+            'service_charge_included' => 'required|boolean'
+        ]);
+
+        $menu = Menu::findOrFail($id);
+        $menu->fixed_service_charge = $request->fixed_service_charge;
+        
+        // If a fixed service charge is set, it MUST be treated as included (internal allocation)
+        // This ensures it never shows up as an extra charge on the customer bill
+        if ($menu->fixed_service_charge !== null && $menu->fixed_service_charge >= 0) {
+            $menu->service_charge_included = 1;
+        } else {
+            $menu->service_charge_included = $request->service_charge_included;
+        }
+        
+        $menu->save();
+
+        $status = $menu->service_charge_included ? 'Included' : 'Additional';
+        $amount = $menu->fixed_service_charge ? "Rs " . number_format($menu->fixed_service_charge, 2) : "Standard %";
+        
+        $this->logActivity('service_charge_updated', $menu->id, $menu->name, "Service Charge: {$amount} ({$status})");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Service charge updated successfully',
+            'menu' => $menu
+        ]);
+    }
+
+    /**
      * Toggle service charge included status (Admin only)
+     * @deprecated Use updateServiceCharge instead
      */
     public function toggleServiceCharge(Request $request, $id)
     {

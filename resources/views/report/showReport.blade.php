@@ -966,7 +966,7 @@ $(document).ready(function() {
 
         if (pendingAction.type === 'cancel-bill') {
             $.ajax({
-                type: 'POST', url: '/report/cancel-bill',
+                type: 'POST', url: '{{ route('report.cancelBill') }}',
                 data: { _token: '{{ csrf_token() }}', sale_id: pendingAction.sale_id, reason: reason },
                 success: function(data) {
                     reasonModal.hide();
@@ -989,7 +989,7 @@ $(document).ready(function() {
             });
         } else if (pendingAction.type === 'void-item') {
             $.ajax({
-                type: 'POST', url: '/report/void-item',
+                type: 'POST', url: '{{ route('report.voidItem') }}',
                 data: { _token: '{{ csrf_token() }}', sale_detail_id: pendingAction.sale_detail_id, reason: reason },
                 success: function(data) {
                     reasonModal.hide();

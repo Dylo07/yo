@@ -541,8 +541,8 @@ body { background: var(--exp-bg) !important; }
                         <input type="date" name="cost_date" class="form-control" value="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" readonly style="background:#f0f2f7;cursor:not-allowed;">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Description <span style="font-weight:400;text-transform:none;">(optional)</span></label>
-                        <textarea name="description" class="form-control" rows="2" placeholder="Notes..."></textarea>
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Notes..." required></textarea>
                     </div>
                     <div class="d-flex justify-content-end gap-2">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

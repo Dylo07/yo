@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@push('styles')
+@section('styles')
 <style>
 .order-panel-right {
     position: fixed;
@@ -251,7 +251,7 @@
 }
 </style>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-@endpush
+@endsection
 
 @section('content')
 <div class="container">

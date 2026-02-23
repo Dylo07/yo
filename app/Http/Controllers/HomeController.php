@@ -51,17 +51,18 @@ class HomeController extends Controller
          }
      
          // Get current month service charge
-         $currentSales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
-                         ->where('sale_status', 'paid');
-         $serviceCharge = $currentSales->sum('total_recieved');
-     
-         // Get previous month service charge
-         $prevMonthStart = $dateStart->copy()->subMonth()->startOfMonth();
-         $prevMonthEnd = $dateStart->copy()->subMonth()->endOfMonth();
-         
-         $previousSales = Sale::whereBetween('updated_at', [$prevMonthStart, $prevMonthEnd])
-                         ->where('sale_status', 'paid');
-         $previousServiceCharge = $previousSales->sum('total_recieved');
+        // Sum of 'total_recieved' (Extra S/C) + 'included_service_charge' (Hidden S/C from packages)
+        $currentSales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
+                        ->where('sale_status', 'paid');
+        $serviceCharge = $currentSales->sum(DB::raw('total_recieved + IFNULL(included_service_charge, 0)'));
+    
+        // Get previous month service charge
+        $prevMonthStart = $dateStart->copy()->subMonth()->startOfMonth();
+        $prevMonthEnd = $dateStart->copy()->subMonth()->endOfMonth();
+        
+        $previousSales = Sale::whereBetween('updated_at', [$prevMonthStart, $prevMonthEnd])
+                        ->where('sale_status', 'paid');
+        $previousServiceCharge = $previousSales->sum(DB::raw('total_recieved + IFNULL(included_service_charge, 0)'));
      
          // Calculate percentage change
          $percentageChange = 0;

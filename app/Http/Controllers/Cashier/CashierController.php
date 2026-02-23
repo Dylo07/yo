@@ -524,6 +524,23 @@ class CashierController extends Controller
             }
             $sale->total_recieved = $recievedAmount;
             
+            // Calculate and store 'hidden' service charge from items where it's included
+            // Formula: Price * (10/110) = ~9.09% of gross price is the service charge component
+            $includedServiceCharge = 0;
+            $saleDetails = SaleDetail::where('sale_id', $saleID)->get();
+            foreach($saleDetails as $detail){
+                $menu = Menu::find($detail->menu_id);
+                if($menu && $menu->service_charge_included){
+                    // For items with included service charge, we calculate the portion
+                    // Assuming 10% rate: Price = Base + (Base * 0.10) = Base * 1.10
+                    // S/C = Price - Base = Price - (Price / 1.10)
+                    $itemTotal = $detail->unit_price * $detail->quantity;
+                    $sChargePortion = $itemTotal - ($itemTotal / 1.10);
+                    $includedServiceCharge += $sChargePortion;
+                }
+            }
+            $sale->included_service_charge = round($includedServiceCharge, 2);
+            
             // ⚠️ IMPORTANT: DO NOT MODIFY THIS CALCULATION - IT IS CORRECT!
             // The 'change' field name is MISLEADING - it does NOT store customer change.
             // ACTUAL PURPOSE: Stores Grand Total = Service Charge + Bill Total

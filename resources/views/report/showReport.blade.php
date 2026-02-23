@@ -899,10 +899,16 @@
 <script type="text/javascript">
 $(document).ready(function() {
     var pendingAction = null;
-    var reasonModalEl = document.getElementById('reasonModal');
-    var resultModalEl = document.getElementById('resultModal');
-    var reasonModal = new bootstrap.Modal(reasonModalEl);
-    var resultModal = new bootstrap.Modal(resultModalEl);
+
+    function getReasonModal() {
+        var el = document.getElementById('reasonModal');
+        return bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+    }
+
+    function getResultModal() {
+        var el = document.getElementById('resultModal');
+        return bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+    }
 
     // Search
     $('#saleSearch').on('input', function() {
@@ -946,7 +952,7 @@ $(document).ready(function() {
         $('#reasonModalDesc').html('This will <strong>cancel the entire bill</strong> and <strong>restore all stock items</strong> that were deducted. This action cannot be undone.');
         $('#reasonInput').val('');
         pendingAction = { type: 'cancel-bill', sale_id: saleId };
-        reasonModal.show();
+        getReasonModal().show();
     });
 
     // Void Item
@@ -960,7 +966,7 @@ $(document).ready(function() {
         $('#reasonModalDesc').html('This will <strong>remove "' + menuName + '"</strong> from Bill #' + saleId + ' and <strong>restore its stock items</strong>. This action cannot be undone.');
         $('#reasonInput').val('');
         pendingAction = { type: 'void-item', sale_detail_id: detailId, sale_id: saleId };
-        reasonModal.show();
+        getReasonModal().show();
     });
 
     // Confirm
@@ -976,7 +982,7 @@ $(document).ready(function() {
                 type: 'POST', url: '{{ route('report.cancelBill') }}',
                 data: { _token: '{{ csrf_token() }}', sale_id: pendingAction.sale_id, reason: reason },
                 success: function(data) {
-                    reasonModal.hide();
+                    getReasonModal().hide();
                     showResult(true, data.message, data.restored_items);
                     var card = $('#sale-row-' + pendingAction.sale_id);
                     card.removeClass('active-sale').addClass('cancelled');
@@ -987,7 +993,7 @@ $(document).ready(function() {
                     card.attr('data-status', 'cancelled');
                 },
                 error: function(xhr) {
-                    reasonModal.hide();
+                    getReasonModal().hide();
                     var msg = 'Failed to cancel bill.';
                     if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
                     showResult(false, msg, []);
@@ -999,7 +1005,7 @@ $(document).ready(function() {
                 type: 'POST', url: '{{ route('report.voidItem') }}',
                 data: { _token: '{{ csrf_token() }}', sale_detail_id: pendingAction.sale_detail_id, reason: reason },
                 success: function(data) {
-                    reasonModal.hide();
+                    getReasonModal().hide();
                     showResult(true, data.message, data.restored_items);
                     $('#detail-row-' + pendingAction.sale_detail_id).fadeOut(300, function() { $(this).remove(); });
                     if (data.new_total !== undefined) {
@@ -1015,7 +1021,7 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr) {
-                    reasonModal.hide();
+                    getReasonModal().hide();
                     var msg = 'Failed to void item.';
                     if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
                     showResult(false, msg, []);

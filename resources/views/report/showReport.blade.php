@@ -1048,7 +1048,7 @@ $(document).ready(function() {
             body += '</ul></div>';
         }
         $('#resultModalBody').html(body);
-        resultModal.show();
+        getResultModal().show();
     }
 });
 </script>

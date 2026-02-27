@@ -437,6 +437,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/duty-roster/arrivals-departures', [StaffAllocationController::class, 'getArrivalsAndDepartures'])->name('duty.roster.api.arrivals-departures');
     Route::get('/api/duty-roster/housekeeping-status', [StaffAllocationController::class, 'getHousekeepingStatus'])->name('duty.roster.api.housekeeping-status');
     Route::get('/api/duty-roster/housekeeping-logs', [StaffAllocationController::class, 'getRoomStatusLogs'])->name('duty.roster.api.housekeeping-logs');
+    Route::get('/api/duty-roster/rooms', [StaffAllocationController::class, 'getAllRooms'])->name('duty.roster.api.rooms');
+    Route::post('/api/duty-roster/rooms', [StaffAllocationController::class, 'addRoom'])->name('duty.roster.api.rooms.add');
+    Route::delete('/api/duty-roster/rooms/{roomId}', [StaffAllocationController::class, 'deleteRoom'])->name('duty.roster.api.rooms.delete');
+    Route::get('/api/duty-roster/teams', [StaffAllocationController::class, 'getAllTeams'])->name('duty.roster.api.teams');
+    Route::post('/api/duty-roster/teams', [StaffAllocationController::class, 'createTeam'])->name('duty.roster.api.teams.create');
+    Route::delete('/api/duty-roster/teams/{teamId}', [StaffAllocationController::class, 'deleteTeam'])->name('duty.roster.api.teams.delete');
+    Route::post('/api/duty-roster/rooms/{roomId}/assign-team', [StaffAllocationController::class, 'assignTeamToRoom'])->name('duty.roster.api.rooms.assign-team');
     Route::get('/api/duty-roster/inventory-warnings', [StaffAllocationController::class, 'getInventoryWarnings'])->name('duty.roster.api.inventory-warnings');
     Route::get('/api/duty-roster/pending-leads', [StaffAllocationController::class, 'getPendingLeads'])->name('duty.roster.api.pending-leads');
     Route::get('/api/duty-roster/maintenance-tickets', [StaffAllocationController::class, 'getMaintenanceTickets'])->name('duty.roster.api.maintenance-tickets');

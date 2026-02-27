@@ -50,6 +50,9 @@
                         <i class="fas fa-broom me-2"></i> Housekeeping Status
                     </h5>
                     <div>
+                        <button onclick="showManageRoomsModal()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none me-1" style="background: rgba(255,255,255,0.2);" title="Manage Rooms">
+                            <i class="fas fa-cog"></i>
+                        </button>
                         <button onclick="showHousekeepingLogs()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none me-1" style="background: rgba(255,255,255,0.2);" title="View History">
                             <i class="fas fa-history"></i>
                         </button>
@@ -169,6 +172,131 @@
                     <div id="hkLogsContainer" class="p-3">
                         <div class="text-center py-4 text-muted">
                             <i class="fas fa-spinner fa-spin me-2"></i> Loading history...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Rooms Modal -->
+    <div class="modal fade" id="manageRoomsModal" tabindex="-1" aria-labelledby="manageRoomsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="manageRoomsModalLabel"><i class="fas fa-cog me-2"></i>Manage Rooms</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tabs for Rooms and Teams -->
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="rooms-tab" data-bs-toggle="tab" data-bs-target="#rooms-content" type="button" role="tab">
+                                <i class="fas fa-door-open me-1"></i> Rooms
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams-content" type="button" role="tab">
+                                <i class="fas fa-users me-1"></i> Teams
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Rooms Tab -->
+                        <div class="tab-pane fade show active" id="rooms-content" role="tabpanel">
+                            <!-- Add Room Form -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Room</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="addRoomForm" onsubmit="addRoom(event)">
+                                        <div class="input-group">
+                                            <input type="text" id="newRoomName" class="form-control" placeholder="Enter room number or name" required>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-plus me-1"></i> Add Room
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Existing Rooms List -->
+                            <div class="card">
+                                <div class="card-header bg-secondary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-list me-2"></i>Existing Rooms</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="roomsListContainer" style="max-height: 400px; overflow-y: auto;">
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="fas fa-spinner fa-spin me-2"></i> Loading rooms...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teams Tab -->
+                        <div class="tab-pane fade" id="teams-content" role="tabpanel">
+                            <!-- Add Team Form -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Team/Group</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="addTeamForm" onsubmit="addTeam(event)">
+                                        <div class="mb-2">
+                                            <input type="text" id="newTeamName" class="form-control form-control-sm" placeholder="Team name (e.g., Cricket Team, Family Group)" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small mb-1">Choose Color:</label>
+                                            <div class="d-flex gap-2">
+                                                <label class="color-option">
+                                                    <input type="radio" name="teamColor" value="#3b82f6" required>
+                                                    <span class="color-box" style="background: #3b82f6"></span>
+                                                </label>
+                                                <label class="color-option">
+                                                    <input type="radio" name="teamColor" value="#10b981" required>
+                                                    <span class="color-box" style="background: #10b981"></span>
+                                                </label>
+                                                <label class="color-option">
+                                                    <input type="radio" name="teamColor" value="#f59e0b" required>
+                                                    <span class="color-box" style="background: #f59e0b"></span>
+                                                </label>
+                                                <label class="color-option">
+                                                    <input type="radio" name="teamColor" value="#ef4444" required>
+                                                    <span class="color-box" style="background: #ef4444"></span>
+                                                </label>
+                                                <label class="color-option">
+                                                    <input type="radio" name="teamColor" value="#8b5cf6" required>
+                                                    <span class="color-box" style="background: #8b5cf6"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <textarea id="newTeamNotes" class="form-control form-control-sm" placeholder="Notes (optional)" rows="2"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-plus me-1"></i> Add Team
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Existing Teams List -->
+                            <div class="card">
+                                <div class="card-header bg-secondary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Existing Teams</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="teamsListContainer" style="max-height: 350px; overflow-y: auto;">
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="fas fa-spinner fa-spin me-2"></i> Loading teams...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1396,6 +1524,36 @@ document.addEventListener('DOMContentLoaded', function() {
     border-left: 4px solid #d69e2e;
 }
 
+/* Team Color Picker */
+.color-option {
+    cursor: pointer;
+    display: inline-block;
+}
+
+.color-option input[type="radio"] {
+    display: none;
+}
+
+.color-box {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.color-option input[type="radio"]:checked + .color-box {
+    border-color: #000;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+    transform: scale(1.1);
+}
+
+.color-option:hover .color-box {
+    transform: scale(1.05);
+}
+}
+
 /* Task Cell Highlight */
 .task-cell {
     background: linear-gradient(135deg, #fffef0 0%, #fef9c3 100%);
@@ -1625,10 +1783,12 @@ function renderHousekeepingGrid(rooms) {
     }
     container.innerHTML = rooms.map(room => {
         const s = getRoomStatusStyle(room.status);
+        const teamBorder = room.team_color ? `border-left: 4px solid ${room.team_color};` : '';
+        const teamTooltip = room.team_name ? ` | Team: ${room.team_name}` : '';
         return `
             <div class="hk-room-card"
-                 style="background-color: ${s.bg}; color: ${s.text}; border: 1px solid ${s.border}; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; user-select: none; transition: all 0.2s;"
-                 title="${room.name}: ${s.label} (click to change)"
+                 style="background-color: ${s.bg}; color: ${s.text}; border: 1px solid ${s.border}; ${teamBorder} padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; user-select: none; transition: all 0.2s;"
+                 title="${room.name}: ${s.label}${teamTooltip} (click to change)"
                  onclick="cycleRoomStatus(${room.id})"
                  id="hk-room-${room.id}">
                 <i class="fas ${s.icon} me-1" style="font-size: 0.7rem;"></i> ${room.name}
@@ -1735,6 +1895,350 @@ function getStatusBadgeHTML(status) {
     return `<span class="badge" style="background-color: ${style.bg}; color: ${style.text}; border: 1px solid ${style.border};">
                 <i class="fas ${style.icon} me-1"></i>${style.label}
             </span>`;
+}
+
+async function showManageRoomsModal() {
+    const modal = new bootstrap.Modal(document.getElementById('manageRoomsModal'));
+    modal.show();
+    await Promise.all([loadRoomsList(), loadTeamsList()]);
+}
+
+async function loadRoomsList() {
+    const container = document.getElementById('roomsListContainer');
+    container.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading rooms...</div>';
+    
+    try {
+        const response = await fetch('/api/duty-roster/rooms');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.rooms.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted">No rooms found</div>';
+                return;
+            }
+            
+            // Fetch teams for the dropdown
+            const teamsResponse = await fetch('/api/duty-roster/teams');
+            const teamsData = await teamsResponse.json();
+            const teams = teamsData.success ? teamsData.teams : [];
+            
+            let html = '<div class="list-group list-group-flush">';
+            
+            data.rooms.forEach(room => {
+                const statusStyle = getRoomStatusStyle(room.housekeeping_status);
+                const isBooked = room.is_booked;
+                const teamColorBar = room.team_color ? `<div style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: ${room.team_color};"></div>` : '';
+                
+                html += `
+                    <div class="list-group-item" style="position: relative;">
+                        ${teamColorBar}
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1" style="padding-left: ${room.team_color ? '8px' : '0'}">
+                                <h6 class="mb-1 fw-bold">${room.name}</h6>
+                                <div class="mb-2">
+                                    <small class="badge" style="background-color: ${statusStyle.bg}; color: ${statusStyle.text};">
+                                        <i class="fas ${statusStyle.icon} me-1"></i>${statusStyle.label}
+                                    </small>
+                                    ${isBooked ? '<small class="badge bg-danger ms-1">Booked</small>' : ''}
+                                    ${room.team_name ? `<small class="badge ms-1" style="background: ${room.team_color}; color: white;">${room.team_name}</small>` : ''}
+                                </div>
+                                <select class="form-select form-select-sm" style="max-width: 200px;" onchange="assignTeamToRoom(${room.id}, this.value)">
+                                    <option value="">No Team</option>
+                                    ${teams.map(team => `<option value="${team.id}" ${room.team_id == team.id ? 'selected' : ''} style="background: ${team.color}; color: white;">${team.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <button 
+                                onclick="deleteRoomConfirm(${room.id}, '${room.name}', ${isBooked})" 
+                                class="btn btn-sm btn-danger ms-2"
+                                ${isBooked ? 'disabled title="Cannot delete booked room"' : ''}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-4 text-danger">Failed to load rooms</div>';
+        }
+    } catch (error) {
+        console.error('Error loading rooms:', error);
+        container.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle"></i> Error loading rooms</div>';
+    }
+}
+
+async function addRoom(event) {
+    event.preventDefault();
+    
+    const roomName = document.getElementById('newRoomName').value.trim();
+    if (!roomName) return;
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
+    
+    try {
+        const response = await fetch('/api/duty-roster/rooms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ name: roomName })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('newRoomName').value = '';
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+            
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            event.target.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error adding room:', error);
+        alert('Error adding room. Please try again.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+function deleteRoomConfirm(roomId, roomName, isBooked) {
+    if (isBooked) {
+        alert('Cannot delete a booked room');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete room "${roomName}"?`)) {
+        deleteRoom(roomId);
+    }
+}
+
+async function deleteRoom(roomId) {
+    try {
+        const response = await fetch(`/api/duty-roster/rooms/${roomId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+            
+            const container = document.getElementById('roomsListContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show m-3';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.insertAdjacentElement('beforebegin', alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error deleting room:', error);
+        alert('Error deleting room. Please try again.');
+    }
+}
+
+// ===== Team Management Functions =====
+async function loadTeamsList() {
+    const container = document.getElementById('teamsListContainer');
+    container.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading teams...</div>';
+    
+    try {
+        const response = await fetch('/api/duty-roster/teams');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.teams.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted">No teams found. Add your first team above!</div>';
+                return;
+            }
+            
+            let html = '<div class="list-group list-group-flush">';
+            
+            data.teams.forEach(team => {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="width: 24px; height: 24px; background: ${team.color}; border-radius: 4px; margin-right: 8px;"></div>
+                                    <h6 class="mb-0 fw-bold">${team.name}</h6>
+                                </div>
+                                ${team.notes ? `<small class="text-muted d-block mb-1"><i class="fas fa-info-circle me-1"></i>${team.notes}</small>` : ''}
+                                <small class="text-muted">
+                                    <i class="fas fa-door-open me-1"></i>${team.rooms_count} room${team.rooms_count !== 1 ? 's' : ''}
+                                </small>
+                            </div>
+                            <button 
+                                onclick="deleteTeamConfirm(${team.id}, '${team.name}')" 
+                                class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-4 text-danger">Failed to load teams</div>';
+        }
+    } catch (error) {
+        console.error('Error loading teams:', error);
+        container.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle"></i> Error loading teams</div>';
+    }
+}
+
+async function addTeam(event) {
+    event.preventDefault();
+    
+    const teamName = document.getElementById('newTeamName').value.trim();
+    const teamColor = document.querySelector('input[name="teamColor"]:checked')?.value;
+    const teamNotes = document.getElementById('newTeamNotes').value.trim();
+    
+    if (!teamName || !teamColor) {
+        alert('Please provide a team name and select a color');
+        return;
+    }
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
+    
+    try {
+        const response = await fetch('/api/duty-roster/teams', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                name: teamName,
+                color: teamColor,
+                notes: teamNotes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('newTeamName').value = '';
+            document.getElementById('newTeamNotes').value = '';
+            document.querySelectorAll('input[name="teamColor"]').forEach(input => input.checked = false);
+            
+            await loadTeamsList();
+            await loadRoomsList(); // Refresh room list to update team dropdown
+            
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            event.target.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error adding team:', error);
+        alert('Error adding team. Please try again.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+function deleteTeamConfirm(teamId, teamName) {
+    if (confirm(`Are you sure you want to delete team "${teamName}"? This will unassign all rooms from this team.`)) {
+        deleteTeam(teamId);
+    }
+}
+
+async function deleteTeam(teamId) {
+    try {
+        const response = await fetch(`/api/duty-roster/teams/${teamId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            await loadTeamsList();
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+            
+            const container = document.getElementById('teamsListContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show m-3';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.insertAdjacentElement('beforebegin', alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error deleting team:', error);
+        alert('Error deleting team. Please try again.');
+    }
+}
+
+async function assignTeamToRoom(roomId, teamId) {
+    try {
+        const response = await fetch(`/api/duty-roster/rooms/${roomId}/assign-team`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ team_id: teamId || null })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+        } else {
+            alert('Error: ' + data.error);
+            await loadRoomsList(); // Reload to reset dropdown
+        }
+    } catch (error) {
+        console.error('Error assigning team:', error);
+        alert('Error assigning team. Please try again.');
+        await loadRoomsList(); // Reload to reset dropdown
+    }
 }
 </script>
 @endsection

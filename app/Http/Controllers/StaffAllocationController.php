@@ -1840,31 +1840,60 @@ class StaffAllocationController extends Controller
      */
     public function getHousekeepingStatus(Request $request)
     {
-        $rooms = Room::all();
+        try {
+            // Check if team relationship exists (migration has been run)
+            $hasTeams = \Schema::hasColumn('rooms', 'team_id') && \Schema::hasTable('room_teams');
+            
+            if ($hasTeams) {
+                $rooms = Room::with('team')->get();
+            } else {
+                $rooms = Room::all();
+            }
 
-        $roomStatuses = $rooms->map(function ($room) {
-            $status = $room->housekeeping_status ?? 'available';
-            return [
-                'id' => $room->id,
-                'name' => $room->name,
-                'status' => $status,
-            ];
-        });
+            $roomStatuses = $rooms->map(function ($room) use ($hasTeams) {
+                $status = $room->housekeeping_status ?? 'available';
+                $data = [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'status' => $status,
+                ];
+                
+                if ($hasTeams) {
+                    $data['team_id'] = $room->team_id ?? null;
+                    $data['team_name'] = $room->team ? $room->team->name : null;
+                    $data['team_color'] = $room->team ? $room->team->color : null;
+                }
+                
+                return $data;
+            });
 
-        $available = $roomStatuses->where('status', 'available')->count();
-        $occupied = $roomStatuses->where('status', 'occupied')->count();
-        $needsCleaning = $roomStatuses->where('status', 'needs_cleaning')->count();
+            $available = $roomStatuses->where('status', 'available')->count();
+            $occupied = $roomStatuses->where('status', 'occupied')->count();
+            $needsCleaning = $roomStatuses->where('status', 'needs_cleaning')->count();
 
-        return response()->json([
-            'success' => true,
-            'rooms' => $roomStatuses,
-            'stats' => [
-                'total' => $rooms->count(),
-                'available' => $available,
-                'occupied' => $occupied,
-                'needs_cleaning' => $needsCleaning,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'rooms' => $roomStatuses,
+                'stats' => [
+                    'total' => $rooms->count(),
+                    'available' => $available,
+                    'occupied' => $occupied,
+                    'needs_cleaning' => $needsCleaning,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'rooms' => [],
+                'stats' => [
+                    'total' => 0,
+                    'available' => 0,
+                    'occupied' => 0,
+                    'needs_cleaning' => 0,
+                ],
+            ]);
+        }
     }
 
     /**
@@ -1951,6 +1980,248 @@ class StaffAllocationController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Get All Rooms for Management
+     */
+    public function getAllRooms(Request $request)
+    {
+        try {
+            // Check if team relationship exists (migration has been run)
+            $hasTeams = \Schema::hasColumn('rooms', 'team_id') && \Schema::hasTable('room_teams');
+            
+            if ($hasTeams) {
+                $rooms = Room::with('team')->orderBy('name')->get();
+            } else {
+                $rooms = Room::orderBy('name')->get();
+            }
+            
+            $roomsData = $rooms->map(function ($room) use ($hasTeams) {
+                $data = [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'housekeeping_status' => $room->housekeeping_status ?? 'available',
+                    'is_booked' => $room->is_booked ?? false,
+                ];
+                
+                if ($hasTeams) {
+                    $data['team_id'] = $room->team_id ?? null;
+                    $data['team_name'] = $room->team ? $room->team->name : null;
+                    $data['team_color'] = $room->team ? $room->team->color : null;
+                }
+                
+                return $data;
+            });
+
+            return response()->json([
+                'success' => true,
+                'rooms' => $roomsData
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Add New Room
+     */
+    public function addRoom(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255|unique:rooms,name'
+            ]);
+
+            $room = Room::create([
+                'name' => $validated['name'],
+                'housekeeping_status' => 'available',
+                'daily_checked' => false,
+                'is_booked' => false,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Room added successfully',
+                'room' => [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'housekeeping_status' => $room->housekeeping_status,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Room name already exists or is invalid'
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Delete Room
+     */
+    public function deleteRoom(Request $request, $roomId)
+    {
+        try {
+            $room = Room::findOrFail($roomId);
+            
+            if ($room->is_booked) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cannot delete a booked room'
+                ], 400);
+            }
+
+            $roomName = $room->name;
+            $room->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Room '{$roomName}' deleted successfully"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Room not found or error occurred'
+            ], 404);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Get All Teams
+     */
+    public function getAllTeams(Request $request)
+    {
+        try {
+            // Check if team table exists (migration has been run)
+            if (!\Schema::hasTable('room_teams')) {
+                return response()->json([
+                    'success' => true,
+                    'teams' => []
+                ]);
+            }
+            
+            $teams = \App\Models\RoomTeam::withCount('rooms')->get()->map(function ($team) {
+                return [
+                    'id' => $team->id,
+                    'name' => $team->name,
+                    'color' => $team->color,
+                    'notes' => $team->notes,
+                    'check_in_date' => $team->check_in_date ? $team->check_in_date->format('Y-m-d') : null,
+                    'check_out_date' => $team->check_out_date ? $team->check_out_date->format('Y-m-d') : null,
+                    'rooms_count' => $team->rooms_count,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'teams' => $teams
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'teams' => []
+            ]);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Create Team
+     */
+    public function createTeam(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'color' => 'required|string|max:7',
+                'notes' => 'nullable|string',
+                'check_in_date' => 'nullable|date',
+                'check_out_date' => 'nullable|date',
+            ]);
+
+            $team = \App\Models\RoomTeam::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Team created successfully',
+                'team' => [
+                    'id' => $team->id,
+                    'name' => $team->name,
+                    'color' => $team->color,
+                    'notes' => $team->notes,
+                    'check_in_date' => $team->check_in_date,
+                    'check_out_date' => $team->check_out_date,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Delete Team
+     */
+    public function deleteTeam(Request $request, $teamId)
+    {
+        try {
+            $team = \App\Models\RoomTeam::findOrFail($teamId);
+            
+            // Unassign all rooms from this team
+            Room::where('team_id', $teamId)->update(['team_id' => null]);
+            
+            $teamName = $team->name;
+            $team->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Team '{$teamName}' deleted successfully"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Team not found or error occurred'
+            ], 404);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Assign Team to Room
+     */
+    public function assignTeamToRoom(Request $request, $roomId)
+    {
+        try {
+            $room = Room::findOrFail($roomId);
+            $teamId = $request->input('team_id');
+            
+            if ($teamId) {
+                $team = \App\Models\RoomTeam::findOrFail($teamId);
+                $room->team_id = $teamId;
+                $message = "Room assigned to team '{$team->name}'";
+            } else {
+                $room->team_id = null;
+                $message = "Team removed from room";
+            }
+            
+            $room->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

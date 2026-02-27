@@ -532,6 +532,9 @@
                     <i class="fas fa-broom"></i> Housekeeping Status
                 </h3>
                 <div class="flex items-center gap-2">
+                    <button onclick="showManageRoomsModal()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="Manage Rooms">
+                        <i class="fas fa-cog"></i>
+                    </button>
                     <button onclick="showHousekeepingLogs()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="View History">
                         <i class="fas fa-history"></i>
                     </button>
@@ -1785,6 +1788,46 @@
                 <div id="hkLogsContainer" class="p-3">
                     <div class="text-center py-4 text-gray-500 text-xs">
                         <i class="fas fa-spinner fa-spin mr-2"></i> Loading history...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Rooms Modal -->
+<div class="modal fade" id="manageRoomsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gray-800 text-white p-3">
+                <h5 class="modal-title text-sm font-bold"><i class="fas fa-cog mr-2"></i>Manage Rooms</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Add Room Form -->
+                <div class="bg-white border border-gray-200 rounded-lg mb-3 overflow-hidden">
+                    <div class="bg-blue-600 text-white p-2">
+                        <h6 class="text-xs font-bold mb-0"><i class="fas fa-plus mr-2"></i>Add New Room</h6>
+                    </div>
+                    <div class="p-3">
+                        <form id="addRoomForm" onsubmit="addRoom(event)" class="flex gap-2">
+                            <input type="text" id="newRoomName" class="form-control text-sm" placeholder="Enter room number or name" required>
+                            <button type="submit" class="btn btn-primary text-xs">
+                                <i class="fas fa-plus mr-1"></i> Add Room
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Existing Rooms List -->
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="bg-gray-600 text-white p-2">
+                        <h6 class="text-xs font-bold mb-0"><i class="fas fa-list mr-2"></i>Existing Rooms</h6>
+                    </div>
+                    <div id="roomsListContainer" style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-center py-4 text-gray-500 text-xs">
+                            <i class="fas fa-spinner fa-spin mr-2"></i> Loading rooms...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -6168,9 +6211,13 @@ function renderHousekeepingGrid(rooms) {
     }
     container.innerHTML = rooms.map(room => {
         const s = getRoomStatusStyle(room.status);
+        const teamBorderStyle = room.team_color ? `border-l-4` : '';
+        const teamBorderColor = room.team_color ? `style="border-left-color: ${room.team_color};"` : '';
+        const teamTooltip = room.team_name ? ` | Team: ${room.team_name}` : '';
         return `
-            <div class="relative ${s.bg} ${s.text} border ${s.border} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px] cursor-pointer select-none hover:opacity-80 active:scale-95 transition-all"
-                 title="${room.name}: ${s.label} (click to change)"
+            <div class="relative ${s.bg} ${s.text} border ${s.border} ${teamBorderStyle} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px] cursor-pointer select-none hover:opacity-80 active:scale-95 transition-all"
+                 ${teamBorderColor}
+                 title="${room.name}: ${s.label}${teamTooltip} (click to change)"
                  onclick="cycleRoomStatus(${room.id})"
                  id="hk-room-${room.id}">
                 <i class="fas ${s.icon} text-[8px]"></i> ${room.name}
@@ -6257,6 +6304,154 @@ async function showHousekeepingLogs() {
     } catch (error) {
         console.error('Error loading housekeeping logs:', error);
         container.innerHTML = '<div class="text-center py-4 text-red-500 text-xs"><i class="fas fa-exclamation-triangle"></i> Error loading history</div>';
+    }
+}
+
+async function showManageRoomsModal() {
+    const modal = new bootstrap.Modal(document.getElementById('manageRoomsModal'));
+    modal.show();
+    await loadRoomsList();
+}
+
+async function loadRoomsList() {
+    const container = document.getElementById('roomsListContainer');
+    container.innerHTML = '<div class="text-center py-4 text-gray-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i> Loading rooms...</div>';
+    
+    try {
+        const response = await fetch('/api/duty-roster/rooms');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.rooms.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-gray-500 text-xs">No rooms found</div>';
+                return;
+            }
+            
+            let html = '<div class="divide-y divide-gray-100">';
+            
+            data.rooms.forEach(room => {
+                const statusStyle = getRoomStatusStyle(room.housekeeping_status);
+                const isBooked = room.is_booked;
+                
+                html += `
+                    <div class="flex justify-between items-center p-2 hover:bg-gray-50">
+                        <div>
+                            <h6 class="text-xs font-bold mb-1">${room.name}</h6>
+                            <span class="${statusStyle.bg} ${statusStyle.text} text-[10px] px-1.5 py-0.5 rounded">
+                                <i class="fas ${statusStyle.icon} mr-1"></i>${statusStyle.label}
+                            </span>
+                            ${isBooked ? '<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded ml-1">Booked</span>' : ''}
+                        </div>
+                        <button 
+                            onclick="deleteRoomConfirm(${room.id}, '${room.name}', ${isBooked})" 
+                            class="btn btn-sm btn-danger text-xs px-2 py-1"
+                            ${isBooked ? 'disabled title="Cannot delete booked room"' : ''}>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-4 text-red-500 text-xs">Failed to load rooms</div>';
+        }
+    } catch (error) {
+        console.error('Error loading rooms:', error);
+        container.innerHTML = '<div class="text-center py-4 text-red-500 text-xs"><i class="fas fa-exclamation-triangle"></i> Error loading rooms</div>';
+    }
+}
+
+async function addRoom(event) {
+    event.preventDefault();
+    
+    const roomName = document.getElementById('newRoomName').value.trim();
+    if (!roomName) return;
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Adding...';
+    
+    try {
+        const response = await fetch('/api/duty-roster/rooms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ name: roomName })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('newRoomName').value = '';
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+            
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2 text-xs';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle mr-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            event.target.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error adding room:', error);
+        alert('Error adding room. Please try again.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+function deleteRoomConfirm(roomId, roomName, isBooked) {
+    if (isBooked) {
+        alert('Cannot delete a booked room');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete room "${roomName}"?`)) {
+        deleteRoom(roomId);
+    }
+}
+
+async function deleteRoom(roomId) {
+    try {
+        const response = await fetch(`/api/duty-roster/rooms/${roomId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+            
+            const container = document.getElementById('roomsListContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show m-3 text-xs';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle mr-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.insertAdjacentElement('beforebegin', alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error deleting room:', error);
+        alert('Error deleting room. Please try again.');
     }
 }
 

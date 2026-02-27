@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
-    protected $fillable = ['name', 'daily_checked', 'is_booked', 'housekeeping_status'];
+    protected $fillable = ['name', 'daily_checked', 'is_booked', 'housekeeping_status', 'team_id'];
     
     protected $casts = [
         'daily_checked' => 'boolean',
@@ -18,5 +18,10 @@ class Room extends Model
         return $this->belongsToMany(ChecklistItem::class, 'room_checklist_items')
             ->withPivot('is_checked')
             ->withTimestamps();
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(RoomTeam::class, 'team_id');
     }
 }

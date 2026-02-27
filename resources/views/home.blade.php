@@ -46,7 +46,7 @@
         <div class="col-12 mb-4">
             <div class="card border-0 shadow-lg" style="overflow: hidden; border-radius: 12px;">
                 <div class="card-header text-white p-3 d-flex justify-content-between align-items-center position-relative" style="background: linear-gradient(135deg, #c2185b 0%, #d81b60 50%, #e91e63 100%); border: none;">
-                    <div class="position-absolute w-100 h-100 top-0 start-0" style="background: url('data:image/svg+xml,<svg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"><defs><pattern id=\"grid\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><circle cx=\"10\" cy=\"10\" r=\"1\" fill=\"white\" opacity=\"0.1\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grid)\"/></svg>'); opacity: 0.3;"></div>
+                    <div class="position-absolute w-100 h-100 top-0 start-0" style="background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px); opacity: 0.5;"></div>
                     <h5 class="mb-0 fs-6 fw-bold position-relative" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                         <i class="fas fa-broom me-2"></i> Housekeeping Status
                     </h5>

@@ -527,7 +527,7 @@
 
         <!-- Housekeeping Status Widget -->
         <div class="mb-4 bg-white rounded-xl shadow-lg border-0 overflow-hidden" id="housekeepingWidget">
-            <div class="p-3 bg-gradient-to-br from-pink-600 via-pink-500 to-rose-600 flex items-center justify-between relative" style="background-image: url('data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cdefs%3E%3Cpattern id=\'grid\' width=\'20\' height=\'20\' patternUnits=\'userSpaceOnUse\'%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'1\' fill=\'white\' opacity=\'0.1\'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=\'100\' height=\'100\' fill=\'url(%23grid)\'/%3E%3C/svg%3E'); background-blend-mode: overlay;">
+            <div class="p-3 bg-gradient-to-br from-pink-600 via-pink-500 to-rose-600 flex items-center justify-between relative" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px); background-blend-mode: overlay;">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2 relative z-10" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                     <i class="fas fa-broom"></i> Housekeeping Status
                 </h3>

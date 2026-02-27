@@ -1831,20 +1831,26 @@ function mergeBookingsWithRooms(rooms, bookings) {
     });
 }
 
-function getFunctionTypeColor(functionType) {
-    // Color mapping based on function type (similar to duty-roster)
-    const colorMap = {
-        'wedding': '#3b82f6',      // Blue
-        'function': '#8b5cf6',      // Purple
-        'birthday': '#ec4899',      // Pink
-        'meeting': '#10b981',       // Green
-        'conference': '#f59e0b',    // Orange
-        'party': '#ef4444',         // Red
-        'other': '#6366f1'          // Indigo
-    };
+function getBookingColor(bookingId) {
+    // Color palette for different bookings (each booking gets unique color)
+    const colors = [
+        '#3b82f6',  // Blue
+        '#8b5cf6',  // Purple
+        '#10b981',  // Green
+        '#f59e0b',  // Orange
+        '#ec4899',  // Pink
+        '#ef4444',  // Red
+        '#06b6d4',  // Cyan
+        '#84cc16',  // Lime
+        '#f97316',  // Orange-red
+        '#a855f7',  // Violet
+        '#14b8a6',  // Teal
+        '#eab308'   // Yellow
+    ];
     
-    const type = (functionType || '').toLowerCase();
-    return colorMap[type] || '#3b82f6'; // Default blue
+    // Use booking ID to consistently assign same color to same booking
+    const colorIndex = bookingId % colors.length;
+    return colors[colorIndex];
 }
 
 function updateHousekeepingStats(stats) {
@@ -1888,7 +1894,7 @@ function renderHousekeepingGrid(rooms) {
         let multipleIndicator = '';
         
         if (hasBooking) {
-            const bookingColor = getFunctionTypeColor(room.booking.function_type);
+            const bookingColor = getBookingColor(room.booking.id);
             bookingBorder = `box-shadow: 0 0 0 2px ${bookingColor}; border: 2px solid ${bookingColor} !important;`;
             
             // Build tooltip with all bookings
@@ -1901,7 +1907,7 @@ function renderHousekeepingGrid(rooms) {
                 // Multiple booking indicator (small badge)
                 multipleIndicator = `<span style="position: absolute; top: -4px; right: -4px; background: ${bookingColor}; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${room.bookings.length}</span>`;
             } else {
-                bookingTooltip = ` | 📅 Booking: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})`;
+                bookingTooltip = ` | 📅 Booking #${room.booking.id}: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})`;
             }
         }
         

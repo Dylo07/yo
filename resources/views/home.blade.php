@@ -84,21 +84,21 @@
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%); box-shadow: 0 2px 8px rgba(161,98,7,0.15); transition: all 0.3s;">
-                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #a16207;">
+                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); box-shadow: 0 2px 8px rgba(185,28,28,0.15); transition: all 0.3s;">
+                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #b91c1c;">
                                     <i class="fas fa-user-check"></i>
                                 </div>
-                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #a16207; letter-spacing: 0.5px;">OCCUPIED</div>
-                                <div class="hk-stat-val fw-bold" style="color: #a16207; font-size: 1.75rem;" id="hkOccupied">0</div>
+                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #b91c1c; letter-spacing: 0.5px;">OCCUPIED</div>
+                                <div class="hk-stat-val fw-bold" style="color: #b91c1c; font-size: 1.75rem;" id="hkOccupied">0</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); box-shadow: 0 2px 8px rgba(185,28,28,0.15); transition: all 0.3s;">
-                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #b91c1c;">
+                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%); box-shadow: 0 2px 8px rgba(161,98,7,0.15); transition: all 0.3s;">
+                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #a16207;">
                                     <i class="fas fa-broom"></i>
                                 </div>
-                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #b91c1c; letter-spacing: 0.5px;">NEEDS CLEANING</div>
-                                <div class="hk-stat-val fw-bold" style="color: #b91c1c; font-size: 1.75rem;" id="hkNeedsCleaning">0</div>
+                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #a16207; letter-spacing: 0.5px;">NEEDS CLEANING</div>
+                                <div class="hk-stat-val fw-bold" style="color: #a16207; font-size: 1.75rem;" id="hkNeedsCleaning">0</div>
                             </div>
                         </div>
                     </div>
@@ -1801,9 +1801,9 @@ function getRoomStatusStyle(status) {
         case 'available':
             return { bg: '#dcfce7', text: '#15803d', icon: 'fa-check-circle', border: '#bbf7d0', label: 'Available' };
         case 'occupied':
-            return { bg: '#fef9c3', text: '#a16207', icon: 'fa-user', border: '#fef08a', label: 'Occupied' };
+            return { bg: '#fee2e2', text: '#b91c1c', icon: 'fa-user', border: '#fecaca', label: 'Occupied' };
         case 'needs_cleaning':
-            return { bg: '#fee2e2', text: '#b91c1c', icon: 'fa-broom', border: '#fecaca', label: 'Needs Cleaning' };
+            return { bg: '#fef9c3', text: '#a16207', icon: 'fa-broom', border: '#fef08a', label: 'Needs Cleaning' };
         default:
             return { bg: '#dcfce7', text: '#15803d', icon: 'fa-check-circle', border: '#bbf7d0', label: 'Available' };
     }

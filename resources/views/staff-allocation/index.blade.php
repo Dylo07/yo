@@ -560,19 +560,19 @@
                         <div class="text-[10px] text-green-700 font-semibold tracking-wide mb-1">AVAILABLE</div>
                         <div class="text-xl font-bold text-green-600 relative z-10" id="hkAvailable">0</div>
                     </div>
-                    <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%); box-shadow: 0 2px 8px rgba(161,98,7,0.15);">
-                        <div class="absolute -top-2 -right-2 text-4xl opacity-15 text-yellow-600">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <div class="text-[10px] text-yellow-700 font-semibold tracking-wide mb-1">OCCUPIED</div>
-                        <div class="text-xl font-bold text-yellow-600 relative z-10" id="hkOccupied">0</div>
-                    </div>
                     <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); box-shadow: 0 2px 8px rgba(185,28,28,0.15);">
                         <div class="absolute -top-2 -right-2 text-4xl opacity-15 text-red-600">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="text-[10px] text-red-700 font-semibold tracking-wide mb-1">OCCUPIED</div>
+                        <div class="text-xl font-bold text-red-600 relative z-10" id="hkOccupied">0</div>
+                    </div>
+                    <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%); box-shadow: 0 2px 8px rgba(161,98,7,0.15);">
+                        <div class="absolute -top-2 -right-2 text-4xl opacity-15 text-yellow-600">
                             <i class="fas fa-broom"></i>
                         </div>
-                        <div class="text-[10px] text-red-700 font-semibold tracking-wide mb-1">NEEDS CLEANING</div>
-                        <div class="text-xl font-bold text-red-600 relative z-10" id="hkNeedsCleaning">0</div>
+                        <div class="text-[10px] text-yellow-700 font-semibold tracking-wide mb-1">NEEDS CLEANING</div>
+                        <div class="text-xl font-bold text-yellow-600 relative z-10" id="hkNeedsCleaning">0</div>
                     </div>
                 </div>
                 <!-- Room Grid -->
@@ -6207,9 +6207,9 @@ function getRoomStatusStyle(status) {
         case 'available':
             return { bg: 'bg-green-100', text: 'text-green-700', icon: 'fa-check-circle', border: 'border-green-300', label: 'Available' };
         case 'occupied':
-            return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'fa-user', border: 'border-yellow-300', label: 'Occupied' };
+            return { bg: 'bg-red-100', text: 'text-red-700', icon: 'fa-user', border: 'border-red-300', label: 'Occupied' };
         case 'needs_cleaning':
-            return { bg: 'bg-red-100', text: 'text-red-700', icon: 'fa-broom', border: 'border-red-300', label: 'Needs Cleaning' };
+            return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'fa-broom', border: 'border-yellow-300', label: 'Needs Cleaning' };
         default:
             return { bg: 'bg-green-100', text: 'text-green-700', icon: 'fa-check-circle', border: 'border-green-300', label: 'Available' };
     }

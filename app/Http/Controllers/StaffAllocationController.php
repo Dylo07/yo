@@ -1885,6 +1885,16 @@ class StaffAllocationController extends Controller
             $newStatus = $cycle[$currentStatus] ?? 'available';
             $room->housekeeping_status = $newStatus;
             $room->save();
+            
+            // Log the status change
+            if (class_exists(\App\Models\RoomStatusLog::class)) {
+                \App\Models\RoomStatusLog::create([
+                    'room_id' => $room->id,
+                    'user_id' => auth()->id(),
+                    'old_status' => $currentStatus,
+                    'new_status' => $newStatus,
+                ]);
+            }
 
             // Return updated stats
             $allRooms = Room::all();
@@ -1902,6 +1912,42 @@ class StaffAllocationController extends Controller
                     'occupied' => $occupied,
                     'needs_cleaning' => $needsCleaning,
                 ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Get Housekeeping Status Logs
+     */
+    public function getRoomStatusLogs(Request $request)
+    {
+        try {
+            $limit = $request->input('limit', 50);
+            
+            $logs = [];
+            if (class_exists(\App\Models\RoomStatusLog::class)) {
+                $logs = \App\Models\RoomStatusLog::with(['room', 'user'])
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->get()
+                    ->map(function ($log) {
+                        return [
+                            'id' => $log->id,
+                            'room_name' => $log->room ? $log->room->name : 'Unknown Room',
+                            'user_name' => $log->user ? $log->user->name : 'System',
+                            'old_status' => $log->old_status,
+                            'new_status' => $log->new_status,
+                            'time' => $log->created_at->format('Y-m-d h:i A'),
+                            'time_diff' => $log->created_at->diffForHumans()
+                        ];
+                    });
+            }
+
+            return response()->json([
+                'success' => true,
+                'logs' => $logs
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()]);

@@ -49,9 +49,14 @@
                     <h5 class="mb-0 fs-6 fw-bold">
                         <i class="fas fa-broom me-2"></i> Housekeeping Status
                     </h5>
-                    <button onclick="refreshHousekeeping()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none" style="background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
+                    <div>
+                        <button onclick="showHousekeepingLogs()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none me-1" style="background: rgba(255,255,255,0.2);" title="View History">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="refreshHousekeeping()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none" style="background: rgba(255,255,255,0.2);" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-3 bg-white" style="border: 1px solid #eaeaea; border-top: 0; border-radius: 0 0 8px 8px;">
                     <!-- Housekeeping Stats -->
@@ -152,9 +157,26 @@
         </div>
     </div>
 
+    <!-- Housekeeping Logs Modal -->
+    <div class="modal fade" id="housekeepingLogsModal" tabindex="-1" aria-labelledby="housekeepingLogsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="housekeepingLogsModalLabel"><i class="fas fa-history me-2"></i>Housekeeping Status History</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="hkLogsContainer" class="p-3">
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i> Loading history...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-
-    <div class="card mt-4 shadow-sm">
+<div class="card mt-4 shadow-sm">
    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
        <h5 class="mb-0">Room Check-in Vehicles</h5>
        <form action="{{ route('home') }}" method="GET" class="d-flex align-items-center">
@@ -1658,6 +1680,61 @@ async function cycleRoomStatus(roomId) {
 
 function refreshHousekeeping() {
     loadHousekeepingStatus();
+}
+
+async function showHousekeepingLogs() {
+    const modal = new bootstrap.Modal(document.getElementById('housekeepingLogsModal'));
+    modal.show();
+    
+    const container = document.getElementById('hkLogsContainer');
+    container.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading history...</div>';
+    
+    try {
+        const response = await fetch('/api/duty-roster/housekeeping-logs');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.logs.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted">No recent status changes found.</div>';
+                return;
+            }
+            
+            let html = '<div class="list-group list-group-flush">';
+            
+            data.logs.forEach(log => {
+                const oldStatusBadge = getStatusBadgeHTML(log.old_status || 'unknown');
+                const newStatusBadge = getStatusBadgeHTML(log.new_status);
+                
+                html += `
+                    <div class="list-group-item px-3 py-2">
+                        <div class="d-flex w-100 justify-content-between mb-1">
+                            <h6 class="mb-0 fw-bold">${log.room_name}</h6>
+                            <small class="text-muted" title="${log.time}">${log.time_diff}</small>
+                        </div>
+                        <div class="mb-1 small">
+                            ${oldStatusBadge} <i class="fas fa-arrow-right mx-1 text-muted"></i> ${newStatusBadge}
+                        </div>
+                        <small class="text-muted"><i class="fas fa-user me-1"></i> ${log.user_name}</small>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-4 text-danger">Failed to load history</div>';
+        }
+    } catch (error) {
+        console.error('Error loading housekeeping logs:', error);
+        container.innerHTML = '<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle"></i> Error loading history</div>';
+    }
+}
+
+function getStatusBadgeHTML(status) {
+    const style = getRoomStatusStyle(status);
+    return `<span class="badge" style="background-color: ${style.bg}; color: ${style.text}; border: 1px solid ${style.border};">
+                <i class="fas ${style.icon} me-1"></i>${style.label}
+            </span>`;
 }
 </script>
 @endsection

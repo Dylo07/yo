@@ -532,7 +532,10 @@
                     <i class="fas fa-broom"></i> Housekeeping Status
                 </h3>
                 <div class="flex items-center gap-2">
-                    <button onclick="refreshHousekeeping()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20">
+                    <button onclick="showHousekeepingLogs()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="View History">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    <button onclick="refreshHousekeeping()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -1769,7 +1772,25 @@
         </div>
     </div>
 </div>
-@endsection
+
+<!-- Housekeeping Logs Modal -->
+<div class="modal fade" id="housekeepingLogsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-pink-600 text-white p-3">
+                <h5 class="modal-title text-sm font-bold"><i class="fas fa-history mr-2"></i>Housekeeping Status History</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="hkLogsContainer" class="p-3">
+                    <div class="text-center py-4 text-gray-500 text-xs">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Loading history...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @push('scripts')
 <script>
@@ -1777,6 +1798,7 @@
 const sections = [
     // Top row rooms
     { id: 'ahala', name: 'Ahala', type: 'ROOM', top: 3, left: 17, width: 4, height: 6 },
+    // ... rest of your code remains the same ...
     { id: 'orchid', name: 'Orchid', type: 'ROOM', top: 8, left: 17, width: 4, height: 6 },
     { id: 'sudu-araliya', name: 'Sudu Araliya', type: 'ROOM', top: 6, left: 30, width: 6, height: 6 },
     { id: 'sepalika', name: 'Sepalika', type: 'ROOM', top: 6, left: 38, width: 6, height: 6 },
@@ -6184,6 +6206,58 @@ async function cycleRoomStatus(roomId) {
 
 function refreshHousekeeping() {
     loadHousekeepingStatus();
+}
+
+async function showHousekeepingLogs() {
+    const modal = new bootstrap.Modal(document.getElementById('housekeepingLogsModal'));
+    modal.show();
+    
+    const container = document.getElementById('hkLogsContainer');
+    container.innerHTML = '<div class="text-center py-4 text-gray-500 text-xs"><i class="fas fa-spinner fa-spin mr-2"></i> Loading history...</div>';
+    
+    try {
+        const response = await fetch('/api/duty-roster/housekeeping-logs');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.logs.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-gray-500 text-xs">No recent status changes found.</div>';
+                return;
+            }
+            
+            let html = '<div class="space-y-2">';
+            
+            data.logs.forEach(log => {
+                const oldStyle = getRoomStatusStyle(log.old_status || 'unknown');
+                const newStyle = getRoomStatusStyle(log.new_status);
+                
+                html += `
+                    <div class="bg-gray-50 rounded p-2 border border-gray-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-gray-700">${log.room_name}</span>
+                            <span class="text-[10px] text-gray-400" title="${log.time}">${log.time_diff}</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[10px] mb-1">
+                            <span class="${oldStyle.bg} ${oldStyle.text} px-1.5 py-0.5 rounded"><i class="fas ${oldStyle.icon} mr-1"></i>${oldStyle.label}</span>
+                            <i class="fas fa-arrow-right text-gray-300"></i>
+                            <span class="${newStyle.bg} ${newStyle.text} px-1.5 py-0.5 rounded"><i class="fas ${newStyle.icon} mr-1"></i>${newStyle.label}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-500">
+                            <i class="fas fa-user mr-1"></i> ${log.user_name}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-4 text-red-500 text-xs">Failed to load history</div>';
+        }
+    } catch (error) {
+        console.error('Error loading housekeeping logs:', error);
+        container.innerHTML = '<div class="text-center py-4 text-red-500 text-xs"><i class="fas fa-exclamation-triangle"></i> Error loading history</div>';
+    }
 }
 
 // ===== 4. Inventory Warnings =====

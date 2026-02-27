@@ -1800,29 +1800,51 @@ async function loadHousekeepingStatus() {
 
 function mergeBookingsWithRooms(rooms, bookings) {
     return rooms.map(room => {
-        // Find booking that includes this room number
-        const booking = bookings.find(b => {
+        // Find ALL bookings that include this room number
+        const roomBookings = bookings.filter(b => {
             const roomNumbers = b.current_room_numbers || b.room_numbers || '';
             return roomNumbers.includes(room.name);
-        });
+        }).map(b => ({
+            id: b.id,
+            guest_name: b.name,
+            function_type: b.function_type,
+            contact_number: b.contact_number,
+            guest_count: b.guest_count,
+            check_in: b.start,
+            check_out: b.end,
+            original_rooms: b.room_numbers,
+            current_rooms: b.current_room_numbers || b.room_numbers,
+            is_transferred: b.current_room_numbers && b.current_room_numbers !== b.room_numbers
+        }));
         
-        if (booking) {
-            room.booking = {
-                id: booking.id,
-                guest_name: booking.name,
-                function_type: booking.function_type,
-                contact_number: booking.contact_number,
-                guest_count: booking.guest_count,
-                check_in: booking.start,
-                check_out: booking.end,
-                original_rooms: booking.room_numbers,
-                current_rooms: booking.current_room_numbers || booking.room_numbers,
-                is_transferred: booking.current_room_numbers && booking.current_room_numbers !== booking.room_numbers
-            };
+        if (roomBookings.length > 0) {
+            // Sort by check-in date
+            roomBookings.sort((a, b) => new Date(a.check_in) - new Date(b.check_in));
+            
+            // Store all bookings and mark the primary one (earliest)
+            room.bookings = roomBookings;
+            room.booking = roomBookings[0]; // Primary booking
+            room.hasMultipleBookings = roomBookings.length > 1;
         }
         
         return room;
     });
+}
+
+function getFunctionTypeColor(functionType) {
+    // Color mapping based on function type (similar to duty-roster)
+    const colorMap = {
+        'wedding': '#3b82f6',      // Blue
+        'function': '#8b5cf6',      // Purple
+        'birthday': '#ec4899',      // Pink
+        'meeting': '#10b981',       // Green
+        'conference': '#f59e0b',    // Orange
+        'party': '#ef4444',         // Red
+        'other': '#6366f1'          // Indigo
+    };
+    
+    const type = (functionType || '').toLowerCase();
+    return colorMap[type] || '#3b82f6'; // Default blue
 }
 
 function updateHousekeepingStats(stats) {
@@ -1857,10 +1879,31 @@ function renderHousekeepingGrid(rooms) {
         const teamBorder = (isOccupied && room.team_color) ? `border-left: 4px solid ${room.team_color};` : '';
         const teamTooltip = room.team_name ? ` | Team: ${room.team_name}` : '';
         
-        // Booking indicator - for reference only (visual border)
+        // Booking indicator - for reference only (visual border with function-type color)
         const hasBooking = room.booking;
-        const bookingBorder = hasBooking ? `box-shadow: 0 0 0 2px #3b82f6; border: 2px solid #3b82f6 !important;` : '';
-        const bookingTooltip = hasBooking ? ` | 📅 Booking: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})` : '';
+        const hasMultiple = room.hasMultipleBookings;
+        
+        let bookingBorder = '';
+        let bookingTooltip = '';
+        let multipleIndicator = '';
+        
+        if (hasBooking) {
+            const bookingColor = getFunctionTypeColor(room.booking.function_type);
+            bookingBorder = `box-shadow: 0 0 0 2px ${bookingColor}; border: 2px solid ${bookingColor} !important;`;
+            
+            // Build tooltip with all bookings
+            if (hasMultiple && room.bookings) {
+                const bookingList = room.bookings.map((b, i) => 
+                    `${i + 1}. ${b.guest_name || 'Guest'} (${b.function_type}) - ${new Date(b.check_in).toLocaleDateString()} to ${new Date(b.check_out).toLocaleDateString()}`
+                ).join('\n');
+                bookingTooltip = ` | 📅 ${room.bookings.length} Bookings:\n${bookingList}`;
+                
+                // Multiple booking indicator (small badge)
+                multipleIndicator = `<span style="position: absolute; top: -4px; right: -4px; background: ${bookingColor}; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${room.bookings.length}</span>`;
+            } else {
+                bookingTooltip = ` | 📅 Booking: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})`;
+            }
+        }
         
         const tooltip = `${room.name}: ${s.label}${teamTooltip}${bookingTooltip} (click to change status)`;
         
@@ -1870,6 +1913,7 @@ function renderHousekeepingGrid(rooms) {
                  title="${tooltip}"
                  onclick="cycleRoomStatus(${room.id})"
                  id="hk-room-${room.id}">
+                ${multipleIndicator}
                 <div style="display: flex; align-items: center; justify-content: center; gap: 3px;">
                     <i class="fas ${s.icon}" style="font-size: 0.7rem;"></i>
                     <span>${room.name}</span>

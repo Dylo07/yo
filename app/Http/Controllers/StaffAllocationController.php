@@ -2295,9 +2295,9 @@ class StaffAllocationController extends Controller
                 $query->whereDate('end', '=', $todayDate);
             })
             ->get()
-            ->map(function ($booking) use ($todayDate) {
-                $endDate = \Carbon\Carbon::parse($booking->end)->toDateString();
-                $isDeparted = $endDate < $todayDate; // Departed if checkout date is before today
+            ->map(function ($booking) use ($today) {
+                $endDateTime = \Carbon\Carbon::parse($booking->end);
+                $isDeparted = $endDateTime < $today; // Departed if checkout datetime is before now
                 
                 return [
                     'id' => $booking->id,

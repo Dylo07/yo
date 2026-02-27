@@ -1814,7 +1814,8 @@ function mergeBookingsWithRooms(rooms, bookings) {
             check_out: b.end,
             original_rooms: b.room_numbers,
             current_rooms: b.current_room_numbers || b.room_numbers,
-            is_transferred: b.current_room_numbers && b.current_room_numbers !== b.room_numbers
+            is_transferred: b.current_room_numbers && b.current_room_numbers !== b.room_numbers,
+            is_departed: b.is_departed || false
         }));
         
         if (roomBookings.length > 0) {
@@ -1894,20 +1895,24 @@ function renderHousekeepingGrid(rooms) {
         let multipleIndicator = '';
         
         if (hasBooking) {
-            const bookingColor = getBookingColor(room.booking.id);
-            bookingBorder = `box-shadow: 0 0 0 2px ${bookingColor}; border: 2px solid ${bookingColor} !important;`;
+            const isDeparted = room.booking.is_departed;
+            const bookingColor = isDeparted ? '#9ca3af' : getBookingColor(room.booking.id); // Grey for departed
+            const borderStyle = isDeparted ? 'dashed' : 'solid';
+            
+            bookingBorder = `box-shadow: 0 0 0 2px ${bookingColor}; border: 2px ${borderStyle} ${bookingColor} !important;`;
             
             // Build tooltip with all bookings
             if (hasMultiple && room.bookings) {
                 const bookingList = room.bookings.map((b, i) => 
-                    `${i + 1}. ${b.guest_name || 'Guest'} (${b.function_type}) - ${new Date(b.check_in).toLocaleDateString()} to ${new Date(b.check_out).toLocaleDateString()}`
+                    `${i + 1}. ${b.guest_name || 'Guest'} (${b.function_type}) - ${new Date(b.check_in).toLocaleDateString()} to ${new Date(b.check_out).toLocaleDateString()}${b.is_departed ? ' [DEPARTED]' : ''}`
                 ).join('\n');
                 bookingTooltip = ` | 📅 ${room.bookings.length} Bookings:\n${bookingList}`;
                 
                 // Multiple booking indicator (small badge)
                 multipleIndicator = `<span style="position: absolute; top: -4px; right: -4px; background: ${bookingColor}; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${room.bookings.length}</span>`;
             } else {
-                bookingTooltip = ` | 📅 Booking #${room.booking.id}: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})`;
+                const statusText = isDeparted ? ' [DEPARTED]' : '';
+                bookingTooltip = ` | 📅 Booking #${room.booking.id}: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})${statusText}`;
             }
         }
         

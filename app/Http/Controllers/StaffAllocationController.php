@@ -2275,6 +2275,7 @@ class StaffAllocationController extends Controller
     {
         try {
             $today = now();
+            $todayDate = $today->toDateString();
             
             // Check if bookings table exists
             if (!\Schema::hasTable('bookings')) {
@@ -2284,12 +2285,20 @@ class StaffAllocationController extends Controller
                 ]);
             }
             
-            $bookings = \App\Models\Booking::where(function($query) use ($today) {
-                $query->whereDate('start', '<=', $today)
-                      ->whereDate('end', '>=', $today);
+            // Get active bookings and bookings that departed today (for reference)
+            $bookings = \App\Models\Booking::where(function($query) use ($todayDate) {
+                $query->whereDate('start', '<=', $todayDate)
+                      ->whereDate('end', '>=', $todayDate);
+            })
+            ->orWhere(function($query) use ($todayDate) {
+                // Include bookings that ended today (departed)
+                $query->whereDate('end', '=', $todayDate);
             })
             ->get()
-            ->map(function ($booking) {
+            ->map(function ($booking) use ($todayDate) {
+                $endDate = \Carbon\Carbon::parse($booking->end)->toDateString();
+                $isDeparted = $endDate < $todayDate; // Departed if checkout date is before today
+                
                 return [
                     'id' => $booking->id,
                     'name' => $booking->name,
@@ -2301,6 +2310,7 @@ class StaffAllocationController extends Controller
                     'start' => $booking->start,
                     'end' => $booking->end,
                     'bites_details' => $booking->bites_details,
+                    'is_departed' => $isDeparted,
                 ];
             });
 

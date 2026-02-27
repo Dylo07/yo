@@ -526,45 +526,57 @@
         </div>
 
         <!-- Housekeeping Status Widget -->
-        <div class="mb-4 bg-white rounded-lg shadow-sm border overflow-hidden" id="housekeepingWidget">
-            <div class="p-2.5 bg-gradient-to-r from-pink-600 to-rose-600 flex items-center justify-between">
-                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+        <div class="mb-4 bg-white rounded-xl shadow-lg border-0 overflow-hidden" id="housekeepingWidget">
+            <div class="p-3 bg-gradient-to-br from-pink-600 via-pink-500 to-rose-600 flex items-center justify-between relative" style="background-image: url('data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cdefs%3E%3Cpattern id=\'grid\' width=\'20\' height=\'20\' patternUnits=\'userSpaceOnUse\'%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'1\' fill=\'white\' opacity=\'0.1\'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=\'100\' height=\'100\' fill=\'url(%23grid)\'/%3E%3C/svg%3E'); background-blend-mode: overlay;">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2 relative z-10" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                     <i class="fas fa-broom"></i> Housekeeping Status
                 </h3>
-                <div class="flex items-center gap-2">
-                    <button onclick="showManageRoomsModal()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="Manage Rooms">
+                <div class="flex items-center gap-2 relative z-10">
+                    <button onclick="showManageRoomsModal()" class="text-white text-xs px-2 py-1 rounded-md transition-all duration-300 hover:scale-105 hover:bg-white/25 active:scale-95" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);" title="Manage Rooms">
                         <i class="fas fa-cog"></i>
                     </button>
-                    <button onclick="showHousekeepingLogs()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="View History">
+                    <button onclick="showHousekeepingLogs()" class="text-white text-xs px-2 py-1 rounded-md transition-all duration-300 hover:scale-105 hover:bg-white/25 active:scale-95" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);" title="View History">
                         <i class="fas fa-history"></i>
                     </button>
-                    <button onclick="refreshHousekeeping()" class="text-white hover:text-pink-200 text-xs px-2 py-1 rounded hover:bg-white/20" title="Refresh">
+                    <button onclick="refreshHousekeeping()" class="text-white text-xs px-2 py-1 rounded-md transition-all duration-300 hover:scale-105 hover:bg-white/25 active:scale-95" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);" title="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
             </div>
-            <div class="p-2">
+            <div class="p-3">
                 <!-- Housekeeping Stats -->
-                <div class="grid grid-cols-4 gap-2 mb-2">
-                    <div class="text-center bg-gray-50 rounded-lg p-2">
-                        <div class="text-xs text-gray-500">Total</div>
-                        <div class="text-lg font-bold text-gray-700" id="hkTotal">0</div>
+                <div class="grid grid-cols-4 gap-2 mb-3">
+                    <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                        <div class="absolute -top-2 -right-2 text-4xl opacity-10">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="text-[10px] text-gray-500 font-semibold tracking-wide mb-1">TOTAL</div>
+                        <div class="text-xl font-bold text-gray-700 relative z-10" id="hkTotal">0</div>
                     </div>
-                    <div class="text-center bg-green-50 rounded-lg p-2">
-                        <div class="text-xs text-green-600">Available</div>
-                        <div class="text-lg font-bold text-green-600" id="hkAvailable">0</div>
+                    <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); box-shadow: 0 2px 8px rgba(21,128,61,0.15);">
+                        <div class="absolute -top-2 -right-2 text-4xl opacity-15 text-green-600">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="text-[10px] text-green-700 font-semibold tracking-wide mb-1">AVAILABLE</div>
+                        <div class="text-xl font-bold text-green-600 relative z-10" id="hkAvailable">0</div>
                     </div>
-                    <div class="text-center bg-yellow-50 rounded-lg p-2">
-                        <div class="text-xs text-yellow-600">Occupied</div>
-                        <div class="text-lg font-bold text-yellow-600" id="hkOccupied">0</div>
+                    <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%); box-shadow: 0 2px 8px rgba(161,98,7,0.15);">
+                        <div class="absolute -top-2 -right-2 text-4xl opacity-15 text-yellow-600">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="text-[10px] text-yellow-700 font-semibold tracking-wide mb-1">OCCUPIED</div>
+                        <div class="text-xl font-bold text-yellow-600 relative z-10" id="hkOccupied">0</div>
                     </div>
-                    <div class="text-center bg-red-50 rounded-lg p-2">
-                        <div class="text-xs text-red-600">Needs Cleaning</div>
-                        <div class="text-lg font-bold text-red-600" id="hkNeedsCleaning">0</div>
+                    <div class="text-center rounded-xl p-3 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); box-shadow: 0 2px 8px rgba(185,28,28,0.15);">
+                        <div class="absolute -top-2 -right-2 text-4xl opacity-15 text-red-600">
+                            <i class="fas fa-broom"></i>
+                        </div>
+                        <div class="text-[10px] text-red-700 font-semibold tracking-wide mb-1">NEEDS CLEANING</div>
+                        <div class="text-xl font-bold text-red-600 relative z-10" id="hkNeedsCleaning">0</div>
                     </div>
                 </div>
                 <!-- Room Grid -->
-                <div id="hkRoomGrid" class="flex flex-wrap gap-1.5">
+                <div id="hkRoomGrid" class="flex flex-wrap gap-2">
                     <div class="text-center py-2 text-gray-400 text-xs w-full"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>
                 </div>
             </div>

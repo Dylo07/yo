@@ -44,53 +44,66 @@
         </div>
 
         <div class="col-12 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header text-white p-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, #d81b60, #e11d48); border-radius: 8px 8px 0 0;">
-                    <h5 class="mb-0 fs-6 fw-bold">
+            <div class="card border-0 shadow-lg" style="overflow: hidden; border-radius: 12px;">
+                <div class="card-header text-white p-3 d-flex justify-content-between align-items-center position-relative" style="background: linear-gradient(135deg, #c2185b 0%, #d81b60 50%, #e91e63 100%); border: none;">
+                    <div class="position-absolute w-100 h-100 top-0 start-0" style="background: url('data:image/svg+xml,<svg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"><defs><pattern id=\"grid\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><circle cx=\"10\" cy=\"10\" r=\"1\" fill=\"white\" opacity=\"0.1\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grid)\"/></svg>'); opacity: 0.3;"></div>
+                    <h5 class="mb-0 fs-6 fw-bold position-relative" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                         <i class="fas fa-broom me-2"></i> Housekeeping Status
                     </h5>
-                    <div>
-                        <button onclick="showManageRoomsModal()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none me-1" style="background: rgba(255,255,255,0.2);" title="Manage Rooms">
+                    <div class="position-relative">
+                        <button onclick="showManageRoomsModal()" class="btn btn-sm text-white py-1 px-2 border-0 me-1 hk-header-btn" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 6px; transition: all 0.3s;" title="Manage Rooms">
                             <i class="fas fa-cog"></i>
                         </button>
-                        <button onclick="showHousekeepingLogs()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none me-1" style="background: rgba(255,255,255,0.2);" title="View History">
+                        <button onclick="showHousekeepingLogs()" class="btn btn-sm text-white py-1 px-2 border-0 me-1 hk-header-btn" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 6px; transition: all 0.3s;" title="View History">
                             <i class="fas fa-history"></i>
                         </button>
-                        <button onclick="refreshHousekeeping()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none" style="background: rgba(255,255,255,0.2);" title="Refresh">
+                        <button onclick="refreshHousekeeping()" class="btn btn-sm text-white py-1 px-2 border-0 hk-header-btn" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 6px; transition: all 0.3s;" title="Refresh">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
                 </div>
                 <div class="card-body p-3 bg-white" style="border: 1px solid #eaeaea; border-top: 0; border-radius: 0 0 8px 8px;">
                     <!-- Housekeeping Stats -->
-                    <div class="row g-2 mb-3">
+                    <div class="row g-3 mb-3">
                         <div class="col-6 col-md-3">
-                            <div class="hk-stat-box" style="background-color: #f8f9fa;">
-                                <div class="hk-stat-title text-muted">Total</div>
-                                <div class="hk-stat-val text-dark" id="hkTotal">0</div>
+                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s;">
+                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.1;">
+                                    <i class="fas fa-door-open"></i>
+                                </div>
+                                <div class="hk-stat-title text-muted small fw-semibold mb-1" style="letter-spacing: 0.5px;">TOTAL</div>
+                                <div class="hk-stat-val text-dark fw-bold" style="font-size: 1.75rem;" id="hkTotal">0</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="hk-stat-box" style="background-color: #dcfce7;">
-                                <div class="hk-stat-title" style="color: #15803d;">Available</div>
-                                <div class="hk-stat-val" style="color: #15803d;" id="hkAvailable">0</div>
+                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); box-shadow: 0 2px 8px rgba(21,128,61,0.15); transition: all 0.3s;">
+                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #15803d;">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #15803d; letter-spacing: 0.5px;">AVAILABLE</div>
+                                <div class="hk-stat-val fw-bold" style="color: #15803d; font-size: 1.75rem;" id="hkAvailable">0</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="hk-stat-box" style="background-color: #fef9c3;">
-                                <div class="hk-stat-title" style="color: #a16207;">Occupied</div>
-                                <div class="hk-stat-val" style="color: #a16207;" id="hkOccupied">0</div>
+                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%); box-shadow: 0 2px 8px rgba(161,98,7,0.15); transition: all 0.3s;">
+                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #a16207;">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #a16207; letter-spacing: 0.5px;">OCCUPIED</div>
+                                <div class="hk-stat-val fw-bold" style="color: #a16207; font-size: 1.75rem;" id="hkOccupied">0</div>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="hk-stat-box" style="background-color: #fee2e2;">
-                                <div class="hk-stat-title" style="color: #b91c1c;">Needs Cleaning</div>
-                                <div class="hk-stat-val" style="color: #b91c1c;" id="hkNeedsCleaning">0</div>
+                            <div class="hk-stat-box p-3 rounded-3 border-0 position-relative overflow-hidden" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); box-shadow: 0 2px 8px rgba(185,28,28,0.15); transition: all 0.3s;">
+                                <div class="position-absolute" style="top: -10px; right: -10px; font-size: 3rem; opacity: 0.15; color: #b91c1c;">
+                                    <i class="fas fa-broom"></i>
+                                </div>
+                                <div class="hk-stat-title small fw-semibold mb-1" style="color: #b91c1c; letter-spacing: 0.5px;">NEEDS CLEANING</div>
+                                <div class="hk-stat-val fw-bold" style="color: #b91c1c; font-size: 1.75rem;" id="hkNeedsCleaning">0</div>
                             </div>
                         </div>
                     </div>
                     <!-- Room Grid -->
-                    <div id="hkRoomGrid" class="d-flex flex-wrap gap-2">
+                    <div id="hkRoomGrid" class="d-flex flex-wrap gap-2" style="gap: 0.5rem !important;">
                         <div class="text-center py-2 text-muted small w-100"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>
                     </div>
                 </div>
@@ -1676,12 +1689,15 @@ document.addEventListener('DOMContentLoaded', function() {
 /* Housekeeping Widget Styles */
 .hk-stat-box {
     text-align: center;
-    border-radius: 0.5rem;
-    padding: 0.75rem 0.5rem;
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    cursor: default;
+}
+.hk-stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
 }
 .hk-stat-title {
     font-size: 0.7rem;
@@ -1692,11 +1708,29 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 1.25rem;
     font-weight: 700;
 }
+
+/* Header buttons hover effects */
+.hk-header-btn:hover {
+    background: rgba(255,255,255,0.25) !important;
+    transform: scale(1.05);
+}
+.hk-header-btn:active {
+    transform: scale(0.95);
+}
+
+/* Room card improvements */
+.hk-room-card {
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    min-width: 70px;
+}
 .hk-room-card:hover {
-    opacity: 0.8;
+    opacity: 0.85;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 .hk-room-card:active {
-    transform: scale(0.95);
+    transform: scale(0.97);
 }
 
 /* Chevron rotation for collapsible rows */

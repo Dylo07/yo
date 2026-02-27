@@ -1783,7 +1783,8 @@ function renderHousekeepingGrid(rooms) {
     }
     container.innerHTML = rooms.map(room => {
         const s = getRoomStatusStyle(room.status);
-        const teamBorder = room.team_color ? `border-left: 4px solid ${room.team_color};` : '';
+        const isOccupied = room.status === 'occupied';
+        const teamBorder = (isOccupied && room.team_color) ? `border-left: 4px solid ${room.team_color};` : '';
         const teamTooltip = room.team_name ? ` | Team: ${room.team_name}` : '';
         return `
             <div class="hk-room-card"

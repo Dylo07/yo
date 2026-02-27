@@ -6211,8 +6211,9 @@ function renderHousekeepingGrid(rooms) {
     }
     container.innerHTML = rooms.map(room => {
         const s = getRoomStatusStyle(room.status);
-        const teamBorderStyle = room.team_color ? `border-l-4` : '';
-        const teamBorderColor = room.team_color ? `style="border-left-color: ${room.team_color};"` : '';
+        const isOccupied = room.status === 'occupied';
+        const teamBorderStyle = (isOccupied && room.team_color) ? `border-l-4` : '';
+        const teamBorderColor = (isOccupied && room.team_color) ? `style="border-left-color: ${room.team_color};"` : '';
         const teamTooltip = room.team_name ? ` | Team: ${room.team_name}` : '';
         return `
             <div class="relative ${s.bg} ${s.text} border ${s.border} ${teamBorderStyle} rounded-md px-2 py-1.5 text-center text-[10px] font-medium min-w-[60px] cursor-pointer select-none hover:opacity-80 active:scale-95 transition-all"

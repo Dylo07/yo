@@ -1913,6 +1913,12 @@ class StaffAllocationController extends Controller
 
             $newStatus = $cycle[$currentStatus] ?? 'available';
             $room->housekeeping_status = $newStatus;
+            
+            // Clear team assignment when room becomes available
+            if ($newStatus === 'available' && \Schema::hasColumn('rooms', 'team_id')) {
+                $room->team_id = null;
+            }
+            
             $room->save();
             
             // Log the status change

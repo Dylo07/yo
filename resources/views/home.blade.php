@@ -2079,12 +2079,20 @@ async function loadRoomsList() {
                                     ${teams.map(team => `<option value="${team.id}" ${room.team_id == team.id ? 'selected' : ''} style="background: ${team.color}; color: white;">${team.name}</option>`).join('')}
                                 </select>
                             </div>
-                            <button 
-                                onclick="deleteRoomConfirm(${room.id}, '${room.name}', ${isBooked})" 
-                                class="btn btn-sm btn-danger ms-2"
-                                ${isBooked ? 'disabled title="Cannot delete booked room"' : ''}>
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="d-flex gap-1">
+                                <button 
+                                    onclick="editRoomName(${room.id}, '${room.name}')" 
+                                    class="btn btn-sm btn-primary"
+                                    title="Edit room name">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                    onclick="deleteRoomConfirm(${room.id}, '${room.name}', ${isBooked})" 
+                                    class="btn btn-sm btn-danger"
+                                    ${isBooked ? 'disabled title="Cannot delete booked room"' : ''}>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2146,6 +2154,51 @@ async function addRoom(event) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
+    }
+}
+
+async function editRoomName(roomId, currentName) {
+    const newName = prompt(`Edit room name:`, currentName);
+    
+    if (newName === null || newName.trim() === '') {
+        return; // User cancelled or entered empty name
+    }
+    
+    if (newName.trim() === currentName) {
+        return; // No change
+    }
+    
+    try {
+        const response = await fetch(`/api/duty-roster/rooms/${roomId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ name: newName.trim() })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            await loadRoomsList();
+            await loadHousekeepingStatus();
+            
+            const container = document.getElementById('roomsListContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.insertAdjacentElement('beforebegin', alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error updating room:', error);
+        alert('Error updating room. Please try again.');
     }
 }
 

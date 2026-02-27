@@ -439,6 +439,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/duty-roster/housekeeping-logs', [StaffAllocationController::class, 'getRoomStatusLogs'])->name('duty.roster.api.housekeeping-logs');
     Route::get('/api/duty-roster/rooms', [StaffAllocationController::class, 'getAllRooms'])->name('duty.roster.api.rooms');
     Route::post('/api/duty-roster/rooms', [StaffAllocationController::class, 'addRoom'])->name('duty.roster.api.rooms.add');
+    Route::put('/api/duty-roster/rooms/{roomId}', [StaffAllocationController::class, 'updateRoom'])->name('duty.roster.api.rooms.update');
     Route::delete('/api/duty-roster/rooms/{roomId}', [StaffAllocationController::class, 'deleteRoom'])->name('duty.roster.api.rooms.delete');
     Route::get('/api/duty-roster/teams', [StaffAllocationController::class, 'getAllTeams'])->name('duty.roster.api.teams');
     Route::post('/api/duty-roster/teams', [StaffAllocationController::class, 'createTeam'])->name('duty.roster.api.teams.create');

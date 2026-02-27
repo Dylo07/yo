@@ -2070,6 +2070,43 @@ class StaffAllocationController extends Controller
     }
 
     /**
+     * Dashboard Widget: Update Room
+     */
+    public function updateRoom(Request $request, $roomId)
+    {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255|unique:rooms,name,' . $roomId,
+            ]);
+
+            $room = Room::findOrFail($roomId);
+            $oldName = $room->name;
+            $room->name = $request->name;
+            $room->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Room updated from '{$oldName}' to '{$room->name}'",
+                'room' => [
+                    'id' => $room->id,
+                    'name' => $room->name,
+                    'housekeeping_status' => $room->housekeeping_status,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Room name already exists or is invalid'
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Room not found or error occurred'
+            ], 404);
+        }
+    }
+
+    /**
      * Dashboard Widget: Delete Room
      */
     public function deleteRoom(Request $request, $roomId)

@@ -43,6 +43,52 @@
             </div>
         </div>
 
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header text-white p-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(to right, #d81b60, #e11d48); border-radius: 8px 8px 0 0;">
+                    <h5 class="mb-0 fs-6 fw-bold">
+                        <i class="fas fa-broom me-2"></i> Housekeeping Status
+                    </h5>
+                    <button onclick="refreshHousekeeping()" class="btn btn-sm text-white py-0 px-2 border-0 shadow-none" style="background: rgba(255,255,255,0.2);">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body p-3 bg-white" style="border: 1px solid #eaeaea; border-top: 0; border-radius: 0 0 8px 8px;">
+                    <!-- Housekeeping Stats -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-3">
+                            <div class="hk-stat-box" style="background-color: #f8f9fa;">
+                                <div class="hk-stat-title text-muted">Total</div>
+                                <div class="hk-stat-val text-dark" id="hkTotal">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="hk-stat-box" style="background-color: #dcfce7;">
+                                <div class="hk-stat-title" style="color: #15803d;">Available</div>
+                                <div class="hk-stat-val" style="color: #15803d;" id="hkAvailable">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="hk-stat-box" style="background-color: #fef9c3;">
+                                <div class="hk-stat-title" style="color: #a16207;">Occupied</div>
+                                <div class="hk-stat-val" style="color: #a16207;" id="hkOccupied">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="hk-stat-box" style="background-color: #fee2e2;">
+                                <div class="hk-stat-title" style="color: #b91c1c;">Needs Cleaning</div>
+                                <div class="hk-stat-val" style="color: #b91c1c;" id="hkNeedsCleaning">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Room Grid -->
+                    <div id="hkRoomGrid" class="d-flex flex-wrap gap-2">
+                        <div class="text-center py-2 text-muted small w-100"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-black text-white p-3">
@@ -1447,6 +1493,32 @@ document.addEventListener('DOMContentLoaded', function() {
     opacity: 0.8;
 }
 
+/* Housekeeping Widget Styles */
+.hk-stat-box {
+    text-align: center;
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.hk-stat-title {
+    font-size: 0.7rem;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+.hk-stat-val {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.hk-room-card:hover {
+    opacity: 0.8;
+}
+.hk-room-card:active {
+    transform: scale(0.95);
+}
+
 /* Chevron rotation for collapsible rows */
 .collapse-icon {
     transition: transform 0.3s ease;
@@ -1477,5 +1549,115 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// ===== Housekeeping Status =====
+document.addEventListener('DOMContentLoaded', function() {
+    loadHousekeepingStatus();
+});
+
+async function loadHousekeepingStatus() {
+    try {
+        // Show loading state
+        document.getElementById('hkRoomGrid').innerHTML = '<div class="text-center py-2 text-muted small w-100"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>';
+        
+        const response = await fetch('/api/duty-roster/housekeeping-status');
+        const data = await response.json();
+        
+        if (data.success) {
+            updateHousekeepingStats(data.stats);
+            renderHousekeepingGrid(data.rooms);
+        } else {
+            document.getElementById('hkRoomGrid').innerHTML = '<div class="text-center py-2 text-danger small w-100">Failed to load data</div>';
+        }
+    } catch (error) {
+        console.error('Error loading housekeeping status:', error);
+        document.getElementById('hkRoomGrid').innerHTML = '<div class="text-center py-2 text-danger small w-100"><i class="fas fa-exclamation-triangle"></i> Error loading rooms</div>';
+    }
+}
+
+function updateHousekeepingStats(stats) {
+    if (document.getElementById('hkTotal')) document.getElementById('hkTotal').textContent = stats.total;
+    if (document.getElementById('hkAvailable')) document.getElementById('hkAvailable').textContent = stats.available;
+    if (document.getElementById('hkOccupied')) document.getElementById('hkOccupied').textContent = stats.occupied;
+    if (document.getElementById('hkNeedsCleaning')) document.getElementById('hkNeedsCleaning').textContent = stats.needs_cleaning;
+}
+
+function getRoomStatusStyle(status) {
+    switch (status) {
+        case 'available':
+            return { bg: '#dcfce7', text: '#15803d', icon: 'fa-check-circle', border: '#bbf7d0', label: 'Available' };
+        case 'occupied':
+            return { bg: '#fef9c3', text: '#a16207', icon: 'fa-user', border: '#fef08a', label: 'Occupied' };
+        case 'needs_cleaning':
+            return { bg: '#fee2e2', text: '#b91c1c', icon: 'fa-broom', border: '#fecaca', label: 'Needs Cleaning' };
+        default:
+            return { bg: '#dcfce7', text: '#15803d', icon: 'fa-check-circle', border: '#bbf7d0', label: 'Available' };
+    }
+}
+
+function renderHousekeepingGrid(rooms) {
+    const container = document.getElementById('hkRoomGrid');
+    if (rooms.length === 0) {
+        container.innerHTML = '<div class="text-center py-2 text-muted small w-100">No rooms found</div>';
+        return;
+    }
+    container.innerHTML = rooms.map(room => {
+        const s = getRoomStatusStyle(room.status);
+        return `
+            <div class="hk-room-card"
+                 style="background-color: ${s.bg}; color: ${s.text}; border: 1px solid ${s.border}; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; user-select: none; transition: all 0.2s;"
+                 title="${room.name}: ${s.label} (click to change)"
+                 onclick="cycleRoomStatus(${room.id})"
+                 id="hk-room-${room.id}">
+                <i class="fas ${s.icon} me-1" style="font-size: 0.7rem;"></i> ${room.name}
+            </div>
+        `;
+    }).join('');
+}
+
+async function cycleRoomStatus(roomId) {
+    const el = document.getElementById('hk-room-' + roomId);
+    if (!el) return;
+    
+    const originalOpacity = el.style.opacity;
+    el.style.opacity = '0.5';
+    
+    try {
+        const response = await fetch('/api/duty-roster/cycle-room-status', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content 
+            },
+            body: JSON.stringify({ room_id: roomId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const s = getRoomStatusStyle(data.new_status);
+            el.style.backgroundColor = s.bg;
+            el.style.color = s.text;
+            el.style.borderColor = s.border;
+            el.title = el.textContent.trim().split(' ').pop() + ': ' + s.label + ' (click to change)';
+            
+            const roomName = el.textContent.trim();
+            el.innerHTML = `<i class="fas ${s.icon} me-1" style="font-size: 0.7rem;"></i> ${roomName}`;
+            
+            updateHousekeepingStats(data.stats);
+        } else {
+            alert('Failed to update room status');
+        }
+    } catch (error) {
+        console.error('Error cycling room status:', error);
+        alert('An error occurred while updating room status');
+    } finally {
+        el.style.opacity = originalOpacity || '1';
+    }
+}
+
+function refreshHousekeeping() {
+    loadHousekeepingStatus();
+}
 </script>
 @endsection

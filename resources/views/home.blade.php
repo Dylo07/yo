@@ -317,6 +317,31 @@
         </div>
     </div>
 
+    <!-- Booking Details Modal -->
+    <div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-labelledby="bookingDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="bookingDetailsModalLabel"><i class="fas fa-calendar-check me-2"></i>Booking Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="bookingDetailsContent">
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" id="transferRoomBtn" onclick="showTransferRoomForm()">
+                        <i class="fas fa-exchange-alt me-1"></i> Transfer Room
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <div class="card mt-4 shadow-sm">
    <div class="card-header bg-black text-white d-flex justify-content-between align-items-center p-3">
        <h5 class="mb-0">Room Check-in Vehicles</h5>
@@ -1774,12 +1799,21 @@ async function loadHousekeepingStatus() {
         // Show loading state
         document.getElementById('hkRoomGrid').innerHTML = '<div class="text-center py-2 text-muted small w-100"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>';
         
-        const response = await fetch('/api/duty-roster/housekeeping-status');
-        const data = await response.json();
+        // Fetch both rooms and bookings in parallel
+        const [roomsResponse, bookingsResponse] = await Promise.all([
+            fetch('/api/duty-roster/housekeeping-status'),
+            fetch('/api/duty-roster/bookings/today')
+        ]);
         
-        if (data.success) {
-            updateHousekeepingStats(data.stats);
-            renderHousekeepingGrid(data.rooms);
+        const roomsData = await roomsResponse.json();
+        const bookingsData = await bookingsResponse.json();
+        
+        if (roomsData.success) {
+            // Merge booking info with rooms
+            const rooms = mergeBookingsWithRooms(roomsData.rooms, bookingsData.bookings || []);
+            
+            updateHousekeepingStats(roomsData.stats);
+            renderHousekeepingGrid(rooms);
         } else {
             document.getElementById('hkRoomGrid').innerHTML = '<div class="text-center py-2 text-danger small w-100">Failed to load data</div>';
         }
@@ -1787,6 +1821,33 @@ async function loadHousekeepingStatus() {
         console.error('Error loading housekeeping status:', error);
         document.getElementById('hkRoomGrid').innerHTML = '<div class="text-center py-2 text-danger small w-100"><i class="fas fa-exclamation-triangle"></i> Error loading rooms</div>';
     }
+}
+
+function mergeBookingsWithRooms(rooms, bookings) {
+    return rooms.map(room => {
+        // Find booking that includes this room number
+        const booking = bookings.find(b => {
+            const roomNumbers = b.current_room_numbers || b.room_numbers || '';
+            return roomNumbers.includes(room.name);
+        });
+        
+        if (booking) {
+            room.booking = {
+                id: booking.id,
+                guest_name: booking.name,
+                function_type: booking.function_type,
+                contact_number: booking.contact_number,
+                guest_count: booking.guest_count,
+                check_in: booking.start,
+                check_out: booking.end,
+                original_rooms: booking.room_numbers,
+                current_rooms: booking.current_room_numbers || booking.room_numbers,
+                is_transferred: booking.current_room_numbers && booking.current_room_numbers !== booking.room_numbers
+            };
+        }
+        
+        return room;
+    });
 }
 
 function updateHousekeepingStats(stats) {
@@ -1820,13 +1881,30 @@ function renderHousekeepingGrid(rooms) {
         const isOccupied = room.status === 'occupied';
         const teamBorder = (isOccupied && room.team_color) ? `border-left: 4px solid ${room.team_color};` : '';
         const teamTooltip = room.team_name ? ` | Team: ${room.team_name}` : '';
+        
+        // Booking indicator
+        const hasBooking = room.booking;
+        const bookingIcon = hasBooking ? `<i class="fas fa-calendar-check" style="font-size: 0.6rem; position: absolute; top: 2px; right: 2px; opacity: 0.7;"></i>` : '';
+        const bookingBadge = hasBooking ? `<div style="font-size: 0.6rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${room.booking.function_type || 'Guest'}</div>` : '';
+        const transferIndicator = hasBooking && room.booking.is_transferred ? `<i class="fas fa-exchange-alt" style="font-size: 0.5rem; margin-left: 2px;" title="Room transferred"></i>` : '';
+        
+        const onClick = hasBooking ? `showBookingDetails(${room.id}, ${JSON.stringify(room.booking).replace(/"/g, '&quot;')})` : `cycleRoomStatus(${room.id})`;
+        const tooltip = hasBooking 
+            ? `${room.name}: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type}) - Click for details`
+            : `${room.name}: ${s.label}${teamTooltip} (click to change)`;
+        
         return `
-            <div class="hk-room-card"
-                 style="background-color: ${s.bg}; color: ${s.text}; border: 1px solid ${s.border}; ${teamBorder} padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; user-select: none; transition: all 0.2s;"
-                 title="${room.name}: ${s.label}${teamTooltip} (click to change)"
-                 onclick="cycleRoomStatus(${room.id})"
+            <div class="hk-room-card position-relative"
+                 style="background-color: ${s.bg}; color: ${s.text}; border: 1px solid ${s.border}; ${teamBorder} padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 500; cursor: pointer; user-select: none; transition: all 0.2s; min-width: 80px;"
+                 title="${tooltip}"
+                 onclick="${onClick}"
                  id="hk-room-${room.id}">
-                <i class="fas ${s.icon} me-1" style="font-size: 0.7rem;"></i> ${room.name}
+                ${bookingIcon}
+                <div style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+                    <i class="fas ${s.icon}" style="font-size: 0.7rem;"></i>
+                    <span>${room.name}${transferIndicator}</span>
+                </div>
+                ${bookingBadge}
             </div>
         `;
     }).join('');
@@ -2273,6 +2351,148 @@ async function assignTeamToRoom(roomId, teamId) {
         console.error('Error assigning team:', error);
         alert('Error assigning team. Please try again.');
         await loadRoomsList(); // Reload to reset dropdown
+    }
+}
+
+// ===== Booking Details Functions =====
+let currentBookingData = null;
+let currentRoomId = null;
+
+function showBookingDetails(roomId, booking) {
+    currentBookingData = booking;
+    currentRoomId = roomId;
+    
+    const content = document.getElementById('bookingDetailsContent');
+    const checkIn = new Date(booking.check_in).toLocaleDateString();
+    const checkOut = new Date(booking.check_out).toLocaleDateString();
+    
+    content.innerHTML = `
+        <div class="booking-info">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <h6 class="text-primary mb-3"><i class="fas fa-user me-2"></i>Guest Information</h6>
+                    <div class="mb-2"><strong>Name:</strong> ${booking.guest_name || 'N/A'}</div>
+                    <div class="mb-2"><strong>Function Type:</strong> <span class="badge bg-info">${booking.function_type || 'N/A'}</span></div>
+                    <div class="mb-2"><strong>Contact:</strong> ${booking.contact_number || 'N/A'}</div>
+                    <div class="mb-2"><strong>Guests:</strong> ${booking.guest_count || 'N/A'}</div>
+                </div>
+            </div>
+            <hr>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <h6 class="text-primary mb-3"><i class="fas fa-calendar me-2"></i>Booking Details</h6>
+                    <div class="mb-2"><strong>Check-in:</strong> ${checkIn}</div>
+                    <div class="mb-2"><strong>Check-out:</strong> ${checkOut}</div>
+                    <div class="mb-2"><strong>Booking ID:</strong> #${booking.id}</div>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="text-primary mb-3"><i class="fas fa-door-open me-2"></i>Room Information</h6>
+                    <div class="mb-2"><strong>Original Room(s):</strong> <span class="badge bg-secondary">${booking.original_rooms}</span></div>
+                    ${booking.is_transferred ? `
+                        <div class="mb-2">
+                            <strong>Current Room(s):</strong> <span class="badge bg-warning">${booking.current_rooms}</span>
+                            <i class="fas fa-info-circle text-warning ms-1" title="Room has been transferred"></i>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('bookingDetailsModal'));
+    modal.show();
+}
+
+function showTransferRoomForm() {
+    if (!currentBookingData || !currentRoomId) return;
+    
+    // Get current room name
+    const roomElement = document.getElementById('hk-room-' + currentRoomId);
+    const currentRoomName = roomElement ? roomElement.textContent.trim().replace(/[^\w\s]/g, '').split(' ')[0] : '';
+    
+    const content = document.getElementById('bookingDetailsContent');
+    content.innerHTML = `
+        <div class="transfer-room-form">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Transfer guest from <strong>${currentRoomName}</strong> to a different room
+            </div>
+            <form id="transferRoomForm" onsubmit="transferRoom(event)">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Current Room:</strong></label>
+                    <input type="text" class="form-control" value="${currentRoomName}" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="newRoomNumber" class="form-label"><strong>New Room Number:</strong></label>
+                    <input type="text" id="newRoomNumber" class="form-control" placeholder="Enter new room number" required>
+                    <small class="text-muted">Enter the room number where the guest will be transferred</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" onclick="showBookingDetails(${currentRoomId}, currentBookingData)">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </button>
+                    <button type="submit" class="btn btn-warning flex-fill">
+                        <i class="fas fa-exchange-alt me-1"></i> Confirm Transfer
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+async function transferRoom(event) {
+    event.preventDefault();
+    
+    const roomElement = document.getElementById('hk-room-' + currentRoomId);
+    const oldRoom = roomElement ? roomElement.textContent.trim().replace(/[^\w\s]/g, '').split(' ')[0] : '';
+    const newRoom = document.getElementById('newRoomNumber').value.trim();
+    
+    if (!oldRoom || !newRoom) {
+        alert('Please provide valid room numbers');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/duty-roster/bookings/${currentBookingData.id}/transfer-room`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                old_room: oldRoom,
+                new_room: newRoom
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('bookingDetailsModal')).hide();
+            
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000);
+            
+            // Reload housekeeping status
+            await loadHousekeepingStatus();
+        } else {
+            alert('Error: ' + (data.error || 'Transfer failed'));
+        }
+    } catch (error) {
+        console.error('Error transferring room:', error);
+        alert('Error transferring room. Please try again.');
     }
 }
 </script>

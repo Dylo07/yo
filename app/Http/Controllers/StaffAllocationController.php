@@ -2232,6 +2232,90 @@ class StaffAllocationController extends Controller
     }
 
     /**
+     * Dashboard Widget: Get Today's Active Bookings
+     */
+    public function getTodaysBookings(Request $request)
+    {
+        try {
+            $today = now();
+            
+            // Check if bookings table exists
+            if (!\Schema::hasTable('bookings')) {
+                return response()->json([
+                    'success' => true,
+                    'bookings' => []
+                ]);
+            }
+            
+            $bookings = \App\Models\Booking::where(function($query) use ($today) {
+                $query->whereDate('start', '<=', $today)
+                      ->whereDate('end', '>=', $today);
+            })
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'id' => $booking->id,
+                    'name' => $booking->name,
+                    'function_type' => $booking->function_type,
+                    'contact_number' => $booking->contact_number,
+                    'guest_count' => $booking->guest_count,
+                    'room_numbers' => $booking->room_numbers,
+                    'current_room_numbers' => $booking->current_room_numbers,
+                    'start' => $booking->start,
+                    'end' => $booking->end,
+                    'bites_details' => $booking->bites_details,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'bookings' => $bookings
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'bookings' => []
+            ]);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Transfer Room for Booking
+     */
+    public function transferRoom(Request $request, $bookingId)
+    {
+        try {
+            $booking = \App\Models\Booking::findOrFail($bookingId);
+            $oldRoom = $request->input('old_room');
+            $newRoom = $request->input('new_room');
+            
+            // Get current or original room numbers
+            $currentRooms = $booking->current_room_numbers ?: $booking->room_numbers;
+            
+            // Replace old room with new room
+            $updatedRooms = str_replace($oldRoom, $newRoom, $currentRooms);
+            
+            // Update booking
+            $booking->current_room_numbers = $updatedRooms;
+            $booking->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Room transferred from {$oldRoom} to {$newRoom}",
+                'booking' => [
+                    'id' => $booking->id,
+                    'current_room_numbers' => $booking->current_room_numbers
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Dashboard Widget: Inventory Warnings from /stock system
      */
     public function getInventoryWarnings(Request $request)

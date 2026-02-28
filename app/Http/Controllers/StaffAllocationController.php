@@ -2398,6 +2398,8 @@ class StaffAllocationController extends Controller
                         'contact_number' => $booking->contact_number,
                         'guest_count' => $booking->guest_count,
                         'confirmed_guest_count' => $booking->confirmed_guest_count,
+                        'confirmed_adult_count' => $booking->confirmed_adult_count,
+                        'confirmed_kids_count' => $booking->confirmed_kids_count,
                         'room_numbers' => $booking->current_room_numbers ?: $booking->room_numbers,
                         'start' => $booking->start,
                         'guest_count_confirmed' => $booking->guest_count_confirmed,
@@ -2425,28 +2427,37 @@ class StaffAllocationController extends Controller
     {
         try {
             $request->validate([
-                'confirmed_guest_count' => 'required|integer|min:1',
+                'confirmed_adult_count' => 'required|integer|min:0',
+                'confirmed_kids_count' => 'required|integer|min:0',
             ]);
 
             $booking = \App\Models\Booking::findOrFail($bookingId);
             
+            $adultCount = $request->confirmed_adult_count;
+            $kidsCount = $request->confirmed_kids_count;
+            $totalCount = $adultCount + $kidsCount;
+            
             $booking->guest_count_confirmed = true;
             $booking->guest_count_confirmed_at = now();
             $booking->guest_count_confirmed_by = auth()->id();
-            $booking->confirmed_guest_count = $request->confirmed_guest_count;
+            $booking->confirmed_adult_count = $adultCount;
+            $booking->confirmed_kids_count = $kidsCount;
+            $booking->confirmed_guest_count = $totalCount;
             $booking->save();
 
             $confirmedBy = auth()->user()->name;
 
             return response()->json([
                 'success' => true,
-                'message' => "Guest count confirmed: {$request->confirmed_guest_count} guests",
+                'message' => "Guest count confirmed: {$adultCount} adults + {$kidsCount} kids = {$totalCount} total",
                 'booking' => [
                     'id' => $booking->id,
                     'guest_count_confirmed' => $booking->guest_count_confirmed,
                     'guest_count_confirmed_at' => $booking->guest_count_confirmed_at,
                     'confirmed_by' => $confirmedBy,
-                    'confirmed_guest_count' => $booking->confirmed_guest_count,
+                    'confirmed_guest_count' => $totalCount,
+                    'confirmed_adult_count' => $adultCount,
+                    'confirmed_kids_count' => $kidsCount,
                 ]
             ]);
         } catch (\Exception $e) {

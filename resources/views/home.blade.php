@@ -210,6 +210,52 @@
         </div>
     </div>
 
+    <!-- Guest Count Confirmation Modal -->
+    <div class="modal fade" id="guestCountModal" tabindex="-1" aria-labelledby="guestCountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="guestCountModalLabel">
+                        <i class="fas fa-users me-2"></i>Confirm Guest Count
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="guestCountForm">
+                        <input type="hidden" id="confirmBookingId">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label for="adultCount" class="form-label fw-bold">
+                                    <i class="fas fa-user me-1"></i>Adults
+                                </label>
+                                <input type="number" class="form-control form-control-lg text-center" 
+                                       id="adultCount" min="0" value="0" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="kidsCount" class="form-label fw-bold">
+                                    <i class="fas fa-child me-1"></i>Kids
+                                </label>
+                                <input type="number" class="form-control form-control-lg text-center" 
+                                       id="kidsCount" min="0" value="0" required>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0">
+                            <strong>Total: <span id="totalCount">0</span> guests</strong>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="submitGuestCount()">
+                        <i class="fas fa-check me-1"></i>Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Manage Rooms Modal -->
     <div class="modal fade" id="manageRoomsModal" tabindex="-1" aria-labelledby="manageRoomsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -2505,7 +2551,10 @@ async function loadArrivalsChecklist() {
                         <td class="text-center">
                             ${isConfirmed ? `
                                 <div class="fw-bold text-success">${arrival.confirmed_guest_count} guests</div>
-                                <small class="text-muted">by ${arrival.confirmed_by}</small>
+                                <small class="text-muted">
+                                    ${arrival.confirmed_adult_count || 0} adults + ${arrival.confirmed_kids_count || 0} kids
+                                </small>
+                                <div><small class="text-muted">by ${arrival.confirmed_by}</small></div>
                                 <div><small class="text-muted">${confirmTimeStr}</small></div>
                             ` : '<span class="text-muted">Not confirmed</span>'}
                         </td>
@@ -2551,23 +2600,45 @@ async function loadArrivalsChecklist() {
     }
 }
 
-async function confirmGuestCountPrompt(bookingId, defaultCount) {
-    const guestCount = prompt(`Confirm guest count for this booking:`, defaultCount);
+function confirmGuestCountPrompt(bookingId, defaultCount) {
+    // Set booking ID in hidden field
+    document.getElementById('confirmBookingId').value = bookingId;
     
-    if (guestCount === null || guestCount.trim() === '') {
-        return; // User cancelled
-    }
+    // Reset form
+    document.getElementById('adultCount').value = Math.floor(defaultCount * 0.7) || 0; // Estimate 70% adults
+    document.getElementById('kidsCount').value = Math.ceil(defaultCount * 0.3) || 0;  // Estimate 30% kids
+    updateTotalCount();
     
-    const count = parseInt(guestCount);
-    if (isNaN(count) || count < 1) {
-        alert('Please enter a valid guest count (minimum 1)');
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('guestCountModal'));
+    modal.show();
+}
+
+function updateTotalCount() {
+    const adults = parseInt(document.getElementById('adultCount').value) || 0;
+    const kids = parseInt(document.getElementById('kidsCount').value) || 0;
+    document.getElementById('totalCount').textContent = adults + kids;
+}
+
+// Add event listeners for real-time total calculation
+document.addEventListener('DOMContentLoaded', function() {
+    const adultInput = document.getElementById('adultCount');
+    const kidsInput = document.getElementById('kidsCount');
+    
+    if (adultInput) adultInput.addEventListener('input', updateTotalCount);
+    if (kidsInput) kidsInput.addEventListener('input', updateTotalCount);
+});
+
+async function submitGuestCount() {
+    const bookingId = parseInt(document.getElementById('confirmBookingId').value);
+    const adultCount = parseInt(document.getElementById('adultCount').value) || 0;
+    const kidsCount = parseInt(document.getElementById('kidsCount').value) || 0;
+    
+    if (adultCount + kidsCount < 1) {
+        alert('Total guest count must be at least 1');
         return;
     }
     
-    await confirmGuestCount(bookingId, count);
-}
-
-async function confirmGuestCount(bookingId, confirmedCount) {
     try {
         const response = await fetch(`/api/duty-roster/bookings/${bookingId}/confirm-guest-count`, {
             method: 'POST',
@@ -2575,12 +2646,20 @@ async function confirmGuestCount(bookingId, confirmedCount) {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ confirmed_guest_count: confirmedCount })
+            body: JSON.stringify({ 
+                confirmed_adult_count: adultCount,
+                confirmed_kids_count: kidsCount
+            })
         });
         
         const data = await response.json();
         
         if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('guestCountModal'));
+            modal.hide();
+            
+            // Reload list
             await loadArrivalsChecklist();
             
             const container = document.getElementById('arrivalsChecklistContainer');

@@ -2593,7 +2593,7 @@ async function loadArrivalsChecklist() {
                 const dateStr = arrivalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const timeStr = arrivalDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                 const isConfirmed = arrival.guest_count_confirmed;
-                const rowClass = isConfirmed ? 'table-success' : '';
+                const rowClass = ''; // No special class for confirmed rows
                 
                 let statusBadge = '';
                 let confirmTimeStr = '';

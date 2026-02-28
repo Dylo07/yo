@@ -2512,14 +2512,16 @@ async function loadArrivalsChecklist() {
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">
                             ${!isConfirmed ? `
-                                <button onclick="confirmGuestCountPrompt(${arrival.id}, ${arrival.guest_count})" 
-                                        class="btn btn-sm btn-primary" 
+                                <button class="btn btn-sm btn-primary confirm-guest-btn" 
+                                        data-booking-id="${arrival.id}" 
+                                        data-default-count="${arrival.guest_count || 0}"
                                         title="Confirm guest count">
                                     <i class="fas fa-check"></i>
                                 </button>
                             ` : `
-                                <button onclick="confirmGuestCountPrompt(${arrival.id}, ${arrival.confirmed_guest_count})" 
-                                        class="btn btn-sm btn-outline-secondary" 
+                                <button class="btn btn-sm btn-outline-secondary confirm-guest-btn" 
+                                        data-booking-id="${arrival.id}" 
+                                        data-default-count="${arrival.confirmed_guest_count || 0}"
                                         title="Update confirmation">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -2531,6 +2533,15 @@ async function loadArrivalsChecklist() {
             
             html += '</tbody></table></div>';
             container.innerHTML = html;
+            
+            // Add event listeners to confirm buttons using event delegation
+            container.querySelectorAll('.confirm-guest-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const bookingId = parseInt(this.getAttribute('data-booking-id'));
+                    const defaultCount = parseInt(this.getAttribute('data-default-count'));
+                    confirmGuestCountPrompt(bookingId, defaultCount);
+                });
+            });
         } else {
             container.innerHTML = '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Failed to load arrivals</div>';
         }

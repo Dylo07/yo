@@ -2488,20 +2488,103 @@ async function loadArrivalsChecklist() {
                 return;
             }
             
-            let html = '<div class="table-responsive"><table class="table table-hover align-middle mb-0">';
-            html += `
-                <thead class="table-light">
-                    <tr>
-                        <th class="text-center" style="width: 100px;">Arrival Date</th>
-                        <th>Guest Details</th>
-                        <th class="text-center" style="width: 120px;">Contact</th>
-                        <th class="text-center" style="width: 100px;">Initial Count</th>
-                        <th class="text-center" style="width: 150px;">Confirmed Count</th>
-                        <th class="text-center" style="width: 100px;">Status</th>
-                        <th class="text-center" style="width: 80px;">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
+            let html = `
+                <style>
+                    .arrivals-table {
+                        border-collapse: separate;
+                        border-spacing: 0 8px;
+                    }
+                    .arrivals-table thead th {
+                        background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+                        color: white;
+                        font-weight: 600;
+                        font-size: 0.75rem;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                        padding: 12px 16px;
+                        border: none;
+                    }
+                    .arrivals-table thead th:first-child {
+                        border-radius: 8px 0 0 8px;
+                    }
+                    .arrivals-table thead th:last-child {
+                        border-radius: 0 8px 8px 0;
+                    }
+                    .arrivals-table tbody tr {
+                        background: white;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                        transition: all 0.3s ease;
+                    }
+                    .arrivals-table tbody tr:hover {
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        transform: translateY(-2px);
+                    }
+                    .arrivals-table tbody tr.table-success {
+                        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+                    }
+                    .arrivals-table tbody td {
+                        padding: 16px;
+                        border: none;
+                        vertical-align: middle;
+                    }
+                    .arrivals-table tbody tr td:first-child {
+                        border-radius: 8px 0 0 8px;
+                    }
+                    .arrivals-table tbody tr td:last-child {
+                        border-radius: 0 8px 8px 0;
+                    }
+                    .arrival-date-badge {
+                        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                        display: inline-block;
+                        font-weight: 600;
+                        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+                    }
+                    .guest-count-badge {
+                        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        font-weight: 600;
+                        font-size: 0.875rem;
+                    }
+                    .confirmed-count-box {
+                        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+                        border: 2px solid #22c55e;
+                        padding: 12px;
+                        border-radius: 8px;
+                    }
+                    .phone-link {
+                        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                        padding: 8px 16px;
+                        border-radius: 8px;
+                        color: #1e40af;
+                        font-weight: 600;
+                        transition: all 0.3s;
+                        display: inline-block;
+                    }
+                    .phone-link:hover {
+                        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                        color: white;
+                        transform: scale(1.05);
+                    }
+                </style>
+                <div class="table-responsive">
+                    <table class="table arrivals-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 120px;">Arrival Date</th>
+                                <th>Guest Details</th>
+                                <th class="text-center" style="width: 140px;">Contact</th>
+                                <th class="text-center" style="width: 110px;">Initial Count</th>
+                                <th class="text-center" style="width: 160px;">Confirmed Count</th>
+                                <th class="text-center" style="width: 100px;">Status</th>
+                                <th class="text-center" style="width: 80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
             
             data.arrivals.forEach(arrival => {
@@ -2530,33 +2613,52 @@ async function loadArrivalsChecklist() {
                 html += `
                     <tr class="${rowClass}" id="arrival-row-${arrival.id}">
                         <td class="text-center">
-                            <div class="fw-bold text-primary">${dateStr}</div>
-                            <small class="text-muted">${timeStr}</small>
+                            <div class="arrival-date-badge">
+                                <div style="font-size: 0.95rem;">${dateStr}</div>
+                                <div style="font-size: 0.7rem; opacity: 0.9;">${timeStr}</div>
+                            </div>
                         </td>
                         <td>
-                            <div class="fw-bold">${arrival.name}</div>
-                            <small class="text-muted">
-                                <i class="fas fa-calendar-alt me-1"></i>${arrival.function_type}
-                                ${arrival.room_numbers ? ` | <i class="fas fa-door-open me-1"></i>${arrival.room_numbers}` : ''}
-                            </small>
+                            <div style="font-weight: 700; font-size: 1rem; color: #1e293b; margin-bottom: 4px;">
+                                ${arrival.name}
+                            </div>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <small style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; color: #475569; font-weight: 500;">
+                                    <i class="fas fa-calendar-alt me-1" style="color: #0891b2;"></i>${arrival.function_type}
+                                </small>
+                                ${arrival.room_numbers ? `
+                                    <small style="background: #fef3c7; padding: 4px 10px; border-radius: 6px; color: #92400e; font-weight: 500;">
+                                        <i class="fas fa-door-open me-1" style="color: #f59e0b;"></i>${arrival.room_numbers}
+                                    </small>
+                                ` : ''}
+                            </div>
                         </td>
                         <td class="text-center">
-                            <a href="tel:${arrival.contact_number}" class="text-decoration-none">
+                            <a href="tel:${arrival.contact_number}" class="phone-link text-decoration-none">
                                 <i class="fas fa-phone me-1"></i>${arrival.contact_number}
                             </a>
                         </td>
                         <td class="text-center">
-                            <span class="badge bg-secondary">${arrival.guest_count} guests</span>
+                            <div class="guest-count-badge">
+                                <i class="fas fa-users me-1"></i>${arrival.guest_count}
+                            </div>
                         </td>
                         <td class="text-center">
                             ${isConfirmed ? `
-                                <div class="fw-bold text-success">${arrival.confirmed_guest_count} guests</div>
-                                <small class="text-muted">
-                                    ${arrival.confirmed_adult_count || 0} adults + ${arrival.confirmed_kids_count || 0} kids
-                                </small>
-                                <div><small class="text-muted">by ${arrival.confirmed_by}</small></div>
-                                <div><small class="text-muted">${confirmTimeStr}</small></div>
-                            ` : '<span class="text-muted">Not confirmed</span>'}
+                                <div class="confirmed-count-box">
+                                    <div style="font-weight: 700; font-size: 1.1rem; color: #059669; margin-bottom: 4px;">
+                                        ${arrival.confirmed_guest_count} <i class="fas fa-user-friends"></i>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: #065f46; margin-bottom: 6px;">
+                                        <i class="fas fa-user me-1"></i>${arrival.confirmed_adult_count || 0} adults · 
+                                        <i class="fas fa-child ms-1 me-1"></i>${arrival.confirmed_kids_count || 0} kids
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: #6b7280; border-top: 1px solid #86efac; padding-top: 6px;">
+                                        <i class="fas fa-user-check me-1"></i>${arrival.confirmed_by}<br>
+                                        <i class="fas fa-clock me-1"></i>${confirmTimeStr}
+                                    </div>
+                                </div>
+                            ` : '<span style="color: #9ca3af; font-style: italic;">Not confirmed</span>'}
                         </td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">
@@ -2564,14 +2666,16 @@ async function loadArrivalsChecklist() {
                                 <button class="btn btn-sm btn-primary confirm-guest-btn" 
                                         data-booking-id="${arrival.id}" 
                                         data-default-count="${arrival.guest_count || 0}"
-                                        title="Confirm guest count">
+                                        title="Confirm guest count"
+                                        style="padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
                                     <i class="fas fa-check"></i>
                                 </button>
                             ` : `
                                 <button class="btn btn-sm btn-outline-secondary confirm-guest-btn" 
                                         data-booking-id="${arrival.id}" 
                                         data-default-count="${arrival.confirmed_guest_count || 0}"
-                                        title="Update confirmation">
+                                        title="Update confirmation"
+                                        style="padding: 8px 12px; border-radius: 8px;">
                                     <i class="fas fa-edit"></i>
                                 </button>
                             `}

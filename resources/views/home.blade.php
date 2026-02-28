@@ -2511,7 +2511,7 @@ async function loadArrivalsChecklist() {
                         border-radius: 0 6px 6px 0;
                     }
                     .arrivals-table tbody tr {
-                        background: white;
+                        background: white !important;
                         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
                         transition: all 0.3s ease;
                     }
@@ -2520,7 +2520,7 @@ async function loadArrivalsChecklist() {
                         transform: translateY(-1px);
                     }
                     .arrivals-table tbody tr.table-success {
-                        background: white;
+                        background: white !important;
                     }
                     .arrivals-table tbody td {
                         padding: 10px 8px;

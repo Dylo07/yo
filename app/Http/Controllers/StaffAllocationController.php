@@ -2433,6 +2433,18 @@ class StaffAllocationController extends Controller
 
             $booking = \App\Models\Booking::findOrFail($bookingId);
             
+            // Check 24-hour deadline: must confirm at least 24 hours before function start
+            $functionStart = \Carbon\Carbon::parse($booking->start);
+            $now = \Carbon\Carbon::now();
+            $hoursUntilFunction = $now->diffInHours($functionStart, false);
+            
+            if ($hoursUntilFunction < 24) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Deadline passed: Guest count must be confirmed at least 24 hours before the function starts.'
+                ], 422);
+            }
+            
             $adultCount = $request->confirmed_adult_count;
             $kidsCount = $request->confirmed_kids_count;
             $totalCount = $adultCount + $kidsCount;

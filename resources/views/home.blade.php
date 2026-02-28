@@ -2618,6 +2618,11 @@ async function loadArrivalsChecklist() {
                 const isConfirmed = arrival.guest_count_confirmed;
                 const rowClass = ''; // No special class for confirmed rows
                 
+                // Check if within 24 hours of function start (deadline passed)
+                const now = new Date();
+                const hoursUntilFunction = (arrivalDate - now) / (1000 * 60 * 60);
+                const isPastDeadline = hoursUntilFunction < 24;
+                
                 let statusBadge = '';
                 let confirmTimeStr = '';
                 
@@ -2630,6 +2635,8 @@ async function loadArrivalsChecklist() {
                         minute: '2-digit' 
                     });
                     statusBadge = `<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Confirmed</span>`;
+                } else if (isPastDeadline) {
+                    statusBadge = `<span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Deadline Passed</span>`;
                 } else {
                     statusBadge = `<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>`;
                 }
@@ -2686,11 +2693,15 @@ async function loadArrivalsChecklist() {
                         </td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">
-                            ${!isConfirmed ? `
+                            ${isPastDeadline ? `
+                                <span style="color: #dc2626; font-size: 0.7rem; font-weight: 600; font-style: italic;">
+                                    <i class="fas fa-lock me-1"></i>Too Late
+                                </span>
+                            ` : (!isConfirmed ? `
                                 <button class="btn btn-sm btn-primary confirm-guest-btn" 
                                         data-booking-id="${arrival.id}" 
                                         data-default-count="${arrival.guest_count || 0}"
-                                        title="Confirm guest count"
+                                        title="Confirm guest count (must be done 24h before function)"
                                         style="padding: 6px 10px; border-radius: 6px; box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);">
                                     <i class="fas fa-check" style="font-size: 0.85rem;"></i>
                                 </button>
@@ -2698,11 +2709,11 @@ async function loadArrivalsChecklist() {
                                 <button class="btn btn-sm btn-outline-secondary confirm-guest-btn" 
                                         data-booking-id="${arrival.id}" 
                                         data-default-count="${arrival.confirmed_guest_count || 0}"
-                                        title="Update confirmation"
+                                        title="Update confirmation (must be done 24h before function)"
                                         style="padding: 6px 10px; border-radius: 6px;">
                                     <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
                                 </button>
-                            `}
+                            `)}
                         </td>
                     </tr>
                 `;

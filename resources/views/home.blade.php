@@ -110,6 +110,24 @@
             </div>
         </div>
 
+        <!-- Arrivals Checklist -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header text-white p-3 position-relative" style="background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%); border: none;">
+                    <div class="position-absolute w-100 h-100 top-0 start-0" style="background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px); opacity: 0.5;"></div>
+                    <h5 class="mb-0 fs-6 fw-bold position-relative" style="text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        <i class="fas fa-clipboard-check me-2"></i> Guest Count Confirmation Checklist
+                        <small class="ms-2 opacity-75" style="font-size: 0.75rem; font-weight: normal;">(Upcoming Arrivals - Next 3 Days)</small>
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <div id="arrivalsChecklistContainer">
+                        <div class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading arrivals...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-black text-white p-3">
@@ -2401,6 +2419,174 @@ async function deleteTeam(teamId) {
     } catch (error) {
         console.error('Error deleting team:', error);
         alert('Error deleting team. Please try again.');
+    }
+}
+
+// ===== Arrivals Checklist =====
+document.addEventListener('DOMContentLoaded', function() {
+    loadArrivalsChecklist();
+});
+
+async function loadArrivalsChecklist() {
+    const container = document.getElementById('arrivalsChecklistContainer');
+    
+    try {
+        container.innerHTML = '<div class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading arrivals...</div>';
+        
+        const response = await fetch('/api/duty-roster/arrivals-checklist');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.arrivals.length === 0) {
+                container.innerHTML = '<div class="text-center py-3 text-muted"><i class="fas fa-calendar-check me-2"></i> No upcoming arrivals in the next 3 days</div>';
+                return;
+            }
+            
+            let html = '<div class="table-responsive"><table class="table table-hover align-middle mb-0">';
+            html += `
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width: 100px;">Arrival Date</th>
+                        <th>Guest Details</th>
+                        <th class="text-center" style="width: 120px;">Contact</th>
+                        <th class="text-center" style="width: 100px;">Initial Count</th>
+                        <th class="text-center" style="width: 150px;">Confirmed Count</th>
+                        <th class="text-center" style="width: 100px;">Status</th>
+                        <th class="text-center" style="width: 80px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            data.arrivals.forEach(arrival => {
+                const arrivalDate = new Date(arrival.start);
+                const dateStr = arrivalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const timeStr = arrivalDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                const isConfirmed = arrival.guest_count_confirmed;
+                const rowClass = isConfirmed ? 'table-success' : '';
+                
+                let statusBadge = '';
+                let confirmTimeStr = '';
+                
+                if (isConfirmed) {
+                    const confirmTime = new Date(arrival.guest_count_confirmed_at);
+                    confirmTimeStr = confirmTime.toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    statusBadge = `<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Confirmed</span>`;
+                } else {
+                    statusBadge = `<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>`;
+                }
+                
+                html += `
+                    <tr class="${rowClass}" id="arrival-row-${arrival.id}">
+                        <td class="text-center">
+                            <div class="fw-bold text-primary">${dateStr}</div>
+                            <small class="text-muted">${timeStr}</small>
+                        </td>
+                        <td>
+                            <div class="fw-bold">${arrival.name}</div>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-alt me-1"></i>${arrival.function_type}
+                                ${arrival.room_numbers ? ` | <i class="fas fa-door-open me-1"></i>${arrival.room_numbers}` : ''}
+                            </small>
+                        </td>
+                        <td class="text-center">
+                            <a href="tel:${arrival.contact_number}" class="text-decoration-none">
+                                <i class="fas fa-phone me-1"></i>${arrival.contact_number}
+                            </a>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary">${arrival.guest_count} guests</span>
+                        </td>
+                        <td class="text-center">
+                            ${isConfirmed ? `
+                                <div class="fw-bold text-success">${arrival.confirmed_guest_count} guests</div>
+                                <small class="text-muted">by ${arrival.confirmed_by}</small>
+                                <div><small class="text-muted">${confirmTimeStr}</small></div>
+                            ` : '<span class="text-muted">Not confirmed</span>'}
+                        </td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">
+                            ${!isConfirmed ? `
+                                <button onclick="confirmGuestCountPrompt(${arrival.id}, ${arrival.guest_count})" 
+                                        class="btn btn-sm btn-primary" 
+                                        title="Confirm guest count">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            ` : `
+                                <button onclick="confirmGuestCountPrompt(${arrival.id}, ${arrival.confirmed_guest_count})" 
+                                        class="btn btn-sm btn-outline-secondary" 
+                                        title="Update confirmation">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Failed to load arrivals</div>';
+        }
+    } catch (error) {
+        console.error('Error loading arrivals checklist:', error);
+        container.innerHTML = '<div class="text-center py-3 text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Error loading arrivals</div>';
+    }
+}
+
+async function confirmGuestCountPrompt(bookingId, defaultCount) {
+    const guestCount = prompt(`Confirm guest count for this booking:`, defaultCount);
+    
+    if (guestCount === null || guestCount.trim() === '') {
+        return; // User cancelled
+    }
+    
+    const count = parseInt(guestCount);
+    if (isNaN(count) || count < 1) {
+        alert('Please enter a valid guest count (minimum 1)');
+        return;
+    }
+    
+    await confirmGuestCount(bookingId, count);
+}
+
+async function confirmGuestCount(bookingId, confirmedCount) {
+    try {
+        const response = await fetch(`/api/duty-roster/bookings/${bookingId}/confirm-guest-count`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ confirmed_guest_count: confirmedCount })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            await loadArrivalsChecklist();
+            
+            const container = document.getElementById('arrivalsChecklistContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${data.message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.insertAdjacentElement('beforebegin', alert);
+            setTimeout(() => alert.remove(), 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error confirming guest count:', error);
+        alert('Error confirming guest count. Please try again.');
     }
 }
 

@@ -2363,6 +2363,101 @@ class StaffAllocationController extends Controller
     }
 
     /**
+     * Dashboard Widget: Get Arrivals Checklist for Guest Count Confirmation
+     */
+    public function getArrivalsChecklist(Request $request)
+    {
+        try {
+            $today = now();
+            $todayDate = $today->toDateString();
+            $threeDaysAhead = $today->copy()->addDays(3)->toDateString();
+            
+            // Check if bookings table exists
+            if (!\Schema::hasTable('bookings')) {
+                return response()->json([
+                    'success' => true,
+                    'arrivals' => []
+                ]);
+            }
+            
+            // Get bookings arriving today or within next 3 days
+            $arrivals = \App\Models\Booking::whereBetween('start', [$todayDate, $threeDaysAhead])
+                ->orderBy('start', 'asc')
+                ->get()
+                ->map(function ($booking) {
+                    $confirmedBy = null;
+                    if ($booking->guest_count_confirmed && $booking->guest_count_confirmed_by) {
+                        $user = \App\Models\User::find($booking->guest_count_confirmed_by);
+                        $confirmedBy = $user ? $user->name : 'Unknown';
+                    }
+                    
+                    return [
+                        'id' => $booking->id,
+                        'name' => $booking->name,
+                        'function_type' => $booking->function_type,
+                        'contact_number' => $booking->contact_number,
+                        'guest_count' => $booking->guest_count,
+                        'confirmed_guest_count' => $booking->confirmed_guest_count,
+                        'room_numbers' => $booking->current_room_numbers ?: $booking->room_numbers,
+                        'start' => $booking->start,
+                        'guest_count_confirmed' => $booking->guest_count_confirmed,
+                        'guest_count_confirmed_at' => $booking->guest_count_confirmed_at,
+                        'confirmed_by' => $confirmedBy,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'arrivals' => $arrivals
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'arrivals' => []
+            ]);
+        }
+    }
+
+    /**
+     * Dashboard Widget: Confirm Guest Count for Booking
+     */
+    public function confirmGuestCount(Request $request, $bookingId)
+    {
+        try {
+            $request->validate([
+                'confirmed_guest_count' => 'required|integer|min:1',
+            ]);
+
+            $booking = \App\Models\Booking::findOrFail($bookingId);
+            
+            $booking->guest_count_confirmed = true;
+            $booking->guest_count_confirmed_at = now();
+            $booking->guest_count_confirmed_by = auth()->id();
+            $booking->confirmed_guest_count = $request->confirmed_guest_count;
+            $booking->save();
+
+            $confirmedBy = auth()->user()->name;
+
+            return response()->json([
+                'success' => true,
+                'message' => "Guest count confirmed: {$request->confirmed_guest_count} guests",
+                'booking' => [
+                    'id' => $booking->id,
+                    'guest_count_confirmed' => $booking->guest_count_confirmed,
+                    'guest_count_confirmed_at' => $booking->guest_count_confirmed_at,
+                    'confirmed_by' => $confirmedBy,
+                    'confirmed_guest_count' => $booking->confirmed_guest_count,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to confirm guest count'
+            ], 500);
+        }
+    }
+
+    /**
      * Dashboard Widget: Inventory Warnings from /stock system
      */
     public function getInventoryWarnings(Request $request)

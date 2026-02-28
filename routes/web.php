@@ -453,6 +453,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/duty-roster/cycle-room-status', [StaffAllocationController::class, 'cycleRoomStatus'])->name('duty.roster.api.cycle-room-status');
     Route::get('/api/duty-roster/bookings/today', [StaffAllocationController::class, 'getTodaysBookings'])->name('duty.roster.api.bookings.today');
     Route::post('/api/duty-roster/bookings/{bookingId}/transfer-room', [StaffAllocationController::class, 'transferRoom'])->name('duty.roster.api.bookings.transfer-room');
+    Route::get('/api/duty-roster/arrivals-checklist', [StaffAllocationController::class, 'getArrivalsChecklist'])->name('duty.roster.api.arrivals-checklist');
+    Route::post('/api/duty-roster/bookings/{bookingId}/confirm-guest-count', [StaffAllocationController::class, 'confirmGuestCount'])->name('duty.roster.api.confirm-guest-count');
     Route::get('/api/duty-roster/online-users', [StaffAllocationController::class, 'getOnlineUsers'])->name('duty.roster.api.online-users');
     Route::get('/api/duty-roster/monthly-profit', [StaffAllocationController::class, 'getMonthlyFinancialSummary'])->name('duty.roster.api.monthly-profit');
     Route::get('/api/duty-roster/salary-summary', [StaffAllocationController::class, 'getSalarySummary'])->name('duty.roster.api.salary-summary');

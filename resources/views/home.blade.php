@@ -1967,16 +1967,39 @@ function renderHousekeepingGrid(rooms) {
             
             // Build tooltip with all bookings
             if (hasMultiple && room.bookings) {
-                const bookingList = room.bookings.map((b, i) => 
-                    `${i + 1}. ${b.guest_name || 'Guest'} (${b.function_type}) - ${new Date(b.check_in).toLocaleDateString()} to ${new Date(b.check_out).toLocaleDateString()}${b.is_departed ? ' [DEPARTED]' : ''}`
-                ).join('\n');
+                const bookingList = room.bookings.map((b, i) => {
+                    const checkInDate = new Date(b.check_in);
+                    const checkOutDate = new Date(b.check_out);
+                    const checkInStr = checkInDate.toLocaleString('en-US', { 
+                        month: 'short', day: 'numeric', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit' 
+                    });
+                    const checkOutStr = checkOutDate.toLocaleString('en-US', { 
+                        month: 'short', day: 'numeric', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit' 
+                    });
+                    const guestCount = b.guest_count || 0;
+                    const departedText = b.is_departed ? ' [DEPARTED]' : '';
+                    return `${i + 1}. ${b.guest_name || 'Guest'} (${b.function_type})${departedText}\n   👥 ${guestCount} guests | 📅 In: ${checkInStr} | Out: ${checkOutStr}`;
+                }).join('\n');
                 bookingTooltip = ` | 📅 ${room.bookings.length} Bookings:\n${bookingList}`;
                 
                 // Multiple booking indicator (small badge)
                 multipleIndicator = `<span style="position: absolute; top: -4px; right: -4px; background: ${bookingColor}; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${room.bookings.length}</span>`;
             } else {
+                const checkInDate = new Date(room.booking.check_in);
+                const checkOutDate = new Date(room.booking.check_out);
+                const checkInStr = checkInDate.toLocaleString('en-US', { 
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit' 
+                });
+                const checkOutStr = checkOutDate.toLocaleString('en-US', { 
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit' 
+                });
+                const guestCount = room.booking.guest_count || 0;
                 const statusText = isDeparted ? ' [DEPARTED]' : '';
-                bookingTooltip = ` | 📅 Booking #${room.booking.id}: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})${statusText}`;
+                bookingTooltip = ` | 📅 Booking #${room.booking.id}: ${room.booking.guest_name || 'Guest'} (${room.booking.function_type})${statusText}\n   👥 ${guestCount} guests | 📅 Check-in: ${checkInStr}\n   📅 Check-out: ${checkOutStr}`;
             }
         }
         

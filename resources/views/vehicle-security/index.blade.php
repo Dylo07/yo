@@ -342,8 +342,8 @@
    </div>
 </div>
 
-<!-- Mobile Card View (Hidden on Desktop) -->
-<div class="mobile-vehicle-cards" id="mobileVehicleCards" style="display: none;">
+<!-- Mobile Card View -->
+<div class="mobile-vehicle-cards" id="mobileVehicleCards">
     @foreach($vehicles as $vehicle)
     <div class="vehicle-card {{ $vehicle->checkout_time ? 'status-checked-out' : ($vehicle->is_temp_out ? 'status-temp-out' : 'status-on-property') }} {{ $vehicle->team ? 'team-'.str_replace(' ', '', $vehicle->team) : '' }}" 
          data-vehicle-id="{{ $vehicle->id }}">

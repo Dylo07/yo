@@ -1087,7 +1087,7 @@
 
 /* Mobile Vehicle Card Styles */
 .mobile-vehicle-cards {
-    display: none !important;
+    display: none;
 }
 
 .vehicle-card {

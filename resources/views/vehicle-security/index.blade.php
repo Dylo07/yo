@@ -347,77 +347,71 @@
     @foreach($vehicles as $vehicle)
     <div class="vehicle-card {{ $vehicle->checkout_time ? 'status-checked-out' : ($vehicle->is_temp_out ? 'status-temp-out' : 'status-on-property') }} {{ $vehicle->team ? 'team-'.str_replace(' ', '', $vehicle->team) : '' }}" 
          data-vehicle-id="{{ $vehicle->id }}">
-        <div class="vehicle-card-header" style="padding: 8px 12px;">
+        <div class="vehicle-card-header" style="padding: 4px 8px;">
             <div class="d-flex justify-content-between align-items-center">
-                <div class="vehicle-card-number" style="font-size: 18px;">{{ $vehicle->vehicle_number }}</div>
+                <div class="vehicle-card-number" style="font-size: 15px; font-weight: 700;">{{ $vehicle->vehicle_number }}</div>
                 @if($vehicle->checkout_time)
-                    <span class="badge badge-secondary" style="font-size: 10px;"><i class="fas fa-check"></i> OUT</span>
+                    <span class="badge badge-secondary" style="font-size: 9px; padding: 2px 6px;"><i class="fas fa-check"></i> OUT</span>
                 @elseif($vehicle->is_temp_out)
-                    <span class="badge badge-info" style="font-size: 10px;"><i class="fas fa-clock"></i> TEMP</span>
+                    <span class="badge badge-info" style="font-size: 9px; padding: 2px 6px;"><i class="fas fa-clock"></i> TEMP</span>
                 @else
-                    <span class="badge badge-success" style="font-size: 10px;"><i class="fas fa-car"></i> IN</span>
+                    <span class="badge badge-success" style="font-size: 9px; padding: 2px 6px;"><i class="fas fa-car"></i> IN</span>
                 @endif
             </div>
-            <div class="text-muted" style="font-size: 12px;">{{ $vehicle->matter }}</div>
+            <div class="text-muted" style="font-size: 10px; margin-top: 2px;">{{ $vehicle->matter }}</div>
         </div>
-        <div class="vehicle-card-body" style="padding: 8px 12px;">
+        <div class="vehicle-card-body" style="padding: 4px 8px;">
             <!-- Compact Time Details -->
-            <div class="d-flex align-items-center mb-2" style="gap: 6px;">
-                <div class="flex-grow-1 text-center" style="background: #fff3cd; border-radius: 4px; padding: 4px 6px;">
-                    <div style="font-size: 10px; color: #666;">In Time & Date</div>
-                    <div style="font-size: 11px;">{{ $vehicle->created_at->format('d M Y') }}</div>
-                    <div class="font-weight-bold" style="font-size: 13px;">{{ $vehicle->created_at->format('h:i A') }}</div>
+            <div class="d-flex align-items-stretch mb-1" style="gap: 4px;">
+                <div class="flex-grow-1 text-center" style="background: #fff3cd; border-radius: 3px; padding: 3px 4px;">
+                    <div style="font-size: 8px; color: #666; line-height: 1;">In Time & Date</div>
+                    <div style="font-size: 9px; line-height: 1.2;">{{ $vehicle->created_at->format('d M Y') }}</div>
+                    <div class="font-weight-bold" style="font-size: 11px; line-height: 1.2;">{{ $vehicle->created_at->format('h:i A') }}</div>
                 </div>
-                <div class="flex-grow-1 text-center" style="background: #fff3cd; border-radius: 4px; padding: 4px 6px;">
-                    <div style="font-size: 10px; color: #666;">Out Time & Date</div>
+                <div class="flex-grow-1 text-center" style="background: #fff3cd; border-radius: 3px; padding: 3px 4px;">
+                    <div style="font-size: 8px; color: #666; line-height: 1;">Out Time & Date</div>
                     @if($vehicle->checkout_time)
-                        <div style="font-size: 11px;">{{ $vehicle->checkout_time->format('d M Y') }}</div>
-                        <div class="font-weight-bold" style="font-size: 13px;">{{ $vehicle->checkout_time->format('h:i A') }}</div>
+                        <div style="font-size: 9px; line-height: 1.2;">{{ $vehicle->checkout_time->format('d M Y') }}</div>
+                        <div class="font-weight-bold" style="font-size: 11px; line-height: 1.2;">{{ $vehicle->checkout_time->format('h:i A') }}</div>
                     @else
-                        <div class="text-muted" style="font-size: 11px;">Not yet</div>
+                        <div class="text-muted" style="font-size: 9px;">Not yet</div>
                     @endif
                 </div>
-                @if($vehicle->checkout_time)
-                <div class="text-center" style="min-width: 45px;">
-                    <div style="font-size: 9px; color: #999;">Duration</div>
-                    <div class="font-weight-bold text-info" style="font-size: 11px;">{{ number_format($vehicle->created_at->diffInMinutes($vehicle->checkout_time) / 60, 1) }}h</div>
-                </div>
-                @endif
             </div>
-            <div class="d-flex flex-wrap align-items-center" style="gap: 4px;">
+            <div class="d-flex flex-wrap align-items-center" style="gap: 3px; margin-top: 3px;">
                 @if($vehicle->room_numbers)
                     @foreach(json_decode($vehicle->room_numbers) as $room)
-                        <span class="badge badge-primary" style="font-size: 10px; padding: 2px 5px;"><i class="fas fa-bed"></i> {{ $room }}</span>
+                        <span class="badge badge-primary" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-bed"></i> {{ $room }}</span>
                     @endforeach
                 @endif
                 @if($vehicle->adult_pool_count || $vehicle->kids_pool_count)
-                    <span class="badge badge-info" style="font-size: 10px; padding: 2px 5px;"><i class="fas fa-swimming-pool"></i> {{ $vehicle->adult_pool_count }}/{{ $vehicle->kids_pool_count }}</span>
+                    <span class="badge badge-info" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-swimming-pool"></i> {{ $vehicle->adult_pool_count }}/{{ $vehicle->kids_pool_count }}</span>
                 @endif
                 @if($vehicle->team)
-                    <span class="badge badge-warning" style="font-size: 10px; padding: 2px 5px;">{{ $vehicle->team }}</span>
+                    <span class="badge badge-warning" style="font-size: 9px; padding: 1px 4px;">{{ $vehicle->team }}</span>
                 @endif
                 @if($vehicle->description)
-                    <span class="text-muted" style="font-size: 10px;"><i class="fas fa-comment"></i> {{ $vehicle->description }}</span>
+                    <span class="text-muted" style="font-size: 9px;"><i class="fas fa-comment"></i> {{ $vehicle->description }}</span>
                 @endif
             </div>
         </div>
         @if(!$vehicle->is_note && !$vehicle->checkout_time)
-        <div class="vehicle-card-actions" style="padding: 6px 10px; gap: 6px;">
-            <button type="button" class="btn btn-primary btn-sm" onclick="editVehicle({{ $vehicle->id }})" style="min-height: 40px;">
+        <div class="vehicle-card-actions" style="padding: 4px 8px; gap: 4px;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="editVehicle({{ $vehicle->id }})" style="min-height: 32px; padding: 4px 8px;">
                 <i class="fas fa-edit"></i>
             </button>
             @if(!$vehicle->is_temp_out)
-                <button type="button" class="btn btn-info btn-sm" onclick="tempCheckout({{ $vehicle->id }})" style="min-height: 40px;">
+                <button type="button" class="btn btn-info btn-sm" onclick="tempCheckout({{ $vehicle->id }})" style="min-height: 32px; padding: 4px 8px;">
                     <i class="fas fa-clock"></i>
                 </button>
             @else
-                <button type="button" class="btn btn-success btn-sm" onclick="tempCheckin({{ $vehicle->id }})" style="min-height: 40px;">
+                <button type="button" class="btn btn-success btn-sm" onclick="tempCheckin({{ $vehicle->id }})" style="min-height: 32px; padding: 4px 8px;">
                     <i class="fas fa-undo"></i>
                 </button>
             @endif
             <form action="{{ route('vehicle-security.checkout', $vehicle->id) }}" method="POST" style="flex:2;" onsubmit="checkoutVehicleMobile(event, {{ $vehicle->id }})">
                 @csrf
-                <button type="submit" class="btn btn-danger w-100" style="min-height: 40px; font-size: 14px;">
+                <button type="submit" class="btn btn-danger w-100" style="min-height: 32px; font-size: 11px; padding: 4px 8px;">
                     <i class="fas fa-sign-out-alt"></i> CHECK OUT
                 </button>
             </form>

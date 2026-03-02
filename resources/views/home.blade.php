@@ -2617,6 +2617,7 @@ async function loadArrivalsChecklist() {
                 const arrivalDate = new Date(arrival.start);
                 const dateStr = arrivalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const timeStr = arrivalDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                const dateParam = arrivalDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
                 const isConfirmed = arrival.guest_count_confirmed;
                 const rowClass = ''; // No special class for confirmed rows
                 
@@ -2694,7 +2695,7 @@ async function loadArrivalsChecklist() {
                             ` : '<span style="color: #9ca3af; font-style: italic; font-size: 0.8rem;">Not confirmed</span>'}
                         </td>
                         <td class="text-center">
-                            <a href="/food-menu?booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
+                            <a href="/food-menu?date=${dateParam}&booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
                                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 4px rgba(245, 158, 11, 0.3);">
                                 <i class="fas fa-utensils me-1" style="font-size: 0.7rem;"></i>Edit Menu
                             </a>

@@ -701,6 +701,7 @@ Route::middleware(['auth'])->group(function () {
 
 // Add this to your food menu routes
 Route::get('/food-menu/print-daily', [App\Http\Controllers\FoodMenuController::class, 'printDailyMenus'])->name('food-menu.print-daily');
+Route::get('/food-menu/print-multi-day', [App\Http\Controllers\FoodMenuController::class, 'printMultiDayMenu'])->name('food-menu.print-multi-day');
 
 // Add this to your routes/web.php file for testing the bookings endpoint
 

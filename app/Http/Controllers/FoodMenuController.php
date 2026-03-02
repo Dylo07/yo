@@ -47,12 +47,35 @@ class FoodMenuController extends Controller
         
         $selectedBooking = null;
         $menu = null;
+        $dateRange = [];
+        $menusForAllDays = [];
         
         // If a booking ID is provided, load that specific booking
         if ($bookingId) {
             $selectedBooking = Booking::find($bookingId);
             
             if ($selectedBooking) {
+                // Calculate date range for multi-day bookings
+                $startDate = Carbon::parse($selectedBooking->start)->startOfDay();
+                $endDate = Carbon::parse($selectedBooking->end)->startOfDay();
+                
+                // Generate array of all dates in the booking period
+                $currentDate = $startDate->copy();
+                while ($currentDate->lte($endDate)) {
+                    $dateStr = $currentDate->format('Y-m-d');
+                    $dateRange[] = $dateStr;
+                    
+                    // Load menu for this date if exists
+                    $dayMenu = FoodMenu::where('booking_id', $bookingId)
+                                      ->where('date', $dateStr)
+                                      ->first();
+                    
+                    $menusForAllDays[$dateStr] = $dayMenu;
+                    
+                    $currentDate->addDay();
+                }
+                
+                // For backward compatibility, still load the single date menu
                 $menu = FoodMenu::where('booking_id', $bookingId)
                               ->where('date', $date)
                               ->first();
@@ -67,7 +90,9 @@ class FoodMenuController extends Controller
             'selectedBooking' => $selectedBooking,
             'menu' => $menu,
             'date' => $date,
-            'packages' => $packages
+            'packages' => $packages,
+            'dateRange' => $dateRange,
+            'menusForAllDays' => $menusForAllDays
         ]);
     }
 
@@ -282,6 +307,59 @@ class FoodMenuController extends Controller
             ]);
             
             return back()->with('error', 'Failed to print daily menus: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Print multi-day menu for a booking that spans multiple days
+     */
+    public function printMultiDayMenu(Request $request)
+    {
+        try {
+            $bookingId = $request->input('booking_id');
+            $booking = Booking::findOrFail($bookingId);
+            
+            // Calculate date range
+            $startDate = Carbon::parse($booking->start)->startOfDay();
+            $endDate = Carbon::parse($booking->end)->startOfDay();
+            
+            $menusForAllDays = [];
+            $currentDate = $startDate->copy();
+            
+            while ($currentDate->lte($endDate)) {
+                $dateStr = $currentDate->format('Y-m-d');
+                
+                $menu = FoodMenu::where('booking_id', $bookingId)
+                              ->where('date', $dateStr)
+                              ->first();
+                
+                if (!$menu) {
+                    $menu = new FoodMenu([
+                        'booking_id' => $bookingId,
+                        'date' => $dateStr
+                    ]);
+                }
+                
+                $menusForAllDays[] = [
+                    'date' => $currentDate->copy(),
+                    'menu' => $menu
+                ];
+                
+                $currentDate->addDay();
+            }
+            
+            return view('food-menu.print-multi-day', [
+                'booking' => $booking,
+                'menusForAllDays' => $menusForAllDays
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error printing multi-day menu', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->with('error', 'Failed to print multi-day menu: ' . $e->getMessage());
         }
     }
 }

@@ -142,9 +142,52 @@
                         </div>
                         @endif
                         
+                        <!-- Multi-Day Navigation -->
+                        @if(count($dateRange) > 1)
+                        <div class="alert alert-success mt-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-calendar-week me-2"></i>
+                                    <strong>Multi-Day Function:</strong> This booking spans {{ count($dateRange) }} days
+                                    ({{ \Carbon\Carbon::parse($dateRange[0])->format('M j') }} - {{ \Carbon\Carbon::parse(end($dateRange))->format('M j, Y') }})
+                                </div>
+                                <a href="{{ route('food-menu.print-multi-day', ['booking_id' => $selectedBooking->id]) }}" 
+                                   target="_blank" class="btn btn-sm btn-success">
+                                    <i class="fas fa-print me-1"></i>Print All Days
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <ul class="nav nav-tabs mb-3" id="dayTabs" role="tablist">
+                            @foreach($dateRange as $index => $dayDate)
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {{ $dayDate == $date ? 'active' : '' }}" 
+                                            id="day-{{ $index }}-tab" 
+                                            data-bs-toggle="tab" 
+                                            data-bs-target="#day-{{ $index }}" 
+                                            type="button" 
+                                            role="tab"
+                                            onclick="window.location.href='{{ route('food-menu.index', ['date' => $dayDate, 'booking_id' => $selectedBooking->id]) }}'">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        Day {{ $index + 1 }} - {{ \Carbon\Carbon::parse($dayDate)->format('M j, Y') }}
+                                        @if(isset($menusForAllDays[$dayDate]) && $menusForAllDays[$dayDate])
+                                            <i class="fas fa-check-circle text-success ms-1"></i>
+                                        @else
+                                            <i class="fas fa-circle text-warning ms-1" style="font-size: 0.6rem;"></i>
+                                        @endif
+                                    </button>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @endif
+                        
                         <!-- Menu Form -->
                         <div class="mt-4">
-                            <h5>Food Menu @if($selectedBooking->function_type == 'Wedding')<span class="badge bg-pink">Wedding Menu</span>@endif</h5>
+                            <h5>Food Menu @if($selectedBooking->function_type == 'Wedding')<span class="badge bg-pink">Wedding Menu</span>@endif
+                                @if(count($dateRange) > 1)
+                                    - <span class="text-primary">{{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</span>
+                                @endif
+                            </h5>
                             <form action="{{ route('food-menu.save') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="booking_id" value="{{ $selectedBooking->id }}">

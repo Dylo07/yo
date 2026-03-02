@@ -142,7 +142,7 @@
                         </div>
                         @endif
                         
-                        <!-- Multi-Day Navigation -->
+                        <!-- Multi-Day Display -->
                         @if(count($dateRange) > 1)
                         <div class="alert alert-success mt-4">
                             <div class="d-flex justify-content-between align-items-center">
@@ -158,28 +158,57 @@
                             </div>
                         </div>
                         
-                        <ul class="nav nav-tabs mb-3" id="dayTabs" role="tablist">
+                        <!-- All Days Accordion -->
+                        <div class="accordion mt-4" id="daysAccordion">
                             @foreach($dateRange as $index => $dayDate)
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link {{ $dayDate == $date ? 'active' : '' }}" 
-                                            id="day-{{ $index }}-tab" 
-                                            data-bs-toggle="tab" 
-                                            data-bs-target="#day-{{ $index }}" 
-                                            type="button" 
-                                            role="tab"
-                                            onclick="window.location.href='{{ route('food-menu.index', ['date' => $dayDate, 'booking_id' => $selectedBooking->id]) }}'">
-                                        <i class="fas fa-calendar-day me-1"></i>
-                                        Day {{ $index + 1 }} - {{ \Carbon\Carbon::parse($dayDate)->format('M j, Y') }}
-                                        @if(isset($menusForAllDays[$dayDate]) && $menusForAllDays[$dayDate])
-                                            <i class="fas fa-check-circle text-success ms-1"></i>
-                                        @else
-                                            <i class="fas fa-circle text-warning ms-1" style="font-size: 0.6rem;"></i>
-                                        @endif
-                                    </button>
-                                </li>
+                                @php
+                                    $dayMenu = $menusForAllDays[$dayDate] ?? null;
+                                @endphp
+                                
+                                <div class="accordion-item mb-3" style="border: 2px solid #dee2e6; border-radius: 8px;">
+                                    <h2 class="accordion-header" id="heading-day-{{ $index }}">
+                                        <button class="accordion-button {{ $index != 0 ? 'collapsed' : '' }}" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#collapse-day-{{ $index }}" 
+                                                aria-expanded="{{ $index == 0 ? 'true' : 'false' }}" 
+                                                aria-controls="collapse-day-{{ $index }}"
+                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; border-radius: 6px 6px 0 0;">
+                                            <div class="d-flex justify-content-between align-items-center w-100 pe-3">
+                                                <div>
+                                                    <i class="fas fa-calendar-day me-2"></i>
+                                                    <strong>Day {{ $index + 1 }}</strong> - {{ \Carbon\Carbon::parse($dayDate)->format('l, F j, Y') }}
+                                                </div>
+                                                <div>
+                                                    @if($dayMenu)
+                                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Menu Added</span>
+                                                    @else
+                                                        <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle me-1"></i>No Menu</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse-day-{{ $index }}" class="accordion-collapse collapse {{ $index == 0 ? 'show' : '' }}" 
+                                         aria-labelledby="heading-day-{{ $index }}" data-bs-parent="#daysAccordion">
+                                        <div class="accordion-body" style="background: #f8f9fa; padding: 20px;">
+                                            <!-- Menu Form for this day -->
+                                            <form action="{{ route('food-menu.save') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="booking_id" value="{{ $selectedBooking->id }}">
+                                                <input type="hidden" name="date" value="{{ $dayDate }}">
+                                                
+                                                @include('food-menu.includes.menu-fields', [
+                                                    'menu' => $dayMenu,
+                                                    'dayIndex' => $index,
+                                                    'functionType' => $selectedBooking->function_type
+                                                ])
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             @endforeach
-                        </ul>
-                        @endif
+                        </div>
+                        
+                        @else
                         
                         <!-- Menu Form -->
                         <div class="mt-4">

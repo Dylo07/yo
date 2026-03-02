@@ -644,14 +644,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     let fieldsUpdated = [];
                     const isMultiDay = {{ count($dateRange) > 1 ? 'true' : 'false' }};
                     
+                    // Detect which day's accordion is currently open
+                    let activeDayIndex = 0;
+                    if (isMultiDay) {
+                        const accordionPanels = document.querySelectorAll('#daysAccordion .accordion-collapse');
+                        accordionPanels.forEach((panel, index) => {
+                            if (panel.classList.contains('show')) {
+                                activeDayIndex = index;
+                            }
+                        });
+                    }
+                    
                     for (const [fieldId, items] of Object.entries(categorizedItems)) {
                         if (items.length > 0) {
-                            // For multi-day bookings, try to find field with _0 suffix (Day 1)
+                            // For multi-day bookings, use active day index
                             let textarea = document.getElementById(fieldId);
                             
                             if (!textarea && isMultiDay) {
-                                // Try with day index appended (e.g., welcome_drink_0)
-                                textarea = document.getElementById(fieldId + '_0');
+                                // Try with active day index (e.g., welcome_drink_0, welcome_drink_1, etc.)
+                                textarea = document.getElementById(fieldId + '_' + activeDayIndex);
                             }
                             
                             if (textarea) {
@@ -689,10 +700,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                     
-                    // Try to find the field (with day index if multi-day)
+                    // Detect which day's accordion is currently open
+                    let activeDayIndex = 0;
+                    if (isMultiDay) {
+                        const accordionPanels = document.querySelectorAll('#daysAccordion .accordion-collapse');
+                        accordionPanels.forEach((panel, index) => {
+                            if (panel.classList.contains('show')) {
+                                activeDayIndex = index;
+                            }
+                        });
+                    }
+                    
+                    // Try to find the field (with active day index if multi-day)
                     let targetTextarea = document.getElementById(targetField);
                     if (!targetTextarea && isMultiDay) {
-                        targetTextarea = document.getElementById(targetField + '_0');
+                        targetTextarea = document.getElementById(targetField + '_' + activeDayIndex);
                     }
                     
                     if (targetTextarea) {

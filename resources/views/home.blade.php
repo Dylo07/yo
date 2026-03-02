@@ -2617,7 +2617,11 @@ async function loadArrivalsChecklist() {
                 const arrivalDate = new Date(arrival.start);
                 const dateStr = arrivalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const timeStr = arrivalDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                const dateParam = arrivalDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                // Format date as YYYY-MM-DD using local date (no UTC conversion)
+                const year = arrivalDate.getFullYear();
+                const month = String(arrivalDate.getMonth() + 1).padStart(2, '0');
+                const day = String(arrivalDate.getDate()).padStart(2, '0');
+                const dateParam = `${year}-${month}-${day}`;
                 const isConfirmed = arrival.guest_count_confirmed;
                 const rowClass = ''; // No special class for confirmed rows
                 

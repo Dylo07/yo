@@ -2391,6 +2391,15 @@ class StaffAllocationController extends Controller
                         $confirmedBy = $user ? $user->name : 'Unknown';
                     }
                     
+                    // Check if food menu exists for this booking
+                    $foodMenuExists = false;
+                    if (\Schema::hasTable('food_menus')) {
+                        $bookingDate = \Carbon\Carbon::parse($booking->start)->format('Y-m-d');
+                        $foodMenuExists = \App\Models\FoodMenu::where('booking_id', $booking->id)
+                            ->where('date', $bookingDate)
+                            ->exists();
+                    }
+                    
                     return [
                         'id' => $booking->id,
                         'name' => $booking->name,
@@ -2405,6 +2414,8 @@ class StaffAllocationController extends Controller
                         'guest_count_confirmed' => $booking->guest_count_confirmed,
                         'guest_count_confirmed_at' => $booking->guest_count_confirmed_at,
                         'confirmed_by' => $confirmedBy,
+                        'bites_details' => $booking->bites_details,
+                        'food_menu_exists' => $foodMenuExists,
                     ];
                 });
 

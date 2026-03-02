@@ -2695,30 +2695,42 @@ async function loadArrivalsChecklist() {
                             ` : '<span style="color: #9ca3af; font-style: italic; font-size: 0.8rem;">Not confirmed</span>'}
                         </td>
                         <td class="text-center">
-                            <a href="/food-menu?date=${dateParam}&booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
-                               style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 4px rgba(245, 158, 11, 0.3);">
-                                <i class="fas fa-utensils me-1" style="font-size: 0.7rem;"></i>Edit Menu
-                            </a>
+                            ${arrival.food_menu_exists ? `
+                                <div style="line-height: 1.3;">
+                                    <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #166534; padding: 4px 10px; border-radius: 6px; display: inline-block; font-weight: 700; font-size: 0.8rem; border: 1px solid #86efac;">
+                                        <i class="fas fa-check-circle me-1" style="font-size: 0.75rem;"></i>Added
+                                    </div>
+                                    <div style="margin-top: 4px;">
+                                        <a href="/food-menu?date=${dateParam}&booking_id=${arrival.id}" target="_blank" style="color: #f59e0b; font-size: 0.7rem; font-weight: 600; text-decoration: none;">
+                                            <i class="fas fa-edit" style="font-size: 0.65rem;"></i> Edit Menu
+                                        </a>
+                                    </div>
+                                </div>
+                            ` : `
+                                <a href="/food-menu?date=${dateParam}&booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
+                                   style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 4px rgba(245, 158, 11, 0.3);">
+                                    <i class="fas fa-plus-circle me-1" style="font-size: 0.7rem;"></i>Add Menu
+                                </a>
+                            `}
                         </td>
                         <td class="text-center">
-                            <a href="/bites-menu?booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
-                               style="background: ${arrival.bites_details ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)'}; 
-                                      color: ${arrival.bites_details ? '#92400e' : '#6b7280'}; 
-                                      padding: 6px 12px; 
-                                      border-radius: 6px; 
-                                      text-decoration: none; 
-                                      font-size: 0.75rem; 
-                                      font-weight: 600; 
-                                      border: 1px solid ${arrival.bites_details ? '#fbbf24' : '#d1d5db'};
-                                      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-                                      display: inline-block;
-                                      min-width: 100px;">
-                                ${arrival.bites_details ? `
-                                    <i class="fas fa-cookie-bite me-1" style="color: #f59e0b;"></i>${arrival.bites_details.substring(0, 15)}${arrival.bites_details.length > 15 ? '...' : ''}
-                                ` : `
-                                    <i class="fas fa-plus-circle me-1"></i>Add Bites
-                                `}
-                            </a>
+                            ${arrival.bites_details ? `
+                                <div style="line-height: 1.3;">
+                                    <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #166534; padding: 4px 10px; border-radius: 6px; display: inline-block; font-weight: 700; font-size: 0.8rem; border: 1px solid #86efac;">
+                                        <i class="fas fa-check-circle me-1" style="font-size: 0.75rem;"></i>Added
+                                    </div>
+                                    <div style="margin-top: 4px;">
+                                        <a href="/bites-menu?booking_id=${arrival.id}" target="_blank" style="color: #f59e0b; font-size: 0.7rem; font-weight: 600; text-decoration: none;">
+                                            <i class="fas fa-edit" style="font-size: 0.65rem;"></i> Edit Bites
+                                        </a>
+                                    </div>
+                                </div>
+                            ` : `
+                                <a href="/bites-menu?booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
+                                   style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 4px rgba(245, 158, 11, 0.3);">
+                                    <i class="fas fa-plus-circle me-1" style="font-size: 0.7rem;"></i>Add Bites
+                                </a>
+                            `}
                         </td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">

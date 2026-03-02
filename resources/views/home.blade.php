@@ -2605,7 +2605,7 @@ async function loadArrivalsChecklist() {
                                 <th class="text-center" style="width: 110px;">Initial Count</th>
                                 <th class="text-center" style="width: 100px;">Food Menu</th>
                                 <th class="text-center" style="width: 140px;">Bites Menu</th>
-                                <th class="text-center" style="width: 200px;">Confirmation</th>
+                                <th class="text-center" style="width: 200px;">Guest count confirmation</th>
                             </tr>
                         </thead>
                         <tbody>

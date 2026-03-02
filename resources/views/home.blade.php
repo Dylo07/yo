@@ -2604,6 +2604,8 @@ async function loadArrivalsChecklist() {
                                 <th class="text-center" style="width: 140px;">Contact</th>
                                 <th class="text-center" style="width: 110px;">Initial Count</th>
                                 <th class="text-center" style="width: 160px;">Confirmed Count</th>
+                                <th class="text-center" style="width: 100px;">Food Menu</th>
+                                <th class="text-center" style="width: 140px;">Bites Menu</th>
                                 <th class="text-center" style="width: 100px;">Status</th>
                                 <th class="text-center" style="width: 80px;">Action</th>
                             </tr>
@@ -2690,6 +2692,21 @@ async function loadArrivalsChecklist() {
                                     </div>
                                 </div>
                             ` : '<span style="color: #9ca3af; font-style: italic; font-size: 0.8rem;">Not confirmed</span>'}
+                        </td>
+                        <td class="text-center">
+                            <a href="/food-menu" target="_blank" class="btn btn-sm" 
+                               style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: 600; box-shadow: 0 1px 4px rgba(245, 158, 11, 0.3);">
+                                <i class="fas fa-utensils me-1" style="font-size: 0.7rem;"></i>Edit Menu
+                            </a>
+                        </td>
+                        <td class="text-center">
+                            ${arrival.bites_details ? `
+                                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 6px 10px; border-radius: 6px; border: 1px solid #fbbf24; max-width: 200px; margin: 0 auto;">
+                                    <div style="font-size: 0.75rem; color: #92400e; font-weight: 600; line-height: 1.3;">
+                                        <i class="fas fa-cookie-bite me-1" style="color: #f59e0b;"></i>${arrival.bites_details}
+                                    </div>
+                                </div>
+                            ` : `<span style="color: #9ca3af; font-style: italic; font-size: 0.75rem;">No bites info</span>`}
                         </td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">

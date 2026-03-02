@@ -2701,13 +2701,24 @@ async function loadArrivalsChecklist() {
                             </a>
                         </td>
                         <td class="text-center">
-                            ${arrival.bites_details ? `
-                                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 6px 10px; border-radius: 6px; border: 1px solid #fbbf24; max-width: 200px; margin: 0 auto;">
-                                    <div style="font-size: 0.75rem; color: #92400e; font-weight: 600; line-height: 1.3;">
-                                        <i class="fas fa-cookie-bite me-1" style="color: #f59e0b;"></i>${arrival.bites_details}
-                                    </div>
-                                </div>
-                            ` : `<span style="color: #9ca3af; font-style: italic; font-size: 0.75rem;">No bites info</span>`}
+                            <a href="/bites-menu?booking_id=${arrival.id}" target="_blank" class="btn btn-sm" 
+                               style="background: ${arrival.bites_details ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)'}; 
+                                      color: ${arrival.bites_details ? '#92400e' : '#6b7280'}; 
+                                      padding: 6px 12px; 
+                                      border-radius: 6px; 
+                                      text-decoration: none; 
+                                      font-size: 0.75rem; 
+                                      font-weight: 600; 
+                                      border: 1px solid ${arrival.bites_details ? '#fbbf24' : '#d1d5db'};
+                                      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+                                      display: inline-block;
+                                      min-width: 100px;">
+                                ${arrival.bites_details ? `
+                                    <i class="fas fa-cookie-bite me-1" style="color: #f59e0b;"></i>${arrival.bites_details.substring(0, 15)}${arrival.bites_details.length > 15 ? '...' : ''}
+                                ` : `
+                                    <i class="fas fa-plus-circle me-1"></i>Add Bites
+                                `}
+                            </a>
                         </td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">

@@ -210,6 +210,8 @@ Route::get('/bookings/recent', [BookingController::class, 'getRecentBookings']);
 Route::get('/bookings/stats', [BookingController::class, 'getBookingStats']);
 Route::get('/bookings/{id}/audit-logs', [BookingController::class, 'getAuditLogs']);
 Route::get('/bookings/can-edit-dates', [BookingController::class, 'canEditDates']);
+Route::get('/bites-menu', [BookingController::class, 'showBitesMenu'])->name('bites-menu.show');
+Route::post('/bites-menu/update', [BookingController::class, 'updateBitesMenu'])->name('bites-menu.update');
 // routes/web.php
 Route::post(
     '/booking-payments/{payment}/toggle-verification',

@@ -672,4 +672,42 @@ public function addPaymentFromReceipt(Request $request)
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
+
+/**
+ * Show bites menu form for a specific booking
+ */
+public function showBitesMenu(Request $request)
+{
+    $bookingId = $request->get('booking_id');
+    
+    if (!$bookingId) {
+        return redirect()->route('calendar')->with('error', 'Booking ID is required');
+    }
+    
+    $booking = Booking::findOrFail($bookingId);
+    
+    return view('bites-menu', compact('booking'));
+}
+
+/**
+ * Update bites details for a booking
+ */
+public function updateBitesMenu(Request $request)
+{
+    try {
+        $request->validate([
+            'booking_id' => 'required|exists:bookings,id',
+            'bites_details' => 'nullable|string'
+        ]);
+        
+        $booking = Booking::findOrFail($request->booking_id);
+        $booking->bites_details = $request->bites_details;
+        $booking->save();
+        
+        return redirect()->back()->with('success', 'Bites details updated successfully!');
+    } catch (\Exception $e) {
+        Log::error('Update Bites Menu Error:', ['error' => $e->getMessage()]);
+        return redirect()->back()->with('error', 'Failed to update bites details: ' . $e->getMessage());
+    }
+}
 };

@@ -642,9 +642,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Populate each field
                     let fieldsUpdated = [];
+                    const isMultiDay = {{ count($dateRange) > 1 ? 'true' : 'false' }};
+                    
                     for (const [fieldId, items] of Object.entries(categorizedItems)) {
                         if (items.length > 0) {
-                            const textarea = document.getElementById(fieldId);
+                            // For multi-day bookings, try to find field with _0 suffix (Day 1)
+                            let textarea = document.getElementById(fieldId);
+                            
+                            if (!textarea && isMultiDay) {
+                                // Try with day index appended (e.g., welcome_drink_0)
+                                textarea = document.getElementById(fieldId + '_0');
+                            }
+                            
                             if (textarea) {
                                 const newContent = items.join('\n');
                                 if (textarea.value.trim() !== '') {
@@ -652,8 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 } else {
                                     textarea.value = newContent;
                                 }
-                                highlightField(fieldId);
-                                fieldsUpdated.push(fieldId.replace('_', ' '));
+                                highlightField(textarea.id);
+                                fieldsUpdated.push(fieldId.replace(/_/g, ' '));
                             }
                         }
                     }
@@ -666,6 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                 } else {
                     // Single Field Import
+                    const isMultiDay = {{ count($dateRange) > 1 ? 'true' : 'false' }};
                     const targetField = targetMealField.value;
                     let menuText = '';
                     
@@ -679,10 +689,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     }
                     
-                    const targetTextarea = document.getElementById(targetField);
+                    // Try to find the field (with day index if multi-day)
+                    let targetTextarea = document.getElementById(targetField);
+                    if (!targetTextarea && isMultiDay) {
+                        targetTextarea = document.getElementById(targetField + '_0');
+                    }
+                    
                     if (targetTextarea) {
                         if (targetTextarea.value.trim() !== '') {
-                            if (confirm('The ' + targetField.replace('_', ' ') + ' field already has content. Do you want to replace it?\n\nClick OK to replace, Cancel to append.')) {
+                            if (confirm('The ' + targetField.replace(/_/g, ' ') + ' field already has content. Do you want to replace it?\n\nClick OK to replace, Cancel to append.')) {
                                 targetTextarea.value = menuText.trim();
                             } else {
                                 targetTextarea.value = targetTextarea.value + '\n\n--- ' + packageName + ' ---\n' + menuText.trim();
@@ -691,9 +706,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             targetTextarea.value = menuText.trim();
                         }
                         
-                        highlightField(targetField);
+                        highlightField(targetTextarea.id);
                         targetTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         targetTextarea.focus();
+                    } else {
+                        alert('Could not find the target field. Please try again.');
                     }
                 }
             } catch (e) {

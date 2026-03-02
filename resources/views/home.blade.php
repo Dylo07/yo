@@ -2603,11 +2603,9 @@ async function loadArrivalsChecklist() {
                                 <th>Guest Details</th>
                                 <th class="text-center" style="width: 140px;">Contact</th>
                                 <th class="text-center" style="width: 110px;">Initial Count</th>
-                                <th class="text-center" style="width: 160px;">Confirmed Count</th>
                                 <th class="text-center" style="width: 100px;">Food Menu</th>
                                 <th class="text-center" style="width: 140px;">Bites Menu</th>
-                                <th class="text-center" style="width: 100px;">Status</th>
-                                <th class="text-center" style="width: 80px;">Action</th>
+                                <th class="text-center" style="width: 200px;">Confirmation</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2682,23 +2680,6 @@ async function loadArrivalsChecklist() {
                             </div>
                         </td>
                         <td class="text-center">
-                            ${isConfirmed ? `
-                                <div class="confirmed-count-box">
-                                    <div style="font-weight: 700; font-size: 0.95rem; color: #059669; margin-bottom: 2px; line-height: 1.2;">
-                                        ${arrival.confirmed_guest_count} <i class="fas fa-user-friends" style="font-size: 0.85rem;"></i>
-                                    </div>
-                                    <div style="font-size: 0.68rem; color: #065f46; margin-bottom: 3px; line-height: 1.2;">
-                                        <i class="fas fa-user me-1"></i>${arrival.confirmed_adult_count || 0} adults · 
-                                        <i class="fas fa-child ms-1 me-1"></i>${arrival.confirmed_kids_count || 0} kids
-                                    </div>
-                                    <div style="font-size: 0.65rem; color: #6b7280; border-top: 1px solid #86efac; padding-top: 3px; line-height: 1.3;">
-                                        <i class="fas fa-user-check me-1"></i>${arrival.confirmed_by}<br>
-                                        <i class="fas fa-clock me-1"></i>${confirmTimeStr}
-                                    </div>
-                                </div>
-                            ` : '<span style="color: #9ca3af; font-style: italic; font-size: 0.8rem;">Not confirmed</span>'}
-                        </td>
-                        <td class="text-center">
                             ${arrival.food_menu_exists ? `
                                 <div style="line-height: 1.3;">
                                     <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #166534; padding: 4px 10px; border-radius: 6px; display: inline-block; font-weight: 700; font-size: 0.8rem; border: 1px solid #86efac;">
@@ -2736,29 +2717,44 @@ async function loadArrivalsChecklist() {
                                 </a>
                             `}
                         </td>
-                        <td class="text-center">${statusBadge}</td>
                         <td class="text-center">
-                            ${isPastDeadline ? `
-                                <span style="color: #dc2626; font-size: 0.7rem; font-weight: 600; font-style: italic;">
-                                    <i class="fas fa-lock me-1"></i>Too Late
-                                </span>
-                            ` : (!isConfirmed ? `
-                                <button class="btn btn-sm btn-primary confirm-guest-btn" 
-                                        data-booking-id="${arrival.id}" 
-                                        data-default-count="${arrival.guest_count || 0}"
-                                        title="Confirm guest count (must be done 24h before function)"
-                                        style="padding: 6px 10px; border-radius: 6px; box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);">
-                                    <i class="fas fa-check" style="font-size: 0.85rem;"></i>
-                                </button>
-                            ` : `
-                                <button class="btn btn-sm btn-outline-secondary confirm-guest-btn" 
-                                        data-booking-id="${arrival.id}" 
-                                        data-default-count="${arrival.confirmed_guest_count || 0}"
-                                        title="Update confirmation (must be done 24h before function)"
-                                        style="padding: 6px 10px; border-radius: 6px;">
-                                    <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
-                                </button>
-                            `)}
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                ${isConfirmed ? `
+                                    <div class="confirmed-count-box" style="width: 100%;">
+                                        <div style="font-weight: 700; font-size: 0.9rem; color: #059669; margin-bottom: 2px; line-height: 1.2;">
+                                            ${arrival.confirmed_guest_count} <i class="fas fa-user-friends" style="font-size: 0.8rem;"></i>
+                                        </div>
+                                        <div style="font-size: 0.65rem; color: #065f46; line-height: 1.2;">
+                                            <i class="fas fa-user me-1"></i>${arrival.confirmed_adult_count || 0} adults · 
+                                            <i class="fas fa-child ms-1 me-1"></i>${arrival.confirmed_kids_count || 0} kids
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                <div>${statusBadge}</div>
+                                <div>
+                                    ${isPastDeadline ? `
+                                        <span style="color: #dc2626; font-size: 0.7rem; font-weight: 600; font-style: italic;">
+                                            <i class="fas fa-lock me-1"></i>Too Late
+                                        </span>
+                                    ` : (!isConfirmed ? `
+                                        <button class="btn btn-sm btn-primary confirm-guest-btn" 
+                                                data-booking-id="${arrival.id}" 
+                                                data-default-count="${arrival.guest_count || 0}"
+                                                title="Confirm guest count (must be done 24h before function)"
+                                                style="padding: 6px 10px; border-radius: 6px; box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);">
+                                            <i class="fas fa-check" style="font-size: 0.85rem;"></i>
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-sm btn-outline-secondary confirm-guest-btn" 
+                                                data-booking-id="${arrival.id}" 
+                                                data-default-count="${arrival.confirmed_guest_count || 0}"
+                                                title="Update confirmation (must be done 24h before function)"
+                                                style="padding: 6px 10px; border-radius: 6px;">
+                                            <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
+                                        </button>
+                                    `)}
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 `;

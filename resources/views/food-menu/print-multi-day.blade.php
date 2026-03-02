@@ -238,20 +238,49 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td class="num">1</td><td class="name">Welcome Drink</td><td class="content">{{ $menu->wedding_welcome_drink ?: '-' }}</td></tr>
-                    <tr><td class="num">2</td><td class="name">Appetizer</td><td class="content">{{ $menu->wedding_appetizer ?: '-' }}</td></tr>
-                    <tr><td class="num">3</td><td class="name">Shooters</td><td class="content">{{ $menu->wedding_shooters ?: '-' }}</td></tr>
-                    <tr><td class="num">4</td><td class="name">Salad Bar</td><td class="content">{{ $menu->wedding_salad_bar ?: '-' }}</td></tr>
-                    <tr><td class="num">5</td><td class="name">Salad Dressing</td><td class="content">{{ $menu->wedding_salad_dressing ?: '-' }}</td></tr>
-                    <tr><td class="num">6</td><td class="name">Soup</td><td class="content">{{ $menu->wedding_soup ?: '-' }}</td></tr>
-                    <tr><td class="num">7</td><td class="name">Bread Corner</td><td class="content">{{ $menu->wedding_bread_corner ?: '-' }}</td></tr>
-                    <tr><td class="num">8</td><td class="name">Rice & Noodle</td><td class="content">{{ $menu->wedding_rice_noodle ?: '-' }}</td></tr>
-                    <tr><td class="num">9</td><td class="name">Meat Items</td><td class="content">{{ $menu->wedding_meat_items ?: '-' }}</td></tr>
-                    <tr><td class="num">10</td><td class="name">Seafood Items</td><td class="content">{{ $menu->wedding_seafood_items ?: '-' }}</td></tr>
-                    <tr><td class="num">11</td><td class="name">Vegetables</td><td class="content">{{ $menu->wedding_vegetables ?: '-' }}</td></tr>
-                    <tr><td class="num">12</td><td class="name">Condiments</td><td class="content">{{ $menu->wedding_condiments ?: '-' }}</td></tr>
-                    <tr><td class="num">13</td><td class="name">Desserts</td><td class="content">{{ $menu->wedding_desserts ?: '-' }}</td></tr>
-                    <tr><td class="num">14</td><td class="name">Beverages</td><td class="content">{{ $menu->wedding_beverages ?: '-' }}</td></tr>
+                    @php $rowNum = 1; @endphp
+                    @if($menu->wedding_welcome_drink)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Welcome Drink</td><td class="content">{{ $menu->wedding_welcome_drink }}</td></tr>
+                    @endif
+                    @if($menu->wedding_appetizer)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Appetizer</td><td class="content">{{ $menu->wedding_appetizer }}</td></tr>
+                    @endif
+                    @if($menu->wedding_shooters)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Shooters</td><td class="content">{{ $menu->wedding_shooters }}</td></tr>
+                    @endif
+                    @if($menu->wedding_salad_bar)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Salad Bar</td><td class="content">{{ $menu->wedding_salad_bar }}</td></tr>
+                    @endif
+                    @if($menu->wedding_salad_dressing)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Salad Dressing</td><td class="content">{{ $menu->wedding_salad_dressing }}</td></tr>
+                    @endif
+                    @if($menu->wedding_soup)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Soup</td><td class="content">{{ $menu->wedding_soup }}</td></tr>
+                    @endif
+                    @if($menu->wedding_bread_corner)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Bread Corner</td><td class="content">{{ $menu->wedding_bread_corner }}</td></tr>
+                    @endif
+                    @if($menu->wedding_rice_noodle)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Rice & Noodle</td><td class="content">{{ $menu->wedding_rice_noodle }}</td></tr>
+                    @endif
+                    @if($menu->wedding_meat_items)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Meat Items</td><td class="content">{{ $menu->wedding_meat_items }}</td></tr>
+                    @endif
+                    @if($menu->wedding_seafood_items)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Seafood Items</td><td class="content">{{ $menu->wedding_seafood_items }}</td></tr>
+                    @endif
+                    @if($menu->wedding_vegetables)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Vegetables</td><td class="content">{{ $menu->wedding_vegetables }}</td></tr>
+                    @endif
+                    @if($menu->wedding_condiments)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Condiments</td><td class="content">{{ $menu->wedding_condiments }}</td></tr>
+                    @endif
+                    @if($menu->wedding_desserts)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Desserts</td><td class="content">{{ $menu->wedding_desserts }}</td></tr>
+                    @endif
+                    @if($menu->wedding_beverages)
+                        <tr><td class="num">{{ $rowNum++ }}</td><td class="name">Beverages</td><td class="content">{{ $menu->wedding_beverages }}</td></tr>
+                    @endif
                 </tbody>
             </table>
             
@@ -267,66 +296,87 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="num">1</td>
-                        <td class="name">Welcome Drink</td>
-                        <td class="time">-</td>
-                        <td class="content">{{ $menu->welcome_drink ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">2</td>
-                        <td class="name">Evening Snack</td>
-                        <td class="time">{{ $menu->evening_snack_time ? $menu->getFormattedTime('evening_snack_time') : '-' }}</td>
-                        <td class="content">{{ $menu->evening_snack ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">3</td>
-                        <td class="name">Dinner</td>
-                        <td class="time">{{ $menu->dinner_time ? $menu->getFormattedTime('dinner_time') : '-' }}</td>
-                        <td class="content">{{ $menu->dinner ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">4</td>
-                        <td class="name">Dessert (Dinner)</td>
-                        <td class="time">-</td>
-                        <td class="content">{{ $menu->dessert_after_dinner ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">5</td>
-                        <td class="name">Bed Tea</td>
-                        <td class="time">{{ $menu->bed_tea_time ? $menu->getFormattedTime('bed_tea_time') : '-' }}</td>
-                        <td class="content">{{ $menu->bed_tea ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">6</td>
-                        <td class="name">Breakfast</td>
-                        <td class="time">{{ $menu->breakfast_time ? $menu->getFormattedTime('breakfast_time') : '-' }}</td>
-                        <td class="content">{{ $menu->breakfast ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">7</td>
-                        <td class="name">Dessert (Breakfast)</td>
-                        <td class="time">-</td>
-                        <td class="content">{{ $menu->dessert_after_breakfast ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">8</td>
-                        <td class="name">Lunch</td>
-                        <td class="time">{{ $menu->lunch_time ? $menu->getFormattedTime('lunch_time') : '-' }}</td>
-                        <td class="content">{{ $menu->lunch ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">9</td>
-                        <td class="name">Dessert (Lunch)</td>
-                        <td class="time">-</td>
-                        <td class="content">{{ $menu->dessert_after_lunch ?: '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="num">10</td>
-                        <td class="name">Bites Details</td>
-                        <td class="time">-</td>
-                        <td class="content">{{ $booking->bites_details ?: '-' }}</td>
-                    </tr>
+                    @php $rowNum = 1; @endphp
+                    @if($menu->welcome_drink)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Welcome Drink</td>
+                            <td class="time">-</td>
+                            <td class="content">{{ $menu->welcome_drink }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->evening_snack)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Evening Snack</td>
+                            <td class="time">{{ $menu->evening_snack_time ? $menu->getFormattedTime('evening_snack_time') : '-' }}</td>
+                            <td class="content">{{ $menu->evening_snack }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->dinner)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Dinner</td>
+                            <td class="time">{{ $menu->dinner_time ? $menu->getFormattedTime('dinner_time') : '-' }}</td>
+                            <td class="content">{{ $menu->dinner }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->dessert_after_dinner)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Dessert (Dinner)</td>
+                            <td class="time">-</td>
+                            <td class="content">{{ $menu->dessert_after_dinner }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->bed_tea)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Bed Tea</td>
+                            <td class="time">{{ $menu->bed_tea_time ? $menu->getFormattedTime('bed_tea_time') : '-' }}</td>
+                            <td class="content">{{ $menu->bed_tea }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->breakfast)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Breakfast</td>
+                            <td class="time">{{ $menu->breakfast_time ? $menu->getFormattedTime('breakfast_time') : '-' }}</td>
+                            <td class="content">{{ $menu->breakfast }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->dessert_after_breakfast)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Dessert (Breakfast)</td>
+                            <td class="time">-</td>
+                            <td class="content">{{ $menu->dessert_after_breakfast }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->lunch)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Lunch</td>
+                            <td class="time">{{ $menu->lunch_time ? $menu->getFormattedTime('lunch_time') : '-' }}</td>
+                            <td class="content">{{ $menu->lunch }}</td>
+                        </tr>
+                    @endif
+                    @if($menu->dessert_after_lunch)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Dessert (Lunch)</td>
+                            <td class="time">-</td>
+                            <td class="content">{{ $menu->dessert_after_lunch }}</td>
+                        </tr>
+                    @endif
+                    @if($booking->bites_details)
+                        <tr>
+                            <td class="num">{{ $rowNum++ }}</td>
+                            <td class="name">Bites Details</td>
+                            <td class="time">-</td>
+                            <td class="content">{{ $booking->bites_details }}</td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
             @endif

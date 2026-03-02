@@ -2685,9 +2685,13 @@ async function loadArrivalsChecklist() {
                                     <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #166534; padding: 4px 10px; border-radius: 6px; display: inline-block; font-weight: 700; font-size: 0.8rem; border: 1px solid #86efac;">
                                         <i class="fas fa-check-circle me-1" style="font-size: 0.75rem;"></i>Added
                                     </div>
-                                    <div style="margin-top: 4px;">
+                                    <div style="margin-top: 4px; display: flex; gap: 6px; justify-content: center;">
                                         <a href="/food-menu?date=${dateParam}&booking_id=${arrival.id}" target="_blank" style="color: #f59e0b; font-size: 0.7rem; font-weight: 600; text-decoration: none;">
-                                            <i class="fas fa-edit" style="font-size: 0.65rem;"></i> Edit Menu
+                                            <i class="fas fa-edit" style="font-size: 0.65rem;"></i> Edit
+                                        </a>
+                                        <span style="color: #d1d5db;">|</span>
+                                        <a href="/food-menu/print/${arrival.id}/${dateParam}" target="_blank" style="color: #3b82f6; font-size: 0.7rem; font-weight: 600; text-decoration: none;">
+                                            <i class="fas fa-print" style="font-size: 0.65rem;"></i> Print
                                         </a>
                                     </div>
                                 </div>

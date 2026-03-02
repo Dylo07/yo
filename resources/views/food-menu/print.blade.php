@@ -287,6 +287,12 @@
                     <td class="time">-</td>
                     <td class="content">{{ $menu->dessert_after_lunch ?: '-' }}</td>
                 </tr>
+                <tr>
+                    <td class="num">10</td>
+                    <td class="name">Bites Details</td>
+                    <td class="time">-</td>
+                    <td class="content">{{ $booking->bites_details ?: '-' }}</td>
+                </tr>
             </tbody>
         </table>
         @endif

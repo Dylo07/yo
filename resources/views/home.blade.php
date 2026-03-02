@@ -2628,8 +2628,12 @@ async function loadArrivalsChecklist() {
                 const hoursUntilFunction = (arrivalDate - now) / (1000 * 60 * 60);
                 const isPastDeadline = hoursUntilFunction < 24;
                 
+                // Calculate confirmation deadline (24h before function)
+                const confirmDeadline = new Date(arrivalDate.getTime() - (24 * 60 * 60 * 1000));
+                
                 let statusBadge = '';
                 let confirmTimeStr = '';
+                let countdownHtml = '';
                 
                 if (isConfirmed) {
                     const confirmTime = new Date(arrival.guest_count_confirmed_at);
@@ -2643,6 +2647,33 @@ async function loadArrivalsChecklist() {
                 } else if (isPastDeadline) {
                     statusBadge = `<span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Deadline Passed</span>`;
                 } else {
+                    // Calculate time remaining until deadline (24h before function)
+                    const now = new Date();
+                    const msRemaining = confirmDeadline - now;
+                    const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60));
+                    const minutesRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                    
+                    // Color code based on urgency
+                    let countdownColor = '#059669'; // green
+                    let countdownBg = '#d1fae5';
+                    let urgencyIcon = 'fa-clock';
+                    
+                    if (hoursRemaining < 6) {
+                        countdownColor = '#dc2626'; // red
+                        countdownBg = '#fee2e2';
+                        urgencyIcon = 'fa-exclamation-circle';
+                    } else if (hoursRemaining < 12) {
+                        countdownColor = '#f59e0b'; // orange
+                        countdownBg = '#fef3c7';
+                        urgencyIcon = 'fa-clock';
+                    }
+                    
+                    countdownHtml = `
+                        <div style="background: ${countdownBg}; color: ${countdownColor}; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; border: 1px solid ${countdownColor}40;">
+                            <i class="fas ${urgencyIcon} me-1"></i>${hoursRemaining}h ${minutesRemaining}m left
+                        </div>
+                    `;
+                    
                     statusBadge = `<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>`;
                 }
                 
@@ -2734,6 +2765,7 @@ async function loadArrivalsChecklist() {
                                         </div>
                                     </div>
                                 ` : ''}
+                                ${countdownHtml}
                                 <div>${statusBadge}</div>
                                 <div>
                                     ${isPastDeadline ? `

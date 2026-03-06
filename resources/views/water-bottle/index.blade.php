@@ -167,11 +167,24 @@
                             <div class="card-header bg-dark text-white">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0"><i class="fas fa-history"></i> Stock History</h5>
-                                    <form action="{{ route('water-bottle.index') }}" method="GET"
-                                        class="d-flex align-items-center">
-                                        <input type="date" name="date" class="form-control form-control-sm me-2"
-                                            value="{{ $selectedDate }}" onchange="this.form.submit()">
-                                    </form>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <form action="{{ route('water-bottle.index') }}" method="GET"
+                                            class="d-flex align-items-center gap-2">
+                                            <input type="date" name="start_date" class="form-control form-control-sm"
+                                                value="{{ $startDate }}" style="width: 150px;">
+                                            <span class="text-white">to</span>
+                                            <input type="date" name="end_date" class="form-control form-control-sm"
+                                                value="{{ $endDate }}" style="width: 150px;">
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </form>
+                                        <a href="{{ route('water-bottle.print', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-light">
+                                            <i class="fas fa-print"></i> Print
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                             <div class="card-body">

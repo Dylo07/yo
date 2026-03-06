@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/water-bottle', [WaterBottleController::class, 'index'])->name('water-bottle.index');
     Route::post('/water-bottle/issue', [WaterBottleController::class, 'issue'])->name('water-bottle.issue');
     Route::get('/water-bottle/report', [WaterBottleController::class, 'report'])->name('water-bottle.report');
+    Route::get('/water-bottle/print', [WaterBottleController::class, 'printStockHistory'])->name('water-bottle.print');
 
     // routes for management
     Route::get('/management', function () {

@@ -29,22 +29,23 @@ class WaterBottleController extends Controller
             return redirect('/home')->with('error', 'Water bottle item not found in inventory.');
         }
 
-        // Get date filter (default to today)
-        $date = $request->input('date', Carbon::today()->format('Y-m-d'));
+        // Get date range filter (default to today)
+        $startDate = $request->input('start_date', Carbon::today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
 
-        // Get ALL stock history for the selected date (both additions and reductions)
+        // Get ALL stock history for the selected date range (both additions and reductions)
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
-            ->whereDate('created_at', $date)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->with(['user', 'sale'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Calculate totals for the day
+        // Calculate totals for the date range
         $totalIssuedToday = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
         $totalAddedToday = $stockHistory->where('stock', '>', 0)->sum('stock');
 
         // Get monthly summary for current month
-        $currentMonth = Carbon::parse($date);
+        $currentMonth = Carbon::parse($endDate);
         $monthStart = $currentMonth->copy()->startOfMonth();
         $monthEnd = $currentMonth->copy()->endOfMonth();
 
@@ -62,7 +63,8 @@ class WaterBottleController extends Controller
             'totalAddedToday' => $totalAddedToday,
             'monthlyIssued' => $monthlyIssued,
             'monthlyAdded' => $monthlyAdded,
-            'selectedDate' => $date,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
             'currentMonth' => $currentMonth->format('F Y')
         ]);
     }
@@ -141,6 +143,40 @@ class WaterBottleController extends Controller
             'waterBottle' => $waterBottle,
             'groupedByDate' => $groupedByDate,
             'totalIssued' => $totalIssued,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
+    }
+
+    /**
+     * Print stock history for a date range.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function printStockHistory(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
+
+        $waterBottle = Menu::find(self::WATER_BOTTLE_MENU_ID);
+
+        // Get stock history for the date range
+        $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->with(['user', 'sale'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate totals
+        $totalIssued = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
+        $totalAdded = $stockHistory->where('stock', '>', 0)->sum('stock');
+
+        return view('water-bottle.print-stock-history', [
+            'waterBottle' => $waterBottle,
+            'stockHistory' => $stockHistory,
+            'totalIssued' => $totalIssued,
+            'totalAdded' => $totalAdded,
             'startDate' => $startDate,
             'endDate' => $endDate
         ]);

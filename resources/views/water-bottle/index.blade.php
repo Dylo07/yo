@@ -164,21 +164,21 @@
                     -->
 
                     <!-- Vehicle Rooms Section -->
-                    <div class="col-md-5 mb-4">
+                    <div class="col-12 mb-4">
                         <div class="card shadow-sm">
                             <div class="card-header bg-info text-white">
                                 <h5 class="mb-0"><i class="fas fa-car"></i> Vehicle Rooms</h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-0">
                                 @if(isset($vehicleRooms) && $vehicleRooms->count() > 0)
-                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                                        <table class="table table-hover table-striped table-sm">
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-hover table-striped table-sm mb-0">
                                             <thead class="table-light sticky-top">
                                                 <tr>
-                                                    <th>Room</th>
-                                                    <th>Vehicle Number</th>
-                                                    <th>Check In</th>
-                                                    <th>Check Out</th>
+                                                    <th style="width: 15%;">Room</th>
+                                                    <th style="width: 30%;">Vehicle Number</th>
+                                                    <th style="width: 25%;">Check In</th>
+                                                    <th style="width: 30%;">Check Out</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -217,8 +217,8 @@
                         </div>
                     </div>
 
-                    <!-- Today's Stock History -->
-                    <div class="col-md-7 mb-4">
+                    <!-- Stock History -->
+                    <div class="col-12 mb-4">
                         <div class="card shadow-sm">
                             <div class="card-header bg-dark text-white">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -264,17 +264,17 @@
                                 </div>
 
                                 @if($stockHistory->count() > 0)
-                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-hover table-striped table-sm">
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-hover table-striped table-sm mb-0">
                                             <thead class="table-light sticky-top">
                                                 <tr>
-                                                    <th>Time</th>
-                                                    <th>Type</th>
-                                                    <th>Qty</th>
-                                                    <th>Room/Note</th>
-                                                    <th>Bill #</th>
-                                                    <th>Description</th>
-                                                    <th>By</th>
+                                                    <th style="width: 10%;">Time</th>
+                                                    <th style="width: 10%;">Type</th>
+                                                    <th style="width: 8%;">Qty</th>
+                                                    <th style="width: 15%;">Room/Note</th>
+                                                    <th style="width: 12%;">Bill #</th>
+                                                    <th style="width: 30%;">Description</th>
+                                                    <th style="width: 15%;">By</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

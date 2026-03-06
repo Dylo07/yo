@@ -12,7 +12,7 @@ class Sale extends Model
     protected $fillable = [
         'table_id', 'user_id', 'table_name', 'total_price', 
         'total_recieved', 'change', 'payment_type', 'sale_status',
-        'included_service_charge'
+        'included_service_charge', 'description'
     ];
 
     public function saleDetails(){

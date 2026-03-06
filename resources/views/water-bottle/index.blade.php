@@ -26,7 +26,8 @@
                 @endif
 
                 <div class="row">
-                    <!-- Issue Water Bottles Card -->
+                    <!-- HIDDEN: Water Bottle Room Issuance - Can be restored if needed -->
+                    <!--
                     <div class="col-md-5 mb-4">
                         <div class="card shadow-sm">
                             <div class="card-header bg-primary text-white">
@@ -160,6 +161,61 @@
                             </div>
                         </div>
                     </div>
+                    -->
+
+                    <!-- Vehicle Rooms Section -->
+                    <div class="col-md-5 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-car"></i> Vehicle Rooms</h5>
+                            </div>
+                            <div class="card-body">
+                                @if(isset($vehicleRooms) && $vehicleRooms->count() > 0)
+                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                        <table class="table table-hover table-striped table-sm">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th>Room</th>
+                                                    <th>Vehicle Number</th>
+                                                    <th>Check In</th>
+                                                    <th>Check Out</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($vehicleRooms as $vehicle)
+                                                    @php
+                                                        $rooms = is_string($vehicle->room_numbers) 
+                                                            ? json_decode($vehicle->room_numbers, true) 
+                                                            : $vehicle->room_numbers;
+                                                        $rooms = is_array($rooms) ? $rooms : [];
+                                                    @endphp
+                                                    @foreach($rooms as $room)
+                                                        <tr>
+                                                            <td><span class="badge bg-primary">{{ $room }}</span></td>
+                                                            <td><strong>{{ $vehicle->vehicle_number }}</strong></td>
+                                                            <td><small>{{ $vehicle->created_at->format('M d, h:i A') }}</small></td>
+                                                            <td>
+                                                                @if($vehicle->checkout_time)
+                                                                    <small>{{ \Carbon\Carbon::parse($vehicle->checkout_time)->format('M d, h:i A') }}</small>
+                                                                @else
+                                                                    <span class="badge bg-success">Active</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-car fa-3x mb-3"></i>
+                                        <p>No vehicles with rooms found.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Today's Stock History -->
                     <div class="col-md-7 mb-4">
@@ -169,17 +225,17 @@
                                     <h5 class="mb-0"><i class="fas fa-history"></i> Stock History</h5>
                                     <div class="d-flex align-items-center gap-2">
                                         <form action="{{ route('water-bottle.index') }}" method="GET"
-                                            class="d-flex align-items-center gap-2">
-                                            <input type="date" name="start_date" class="form-control form-control-sm"
-                                                value="{{ $startDate }}" style="width: 150px;">
+                                            class="d-flex align-items-center gap-2" id="dateRangeForm">
+                                            <input type="datetime-local" name="start_date" class="form-control form-control-sm"
+                                                value="{{ $startDate }}" style="width: 200px;">
                                             <span class="text-white">to</span>
-                                            <input type="date" name="end_date" class="form-control form-control-sm"
-                                                value="{{ $endDate }}" style="width: 150px;">
+                                            <input type="datetime-local" name="end_date" class="form-control form-control-sm"
+                                                value="{{ $endDate }}" style="width: 200px;">
                                             <button type="submit" class="btn btn-sm btn-primary">
                                                 <i class="fas fa-search"></i>
                                             </button>
                                         </form>
-                                        <a href="{{ route('water-bottle.print', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
+                                        <a href="{{ route('water-bottle.print-combined', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
                                            target="_blank" 
                                            class="btn btn-sm btn-light">
                                             <i class="fas fa-print"></i> Print

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\InStock;
 use App\Models\Menu;
+use App\Models\VehicleSecurity;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -56,6 +57,14 @@ class WaterBottleController extends Controller
         $monthlyIssued = abs($monthlyData->where('stock', '<', 0)->sum('stock'));
         $monthlyAdded = $monthlyData->where('stock', '>', 0)->sum('stock');
 
+        // Get vehicle security data with rooms for the date range
+        $vehicleRooms = VehicleSecurity::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->whereNotNull('room_numbers')
+            ->where('room_numbers', '<>', '[]')
+            ->where('is_note', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('water-bottle.index', [
             'waterBottle' => $waterBottle,
             'stockHistory' => $stockHistory,
@@ -65,7 +74,8 @@ class WaterBottleController extends Controller
             'monthlyAdded' => $monthlyAdded,
             'startDate' => $startDate,
             'endDate' => $endDate,
-            'currentMonth' => $currentMonth->format('F Y')
+            'currentMonth' => $currentMonth->format('F Y'),
+            'vehicleRooms' => $vehicleRooms
         ]);
     }
 
@@ -177,6 +187,49 @@ class WaterBottleController extends Controller
             'stockHistory' => $stockHistory,
             'totalIssued' => $totalIssued,
             'totalAdded' => $totalAdded,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
+    }
+
+    /**
+     * Print combined report: Vehicle Rooms + Stock History.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function printCombined(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
+
+        $waterBottle = Menu::find(self::WATER_BOTTLE_MENU_ID);
+
+        // Get stock history for the date range
+        $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->with(['user', 'dailySalesSummary'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate totals
+        $totalIssued = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
+        $totalAdded = $stockHistory->where('stock', '>', 0)->sum('stock');
+
+        // Get vehicle security data with rooms for the date range
+        $vehicleRooms = VehicleSecurity::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->whereNotNull('room_numbers')
+            ->where('room_numbers', '<>', '[]')
+            ->where('is_note', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('water-bottle.print-combined', [
+            'waterBottle' => $waterBottle,
+            'stockHistory' => $stockHistory,
+            'totalIssued' => $totalIssued,
+            'totalAdded' => $totalAdded,
+            'vehicleRooms' => $vehicleRooms,
             'startDate' => $startDate,
             'endDate' => $endDate
         ]);

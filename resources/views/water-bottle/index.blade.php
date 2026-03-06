@@ -53,6 +53,13 @@
                                     <i class="fas fa-print"></i> Print Report
                                 </a>
                             </div>
+                            <div class="col-auto">
+                                <a href="{{ route('water-bottle.print-with-description', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
+                                   target="_blank" 
+                                   class="btn btn-outline-info">
+                                    <i class="fas fa-print"></i> Print only with Description
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>

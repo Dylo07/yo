@@ -234,4 +234,52 @@ class WaterBottleController extends Controller
             'endDate' => $endDate
         ]);
     }
+
+    /**
+     * Print combined report with only stock history entries that have descriptions.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function printWithDescription(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::today()->format('Y-m-d'));
+        $endDate = $request->input('end_date', Carbon::today()->format('Y-m-d'));
+
+        $waterBottle = Menu::find(self::WATER_BOTTLE_MENU_ID);
+
+        // Get stock history for the date range - ONLY with descriptions
+        $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->with(['user', 'dailySalesSummary'])
+            ->whereHas('dailySalesSummary', function($query) {
+                $query->whereNotNull('description')
+                      ->where('description', '!=', '');
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate totals for filtered data
+        $totalIssued = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
+        $totalAdded = $stockHistory->where('stock', '>', 0)->sum('stock');
+
+        // Get vehicle security data with rooms for the date range
+        $vehicleRooms = VehicleSecurity::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->whereNotNull('room_numbers')
+            ->where('room_numbers', '<>', '[]')
+            ->where('is_note', false)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('water-bottle.print-combined', [
+            'waterBottle' => $waterBottle,
+            'stockHistory' => $stockHistory,
+            'totalIssued' => $totalIssued,
+            'totalAdded' => $totalAdded,
+            'vehicleRooms' => $vehicleRooms,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'descriptionOnly' => true
+        ]);
+    }
 }

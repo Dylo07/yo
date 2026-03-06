@@ -305,7 +305,7 @@
                     <tbody>
                         @foreach($stockHistory as $record)
                             <tr>
-                                <td><small>{{ \Carbon\Carbon::parse($record->created_at)->format('h:i A') }}</small></td>
+                                <td><small>{{ \Carbon\Carbon::parse($record->created_at)->format('M d, h:i A') }}</small></td>
                                 <td>
                                     @if($record->stock > 0)
                                         <span class="badge badge-success">Added</span>

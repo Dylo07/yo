@@ -204,6 +204,7 @@
                                                     <th>Qty</th>
                                                     <th>Room/Note</th>
                                                     <th>Bill #</th>
+                                                    <th>Description</th>
                                                     <th>By</th>
                                                 </tr>
                                             </thead>
@@ -234,6 +235,13 @@
                                                         <td>
                                                             @if($record->sale_id)
                                                                 <span class="badge bg-primary">BILL #{{ $record->sale_id }}</span>
+                                                            @else
+                                                                <span class="text-muted">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($record->sale && $record->sale->description)
+                                                                <small class="text-muted">{{ $record->sale->description }}</small>
                                                             @else
                                                                 <span class="text-muted">-</span>
                                                             @endif

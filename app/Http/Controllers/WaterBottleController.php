@@ -35,7 +35,7 @@ class WaterBottleController extends Controller
         // Get ALL stock history for the selected date (both additions and reductions)
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
             ->whereDate('created_at', $date)
-            ->with('user')
+            ->with(['user', 'sale'])
             ->orderBy('created_at', 'desc')
             ->get();
 

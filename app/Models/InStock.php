@@ -27,4 +27,12 @@ class InStock extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    /**
+     * Get the sale associated with this stock entry.
+     */
+    public function sale()
+    {
+        return $this->belongsTo(Sale::class, 'sale_id');
+    }
 }

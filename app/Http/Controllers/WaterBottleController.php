@@ -36,7 +36,7 @@ class WaterBottleController extends Controller
         // Get ALL stock history for the selected date range (both additions and reductions)
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
-            ->with(['user', 'sale'])
+            ->with(['user', 'dailySalesSummary'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -164,7 +164,7 @@ class WaterBottleController extends Controller
         // Get stock history for the date range
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
-            ->with(['user', 'sale'])
+            ->with(['user', 'dailySalesSummary'])
             ->orderBy('created_at', 'desc')
             ->get();
 

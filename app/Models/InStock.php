@@ -35,4 +35,13 @@ class InStock extends Model
     {
         return $this->belongsTo(Sale::class, 'sale_id');
     }
+
+    /**
+     * Get the daily sales summary associated with this stock entry.
+     * Description is stored in daily_sales_summaries, not sales table.
+     */
+    public function dailySalesSummary()
+    {
+        return $this->belongsTo(DailySalesSummary::class, 'sale_id', 'bill_number');
+    }
 }

@@ -270,8 +270,8 @@
                             @endif
                         </td>
                         <td>
-                            @if($record->sale && $record->sale->description)
-                                {{ $record->sale->description }}
+                            @if($record->dailySalesSummary && $record->dailySalesSummary->description)
+                                {{ $record->dailySalesSummary->description }}
                             @else
                                 <span class="text-muted">-</span>
                             @endif

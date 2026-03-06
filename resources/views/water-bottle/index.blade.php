@@ -25,144 +25,39 @@
                     </div>
                 @endif
 
-                <div class="row">
-                    <!-- HIDDEN: Water Bottle Room Issuance - Can be restored if needed -->
-                    <!--
-                    <div class="col-md-5 mb-4">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0"><i class="fas fa-hand-holding-water"></i> Issue Water Bottles</h5>
+                <!-- Universal Date Range Filter -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <form action="{{ route('water-bottle.index') }}" method="GET" class="row align-items-center">
+                            <div class="col-auto">
+                                <label class="form-label mb-0 fw-bold"><i class="fas fa-calendar-alt"></i> Date Range:</label>
                             </div>
-                            <div class="card-body">
-                                <div class="alert alert-info mb-4">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span><strong>Current Stock:</strong></span>
-                                        <span
-                                            class="badge bg-{{ $waterBottle->stock > 10 ? 'success' : ($waterBottle->stock > 0 ? 'warning' : 'danger') }} fs-5">
-                                            {{ $waterBottle->stock }} bottles
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <form action="{{ route('water-bottle.issue') }}" method="POST">
-                                    @csrf
-                                    <div class="mb-3">
-                                        <label for="quantity" class="form-label"><strong>Quantity</strong></label>
-                                        <input type="number"
-                                            class="form-control form-control-lg @error('quantity') is-invalid @enderror"
-                                            id="quantity" name="quantity" min="1" max="{{ $waterBottle->stock }}" value="1"
-                                            required>
-                                        @error('quantity')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="mb-4">
-                                        <label for="room_numbers" class="form-label"><strong>Room Number(s)</strong></label>
-                                        <input type="text"
-                                            class="form-control form-control-lg @error('room_numbers') is-invalid @enderror"
-                                            id="room_numbers" name="room_numbers" placeholder="e.g., 101, 102, 103"
-                                            required>
-                                        <div class="form-text">Enter room number(s) - separate multiple rooms with commas
-                                        </div>
-                                        @error('room_numbers')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <button type="submit" class="btn btn-primary btn-lg w-100" {{ $waterBottle->stock < 1 ? 'disabled' : '' }}>
-                                        <i class="fas fa-paper-plane"></i> Issue Water Bottles
-                                    </button>
-                                </form>
+                            <div class="col-auto">
+                                <input type="datetime-local" name="start_date" class="form-control" value="{{ $startDate }}" required>
                             </div>
-                        </div>
-
-                        <!-- Quick Issue Buttons -->
-                        <div class="card shadow-sm mt-3">
-                            <div class="card-header bg-secondary text-white">
-                                <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Issue (1 bottle)</h6>
+                            <div class="col-auto">
+                                <span class="fw-bold">to</span>
                             </div>
-                            <div class="card-body" style="max-height: 350px; overflow-y: auto;">
-                                <h6 class="text-muted mb-2">Standard Rooms</h6>
-                                <div class="row g-2 mb-3">
-                                    @foreach(['101', '102', '103', '104', '105', '106', '107', '108', '109'] as $room)
-                                        <div class="col-4">
-                                            <form action="{{ route('water-bottle.issue') }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="quantity" value="1">
-                                                <input type="hidden" name="room_numbers" value="{{ $room }}">
-                                                <button type="submit" class="btn btn-outline-primary btn-sm w-100" {{ $waterBottle->stock < 1 ? 'disabled' : '' }}>
-                                                    {{ $room }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <h6 class="text-muted mb-2">Rooms 121-124</h6>
-                                <div class="row g-2 mb-3">
-                                    @foreach(['121', '122', '123', '124'] as $room)
-                                        <div class="col-3">
-                                            <form action="{{ route('water-bottle.issue') }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="quantity" value="1">
-                                                <input type="hidden" name="room_numbers" value="{{ $room }}">
-                                                <button type="submit" class="btn btn-outline-success btn-sm w-100" {{ $waterBottle->stock < 1 ? 'disabled' : '' }}>
-                                                    {{ $room }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <h6 class="text-muted mb-2">Rooms 130-134</h6>
-                                <div class="row g-2 mb-3">
-                                    @foreach(['130', '131', '132', '133', '134', 'CH Room'] as $room)
-                                        <div class="col-4">
-                                            <form action="{{ route('water-bottle.issue') }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="quantity" value="1">
-                                                <input type="hidden" name="room_numbers" value="{{ $room }}">
-                                                <button type="submit" class="btn btn-outline-info btn-sm w-100" {{ $waterBottle->stock < 1 ? 'disabled' : '' }}>
-                                                    {{ $room }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <h6 class="text-muted mb-2">Named Rooms</h6>
-                                <div class="row g-2 mb-3">
-                                    @foreach(['Orchid', 'Ahela', 'Sepalika', 'Sudu Araliya', 'Olu', 'Nelum'] as $room)
-                                        <div class="col-4">
-                                            <form action="{{ route('water-bottle.issue') }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="quantity" value="1">
-                                                <input type="hidden" name="room_numbers" value="{{ $room }}">
-                                                <button type="submit" class="btn btn-outline-warning btn-sm w-100" {{ $waterBottle->stock < 1 ? 'disabled' : '' }}>
-                                                    {{ $room }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <h6 class="text-muted mb-2">Special Rooms</h6>
-                                <div class="row g-2">
-                                    @foreach(['Hansa', 'Lihini', 'Mayura'] as $room)
-                                        <div class="col-4">
-                                            <form action="{{ route('water-bottle.issue') }}" method="POST" class="d-inline">
-                                                @csrf
-                                                <input type="hidden" name="quantity" value="1">
-                                                <input type="hidden" name="room_numbers" value="{{ $room }}">
-                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" {{ $waterBottle->stock < 1 ? 'disabled' : '' }}>
-                                                    {{ $room }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @endforeach
-                                </div>
+                            <div class="col-auto">
+                                <input type="datetime-local" name="end_date" class="form-control" value="{{ $endDate }}" required>
                             </div>
-                        </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Filter
+                                </button>
+                            </div>
+                            <div class="col-auto">
+                                <a href="{{ route('water-bottle.print-combined', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
+                                   target="_blank" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-print"></i> Print Report
+                                </a>
+                            </div>
+                        </form>
                     </div>
-                    -->
+                </div>
 
+                <div class="row">
                     <!-- Vehicle Rooms Section -->
                     <div class="col-12 mb-4">
                         <div class="card shadow-sm">
@@ -221,27 +116,7 @@
                     <div class="col-12 mb-4">
                         <div class="card shadow-sm">
                             <div class="card-header bg-dark text-white">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0"><i class="fas fa-history"></i> Stock History</h5>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <form action="{{ route('water-bottle.index') }}" method="GET"
-                                            class="d-flex align-items-center gap-2" id="dateRangeForm">
-                                            <input type="datetime-local" name="start_date" class="form-control form-control-sm"
-                                                value="{{ $startDate }}" style="width: 200px;">
-                                            <span class="text-white">to</span>
-                                            <input type="datetime-local" name="end_date" class="form-control form-control-sm"
-                                                value="{{ $endDate }}" style="width: 200px;">
-                                            <button type="submit" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-search"></i>
-                                            </button>
-                                        </form>
-                                        <a href="{{ route('water-bottle.print-combined', ['start_date' => $startDate, 'end_date' => $endDate]) }}" 
-                                           target="_blank" 
-                                           class="btn btn-sm btn-light">
-                                            <i class="fas fa-print"></i> Print
-                                        </a>
-                                    </div>
-                                </div>
+                                <h5 class="mb-0"><i class="fas fa-history"></i> Stock History</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row mb-3">

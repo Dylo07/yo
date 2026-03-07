@@ -81,36 +81,39 @@ class HomeController extends Controller
      
          $selectedDate = $request->get('date', date('Y-m-d'));
      
-         // Get booked rooms
-         $bookedRooms = RoomBooking::with('room')
-             ->whereDate('guest_in_time', '<=', $selectedDate)
-             ->where(function($query) use ($selectedDate) {
-                 $query->whereNull('guest_out_time')
-                       ->orWhereDate('guest_out_time', '>=', $selectedDate);
-             })
-             ->get();
+         // Get booked rooms (limited for performance)
+        $bookedRooms = RoomBooking::with('room')
+            ->whereDate('guest_in_time', '<=', $selectedDate)
+            ->where(function($query) use ($selectedDate) {
+                $query->whereNull('guest_out_time')
+                      ->orWhereDate('guest_out_time', '>=', $selectedDate);
+            })
+            ->limit(100)
+            ->get();
 
          // Add this new query for vehicle room check-ins
          $selectedDate = $request->get('date', date('Y-m-d'));
-         $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
-             ->where('is_note', false)
-             ->whereRaw("JSON_LENGTH(room_numbers) > 0")
-             ->where(function($query) use ($selectedDate) {
-                 $query->whereDate('created_at', $selectedDate)  // Check-ins on selected date
-                       ->orWhereDate('checkout_time', $selectedDate)  // Check-outs on selected date
-                       ->orWhere(function($q) {
-                           $q->whereNull('checkout_time')  // Not checked out yet
-                             ->whereRaw("JSON_LENGTH(room_numbers) > 0");
-                       });
-             })
-             ->latest()
-             ->get();
-     
-         // Get pending tasks
-        $pendingTasks = Task::with(['taskCategory', 'assignedPerson'])
-            ->where('is_done', false)
-            ->orderBy('date_added', 'desc')
+        $roomVehicles = VehicleSecurity::whereNotNull('room_numbers')
+            ->where('is_note', false)
+            ->whereRaw("JSON_LENGTH(room_numbers) > 0")
+            ->where(function($query) use ($selectedDate) {
+                $query->whereDate('created_at', $selectedDate)  // Check-ins on selected date
+                      ->orWhereDate('checkout_time', $selectedDate)  // Check-outs on selected date
+                      ->orWhere(function($q) {
+                          $q->whereNull('checkout_time')  // Not checked out yet
+                            ->whereRaw("JSON_LENGTH(room_numbers) > 0");
+                      });
+            })
+            ->latest()
+            ->limit(100)
             ->get();
+     
+         // Get pending tasks (limited to most recent 50)
+       $pendingTasks = Task::with(['taskCategory', 'assignedPerson'])
+           ->where('is_done', false)
+           ->orderBy('date_added', 'desc')
+           ->limit(50)
+           ->get();
      
          // Add period navigation for salary advances
          $selectedPeriod = $request->get('period', 0);
@@ -218,16 +221,16 @@ class HomeController extends Controller
          $selectedInventoryCategory = $request->input('inventory_category', '');
          
          $inventoryChangesQuery = StockLog::with(['user', 'item.group'])
-             ->whereDate('created_at', $selectedInventoryDate);
-         
-         // Filter by category if selected
-         if ($selectedInventoryCategory) {
-             $inventoryChangesQuery->whereHas('item', function($query) use ($selectedInventoryCategory) {
-                 $query->where('group_id', $selectedInventoryCategory);
-             });
-         }
-         
-         $inventoryChanges = $inventoryChangesQuery->orderBy('created_at', 'desc')->get();
+            ->whereDate('created_at', $selectedInventoryDate);
+        
+        // Filter by category if selected
+        if ($selectedInventoryCategory) {
+            $inventoryChangesQuery->whereHas('item', function($query) use ($selectedInventoryCategory) {
+                $query->where('group_id', $selectedInventoryCategory);
+            });
+        }
+        
+        $inventoryChanges = $inventoryChangesQuery->orderBy('created_at', 'desc')->limit(150)->get();
          
          // Get all product groups/categories for the dropdown
          $inventoryCategories = \App\Models\ProductGroup::orderBy('name')->get();
@@ -266,6 +269,7 @@ class HomeController extends Controller
             ->whereDate('created_at', $waterBottleDate)
             ->with('user')
             ->orderBy('created_at', 'desc')
+            ->limit(100)
             ->get();
         
         $waterBottleIssued = abs($waterBottleHistory->where('stock', '<', 0)->sum('stock'));
@@ -281,6 +285,7 @@ class HomeController extends Controller
             ->whereDate('created_at', $softDrinkDate)
             ->with(['user', 'menu'])
             ->orderBy('created_at', 'desc')
+            ->limit(100)
             ->get();
         
         $softDrinkIssued = abs($softDrinkHistory->where('stock', '<', 0)->sum('stock'));
@@ -296,6 +301,7 @@ class HomeController extends Controller
             ->whereDate('created_at', $beerDate)
             ->with(['user', 'menu'])
             ->orderBy('created_at', 'desc')
+            ->limit(100)
             ->get();
         
         $beerIssued = abs($beerHistory->where('stock', '<', 0)->sum('stock'));
@@ -311,6 +317,7 @@ class HomeController extends Controller
             ->whereDate('created_at', $arrackDate)
             ->with(['user', 'menu'])
             ->orderBy('created_at', 'desc')
+            ->limit(100)
             ->get();
         
         $arrackIssued = abs($arrackHistory->where('stock', '<', 0)->sum('stock'));
@@ -323,18 +330,20 @@ class HomeController extends Controller
         
         $poolDate = $request->input('pool_date', Carbon::today()->format('Y-m-d'));
         
-        // Get adult ticket sales (negative stock = sold)
+        // Get adult ticket sales (negative stock = sold) - limited for performance
         $adultTicketHistory = InStock::where('menu_id', $adultTicketId)
             ->whereDate('created_at', $poolDate)
             ->with('user')
             ->orderBy('created_at', 'desc')
+            ->limit(100)
             ->get();
         
-        // Get kids ticket sales
+        // Get kids ticket sales - limited for performance
         $kidsTicketHistory = InStock::where('menu_id', $kidsTicketId)
             ->whereDate('created_at', $poolDate)
             ->with('user')
             ->orderBy('created_at', 'desc')
+            ->limit(100)
             ->get();
         
         $adultTicketsSold = abs($adultTicketHistory->where('stock', '<', 0)->sum('stock'));

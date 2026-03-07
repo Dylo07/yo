@@ -77,11 +77,12 @@ class InventoryController extends Controller
             }
         }
         
-        // Get ALL logs for the current month for stock calculations
+        // Get logs for the current month for stock calculations (limited for performance)
         $monthLogs = StockLog::with(['user', 'item'])
             ->whereYear('created_at', $currentYear)
             ->whereMonth('created_at', $currentMonth)
             ->orderBy('created_at', 'desc')
+            ->limit(1000)
             ->get();
         
         // OPTIMIZATION: Group logs by item_id and date for O(1) access
@@ -124,7 +125,7 @@ class InventoryController extends Controller
         }
 
         // ============ DASHBOARD DATA (Independent of selected category) ============
-        // Get logs for the dashboard date range (for ALL categories or filtered category)
+        // Get logs for the dashboard date range (for ALL categories or filtered category) - limited for performance
         $dashboardLogsQuery = StockLog::with(['item.group'])
             ->whereDate('created_at', '>=', $dashboardStartDate)
             ->whereDate('created_at', '<=', $dashboardEndDate);
@@ -136,7 +137,7 @@ class InventoryController extends Controller
             });
         }
         
-        $dashboardLogs = $dashboardLogsQuery->get();
+        $dashboardLogs = $dashboardLogsQuery->limit(1000)->get();
         
         // Build demand data from dashboard logs
         $itemDemand = [];

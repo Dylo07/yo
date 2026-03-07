@@ -37,9 +37,15 @@ class WaterBottleController extends Controller
         // Get ALL stock history for the selected date range (both additions and reductions)
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
-            ->with(['user', 'dailySalesSummary'])
+            ->with('user')
             ->orderBy('created_at', 'desc')
+            ->limit(500)
             ->get();
+
+        // Lazy load dailySalesSummary only for records that have sale_id
+        $stockHistory->load(['dailySalesSummary' => function($query) {
+            $query->select('id', 'bill_number', 'description');
+        }]);
 
         // Calculate totals for the date range
         $totalIssuedToday = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
@@ -57,12 +63,13 @@ class WaterBottleController extends Controller
         $monthlyIssued = abs($monthlyData->where('stock', '<', 0)->sum('stock'));
         $monthlyAdded = $monthlyData->where('stock', '>', 0)->sum('stock');
 
-        // Get vehicle security data with rooms for the date range
+        // Get vehicle security data with rooms for the date range (limited for performance)
         $vehicleRooms = VehicleSecurity::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->whereNotNull('room_numbers')
             ->where('room_numbers', '<>', '[]')
             ->where('is_note', false)
             ->orderBy('created_at', 'desc')
+            ->limit(200)
             ->get();
 
         return view('water-bottle.index', [
@@ -205,23 +212,25 @@ class WaterBottleController extends Controller
 
         $waterBottle = Menu::find(self::WATER_BOTTLE_MENU_ID);
 
-        // Get stock history for the date range
+        // Get stock history for the date range (limited for performance)
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->with(['user', 'dailySalesSummary'])
             ->orderBy('created_at', 'desc')
+            ->limit(500)
             ->get();
 
         // Calculate totals
         $totalIssued = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
         $totalAdded = $stockHistory->where('stock', '>', 0)->sum('stock');
 
-        // Get vehicle security data with rooms for the date range
+        // Get vehicle security data with rooms for the date range (limited for performance)
         $vehicleRooms = VehicleSecurity::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->whereNotNull('room_numbers')
             ->where('room_numbers', '<>', '[]')
             ->where('is_note', false)
             ->orderBy('created_at', 'desc')
+            ->limit(200)
             ->get();
 
         return view('water-bottle.print-combined', [
@@ -248,7 +257,7 @@ class WaterBottleController extends Controller
 
         $waterBottle = Menu::find(self::WATER_BOTTLE_MENU_ID);
 
-        // Get stock history for the date range - ONLY with descriptions
+        // Get stock history for the date range - ONLY with descriptions (limited for performance)
         $stockHistory = InStock::where('menu_id', self::WATER_BOTTLE_MENU_ID)
             ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->with(['user', 'dailySalesSummary'])
@@ -257,18 +266,20 @@ class WaterBottleController extends Controller
                       ->where('description', '!=', '');
             })
             ->orderBy('created_at', 'desc')
+            ->limit(500)
             ->get();
 
         // Calculate totals for filtered data
         $totalIssued = abs($stockHistory->where('stock', '<', 0)->sum('stock'));
         $totalAdded = $stockHistory->where('stock', '>', 0)->sum('stock');
 
-        // Get vehicle security data with rooms for the date range
+        // Get vehicle security data with rooms for the date range (limited for performance)
         $vehicleRooms = VehicleSecurity::whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
             ->whereNotNull('room_numbers')
             ->where('room_numbers', '<>', '[]')
             ->where('is_note', false)
             ->orderBy('created_at', 'desc')
+            ->limit(200)
             ->get();
 
         return view('water-bottle.print-combined', [

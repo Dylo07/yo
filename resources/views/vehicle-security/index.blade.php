@@ -1106,9 +1106,9 @@
     }
 }
 
-/* Mobile Vehicle Card Styles */
+/* Mobile Vehicle Card Styles - Always hidden */
 .mobile-vehicle-cards {
-    display: none;
+    display: none !important;
 }
 
 .vehicle-card {

@@ -983,21 +983,51 @@
         display: none !important;
     }
     
-    /* Make table more compact on mobile */
+    /* Make table much more compact on mobile */
     .table {
-        font-size: 12px;
+        font-size: 10px;
     }
     
-    .table th, .table td {
-        padding: 8px 6px;
+    .table th {
+        padding: 4px 3px;
+        font-size: 9px;
         white-space: nowrap;
+        vertical-align: middle;
     }
     
-    /* Smaller buttons in table for mobile */
+    .table td {
+        padding: 4px 3px;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    /* Very compact buttons in table for mobile */
     .table .btn {
-        min-height: 36px;
-        font-size: 11px;
-        padding: 6px 10px;
+        min-height: 28px;
+        font-size: 9px;
+        padding: 3px 6px;
+        margin: 1px;
+    }
+    
+    /* Compact checkout button */
+    .table .main-checkout-btn {
+        min-height: 32px;
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    /* Compact badges */
+    .table .badge, .table .room-badge, .table .pool-badge {
+        font-size: 8px;
+        padding: 1px 3px;
+        margin: 1px;
+    }
+    
+    /* Compact form selects */
+    .table select.form-control {
+        font-size: 9px;
+        padding: 2px 4px;
+        height: auto;
     }
     
     /* Larger touch targets for form buttons */

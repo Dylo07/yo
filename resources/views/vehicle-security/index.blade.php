@@ -969,18 +969,39 @@
    MOBILE-FIRST RESPONSIVE DESIGN FOR TABLETS
    ============================================ */
 
-/* Hide table on mobile, show cards */
+/* Keep table visible on all devices - removed mobile card view */
 @media (max-width: 992px) {
+    /* Table stays visible on mobile */
     .table-responsive {
+        display: block !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Hide mobile card view - use table on all devices */
+    .mobile-vehicle-cards {
         display: none !important;
     }
     
-    .mobile-vehicle-cards {
-        display: block !important;
+    /* Make table more compact on mobile */
+    .table {
+        font-size: 12px;
     }
     
-    /* Larger touch targets */
-    .btn {
+    .table th, .table td {
+        padding: 8px 6px;
+        white-space: nowrap;
+    }
+    
+    /* Smaller buttons in table for mobile */
+    .table .btn {
+        min-height: 36px;
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+    
+    /* Larger touch targets for form buttons */
+    .card-body .btn:not(.table .btn) {
         min-height: 54px;
         font-size: 16px;
         padding: 14px 20px;

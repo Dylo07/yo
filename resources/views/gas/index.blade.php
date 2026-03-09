@@ -576,6 +576,7 @@ async function loadChart(period) {
             const labels = result.data.map(d => d.label);
             const purchases = result.data.map(d => d.purchases);
             const issues = result.data.map(d => d.issues);
+            const filledStock = result.data.map(d => d.filled_stock);
             
             if (usageChart) {
                 usageChart.destroy();
@@ -592,14 +593,33 @@ async function loadChart(period) {
                             data: purchases,
                             backgroundColor: 'rgba(54, 162, 235, 0.8)',
                             borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
+                            borderWidth: 1,
+                            order: 2
                         },
                         {
                             label: 'Issues',
                             data: issues,
                             backgroundColor: 'rgba(255, 159, 64, 0.8)',
                             borderColor: 'rgba(255, 159, 64, 1)',
-                            borderWidth: 1
+                            borderWidth: 1,
+                            order: 2
+                        },
+                        {
+                            label: 'End-of-Day Stock',
+                            data: filledStock,
+                            type: 'line',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            order: 1,
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -654,6 +674,8 @@ async function loadChart(period) {
                             }
                         },
                         y: {
+                            type: 'linear',
+                            position: 'left',
                             beginAtZero: true,
                             grid: {
                                 color: 'rgba(0, 0, 0, 0.05)',
@@ -670,11 +692,38 @@ async function loadChart(period) {
                             },
                             title: {
                                 display: true,
-                                text: 'Number of Cylinders',
+                                text: 'Purchases / Issues',
                                 font: {
                                     size: 13,
                                     weight: 'bold'
+                                },
+                                color: 'rgba(54, 162, 235, 1)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                font: {
+                                    size: 12
+                                },
+                                callback: function(value) {
+                                    return Number.isInteger(value) ? value : '';
                                 }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Stock Level',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                },
+                                color: 'rgba(75, 192, 192, 1)'
                             }
                         }
                     }

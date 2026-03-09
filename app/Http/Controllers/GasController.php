@@ -231,9 +231,23 @@ class GasController extends Controller
     {
         $period = $request->get('period', 'month'); // month, year
         
+        // Get current total filled stock
+        $currentFilledStock = GasCylinder::where('is_active', true)->sum('filled_stock');
+        
         if ($period === 'year') {
             // Last 12 months
             $stats = [];
+            $runningStock = $currentFilledStock;
+            
+            // Calculate future changes (from today to end of current month)
+            $today = Carbon::now();
+            $endOfMonth = Carbon::now()->endOfMonth();
+            if ($today->day < $endOfMonth->day) {
+                $futurePurchases = GasPurchase::whereBetween('purchase_date', [$today->copy()->addDay(), $endOfMonth])->sum('filled_received');
+                $futureIssues = GasIssue::whereBetween('issue_date', [$today->copy()->addDay(), $endOfMonth])->sum('quantity');
+                $runningStock -= ($futurePurchases - $futureIssues);
+            }
+            
             for ($i = 11; $i >= 0; $i--) {
                 $date = Carbon::now()->subMonths($i);
                 $monthStart = $date->copy()->startOfMonth();
@@ -242,25 +256,47 @@ class GasController extends Controller
                 $purchases = GasPurchase::whereBetween('purchase_date', [$monthStart, $monthEnd])->sum('filled_received');
                 $issues = GasIssue::whereBetween('issue_date', [$monthStart, $monthEnd])->sum('quantity');
                 
+                // Calculate stock at end of this period
+                if ($i > 0) {
+                    $runningStock -= ($purchases - $issues);
+                    $endStock = $runningStock;
+                } else {
+                    // Current month - use current stock
+                    $endStock = $currentFilledStock;
+                }
+                
                 $stats[] = [
                     'label' => $date->format('M Y'),
                     'purchases' => $purchases,
                     'issues' => $issues,
+                    'filled_stock' => max(0, $endStock), // Ensure non-negative
                 ];
             }
         } else {
             // Last 30 days
             $stats = [];
+            $runningStock = $currentFilledStock;
+            
             for ($i = 29; $i >= 0; $i--) {
                 $date = Carbon::now()->subDays($i);
                 
                 $purchases = GasPurchase::whereDate('purchase_date', $date)->sum('filled_received');
                 $issues = GasIssue::whereDate('issue_date', $date)->sum('quantity');
                 
+                // Calculate stock at end of this day
+                if ($i > 0) {
+                    $runningStock -= ($purchases - $issues);
+                    $endStock = $runningStock;
+                } else {
+                    // Today - use current stock
+                    $endStock = $currentFilledStock;
+                }
+                
                 $stats[] = [
                     'label' => $date->format('d M'),
                     'purchases' => $purchases,
                     'issues' => $issues,
+                    'filled_stock' => max(0, $endStock), // Ensure non-negative
                 ];
             }
         }

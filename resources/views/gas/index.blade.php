@@ -593,33 +593,14 @@ async function loadChart(period) {
                             data: purchases,
                             backgroundColor: 'rgba(54, 162, 235, 0.8)',
                             borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1,
-                            order: 2
+                            borderWidth: 1
                         },
                         {
                             label: 'Issues',
                             data: issues,
                             backgroundColor: 'rgba(255, 159, 64, 0.8)',
                             borderColor: 'rgba(255, 159, 64, 1)',
-                            borderWidth: 1,
-                            order: 2
-                        },
-                        {
-                            label: 'End-of-Day Stock',
-                            data: filledStock,
-                            type: 'line',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            fill: true,
-                            tension: 0.3,
-                            order: 1,
-                            yAxisID: 'y1'
+                            borderWidth: 1
                         }
                     ]
                 },
@@ -670,7 +651,11 @@ async function loadChart(period) {
                                     size: 11
                                 },
                                 autoSkip: true,
-                                maxTicksLimit: period === 'month' ? 15 : 12
+                                maxTicksLimit: period === 'month' ? 15 : 12,
+                                callback: function(value, index) {
+                                    const stock = filledStock[index];
+                                    return [labels[index], stock + ' Cylinder' + (stock !== 1 ? 's' : '')];
+                                }
                             }
                         },
                         y: {
@@ -692,38 +677,11 @@ async function loadChart(period) {
                             },
                             title: {
                                 display: true,
-                                text: 'Purchases / Issues',
+                                text: 'Number of Cylinders',
                                 font: {
                                     size: 13,
                                     weight: 'bold'
-                                },
-                                color: 'rgba(54, 162, 235, 1)'
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            beginAtZero: true,
-                            grid: {
-                                drawOnChartArea: false
-                            },
-                            ticks: {
-                                stepSize: 1,
-                                font: {
-                                    size: 12
-                                },
-                                callback: function(value) {
-                                    return Number.isInteger(value) ? value : '';
                                 }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Stock Level',
-                                font: {
-                                    size: 13,
-                                    weight: 'bold'
-                                },
-                                color: 'rgba(75, 192, 192, 1)'
                             }
                         }
                     }

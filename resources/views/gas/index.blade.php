@@ -408,21 +408,14 @@
                     </div>
 
                     <div class="row g-3 mb-4">
-                        <div class="col-6">
+                        <div class="col-12">
                             <div class="card bg-success bg-opacity-10 border-success">
                                 <div class="card-body text-center">
-                                    <label class="form-label fw-bold">How many FILLED got? <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control form-control-lg text-center fw-bold" name="filled_received" id="filled_received" min="1" placeholder="0" required onchange="calculateTotal()" style="font-size: 1.5rem;">
-                                    <small class="text-success"><i class="fas fa-check-circle"></i> New filled cylinders</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="card bg-warning bg-opacity-10 border-warning">
-                                <div class="card-body text-center">
-                                    <label class="form-label fw-bold">How many EMPTY gave? <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control form-control-lg text-center fw-bold" name="empty_returned" id="empty_returned" min="0" value="0" placeholder="0" required style="font-size: 1.5rem;">
-                                    <small class="text-warning"><i class="fas fa-recycle"></i> Empty returned (You have: <span id="available_empty" class="fw-bold">-</span>)</small>
+                                    <label class="form-label fw-bold">How many cylinders to exchange? <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-lg text-center fw-bold" name="filled_received" id="filled_received" min="1" placeholder="0" required onchange="autoSetEmptyReturned(); calculateTotal()" style="font-size: 1.5rem;">
+                                    <small class="text-success"><i class="fas fa-exchange-alt"></i> Exchange cylinders (give empty, get filled)</small>
+                                    <!-- Auto-set empty returned to match filled received -->
+                                    <input type="hidden" name="empty_returned" id="empty_returned" value="0">
                                 </div>
                             </div>
                         </div>
@@ -548,6 +541,12 @@ function updatePurchaseInfo() {
     if (emptyStock !== null) {
         document.getElementById('available_empty').textContent = emptyStock;
     }
+}
+
+// Auto-set empty returned to match filled received (for cylinder exchange)
+function autoSetEmptyReturned() {
+    const filledReceived = document.getElementById('filled_received').value || 0;
+    document.getElementById('empty_returned').value = filledReceived;
 }
 
 // Calculate total purchase amount

@@ -216,7 +216,7 @@
             </div>
         </div>
         <div class="card-body">
-            <canvas id="usageChart" height="80"></canvas>
+            <canvas id="usageChart" height="120"></canvas>
         </div>
     </div>
 
@@ -583,42 +583,98 @@ async function loadChart(period) {
             
             const ctx = document.getElementById('usageChart').getContext('2d');
             usageChart = new Chart(ctx, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
                         {
                             label: 'Purchases',
                             data: purchases,
-                            borderColor: 'rgb(75, 192, 192)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                            tension: 0.4
+                            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
                         },
                         {
                             label: 'Issues',
                             data: issues,
-                            borderColor: 'rgb(255, 159, 64)',
-                            backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                            tension: 0.4
+                            backgroundColor: 'rgba(255, 159, 64, 0.8)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 1
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         legend: {
                             position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                padding: 15,
+                                usePointStyle: true
+                            }
                         },
-                        title: {
-                            display: false
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' cylinders';
+                                }
+                            }
                         }
                     },
                     scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: 11
+                                },
+                                autoSkip: true,
+                                maxTicksLimit: period === 'month' ? 15 : 12
+                            }
+                        },
                         y: {
                             beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            },
                             ticks: {
-                                stepSize: 1
+                                stepSize: 1,
+                                font: {
+                                    size: 12
+                                },
+                                callback: function(value) {
+                                    return Number.isInteger(value) ? value : '';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Cylinders',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                }
                             }
                         }
                     }

@@ -122,6 +122,8 @@ class GasController extends Controller
             'weight_kg' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
             'minimum_stock' => 'required|integer|min:0',
+            'filled_stock' => 'required|integer|min:0',
+            'empty_stock' => 'required|integer|min:0',
         ]);
 
         $cylinder = GasCylinder::findOrFail($id);
@@ -130,9 +132,11 @@ class GasController extends Controller
             'weight_kg' => $request->weight_kg,
             'price' => $request->price,
             'minimum_stock' => $request->minimum_stock,
+            'filled_stock' => $request->filled_stock,
+            'empty_stock' => $request->empty_stock,
         ]);
 
-        return redirect()->back()->with('success', 'Gas cylinder updated successfully!');
+        return redirect()->back()->with('success', 'Gas cylinder updated successfully! Stock adjusted.');
     }
 
     /**

@@ -185,7 +185,7 @@
                                 @endif
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editCylinder({{ $cylinder->id }}, '{{ $cylinder->name }}', {{ $cylinder->weight_kg }}, {{ $cylinder->price }}, {{ $cylinder->minimum_stock }})">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editCylinder({{ $cylinder->id }}, '{{ $cylinder->name }}', {{ $cylinder->weight_kg }}, {{ $cylinder->price }}, {{ $cylinder->minimum_stock }}, {{ $cylinder->filled_stock }}, {{ $cylinder->empty_stock }})">
                                     <i class="fas fa-edit"></i>
                                 </button>
                             </td>
@@ -374,6 +374,30 @@
                         <label class="form-label">Minimum Stock Alert <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" name="minimum_stock" id="edit_min_stock" required>
                     </div>
+                    
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3"><i class="fas fa-box me-2"></i>Current Inventory (Direct Adjustment)</h6>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label class="form-label">Filled Cylinders <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="filled_stock" id="edit_filled_stock" min="0" required onchange="updateEditTotalStock()">
+                                <small class="text-muted">Number of filled cylinders in stock</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label class="form-label">Empty Cylinders <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="empty_stock" id="edit_empty_stock" min="0" required onchange="updateEditTotalStock()">
+                                <small class="text-muted">Number of empty cylinders in stock</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-0">
+                        <small><i class="fas fa-info-circle me-1"></i><strong>Total:</strong> <span id="edit_total_stock">0</span> cylinders</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -517,13 +541,23 @@
 let usageChart = null;
 
 // Edit cylinder
-function editCylinder(id, name, weight, price, minStock) {
+function editCylinder(id, name, weight, price, minStock, filledStock, emptyStock) {
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_weight').value = weight;
     document.getElementById('edit_price').value = price;
     document.getElementById('edit_min_stock').value = minStock;
+    document.getElementById('edit_filled_stock').value = filledStock;
+    document.getElementById('edit_empty_stock').value = emptyStock;
+    updateEditTotalStock();
     document.getElementById('editCylinderForm').action = `/gas/cylinder/${id}`;
     new bootstrap.Modal(document.getElementById('editCylinderModal')).show();
+}
+
+// Update total stock in edit modal
+function updateEditTotalStock() {
+    const filled = parseInt(document.getElementById('edit_filled_stock').value) || 0;
+    const empty = parseInt(document.getElementById('edit_empty_stock').value) || 0;
+    document.getElementById('edit_total_stock').textContent = filled + empty;
 }
 
 // Update purchase info when cylinder is selected

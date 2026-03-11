@@ -51,6 +51,13 @@
                                             View
                                         </a>
                                         
+                                        @if(auth()->user()->role === 'admin')
+                                            <a href="{{ route('quotations.edit', $quotation) }}" 
+                                               class="btn btn-warning">
+                                                Edit
+                                            </a>
+                                        @endif
+                                        
                                         <a href="{{ route('quotations.print', $quotation) }}" 
                                            class="btn btn-success">
                                             Print

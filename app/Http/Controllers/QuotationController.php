@@ -119,11 +119,23 @@ class QuotationController extends Controller
 
     public function edit(Quotation $quotation)
     {
+        // Only admins can edit quotations
+        if (auth()->user()->role !== 'admin') {
+            return redirect()->route('quotations.index')
+                ->with('error', 'Only administrators can edit quotations.');
+        }
+
         return view('quotations.edit', compact('quotation'));
     }
 
     public function update(Request $request, Quotation $quotation)
     {
+        // Only admins can update quotations
+        if (auth()->user()->role !== 'admin') {
+            return redirect()->route('quotations.index')
+                ->with('error', 'Only administrators can update quotations.');
+        }
+
         $validated = $request->validate([
             'client_name' => 'required|string',
             'client_address' => 'required|string',
@@ -131,12 +143,72 @@ class QuotationController extends Controller
             'schedule' => 'required|date',
             'items' => 'required|array',
             'items.*.description' => 'required|string',
-            'service_charge' => 'nullable|numeric',
+            'items.*.pricePerItem' => 'nullable|numeric',
+            'items.*.pax' => 'nullable|numeric',
+            'items.*.quantity' => 'nullable|numeric',
+            'service_charge' => 'required|numeric',
             'total_amount' => 'required|numeric',
             'comments' => 'nullable|array'
         ]);
 
-        $quotation->update($validated);
+        // Calculate amount for each item and format items array
+        $items = collect($request->items)->map(function ($item) {
+            $pricePerItem = isset($item['price_per_item']) ? floatval($item['price_per_item']) : 
+                            (isset($item['pricePerItem']) ? floatval($item['pricePerItem']) : null);
+            
+            $pax = isset($item['pax']) ? intval($item['pax']) : null;
+            $quantity = isset($item['quantity']) ? intval($item['quantity']) : null;
+        
+            $amount = null;
+            if ($pricePerItem && $pax && $quantity) {
+                $amount = $pricePerItem * $pax * $quantity;
+            }
+        
+            return [
+                'description' => $item['description'] ?? '',
+                'pricePerItem' => $pricePerItem,
+                'pax' => $pax,
+                'quantity' => $quantity,
+                'amount' => $amount
+            ];
+        })->toArray();
+
+        // Process manual menu items (text-based categories)
+        $menuItems = [];
+        if ($request->has('menu_items') && is_array($request->menu_items)) {
+            $menuCategories = [
+                'welcome_drink' => 'WELCOME DRINK',
+                'evening_snack' => 'EVENING SNACK',
+                'dinner' => 'DINNER',
+                'live_bbq' => 'LIVE BBQ EXPERIENCE',
+                'bed_tea' => 'BED TEA',
+                'breakfast' => 'BREAKFAST',
+                'morning_snack' => 'MORNING SNACK',
+                'lunch' => 'LUNCH',
+                'desserts' => 'DESSERTS'
+            ];
+            
+            foreach ($request->menu_items as $key => $content) {
+                if (!empty($content) && isset($menuCategories[$key])) {
+                    $menuItems[$key] = [
+                        'category' => $menuCategories[$key],
+                        'content' => $content
+                    ];
+                }
+            }
+        }
+
+        $quotation->update([
+            'client_name' => $validated['client_name'],
+            'client_address' => $validated['client_address'],
+            'quotation_date' => $validated['quotation_date'],
+            'schedule' => $validated['schedule'],
+            'items' => $items,
+            'menu_items' => $menuItems,
+            'service_charge' => floatval($validated['service_charge']),
+            'total_amount' => floatval($validated['total_amount']),
+            'comments' => $request->comments ?? []
+        ]);
 
         return redirect()->route('quotations.show', $quotation)
             ->with('success', 'Quotation updated successfully.');

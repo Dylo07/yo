@@ -102,12 +102,21 @@ class KitchenComparisonController extends Controller
      */
     public function print(Request $request)
     {
-        $startDate = $request->input('start_date', now()->toDateString());
-        $endDate = $request->input('end_date', now()->toDateString());
+        // Support both date and datetime formats
+        $startDate = $request->input('start_date', now()->format('Y-m-d\TH:i'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d\TH:i'));
         
         if (!$startDate || !$endDate) {
-            $startDate = now()->toDateString();
-            $endDate = now()->toDateString();
+            $startDate = now()->format('Y-m-d\TH:i');
+            $endDate = now()->format('Y-m-d\TH:i');
+        }
+        
+        // Convert to datetime-local format if only date was provided
+        if (strlen($startDate) === 10) {
+            $startDate = $startDate . 'T00:00';
+        }
+        if (strlen($endDate) === 10) {
+            $endDate = $endDate . 'T23:59';
         }
         
         if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {
@@ -203,12 +212,21 @@ class KitchenComparisonController extends Controller
      */
     public function printDetailed(Request $request)
     {
-        $startDate = $request->input('start_date', now()->toDateString());
-        $endDate = $request->input('end_date', now()->toDateString());
+        // Support both date and datetime formats
+        $startDate = $request->input('start_date', now()->format('Y-m-d\TH:i'));
+        $endDate = $request->input('end_date', now()->format('Y-m-d\TH:i'));
 
         if (!$startDate || !$endDate) {
-            $startDate = now()->toDateString();
-            $endDate = now()->toDateString();
+            $startDate = now()->format('Y-m-d\TH:i');
+            $endDate = now()->format('Y-m-d\TH:i');
+        }
+        
+        // Convert to datetime-local format if only date was provided
+        if (strlen($startDate) === 10) {
+            $startDate = $startDate . 'T00:00';
+        }
+        if (strlen($endDate) === 10) {
+            $endDate = $endDate . 'T23:59';
         }
 
         if (Carbon::parse($startDate)->gt(Carbon::parse($endDate))) {

@@ -62,7 +62,7 @@
         <h1>Kitchen vs Sales Comparison</h1>
         <div class="sub">— Detailed View —</div>
         <div class="meta">
-            {{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }} — {{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }}
+            {{ \Carbon\Carbon::parse($startDate)->format('M d, Y H:i') }} — {{ \Carbon\Carbon::parse($endDate)->format('M d, Y H:i') }}
             @if($startDate !== $endDate)
                 ({{ \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1 }} days)
             @endif

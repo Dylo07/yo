@@ -29,23 +29,23 @@
         <div class="card-body">
             <form action="{{ route('kitchen.comparison') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label for="startDate" class="form-label">Start Date</label>
-                    <input type="date" 
+                    <label for="startDate" class="form-label">Start Date & Time</label>
+                    <input type="datetime-local" 
                            id="startDate" 
                            name="start_date" 
                            class="form-control" 
                            value="{{ $startDate }}"
-                           max="{{ now()->toDateString() }}"
+                           max="{{ now()->format('Y-m-d\TH:i') }}"
                            onchange="validateDates()">
                 </div>
                 <div class="col-md-3">
-                    <label for="endDate" class="form-label">End Date</label>
-                    <input type="date" 
+                    <label for="endDate" class="form-label">End Date & Time</label>
+                    <input type="datetime-local" 
                            id="endDate" 
                            name="end_date" 
                            class="form-control" 
                            value="{{ $endDate }}"
-                           max="{{ now()->toDateString() }}"
+                           max="{{ now()->format('Y-m-d\TH:i') }}"
                            onchange="validateDates()">
                 </div>
                 <div class="col-md-2">
@@ -362,8 +362,8 @@
     }
 
     /* Date input styling */
-    input[type="date"] {
-        min-width: 150px;
+    input[type="date"], input[type="datetime-local"] {
+        min-width: 200px;
     }
 
     /* Button group responsive */

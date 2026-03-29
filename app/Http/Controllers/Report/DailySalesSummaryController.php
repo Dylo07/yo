@@ -8,7 +8,8 @@ use App\Models\Sale;
 use App\Models\SaleDetail;
 use App\Models\Category;
 use App\Models\DailySalesSummary;
-use App\Models\DailySalesSummaryLog; // Important: Added this import
+use App\Models\DailySalesSummaryLog;
+use App\Models\CashierBalanceLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -922,5 +923,56 @@ public function getLogData(Request $request)
                 'trace' => $e->getTraceAsString()
             ], 500);
         }
+    }
+
+    /**
+     * Store a cashier balance entry
+     */
+    public function storeCashierBalance(Request $request)
+    {
+        $request->validate([
+            'date' => 'required',
+            'time' => 'required',
+            'balance' => 'required|numeric',
+        ]);
+
+        $date = Carbon::createFromFormat('d.m.Y', $request->date)->format('Y-m-d');
+        $user = Auth::user();
+
+        $entry = CashierBalanceLog::create([
+            'date'       => $date,
+            'time'       => $request->time,
+            'balance'    => $request->balance,
+            'note'       => $request->note,
+            'entered_by' => $user ? $user->name : 'Unknown',
+            'user_id'    => $user ? $user->id : null,
+        ]);
+
+        return response()->json(['success' => true, 'entry' => $entry]);
+    }
+
+    /**
+     * Get cashier balance entries for a date
+     */
+    public function getCashierBalances(Request $request)
+    {
+        $date = $request->date
+            ? Carbon::createFromFormat('d.m.Y', $request->date)->format('Y-m-d')
+            : Carbon::today()->format('Y-m-d');
+
+        $entries = CashierBalanceLog::where('date', $date)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json(['success' => true, 'entries' => $entries]);
+    }
+
+    /**
+     * Delete a cashier balance entry
+     */
+    public function deleteCashierBalance($id)
+    {
+        CashierBalanceLog::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
     }
 }

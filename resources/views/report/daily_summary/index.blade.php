@@ -181,6 +181,43 @@
         @endif
     </tr>
 </template>
+<!-- Cashier Balance Log Section -->
+<div class="card mt-4">
+    <div class="card-header bg-info text-white">
+        <h4><i class="fa fa-money"></i> Cashier Balance Log</h4>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label>Balance (Rs)</label>
+                <input type="number" id="cb-balance" class="form-control" step="0.01" placeholder="Enter balance amount">
+            </div>
+            <div class="col-md-4">
+                <label>Note (optional)</label>
+                <input type="text" id="cb-note" class="form-control" placeholder="e.g. Shift handover to Kamal">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="add-cashier-balance" class="btn btn-info btn-block" type="button">Add Balance</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table id="cashier-balance-table" class="table table-bordered table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Balance (Rs)</th>
+                        <th>Note</th>
+                        <th>Entered By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Cashier balance entries loaded via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- Log Summary Section -->
 <div class="card mt-4">
     <div class="card-header bg-secondary text-white">
@@ -507,9 +544,13 @@ $(document).on('change', 'input[type=number]', function() {
             } else {
                 console.log('No sales data found for date:', date);
             }
-            
+
             // Update the totals
             updateTotals();
+
+            // Load the log data and cashier balances for this date
+            loadLogData();
+            loadCashierBalances();
         },
         error: function(xhr, status, error) {
             console.error('Error loading summary data:', {
@@ -517,7 +558,7 @@ $(document).on('change', 'input[type=number]', function() {
                 error: error,
                 responseText: xhr.responseText
             });
-            
+
             try {
                 const errorResponse = JSON.parse(xhr.responseText);
                 alert('Error loading summary data: ' + (errorResponse.message || 'Unknown error'));
@@ -878,6 +919,108 @@ function loadLogData() {
     });
 }
 
+// ========== Cashier Balance Log ==========
+
+$(document).ready(function() {
+    // Add cashier balance entry
+    $(document).on('click', '#add-cashier-balance', function(e) {
+        e.preventDefault();
+        var balance = $('#cb-balance').val();
+        var note = $('#cb-note').val();
+        var date = $('#selected-date').val();
+
+        // Auto-capture current time
+        var now = new Date();
+        var hours = now.getHours();
+        var minutes = String(now.getMinutes()).padStart(2, '0');
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        var displayHours = hours % 12 || 12;
+        var time = String(displayHours).padStart(2, '0') + ':' + minutes + ' ' + ampm;
+
+        if (!balance) {
+            alert('Please enter balance amount.');
+            return;
+        }
+
+        var btn = $(this);
+        btn.prop('disabled', true).text('Saving...');
+
+        $.ajax({
+            url: '/report/daily-summary/cashier-balance',
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: { date: date, time: time, balance: balance, note: note },
+            success: function(response) {
+                if (response.success) {
+                    $('#cb-balance').val('');
+                    $('#cb-note').val('');
+                    loadCashierBalances();
+                } else {
+                    alert('Error saving balance entry.');
+                }
+            },
+            error: function(xhr) {
+                console.error('Cashier balance error:', xhr.responseText);
+                alert('Error saving cashier balance. Please try again.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).text('Add Balance');
+            }
+        });
+    });
+
+    // Delete cashier balance entry
+    $(document).on('click', '.delete-cb', function(e) {
+        e.preventDefault();
+        if (!confirm('Delete this balance entry?')) return;
+
+        var id = $(this).data('id');
+        var row = $(this).closest('tr');
+
+        $.ajax({
+            url: '/report/daily-summary/cashier-balance/' + id,
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function(response) {
+                if (response.success) {
+                    row.fadeOut(300, function() { $(this).remove(); });
+                }
+            }
+        });
+    });
+});
+
+// Load cashier balance entries
+function loadCashierBalances() {
+    var date = $('#selected-date').val();
+
+    $.ajax({
+        url: '/report/daily-summary/cashier-balance',
+        method: 'GET',
+        data: { date: date },
+        success: function(response) {
+            var tbody = $('#cashier-balance-table tbody');
+            tbody.empty();
+
+            if (response.entries && response.entries.length > 0) {
+                response.entries.forEach(function(entry) {
+                    var formattedBalance = parseFloat(entry.balance).toLocaleString('en-LK', { minimumFractionDigits: 2 });
+                    tbody.append(
+                        '<tr>' +
+                            '<td><strong>' + entry.time + '</strong></td>' +
+                            '<td class="text-right"><strong>Rs ' + formattedBalance + '</strong></td>' +
+                            '<td>' + (entry.note || '-') + '</td>' +
+                            '<td>' + entry.entered_by + '</td>' +
+                        '</tr>'
+                    );
+                });
+            } else {
+                tbody.append('<tr><td colspan="4" class="text-center text-muted">No cashier balance entries for this date.</td></tr>');
+            }
+        }
+    });
+}
+
 // Update existing functions to also load log data
 function loadSummaryData() {
     const date = $('#selected-date').val();
@@ -915,8 +1058,9 @@ function loadSummaryData() {
             // Update the totals
             updateTotals();
             
-            // Load the log data for this date
+            // Load the log data and cashier balances for this date
             loadLogData();
+            loadCashierBalances();
         },
         error: function(xhr, status, error) {
             console.error('Error loading summary data:', {

@@ -283,6 +283,10 @@ Route::get('/report/check-bills', 'App\Http\Controllers\Report\DailySalesSummary
 Route::post('/report/daily-summary/debug-verify', 'App\Http\Controllers\Report\DailySalesSummaryController@debugVerify');
 Route::get('/report/daily-summary/logs', 'App\Http\Controllers\Report\DailySalesSummaryController@getLogData')->name('report.daily-summary.logs');
 
+// Cashier Balance Log
+Route::post('/report/daily-summary/cashier-balance', 'App\Http\Controllers\Report\DailySalesSummaryController@storeCashierBalance')->name('report.cashier-balance.store');
+Route::get('/report/daily-summary/cashier-balance', 'App\Http\Controllers\Report\DailySalesSummaryController@getCashierBalances')->name('report.cashier-balance.index');
+Route::delete('/report/daily-summary/cashier-balance/{id}', 'App\Http\Controllers\Report\DailySalesSummaryController@deleteCashierBalance')->name('report.cashier-balance.delete');
 
 // Vehicle Security Routes
 Route::middleware(['auth'])->group(function () {

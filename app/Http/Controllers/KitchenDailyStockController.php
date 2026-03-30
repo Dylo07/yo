@@ -21,8 +21,9 @@ class KitchenDailyStockController extends Controller
         $date = $request->get('date', now()->format('Y-m-d'));
         $dateCarbon = Carbon::parse($date);
 
-        // Get all tracked items
+        // Get all tracked items with their group
         $trackedItems = Item::where('is_kitchen_tracked', true)
+            ->with('group')
             ->orderBy('name')
             ->get();
 
@@ -79,10 +80,13 @@ class KitchenDailyStockController extends Controller
                 $variance = (float) $physicalCount - $expectedBalance;
             }
 
+            $groupName = $item->group ? $item->group->name : 'Other';
+
             $items[] = [
                 'item_id' => $item->id,
                 'name' => $item->name,
                 'unit' => $item->kitchen_unit,
+                'group' => $groupName,
                 'opening_balance' => round($openingBalance, 3),
                 'received' => round($received, 3),
                 'used' => round($used, 3),
@@ -93,7 +97,10 @@ class KitchenDailyStockController extends Controller
             ];
         }
 
-        return view('kitchen.daily_stock', compact('date', 'items', 'savedRecords'));
+        // Group items by category
+        $groupedItems = collect($items)->groupBy('group')->sortKeys();
+
+        return view('kitchen.daily_stock', compact('date', 'items', 'groupedItems', 'savedRecords'));
     }
 
     /**

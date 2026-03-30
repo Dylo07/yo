@@ -93,12 +93,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($items as $index => $item)
+                        @php $counter = 0; @endphp
+                        @foreach($groupedItems as $groupName => $groupItems)
+                        <tr class="bg-secondary text-white">
+                            <td colspan="10" class="font-weight-bold py-2" style="font-size: 1.05em;">
+                                <i class="fas fa-folder-open mr-1"></i> {{ $groupName }}
+                                <span class="badge badge-light ml-2">{{ count($groupItems) }} items</span>
+                            </td>
+                        </tr>
+                        @foreach($groupItems as $item)
+                        @php $counter++; @endphp
                         <tr class="{{ $item['physical_count'] === null ? 'bg-warning-light' : '' }}"
                             data-item-id="{{ $item['item_id'] }}"
                             data-expected="{{ $item['expected_balance'] }}">
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td class="font-weight-bold">{{ $item['name'] }}</td>
+                            <td class="text-center">{{ $counter }}</td>
+                            <td class="font-weight-bold pl-4">{{ $item['name'] }}</td>
                             <td class="text-center text-muted">{{ $item['unit'] }}</td>
                             <td class="text-center">{{ number_format($item['opening_balance'], 3) }}</td>
                             <td class="text-center text-success font-weight-bold">{{ number_format($item['received'], 3) }}</td>
@@ -130,6 +139,7 @@
                                        data-item-id="{{ $item['item_id'] }}">
                             </td>
                         </tr>
+                        @endforeach
                         @endforeach
                     </tbody>
                 </table>

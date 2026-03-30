@@ -170,6 +170,7 @@
                             ['url' => '/duty-roster', 'title' => 'Duty Roster', 'icon' => 'room'],
                             ['url' => '/leads', 'title' => 'Lead Management (CRM)', 'icon' => 'crm'],
                             ['url' => '/gas', 'title' => 'LP Gas Management', 'icon' => 'gas'],
+                            ['url' => '/kitchen/daily-stock', 'title' => 'Kitchen Stock Sheet', 'icon' => 'kitchen'],
                             ] as $item)
                             @if(!isset($item['admin']) || (isset($item['admin']) && Auth::user()->checkAdmin()))
                                 <div class="col-lg-4 col-md-6">

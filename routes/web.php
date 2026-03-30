@@ -598,6 +598,16 @@ Route::middleware(['auth'])->group(function () {
     // Kitchen comparison export
     Route::get('/kitchen/comparison/export', [App\Http\Controllers\KitchenComparisonController::class, 'exportComparison'])
         ->name('kitchen.comparison.export');
+
+    // Kitchen Daily Stock Sheet
+    Route::get('/kitchen/daily-stock', [App\Http\Controllers\KitchenDailyStockController::class, 'index'])
+        ->name('kitchen.daily-stock');
+    Route::post('/kitchen/daily-stock/save', [App\Http\Controllers\KitchenDailyStockController::class, 'save'])
+        ->name('kitchen.daily-stock.save');
+    Route::get('/kitchen/daily-stock/settings', [App\Http\Controllers\KitchenDailyStockController::class, 'settings'])
+        ->name('kitchen.daily-stock.settings');
+    Route::post('/kitchen/daily-stock/settings', [App\Http\Controllers\KitchenDailyStockController::class, 'updateSettings'])
+        ->name('kitchen.daily-stock.settings.update');
 });
 
 

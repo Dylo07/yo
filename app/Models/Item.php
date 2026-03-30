@@ -18,7 +18,8 @@ class Item extends Model
         'kitchen_minimum_stock',
         'kitchen_cost_per_unit',
         'kitchen_description',
-        'kitchen_is_active'
+        'kitchen_is_active',
+        'is_kitchen_tracked'
     ];
 
     protected $casts = [
@@ -26,7 +27,8 @@ class Item extends Model
         'kitchen_current_stock' => 'decimal:2',
         'kitchen_minimum_stock' => 'decimal:2',
         'kitchen_cost_per_unit' => 'decimal:2',
-        'kitchen_is_active' => 'boolean'
+        'kitchen_is_active' => 'boolean',
+        'is_kitchen_tracked' => 'boolean'
     ];
 
     // Existing relationships

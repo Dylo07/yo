@@ -104,43 +104,39 @@ class KitchenDailyStockController extends Controller
     }
 
     /**
-     * Calculate ingredient usage from sales for a given item and date
+     * Calculate ingredient usage from sales for a given item and date.
+     *
+     * Uses SaleDetail.created_at (when each item was added to the bill)
+     * so that items added yesterday deduct from yesterday's stock sheet
+     * even if the bill was paid/printed today.
      */
     private function calculateUsedFromSales($itemId, $date)
     {
         $startOfDay = Carbon::parse($date)->startOfDay();
         $endOfDay = Carbon::parse($date)->endOfDay();
 
-        // Get non-cancelled sales for the date
-        $sales = Sale::whereBetween('updated_at', [$startOfDay, $endOfDay])
-            ->where('sale_status', '!=', 'cancelled')
-            ->with('saleDetails')
+        // Get sale details added on this date, from non-cancelled sales
+        $saleDetails = \App\Models\SaleDetail::whereBetween('sale_details.created_at', [$startOfDay, $endOfDay])
+            ->whereHas('sale', function ($query) {
+                $query->where('sale_status', '!=', 'cancelled');
+            })
+            ->where('quantity', '>', 0)
             ->get();
 
-        if ($sales->isEmpty()) {
+        if ($saleDetails->isEmpty()) {
             return 0;
         }
 
         $totalUsed = 0;
 
-        foreach ($sales as $sale) {
-            if (!$sale->saleDetails || $sale->saleDetails->isEmpty()) {
-                continue;
-            }
+        foreach ($saleDetails as $detail) {
+            // Find recipes for this menu item that use the given ingredient
+            $recipes = MenuItemRecipe::where('menu_id', $detail->menu_id)
+                ->where('item_id', $itemId)
+                ->get();
 
-            foreach ($sale->saleDetails as $detail) {
-                if ($detail->quantity <= 0) {
-                    continue;
-                }
-
-                // Find recipes for this menu item that use the given ingredient
-                $recipes = MenuItemRecipe::where('menu_id', $detail->menu_id)
-                    ->where('item_id', $itemId)
-                    ->get();
-
-                foreach ($recipes as $recipe) {
-                    $totalUsed += (float) $recipe->required_quantity * $detail->quantity;
-                }
+            foreach ($recipes as $recipe) {
+                $totalUsed += (float) $recipe->required_quantity * $detail->quantity;
             }
         }
 

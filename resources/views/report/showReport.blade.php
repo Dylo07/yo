@@ -273,6 +273,26 @@
                           </td>
                         @endif
                       </tr>
+                      @if($saleDetail->menu && $saleDetail->menu->recipes && $saleDetail->menu->recipes->count() > 0)
+                        <tr class="ingredient-row" id="ingredient-row-{{$saleDetail->id}}">
+                          <td colspan="{{ Auth::user() && Auth::user()->role === 'admin' ? 7 : 6 }}" style="padding: 4px 10px 8px 45px; background: #f8fffe; border-top: none;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                              <span style="font-size: 0.72rem; color: #888; font-weight: 600; margin-right: 2px;">
+                                <i class="fas fa-mortar-pestle" style="color:#11998e;"></i> Ingredients:
+                              </span>
+                              @foreach($saleDetail->menu->recipes as $recipe)
+                                <span style="font-size: 0.72rem; background: #e8f5f1; color: #2d7a6d; padding: 2px 8px; border-radius: 10px; white-space: nowrap;">
+                                  {{ $recipe->item ? $recipe->item->name : 'Unknown' }}
+                                  <span style="color:#888; font-weight:600;">× {{ rtrim(rtrim(number_format($recipe->required_quantity * $saleDetail->quantity, 3), '0'), '.') }}</span>
+                                  @if($recipe->item && $recipe->item->kitchen_unit)
+                                    <span style="color:#aaa;">{{ $recipe->item->kitchen_unit }}</span>
+                                  @endif
+                                </span>
+                              @endforeach
+                            </div>
+                          </td>
+                        </tr>
+                      @endif
                     @endforeach
                   </tbody>
                 </table>

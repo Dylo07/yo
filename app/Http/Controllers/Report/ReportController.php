@@ -27,7 +27,9 @@ class ReportController extends Controller
         $dateStart = date("Y-m-d H:i:s", strtotime($request->dateStart.' 00:00:00'));
         $dateEnd = date("Y-m-d H:i:s", strtotime($request->dateEnd.' 23:59:59'));
 
-        $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])->whereIn('sale_status', ['paid', 'cancelled']);
+        $sales = Sale::whereBetween('updated_at', [$dateStart, $dateEnd])
+            ->whereIn('sale_status', ['paid', 'cancelled'])
+            ->with(['saleDetails.menu.recipes.item']);
       
         $summarySales = Sale::select('menu_id','menu_name','categories.name', DB::raw('SUM(sale_details.quantity) as qty_sum'), DB::raw('MIN(sale_details.menu_price) as menu_price'), DB::raw('SUM(sale_details.menu_price * sale_details.quantity) as revenue_sum'))
         ->join('sale_details', 'sales.id', '=', 'sale_details.sale_id')

@@ -11,5 +11,9 @@ class SaleDetail extends Model
     public function sale(){
         return $this->belongsTo(Sale::class);
     }
+
+    public function menu(){
+        return $this->belongsTo(Menu::class, 'menu_id');
+    }
 }
 
